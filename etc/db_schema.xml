@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+
+<schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
+    <table name="athoscommerce_task" resource="default" engine="innodb" comment="AthosCommerce Task">
+        <column xsi:type="int" name="entity_id" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="varchar" name="type" nullable="false" length="100" comment="Task Type"/>
+        <column xsi:type="varchar" name="status" nullable="false" length="100" comment="Task Status"/>
+        <column xsi:type="mediumtext" name="payload" nullable="true" comment="Task Payload"/>
+        <column xsi:type="timestamp" name="created_at" on_update="false" nullable="false" default="CURRENT_TIMESTAMP"
+                comment="Task Created At"/>
+        <column xsi:type="timestamp" name="started_at" on_update="false" nullable="true" comment="Task Execution Started At"/>
+        <column xsi:type="timestamp" name="ended_at" on_update="false" nullable="true" comment="Task Execution Ended At"/>
+        <column xsi:type="int" name="product_count" nullable="true"  comment="Total Product Count"/>
+        <column xsi:type="int" name="file_size" nullable="true"  comment="File Size"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+    </table>
+
+    <table name="athoscommerce_task_error" resource="default" engine="innodb" comment="AthosCommerce Task Error">
+        <column xsi:type="int" name="task_id" unsigned="true" nullable="false" comment="Task ID"/>
+        <column xsi:type="int" name="code" nullable="false" comment="Error Code"/>
+        <column xsi:type="text" name="message" nullable="false" comment="Error Message"/>
+        <constraint xsi:type="unique" referenceId="ATHOSCOMMERCE_TASK_ERROR_TASK_ID">
+            <column name="task_id"/>
+        </constraint>
+        <constraint xsi:type="foreign"
+                    referenceId="ATHOSCOMMERCE_TASK_ERROR_TASK_ID_ATHOSCOMMERCE_TASK_ENTITY_ID"
+                    table="athoscommerce_task_error"
+                    column="task_id"
+                    referenceTable="athoscommerce_task"
+                    referenceColumn="entity_id"
+                    onDelete="CASCADE"/>
+    </table>
+</schema>

@@ -1,0 +1,391 @@
+<?xml version="1.0"?>
+
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <preference for="AthosCommerce\Feed\Api\Data\TaskResultInterface"
+                type="AthosCommerce\Feed\Model\Data\TaskResult"/>
+    <preference for="AthosCommerce\Feed\Api\Data\TaskInterface"
+                type="AthosCommerce\Feed\Model\Task"/>
+    <preference for="AthosCommerce\Feed\Api\Data\TaskErrorInterface"
+                type="AthosCommerce\Feed\Model\Data\TaskError"/>
+    <preference for="AthosCommerce\Feed\Api\Data\TaskSearchResultsInterface"
+                type="AthosCommerce\Feed\Model\TaskSearchResults"/>
+    <preference for="AthosCommerce\Feed\Api\Data\FeedSpecificationInterface"
+                type="AthosCommerce\Feed\Model\Feed\Specification\Feed"/>
+    <preference for="AthosCommerce\Feed\Api\Data\MediaGallerySpecificationInterface"
+                type="AthosCommerce\Feed\Model\Feed\Specification\MediaGallery"/>
+    <preference for="AthosCommerce\Feed\Api\Data\CustomersInterface"
+                type="AthosCommerce\Feed\Model\Customers"/>
+    <preference for="AthosCommerce\Feed\Api\Data\CustomersDataInterface"
+                type="AthosCommerce\Feed\Model\CustomersData"/>
+    <preference for="AthosCommerce\Feed\Api\Data\SalesInterface"
+                type="AthosCommerce\Feed\Model\Sales"/>
+    <preference for="AthosCommerce\Feed\Api\Data\SalesDataInterface"
+                type="AthosCommerce\Feed\Model\SalesData"/>
+    <preference for="AthosCommerce\Feed\Api\TaskRepositoryInterface"
+                type="AthosCommerce\Feed\Model\TaskRepository"/>
+    <preference for="AthosCommerce\Feed\Api\CreateTaskInterface"
+                type="AthosCommerce\Feed\Model\CreateTask"/>
+    <preference for="AthosCommerce\Feed\Api\GenerateFeedInterface"
+                type="AthosCommerce\Feed\Model\GenerateFeed"/>
+    <preference for="AthosCommerce\Feed\Api\ExecutePendingTasksInterface"
+                type="AthosCommerce\Feed\Model\ExecutePendingTasks"/>
+    <preference for="AthosCommerce\Feed\Api\GetVersionInterface"
+                type="AthosCommerce\Feed\Model\GetVersion"/>
+    <preference for="AthosCommerce\Feed\Api\GetApplicationLogInterface"
+                type="AthosCommerce\Feed\Model\GetApplicationLog"/>
+    <preference for="AthosCommerce\Feed\Api\GetCustomersInterface"
+                type="AthosCommerce\Feed\Model\GetCustomers"/>
+    <preference for="AthosCommerce\Feed\Api\GetSalesInterface"
+                type="AthosCommerce\Feed\Model\GetSales"/>
+    <preference for="AthosCommerce\Feed\Api\ExecuteTaskInterface"
+                type="AthosCommerce\Feed\Model\ExecuteTask"/>
+    <preference for="AthosCommerce\Feed\Api\GetStoresInfoInterface"
+                type="AthosCommerce\Feed\Model\GetStoresInfo"/>
+    <preference for="AthosCommerce\Feed\Api\AppConfigInterface"
+                type="AthosCommerce\Feed\Model\AppConfig"/>
+    <preference for="AthosCommerce\Feed\Model\Metric\CollectorInterface"
+                type="AthosCommerce\Feed\Model\Metric\Collector"/>
+    <preference for="AthosCommerce\Feed\Model\Metric\OutputInterface"
+                type="AthosCommerce\Feed\Model\Metric\Output\LogOutput"/>
+    <preference for="AthosCommerce\Feed\Model\Metric\View\FormatterInterface"
+                type="AthosCommerce\Feed\Model\Metric\View\DefaultFormatter"/>
+    <preference for="AthosCommerce\Feed\Model\Feed\SpecificationBuilderInterface"
+                type="AthosCommerce\Feed\Model\Feed\SpecificationBuilder"/>
+    <preference for="AthosCommerce\Feed\Model\Feed\CollectionProviderInterface"
+                type="AthosCommerce\Feed\Model\Feed\CollectionProvider"/>
+    <preference for="AthosCommerce\Feed\Model\Feed\CollectionConfigInterface"
+                type="AthosCommerce\Feed\Model\Feed\CollectionConfig"/>
+    <preference for="AthosCommerce\Feed\Model\Feed\StorageInterface"
+                type="AthosCommerce\Feed\Model\Feed\Storage\PreSignedUrlStorage"/>
+    <preference for="AthosCommerce\Feed\Model\Feed\ContextManagerInterface"
+                type="AthosCommerce\Feed\Model\Feed\ContextManager"/>
+    <preference for="AthosCommerce\Feed\Model\Feed\DataProvider\Stock\StockResolverInterface"
+                type="AthosCommerce\Feed\Model\Feed\DataProvider\Stock\CompositeStockResolver"/>
+    <preference for="AthosCommerce\Feed\Model\Feed\DataProvider\Price\ProviderResolverInterface"
+                type="AthosCommerce\Feed\Model\Feed\DataProvider\Price\ProviderResolver"/>
+    <preference for="AthosCommerce\Feed\Model\Feed\DataProvider\Attribute\AttributesProviderInterface"
+                type="AthosCommerce\Feed\Model\Feed\DataProvider\Attribute\FeedAttributesProvider"/>
+    <preference for="AthosCommerce\Feed\Model\Webapi\ExceptionConverterInterface"
+                type="AthosCommerce\Feed\Model\Webapi\DefaultExceptionConverter"/>
+    <preference for="AthosCommerce\Feed\Model\Aws\Client\ClientInterface"
+                type="AthosCommerce\Feed\Model\Aws\Client\Client"/>
+    <preference for="AthosCommerce\Feed\Model\Aws\Client\ResponseInterface"
+                type="AthosCommerce\Feed\Model\Aws\Client\Response"/>
+    <preference for="AthosCommerce\Feed\Api\CategoryInfoInterface"
+                type="AthosCommerce\Feed\Model\CategoryInfo"/>
+    <preference for="AthosCommerce\Feed\Api\GetModulesListInterface"
+                type="AthosCommerce\Feed\Model\GetModulesList"/>
+    <preference for="AthosCommerce\Feed\Api\Data\ModulesListInterface"
+                type="AthosCommerce\Feed\Model\Data\ModulesList"/>
+    <preference for="AthosCommerce\Feed\Api\GetCronStatusInterface"
+                type="AthosCommerce\Feed\Model\GetCronStatus"/>
+    <preference for="AthosCommerce\Feed\Api\Data\CronStatusInterface"
+                type="AthosCommerce\Feed\Model\Data\CronStatus"/>
+    <preference for="AthosCommerce\Feed\Api\Data\CronStatusSearchResultsInterface"
+                type="AthosCommerce\Feed\Model\CronStatusSearchResults"/>
+
+    <type name="AthosCommerce\Feed\Model\Task\TypeList">
+        <arguments>
+            <argument name="types" xsi:type="array">
+                <item name="feed_generation" xsi:type="string">Feed Generation</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <type name="AthosCommerce\Feed\Helper\LogInfo">
+        <arguments>
+            <argument name="directoryList" xsi:type="object">Magento\Framework\Filesystem\DirectoryList</argument>
+        </arguments>
+    </type>
+
+
+    <type name="AthosCommerce\Feed\Model\Task\ValidatorPool">
+        <arguments>
+            <argument name="validators" xsi:type="array">
+                <item name="feed_generation" xsi:type="object">AthosCommerceFeedTaskValidatorFeedGeneration</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <type name="AthosCommerce\Feed\Model\Task\UniqueCheckerPool">
+        <arguments>
+            <argument name="checkers" xsi:type="array">
+                <item name="feed_generation" xsi:type="object">AthosCommerce\Feed\Model\Task\GenerateFeed\UniqueChecker</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <virtualType name="AthosCommerceFeedTaskValidatorFeedGeneration" type="AthosCommerce\Feed\Model\Task\Validator\ValidatorComposite">
+        <arguments>
+            <argument name="validators" xsi:type="array">
+                <item name="store" xsi:type="array">
+                    <item name="objectInstance" xsi:type="object">AthosCommerce\Feed\Model\Task\Validator\StoreValidator</item>
+                </item>
+                <item name="not_empty" xsi:type="array">
+                    <item name="objectInstance" xsi:type="object">AthosCommerceFeedTaskValidatorFeedGenerationNotEmpty</item>
+                </item>
+                <item name="url_required" xsi:type="array">
+                    <item name="objectInstance" xsi:type="object">AthosCommerceFeedTaskValidatorFeedGenerationUrlRequired</item>
+                </item>
+                <item name="bool" xsi:type="array">
+                    <item name="objectInstance" xsi:type="object">AthosCommerceFeedTaskValidatorFeedGenerationBool</item>
+                </item>
+                <item name="int" xsi:type="array">
+                    <item name="objectInstance" xsi:type="object">AthosCommerceFeedTaskValidatorFeedGenerationInt</item>
+                </item>
+                <item name="customer_id" xsi:type="array">
+                    <item name="objectInstance" xsi:type="object">AthosCommerce\Feed\Model\Task\Validator\CustomerValidator</item>
+                </item>
+                <item name="format" xsi:type="array">
+                    <item name="objectInstance" xsi:type="object">AthosCommerce\Feed\Model\Feed\Validator\FormatValidator</item>
+                </item>
+            </argument>
+        </arguments>
+    </virtualType>
+
+    <virtualType name="AthosCommerceFeedTaskValidatorFeedGenerationNotEmpty" type="AthosCommerce\Feed\Model\Task\Validator\NotEmptyValidator">
+        <arguments>
+            <argument name="fields" xsi:type="array">
+                <item name="preSignedUrl" xsi:type="string">preSignedUrl</item>
+            </argument>
+        </arguments>
+    </virtualType>
+
+    <virtualType name="AthosCommerceFeedTaskValidatorFeedGenerationUrlRequired" type="AthosCommerce\Feed\Model\Task\Validator\UrlValidator">
+        <arguments>
+            <argument name="fields" xsi:type="array">
+                <item name="preSignedUrl" xsi:type="string">preSignedUrl</item>
+            </argument>
+            <argument name="fieldRequired" xsi:type="boolean">true</argument>
+        </arguments>
+    </virtualType>
+
+    <virtualType name="AthosCommerceFeedTaskValidatorFeedGenerationBool" type="AthosCommerce\Feed\Model\Task\Validator\BoolValidator">
+        <arguments>
+            <argument name="fields" xsi:type="array">
+                <item name="includeMenuCategories" xsi:type="string">includeMenuCategories</item>
+                <item name="keepAspectRatio" xsi:type="string">keepAspectRatio</item>
+                <item name="includeUrlHierarchy" xsi:type="string">includeUrlHierarchy</item>
+                <item name="includeJSONConfig" xsi:type="string">includeJSONConfig</item>
+                <item name="includeChildPrices" xsi:type="string">includeChildPrices</item>
+                <item name="includeTierPricing" xsi:type="string">includeTierPricing</item>
+                <item name="includeMediaGallery" xsi:type="string">includeMediaGallery</item>
+                <item name="includeOutOfStock" xsi:type="string">includeOutOfStock</item>
+            </argument>
+        </arguments>
+    </virtualType>
+
+    <virtualType name="AthosCommerceFeedTaskValidatorFeedGenerationInt" type="AthosCommerce\Feed\Model\Task\Validator\IntValidator">
+        <arguments>
+            <argument name="fields" xsi:type="array">
+                <item name="thumbWidth" xsi:type="string">thumbWidth</item>
+                <item name="thumbHeight" xsi:type="string">thumbHeight</item>
+            </argument>
+        </arguments>
+    </virtualType>
+
+    <type name="AthosCommerce\Feed\Model\Feed\CollectionProvider">
+        <arguments>
+            <argument name="modifiers" xsi:type="array">
+                <item name="store" xsi:type="array">
+                    <item name="objectInstance" xsi:type="object">AthosCommerce\Feed\Model\Feed\Collection\StoreModifier</item>
+                    <item name="sortOrder" xsi:type="number">100</item>
+                </item>
+                <item name="status" xsi:type="array">
+                    <item name="objectInstance" xsi:type="object">AthosCommerce\Feed\Model\Feed\Collection\StatusModifier</item>
+                    <item name="sortOrder" xsi:type="number">200</item>
+                </item>
+                <item name="visibility" xsi:type="array">
+                    <item name="objectInstance" xsi:type="object">AthosCommerce\Feed\Model\Feed\Collection\VisibilityModifier</item>
+                    <item name="sortOrder" xsi:type="number">300</item>
+                </item>
+                <item name="stock" xsi:type="array">
+                    <item name="objectInstance" xsi:type="object">AthosCommerce\Feed\Model\Feed\Collection\StockModifier</item>
+                    <item name="sortOrder" xsi:type="number">400</item>
+                </item>
+                <item name="attributes" xsi:type="array">
+                    <item name="objectInstance" xsi:type="object">AthosCommerce\Feed\Model\Feed\Collection\AttributesModifier</item>
+                    <item name="sortOrder" xsi:type="number">500</item>
+                </item>
+                <item name="price" xsi:type="array">
+                    <item name="objectInstance" xsi:type="object">AthosCommerce\Feed\Model\Feed\Collection\PricesModifier</item>
+                    <item name="sortOrder" xsi:type="number">600</item>
+                </item>
+            </argument>
+        </arguments>
+    </type>
+
+    <type name="AthosCommerce\Feed\Model\Task\ExecutorPool">
+        <arguments>
+            <argument name="executors" xsi:type="array">
+                <item name="feed_generation" xsi:type="object">AthosCommerce\Feed\Model\Task\GenerateFeed\Executor</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <type name="AthosCommerce\Feed\Model\Feed\Storage\FormatterPool">
+        <arguments>
+            <argument name="formatters" xsi:type="array">
+                <item name="json" xsi:type="object">AthosCommerce\Feed\Model\Feed\Storage\Formatter\Json</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <type name="AthosCommerce\Feed\Model\Feed\Storage\File\FileFactory">
+        <arguments>
+<!--            <argument name="fileClassPool" xsi:type="array">-->
+                <argument  name="jsonFile" xsi:type="object">AthosCommerce\Feed\Model\Feed\Storage\File\Json</argument>
+<!--            </argument>-->
+        </arguments>
+    </type>
+
+    <type name="AthosCommerce\Feed\Model\Feed\DataProviderPool">
+        <arguments>
+            <argument name="dataProviders" xsi:type="array">
+                <item name="__all_attributes__" xsi:type="object">AthosCommerce\Feed\Model\Feed\DataProvider\AttributesProvider</item>
+                <item name="__configurable_child__" xsi:type="object">AthosCommerce\Feed\Model\Feed\DataProvider\ConfigurableProductsProvider</item>
+                <item name="__grouped_child__" xsi:type="object">AthosCommerce\Feed\Model\Feed\DataProvider\GroupedProductsProvider</item>
+                <item name="prices" xsi:type="object">AthosCommerce\Feed\Model\Feed\DataProvider\PricesProvider</item>
+                <item name="stock" xsi:type="object">AthosCommerce\Feed\Model\Feed\DataProvider\StockProvider</item>
+                <item name="saleable" xsi:type="object">AthosCommerce\Feed\Model\Feed\DataProvider\SaleableProvider</item>
+                <item name="url" xsi:type="object">AthosCommerce\Feed\Model\Feed\DataProvider\UrlProvider</item>
+                <item name="__rating__" xsi:type="object">AthosCommerce\Feed\Model\Feed\DataProvider\RatingProvider</item>
+                <item name="__categories__" xsi:type="object">AthosCommerce\Feed\Model\Feed\DataProvider\CategoriesProvider</item>
+                <item name="options" xsi:type="object">AthosCommerce\Feed\Model\Feed\DataProvider\OptionsProvider</item>
+                <item name="__media_gallery__" xsi:type="object">AthosCommerce\Feed\Model\Feed\DataProvider\MediaGalleryProvider</item>
+                <item name="__json_config__" xsi:type="object">AthosCommerce\Feed\Model\Feed\DataProvider\JsonConfigProvider</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <type name="AthosCommerce\Feed\Model\Feed\DataProvider\Stock\CompositeStockResolver">
+        <arguments>
+            <argument name="resolvers" xsi:type="array">
+                <item name="msi" xsi:type="array">
+                    <item name="sortOrder" xsi:type="number">100</item>
+                    <item name="objectInstance" xsi:type="object">AthosCommerce\Feed\Model\Feed\DataProvider\Stock\MsiStockResolver</item>
+                </item>
+                <item name="legacy" xsi:type="array">
+                    <item name="sortOrder" xsi:type="number">1000</item>
+                    <item name="objectInstance" xsi:type="object">AthosCommerce\Feed\Model\Feed\DataProvider\Stock\LegacyStockResolver</item>
+                </item>
+            </argument>
+        </arguments>
+    </type>
+
+    <type name="AthosCommerce\Feed\Model\Feed\DataProvider\Price\ProviderResolver">
+        <arguments>
+            <argument name="priceProviders" xsi:type="array">
+                <item name="configurable" xsi:type="object">AthosCommerce\Feed\Model\Feed\DataProvider\Price\ConfigurablePriceProvider</item>
+            </argument>
+            <argument name="basePriceProvider" xsi:type="object">AthosCommerce\Feed\Model\Feed\DataProvider\Price\BasePriceProvider</argument>
+        </arguments>
+    </type>
+
+    <type name="AthosCommerce\Feed\Model\Feed\ContextManager">
+        <arguments>
+            <argument name="processors" xsi:type="array">
+                <item name="store" xsi:type="object">AthosCommerce\Feed\Model\Feed\Context\StoreContextManager</item>
+                <item name="customer" xsi:type="object">AthosCommerce\Feed\Model\Feed\Context\CustomerContextManager</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <type name="AthosCommerce\Feed\Model\GenerateFeed">
+        <arguments>
+            <argument name="afterLoadProcessorPool" xsi:type="object">AthosCommerceFeedGenerateFeedAfterLoadCollectionProcessorPool</argument>
+        </arguments>
+    </type>
+
+    <virtualType name="AthosCommerceFeedGenerateFeedAfterLoadCollectionProcessorPool" type="AthosCommerce\Feed\Model\Feed\Collection\ProcessorPool">
+        <arguments>
+            <argument name="processors" xsi:type="array">
+                <item name="media_gallery" xsi:type="object">AthosCommerce\Feed\Model\Feed\Collection\MediaGalleryProcessor</item>
+                <item name="tier_price" xsi:type="object">AthosCommerce\Feed\Model\Feed\Collection\TierPriceProcessor</item>
+                <item name="url" xsi:type="object">AthosCommerce\Feed\Model\Feed\Collection\UrlProcessor</item>
+            </argument>
+        </arguments>
+    </virtualType>
+
+    <virtualType name="AthosCommerceFeedBaseLogHandler" type="Magento\Framework\Logger\Handler\Base">
+        <arguments>
+            <argument name="fileName" xsi:type="string">/var/log/athoscommerce_feed.log</argument>
+        </arguments>
+    </virtualType>
+
+    <virtualType name="AthosCommerceFeedSystemLogHandler" type="Magento\Framework\Logger\Handler\System">
+        <arguments>
+            <argument name="fileName" xsi:type="string">/var/log/athoscommerce_feed.log</argument>
+        </arguments>
+    </virtualType>
+
+    <virtualType name="AthosCommerceLogger" type="Magento\Framework\Logger\Monolog">
+        <arguments>
+            <argument name="handlers" xsi:type="array">
+                <item name="debug" xsi:type="object">AthosCommerceFeedBaseLogHandler</item>
+                <item name="system" xsi:type="object">AthosCommerceFeedSystemLogHandler</item>
+            </argument>
+        </arguments>
+    </virtualType>
+
+    <type name="AthosCommerce\Feed\Model\ExecutePendingTasks">
+        <arguments>
+            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
+        </arguments>
+    </type>
+
+    <type name="AthosCommerce\Feed\Model\ExecuteTask">
+        <arguments>
+            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
+        </arguments>
+    </type>
+    <type name="AthosCommerce\Feed\Model\CreateTask">
+        <arguments>
+            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
+        </arguments>
+    </type>
+    <type name="AthosCommerce\Feed\Model\GenerateFeed">
+        <arguments>
+            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
+        </arguments>
+    </type>
+    <type name="AthosCommerce\Feed\Model\Feed\DataProvider\Stock\MsiStockResolver">
+        <arguments>
+            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
+        </arguments>
+    </type>
+
+    <virtualType name="AthosCommerceFeedGenerateFeedConfigurableChildStorage" type="AthosCommerce\Feed\Model\Feed\DataProvider\Product\ChildStorage" />
+
+    <type name="Magento\Framework\Console\CommandListInterface">
+        <arguments>
+            <argument name="commands" xsi:type="array">
+                <item name="AthosCommerceFeedExecutePendingTasks" xsi:type="object">AthosCommerce\Feed\Console\Command\ExecutePendingTasks\Proxy</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <type name="AthosCommerce\Feed\Console\Command\ExecutePendingTasks">
+        <arguments>
+            <argument name="state" xsi:type="object">Magento\Framework\App\State\Proxy</argument>
+            <argument name="cliOutput" xsi:type="object">AthosCommerce\Feed\Model\Metric\Output\CliOutput\Proxy</argument>
+            <argument name="metricCollector" xsi:type="object">AthosCommerce\Feed\Model\Metric\CollectorInterface\Proxy</argument>
+        </arguments>
+    </type>
+
+    <type name="AthosCommerce\Feed\Model\Metric\Collector">
+        <arguments>
+            <argument name="metricProviders" xsi:type="array">
+                <item name="product_feed" xsi:type="array">
+                    <item name="time" xsi:type="object">AthosCommerce\Feed\Model\Metric\MetricProvider\TimeProvider</item>
+                    <item name="timer" xsi:type="object">AthosCommerce\Feed\Model\Metric\MetricProvider\TimerProvider</item>
+                    <item name="memory" xsi:type="object">AthosCommerce\Feed\Model\Metric\MetricProvider\MemoryProvider</item>
+                    <item name="file_size" xsi:type="object">AthosCommerce\Feed\Model\Metric\MetricProvider\FileSizeProvider</item>
+                </item>
+            </argument>
+        </arguments>
+    </type>
+
+    <type name="AthosCommerce\Feed\Model\Metric\MetricProvider\TimerProvider" shared="false" />
+    <type name="AthosCommerce\Feed\Model\Metric\MetricProvider\FileSizeProvider" shared="false" />
+</config>

@@ -1,0 +1,89 @@
+<?xml version="1.0"?>
+
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Webapi:etc/webapi.xsd">
+    <route url="/V1/athoscommerce/version" method="GET">
+        <service class="AthosCommerce\Feed\Api\GetVersionInterface" method="get" />
+        <resources>
+            <resource ref="AthosCommerce_Feed::general" />
+        </resources>
+    </route>
+    <route url="/V1/athoscommerce/applicationlog" method="GET">
+        <service class="AthosCommerce\Feed\Api\GetApplicationLogInterface" method="getExtensionLog" />
+        <resources>
+            <resource ref="AthosCommerce_Feed::general" />
+        </resources>
+    </route>
+    <route url="/V1/athoscommerce/applicationlog/clear" method="POST">
+        <service class="AthosCommerce\Feed\Api\GetApplicationLogInterface" method="clearExtensionLog" />
+        <resources>
+            <resource ref="AthosCommerce_Feed::general" />
+        </resources>
+    </route>
+    <route url="/V1/athoscommerce/exceptionlog" method="GET">
+        <service class="AthosCommerce\Feed\Api\GetApplicationLogInterface" method="getExceptionLog" />
+        <resources>
+            <resource ref="AthosCommerce_Feed::general" />
+        </resources>
+    </route>
+    <route url="/V1/athoscommerce/exceptionlog/clear" method="POST">
+        <service class="AthosCommerce\Feed\Api\GetApplicationLogInterface" method="clearExceptionLog" />
+        <resources>
+            <resource ref="AthosCommerce_Feed::general" />
+        </resources>
+    </route>
+    <route url="/V1/athoscommerce/customers" method="GET">
+        <service class="AthosCommerce\Feed\Api\GetCustomersInterface" method="getList" />
+        <resources>
+            <resource ref="AthosCommerce_Feed::customers" />
+        </resources>
+    </route>
+    <route url="/V1/athoscommerce/sales" method="GET">
+        <service class="AthosCommerce\Feed\Api\GetSalesInterface" method="getList" />
+        <resources>
+            <resource ref="AthosCommerce_Feed::sales" />
+        </resources>
+    </route>
+    <route url="/V1/athoscommerce/info/html" method="GET">
+        <service class="AthosCommerce\Feed\Api\GetStoresInfoInterface" method="getAsHtml" />
+        <resources>
+            <resource ref="AthosCommerce_Feed::general" />
+        </resources>
+    </route>
+    <route url="/V1/athoscommerce/info/json" method="GET">
+        <service class="AthosCommerce\Feed\Api\GetStoresInfoInterface" method="getAsJson" />
+        <resources>
+            <resource ref="AthosCommerce_Feed::general" />
+        </resources>
+    </route>
+    <route url="/V1/athoscommerce/task" method="POST">
+        <service class="AthosCommerce\Feed\Api\CreateTaskInterface" method="execute" />
+        <resources>
+            <resource ref="AthosCommerce_Feed::task" />
+        </resources>
+    </route>
+    <route url="/V1/athoscommerce/task/:id" method="GET">
+        <service class="AthosCommerce\Feed\Api\TaskRepositoryInterface" method="get" />
+        <resources>
+            <resource ref="AthosCommerce_Feed::task" />
+        </resources>
+    </route>
+    <route url="/V1/athoscommerce/categorylist" method="GET">
+        <service class="AthosCommerce\Feed\Api\CategoryInfoInterface" method="getAllCategories"/>
+        <resources>
+            <resource ref="AthosCommerce_Feed::task" />
+        </resources>
+    </route>
+    <route url="/V1/athoscommerce/moduleslist" method="GET">
+        <service class="AthosCommerce\Feed\Api\GetModulesListInterface" method="getModulesList" />
+        <resources>
+            <resource ref="AthosCommerce_Feed::general" />
+        </resources>
+    </route>
+    <route url="/V1/athoscommerce/cron/status" method="GET">
+        <service class="AthosCommerce\Feed\Api\GetCronStatusInterface" method="getList" />
+        <resources>
+            <resource ref="AthosCommerce_Feed::general" />
+        </resources>
+    </route>
+</routes>

@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <type name="Magento\Framework\Reflection\DataObjectProcessor">
+        <arguments>
+            <argument name="processors" xsi:type="array">
+                <item name="AthosCommerce\Feed\Model\Task" xsi:type="object">AthosCommerce\Feed\Model\Task\Webapi\TaskOutputProcessor\Proxy</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <type name="AthosCommerce\Feed\Api\CreateTaskInterface">
+        <plugin name="AthosCommerce_Feed::convert_exceptions" type="AthosCommerce\Feed\Plugin\Rest\CreateTaskConvertException"/>
+    </type>
+
+    <type name="AthosCommerce\Feed\Api\TaskRepositoryInterface">
+        <plugin name="AthosCommerce_Feed::convert_exceptions" type="AthosCommerce\Feed\Plugin\Rest\GetTaskConvertException"/>
+    </type>
+
+    <type name="AthosCommerce\Feed\Api\GetStoresInfoInterface">
+        <plugin name="AthosCommerce_Feed::convert_exceptions" type="AthosCommerce\Feed\Plugin\Rest\GetStoreInfoConvertException"/>
+    </type>
+
+    <type name="AthosCommerce\Feed\Plugin\Rest\CreateTaskConvertException">
+        <arguments>
+            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
+        </arguments>
+    </type>
+
+    <type name="AthosCommerce\Feed\Plugin\Rest\GetTaskConvertException">
+        <arguments>
+            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
+        </arguments>
+    </type>
+
+    <type name="AthosCommerce\Feed\Plugin\Rest\GetStoreInfoConvertException">
+        <arguments>
+            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
+        </arguments>
+    </type>
+</config>
