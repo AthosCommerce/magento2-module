@@ -71,6 +71,7 @@ class ExecutePendingTasks implements ExecutePendingTasksInterface
      */
     public function execute(): array
     {
+        $this->logger->info('Pending status tasks execution started by cron');
         $searchCriteria = $this->searchCriteriaBuilder
             ->addFilter(TaskInterface::STATUS, MetadataInterface::TASK_STATUS_PENDING)
             ->create();
@@ -78,6 +79,11 @@ class ExecutePendingTasks implements ExecutePendingTasksInterface
         $result = [];
         foreach ($taskList->getItems() as $task) {
             try {
+                $this->logger->info('Task execution with the entity id started', [
+                    'method' => __METHOD__,
+                    'entityId'=> $task->getEntityId(),
+                    'status' => $task->getStatus()
+                ]);
                 $result[$task->getEntityId()] = $this->executeTask->execute($task);
             } catch (\Throwable $exception) {
                 $this->logger->error(

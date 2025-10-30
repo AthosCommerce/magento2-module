@@ -90,18 +90,33 @@ class ExecuteTask implements ExecuteTaskInterface
         $this->taskRepository->save($task);
         $result = null;
         try {
+            $this->logger->info('Processing execution with the entity id started', [
+                'method' => __METHOD__,
+                'entityId'=> $task->getEntityId(),
+                'status' => $task->getStatus()
+            ]);
             $result = $executor->execute($task);
             $task->setStatus(MetadataInterface::TASK_STATUS_SUCCESS);
         } catch (\Throwable $exception) {
             /** @var TaskErrorInterface $error */
             $error = $this->taskErrorFactory->create();
             $code = $exception instanceof GenericException ? $exception->getCode() : GenericException::CODE;
+            $this->logger->info('Issue with Task execution with the entity id', [
+                'method' => __METHOD__,
+                'entityId'=> $task->getEntityId(),
+                'status' => $task->getStatus()
+            ]);
             $this->logger->error($exception->getMessage(), ['trace' => $exception->getTraceAsString()]);
             $error->setMessage($exception->getMessage())
                 ->setCode($code);
             $task->setStatus(MetadataInterface::TASK_STATUS_ERROR)
                 ->setError($error);
         }
+        $this->logger->info('Task execution with the entity id completed successfully', [
+            'method' => __METHOD__,
+            'entityId'=> $task->getEntityId(),
+            'status' => $task->getStatus()
+        ]);
         $time = $this->dateTime->gmtDate();
         $task->setEndedAt($time);
         $this->taskRepository->save($task);
