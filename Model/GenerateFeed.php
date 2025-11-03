@@ -137,9 +137,18 @@ class GenerateFeed implements GenerateFeedInterface
      */
     public function execute(FeedSpecificationInterface $feedSpecification, $id): void
     {
+        $this->logger->info('Product feed generation started with entity id', [
+            'method' => __METHOD__,
+            'entityId'=> $id,
+            'format' => $feedSpecification->getFormat(),
+        ]);
         $this->setPresignUrlFileFormat($feedSpecification);
         $format = $feedSpecification->getFormat();
         if (!$this->storage->isSupportedFormat($format)) {
+            $this->logger->error('Feed format not supported', [
+                'method' => __METHOD__,
+                'format' => $format,
+            ]);
             throw new Exception((string)__('%1 is not supported format', $format));
         }
 
@@ -154,6 +163,11 @@ class GenerateFeed implements GenerateFeedInterface
         $metrics = 0;
         $this->collectMetrics('Before Start Items Generation');
         $productCount = 0;
+        $this->logger->info('Product collection details', [
+            'method' => __METHOD__,
+            'pageSize'=> $pageSize,
+            'pageCount' => $pageCount,
+        ]);
         while ($currentPageNumber <= $pageCount) {
             try {
                 $collection->setCurPage($currentPageNumber);
@@ -180,10 +194,20 @@ class GenerateFeed implements GenerateFeedInterface
                 gc_collect_cycles();
             } catch (Exception $exception) {
                 $this->storage->rollback();
+                $this->logger->error('Error fetching products details', [
+                    'method' => __METHOD__,
+                    'entityId'=> $id,
+                    'format' => $feedSpecification->getFormat(),
+                    'message' => $exception
+                ]);
                 throw $exception;
             }
         }
-
+        $this->logger->info('Product feed generation completed successfully', [
+            'method' => __METHOD__,
+            'entityId'=> $id,
+            'format' => $feedSpecification->getFormat(),
+        ]);
         $task = $this->taskRepository->get($id);
         $task->setProductCount($productCount);
         $this->taskRepository->save($task);
@@ -218,6 +242,11 @@ class GenerateFeed implements GenerateFeedInterface
     {
         $this->resetDataProviders($feedSpecification);
         $this->collectMetrics('Before Send File');
+        $this->logger->info('File storage in s3 started', [
+            'method' => __METHOD__,
+            'entityId'=> $id,
+            'format' => $feedSpecification->getFormat(),
+        ]);
         try {
             $this->storage->commit($id);
         } finally {
@@ -227,7 +256,11 @@ class GenerateFeed implements GenerateFeedInterface
                 CollectorInterface::PRINT_TYPE_FULL
             );
         }
-
+        $this->logger->info('File storage in s3 completed', [
+            'method' => __METHOD__,
+            'entityId'=> $id,
+            'format' => $feedSpecification->getFormat(),
+        ]);
         $this->metricCollector->reset(CollectorInterface::CODE_PRODUCT_FEED);
         $this->contextManager->resetContext();
         if (!$this->gcStatus) {
