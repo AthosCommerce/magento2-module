@@ -137,16 +137,19 @@ class GenerateFeed implements GenerateFeedInterface
      */
     public function execute(FeedSpecificationInterface $feedSpecification, $id): void
     {
+        $format = $feedSpecification->getFormat();
         $this->logger->info('Product feed generation started with entity id', [
             'method' => __METHOD__,
-            'entityId'=> $id,
-            'format' => $feedSpecification->getFormat(),
+            'entityId' => $id,
+            'format' => $format,
         ]);
+        $startTime = microtime(true);
         $this->setPresignUrlFileFormat($feedSpecification);
-        $format = $feedSpecification->getFormat();
+
         if (!$this->storage->isSupportedFormat($format)) {
             $this->logger->error('Feed format not supported', [
                 'method' => __METHOD__,
+                'entityId' => $id,
                 'format' => $format,
             ]);
             throw new Exception((string)__('%1 is not supported format', $format));
@@ -165,7 +168,7 @@ class GenerateFeed implements GenerateFeedInterface
         $productCount = 0;
         $this->logger->info('Product collection details', [
             'method' => __METHOD__,
-            'pageSize'=> $pageSize,
+            'pageSize' => $pageSize,
             'pageCount' => $pageCount,
         ]);
         while ($currentPageNumber <= $pageCount) {
@@ -173,6 +176,16 @@ class GenerateFeed implements GenerateFeedInterface
                 $collection->setCurPage($currentPageNumber);
                 $collection->load();
                 $this->processAfterLoad($collection, $feedSpecification);
+                if ($currentPageNumber === 1) {
+                    $this->logger->info(
+                        'Product collection after loading',
+                        [
+                            'method' => __METHOD__,
+                            'entityId' => $id,
+                            'query' => $collection->getSelect()->__toString(),
+                        ]
+                    );
+                }
                 $itemsData = $this->getItemsData($collection->getItems(), $feedSpecification);
                 $productCount += count($itemsData);
                 $title = 'Products: ' . $pageSize * $metrics . ' - ' . $pageSize * ($metrics + 1);
@@ -194,23 +207,36 @@ class GenerateFeed implements GenerateFeedInterface
                 gc_collect_cycles();
             } catch (Exception $exception) {
                 $this->storage->rollback();
-                $this->logger->error('Error fetching products details', [
-                    'method' => __METHOD__,
-                    'entityId' => $id,
-                    'currentPage' => $currentPageNumber,
-                    'format' => $feedSpecification->getFormat(),
-                    'query' => $collection->getSelect()->__toString(),
-                    'message' => $exception,
-                ]);
+                $this->logger->error('Error fetching products details',
+                    [
+                        'method' => __METHOD__,
+                        'entityId' => $id,
+                        'currentPage' => $currentPageNumber,
+                        'format' => $format,
+                        'query' => $collection->getSelect()->__toString(),
+                        'message' => $exception,
+                    ]
+                );
                 throw $exception;
             }
         }
-        $this->logger->info('Product feed generation completed successfully', [
-            'method' => __METHOD__,
-            'entityId' => $id,
-            'query' => $collection->getSelect()->__toString(),
-            'format' => $feedSpecification->getFormat(),
-        ]);
+        $endTime = microtime(true);
+        $this->logger->info('Product feed generation completed successfully',
+            [
+                'method' => __METHOD__,
+                'entityId' => $id,
+                'query' => $collection->getSelect()->__toString(),
+                'format' => $format,
+            ]
+        );
+        $this->logger->debug('Product feed generation time taken execution',
+            [
+                'startTime' => $startTime,
+                'endTime' => $endTime,
+                'totalSeconds' => ($endTime - $timeStart),
+            ]
+        );
+
         $task = $this->taskRepository->get($id);
         $task->setProductCount($productCount);
         $this->taskRepository->save($task);
@@ -261,7 +287,7 @@ class GenerateFeed implements GenerateFeedInterface
         }
         $this->logger->info('File storage in s3 completed', [
             'method' => __METHOD__,
-            'entityId'=> $id,
+            'entityId' => $id,
             'format' => $feedSpecification->getFormat(),
         ]);
         $this->metricCollector->reset(CollectorInterface::CODE_PRODUCT_FEED);
