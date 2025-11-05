@@ -54,7 +54,9 @@ class FieldsProvider
         'rating',
         'rating_count',
         'child_sku',
-        'child_name'
+        'child_name',
+        'parent_ids',
+        'product_type'
     ];
     /**
      * @var CollectionFactory
