@@ -196,16 +196,19 @@ class GenerateFeed implements GenerateFeedInterface
                 $this->storage->rollback();
                 $this->logger->error('Error fetching products details', [
                     'method' => __METHOD__,
-                    'entityId'=> $id,
+                    'entityId' => $id,
+                    'currentPage' => $currentPageNumber,
                     'format' => $feedSpecification->getFormat(),
-                    'message' => $exception
+                    'query' => $collection->getSelect()->__toString(),
+                    'message' => $exception,
                 ]);
                 throw $exception;
             }
         }
         $this->logger->info('Product feed generation completed successfully', [
             'method' => __METHOD__,
-            'entityId'=> $id,
+            'entityId' => $id,
+            'query' => $collection->getSelect()->__toString(),
             'format' => $feedSpecification->getFormat(),
         ]);
         $task = $this->taskRepository->get($id);
@@ -244,7 +247,7 @@ class GenerateFeed implements GenerateFeedInterface
         $this->collectMetrics('Before Send File');
         $this->logger->info('File storage in s3 started', [
             'method' => __METHOD__,
-            'entityId'=> $id,
+            'entityId' => $id,
             'format' => $feedSpecification->getFormat(),
         ]);
         try {
@@ -408,6 +411,7 @@ class GenerateFeed implements GenerateFeedInterface
             $data = $dataProvider->getData($data, $feedSpecification);
         }
 
+        //TODO:: To check some variants are part of next batch
         $data = $this->cleanupItemsData($data);
 
         return $data;

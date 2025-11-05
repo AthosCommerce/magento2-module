@@ -195,10 +195,6 @@
                     <item name="objectInstance" xsi:type="object">AthosCommerce\Feed\Model\Feed\Collection\StatusModifier</item>
                     <item name="sortOrder" xsi:type="number">200</item>
                 </item>
-                <item name="visibility" xsi:type="array">
-                    <item name="objectInstance" xsi:type="object">AthosCommerce\Feed\Model\Feed\Collection\VisibilityModifier</item>
-                    <item name="sortOrder" xsi:type="number">300</item>
-                </item>
                 <item name="stock" xsi:type="array">
                     <item name="objectInstance" xsi:type="object">AthosCommerce\Feed\Model\Feed\Collection\StockModifier</item>
                     <item name="sortOrder" xsi:type="number">400</item>
@@ -210,6 +206,10 @@
                 <item name="price" xsi:type="array">
                     <item name="objectInstance" xsi:type="object">AthosCommerce\Feed\Model\Feed\Collection\PricesModifier</item>
                     <item name="sortOrder" xsi:type="number">600</item>
+                </item>
+                <item name="type_id" xsi:type="array">
+                    <item name="objectInstance" xsi:type="object">AthosCommerce\Feed\Model\Feed\Collection\ProductTypeIdModifier</item>
+                    <item name="sortOrder" xsi:type="number">700</item>
                 </item>
             </argument>
         </arguments>
@@ -243,7 +243,8 @@
         <arguments>
             <argument name="dataProviders" xsi:type="array">
                 <item name="__all_attributes__" xsi:type="object">AthosCommerce\Feed\Model\Feed\DataProvider\AttributesProvider</item>
-                <item name="__configurable_child__" xsi:type="object">AthosCommerce\Feed\Model\Feed\DataProvider\ConfigurableProductsProvider</item>
+                <!--<item name="__configurable_child__" xsi:type="object">AthosCommerce\Feed\Model\Feed\DataProvider\ConfigurableProductsProvider</item>-->
+                <item name="parents_info" xsi:type="object">AthosCommerce\Feed\Model\Feed\DataProvider\ParentInfoProvider</item>
                 <item name="__grouped_child__" xsi:type="object">AthosCommerce\Feed\Model\Feed\DataProvider\GroupedProductsProvider</item>
                 <item name="prices" xsi:type="object">AthosCommerce\Feed\Model\Feed\DataProvider\PricesProvider</item>
                 <item name="stock" xsi:type="object">AthosCommerce\Feed\Model\Feed\DataProvider\StockProvider</item>
