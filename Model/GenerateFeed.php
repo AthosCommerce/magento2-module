@@ -233,7 +233,7 @@ class GenerateFeed implements GenerateFeedInterface
             [
                 'startTime' => $startTime,
                 'endTime' => $endTime,
-                'totalSeconds' => ($endTime - $timeStart),
+                'totalSeconds' => ($endTime - $startTime),
             ]
         );
 

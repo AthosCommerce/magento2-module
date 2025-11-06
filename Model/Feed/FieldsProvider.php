@@ -56,7 +56,7 @@ class FieldsProvider
         'child_sku',
         'child_name',
         'parent_ids',
-        'product_type'
+        'parent_type_id'
     ];
     /**
      * @var CollectionFactory
