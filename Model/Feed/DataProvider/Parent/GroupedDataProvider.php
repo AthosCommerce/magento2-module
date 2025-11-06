@@ -96,63 +96,68 @@ class GroupedDataProvider implements DataProviderInterface
         unset($parentChildIds);
 
         $linkField = $this->getLinkField();
+        $finalProducts = [];
         foreach ($products as &$product) {
             /** @var Product $productModel */
             $productModel = $product['product_model'] ?? null;
             if (!$productModel) {
                 continue;
             }
+
             $childEntityId = (int)$productModel->getData($linkField);
             $parentIds = $childToParent[$childEntityId] ?? [];
             if (empty($parentIds)) {
+                $finalProducts[] = $product;
                 continue;
             }
 
             $parent = null;
             foreach ($parentIds as $parentId) {
-                //First parent
-                if (isset($parentsDataById[$parentId])) {
-                    $parent = $parentsDataById[$parentId];
-                    break;
+                $parent = $parentsDataById[$parentId] ?? null;
+                if (!$parent) {
+                    continue;
                 }
-            }
-            if (!$parent) {
-                continue;
-            }
+                $shouldExclude = $this->shouldExcludeProduct($productModel, $product, $parent);
+                if ($shouldExclude) {
+                    unset($products[$productIndex]);
+                }
+                $childClone = $product;
 
-            //TODO:: Refactor via separate provider as needed
-            $shouldExclude = $this->shouldExcludeProduct($productModel, $product, $parent);
-            if ($shouldExclude) {
-                unset($products[$productIndex]);
-            }
-
-            if (in_array(
-                $productModel->getTypeId(),
-                [MagentoProductType::TYPE_SIMPLE, MagentoProductType::TYPE_VIRTUAL],
-                true
-            )) {
-                $product['parent_ids'] = $childToParent[$childEntityId] ?? [$parent->getId()];
-
-                if (method_exists($parent, 'getStatus') && $parent->getStatus()) {
-                    $product['parent_status'] = $parent->getStatus();
+                if (in_array(
+                    $productModel->getTypeId(),
+                    [MagentoProductType::TYPE_SIMPLE, MagentoProductType::TYPE_VIRTUAL],
+                    true
+                )) {
+                    $childClone['parent_id'] = $parentId;
+                    if (method_exists($parent, 'getName') && $parent->getName()) {
+                        $childClone['parent_name'] = $parent->getName();
+                    }
+                    if (method_exists($parent, 'getStatus')) {
+                        $childClone['parent_status'] = $parent->getStatus()
+                            ? __('Enabled')
+                            : __('Disabled');
+                    }
+                    if (method_exists($parent, 'getTypeId')) {
+                        $childClone['parent_type_id'] = $parent->getTypeId();
+                    }
+                    if (method_exists($parent, 'getProductUrl') && $parent->getProductUrl()) {
+                        $childClone['parent_url'] = $parent->getProductUrl();
+                    }
+                    if (method_exists($parent, 'getVisibility') && $parent->getVisibility()) {
+                        $childClone['parent_visibility'] = $this->visibility->getVisibilityTextValue(
+                            $parent->getVisibility()
+                        );
+                    }
+                    if (method_exists($parent, 'getImage') && $parent->getImage()) {
+                        $childClone['parent_image'] = $parent->getImage();
+                    }
                 }
-                if (method_exists($parent, 'getTypeId') && $parent->getTypeId()) {
-                    $product['parent_type_id'] = $parent->getTypeId();
-                }
-                if (method_exists($parent, 'getProductUrl') && $parent->getProductUrl()) {
-                    $product['url'] = $parent->getProductUrl();
-                }
-                if (method_exists($parent, 'getVisibility') && $parent->getVisibility()) {
-                    $product['visibility'] = $this->visibility->getVisibilityTextValue(
-                        $parent->getVisibility()
-                    );
-                }
+                $finalProducts[] = $childClone;
             }
         }
-        unset($childToParent);
-        unset($parentsDataById);
+        unset($childToParent, $parentsDataById);
 
-        return array_values($products);
+        return array_values($finalProducts);
     }
 
     /**
@@ -168,10 +173,7 @@ class GroupedDataProvider implements DataProviderInterface
     ): bool {
         $isExclude = false;
         if (($productModel->getVisibility() == 1 && $parent->getVisibility() == 1)
-            || (
-                $parent->getStatus() == \Magento\Catalog\Model\Product\Attribute\Source\Status::STATUS_DISABLED
-                && $productModel->getVisibility() == 1
-            )
+            || ($parent->isDisabled() && $productModel->getVisibility() == 1)
         ) {
             $isExclude = true;
         }

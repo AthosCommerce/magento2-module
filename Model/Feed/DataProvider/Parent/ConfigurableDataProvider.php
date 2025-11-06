@@ -88,6 +88,7 @@ class ConfigurableDataProvider implements DataProviderInterface
         unset($parentChildIds);
 
         $linkField = $this->getLinkField();
+        $finalProducts = [];
 
         foreach ($products as $productIndex => &$product) {
             /** @var Product $productModel */
@@ -98,63 +99,57 @@ class ConfigurableDataProvider implements DataProviderInterface
             $childEntityId = (int)$productModel->getData($linkField);
             $parentIds = $childToParent[$childEntityId] ?? [];
             if (empty($parentIds)) {
+                $finalProducts[] = $product;
                 continue;
             }
+
             $parent = null;
             foreach ($parentIds as $parentId) {
-                //first parent
-                if (isset($parentsDataById[$parentId])) {
-                    $parent = $parentsDataById[$parentId];
-                    break;
+                $parent = $parentsDataById[$parentId] ?? null;
+                if (!$parent) {
+                    continue;
                 }
-            }
-            if (!$parent) {
-                continue;
-            }
-
-            //TODO:: Refactor via separate provider as needed
-            $shouldExclude = $this->shouldExcludeProduct($productModel, $product, $parent);
-            if ($shouldExclude) {
-                unset($products[$productIndex]);
-            }
-
-            if (in_array(
-                $productModel->getTypeId(),
-                [MagentoProductType::TYPE_SIMPLE, MagentoProductType::TYPE_VIRTUAL],
-                true
-            )) {
-                if (array_key_exists('parent_ids', $product)) {
-                    $product['parent_ids'] = array_values(
-                        array_unique(
-                            array_merge(
-                                $product['parent_ids'],
-                                $parentIds
-                            )
-                        )
-                    );
-                } else {
-                    $product['parent_ids'] = $parentIds;
+                $shouldExclude = $this->shouldExcludeProduct($productModel, $product, $parent);
+                if ($shouldExclude) {
+                    unset($products[$productIndex]);
                 }
-                if (method_exists($parent, 'getTypeId') && $parent->getTypeId()) {
-                    $product['parent_type_id'] = $parent->getTypeId();
+                $childClone = $product;
+                //TODO:: Refactor via separate provider as needed
+                if (in_array(
+                    $productModel->getTypeId(),
+                    [MagentoProductType::TYPE_SIMPLE, MagentoProductType::TYPE_VIRTUAL],
+                    true
+                )) {
+                    $childClone['parent_id'] = $parentId;
+                    if (method_exists($parent, 'getName') && $parent->getName()) {
+                        $childClone['parent_name'] = $parent->getName();
+                    }
+                    if (method_exists($parent, 'getTypeId') && $parent->getTypeId()) {
+                        $childClone['parent_type_id'] = $parent->getTypeId();
+                    }
+                    if (method_exists($parent, 'getStatus') && $parent->getStatus()) {
+                        $childClone['parent_status'] = $parent->getStatus()
+                            ? __('Enabled')
+                            : __('Disabled');
+                    }
+                    if (method_exists($parent, 'getProductUrl') && $parent->getProductUrl()) {
+                        $childClone['parent_url'] = $parent->getProductUrl();
+                    }
+                    if (method_exists($parent, 'getVisibility') && $parent->getVisibility()) {
+                        $childClone['parent_visibility'] = $this->visibility->getVisibilityTextValue(
+                            $parent->getVisibility()
+                        );
+                    }
+                    if (method_exists($parent, 'getImage') && $parent->getImage()) {
+                        $childClone['parent_image'] = $parent->getImage();
+                    }
                 }
-                if (method_exists($parent, 'getStatus') && $parent->getStatus()) {
-                    $product['parent_status'] = $parent->getStatus();
-                }
-                if (method_exists($parent, 'getProductUrl') && $parent->getProductUrl()) {
-                    $product['url'] = $parent->getProductUrl();
-                }
-                if (method_exists($parent, 'getVisibility') && $parent->getVisibility()) {
-                    $product['visibility'] = $this->visibility->getVisibilityTextValue(
-                        $parent->getVisibility()
-                    );
-                }
+                $finalProducts[] = $childClone;
             }
         }
-        unset($childToParent);
-        unset($parentsDataById);
+        unset($childToParent, $parentsDataById);
 
-        return array_values($products);
+        return array_values($finalProducts);
     }
 
     /**
@@ -170,10 +165,7 @@ class ConfigurableDataProvider implements DataProviderInterface
     ): bool {
         $isExclude = false;
         if (($productModel->getVisibility() == 1 && $parent->getVisibility() == 1)
-            || (
-                $parent->getStatus() == \Magento\Catalog\Model\Product\Attribute\Source\Status::STATUS_DISABLED
-                && $productModel->getVisibility() == 1
-            )
+            || ($parent->isDisabled() && $productModel->getVisibility() == 1)
         ) {
             $isExclude = true;
         }

@@ -29,16 +29,16 @@ use AthosCommerce\Feed\Model\Feed\SpecificationBuilderInterface;
  * @magentoDbIsolation enabled
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class VisibilityModifierTest extends TestCase
+class ProductTypeIdModifierTest extends TestCase
 {
     /**
      * @var \Magento\Framework\ObjectManagerInterface
      */
     private $objectManager;
     /**
-     * @var VisibilityModifier
+     * @var ProductTypeIdModifier
      */
-    private $visibilityModifier;
+    private $productTypeIdModifier;
     /**
      * @var SpecificationBuilderInterface
      */
@@ -47,7 +47,7 @@ class VisibilityModifierTest extends TestCase
     protected function setUp(): void
     {
         $this->objectManager = Bootstrap::getObjectManager();
-        $this->visibilityModifier = $this->objectManager->get(VisibilityModifier::class);
+        $this->productTypeIdModifier = $this->objectManager->get(ProductTypeIdModifier::class);
         $this->specificationBuilder = $this->objectManager->get(SpecificationBuilderInterface::class);
         parent::setUp();
     }
@@ -59,19 +59,24 @@ class VisibilityModifierTest extends TestCase
      * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_product_not_visible.php
      * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_product_visibility_catalog.php
      * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_product_visibility_search.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/grouped_products.php
      */
     public function testModify() : void
     {
         $specification = $this->specificationBuilder->build([]);
         $collection = $this->getCollection();
-        $this->visibilityModifier->modify($collection, $specification);
+        $this->productTypeIdModifier->modify($collection, $specification);
         $skus = [];
         foreach ($collection as $item) {
             $skus[] = $item->getSku();
         }
 
-        $this->assertTrue(!in_array('athoscommerce_simple_not_visible', $skus));
-        $this->assertTrue(in_array('athoscommerce_simple_visibility_catalog', $skus));
+        $this->assertTrue(!in_array('athoscommerce_grouped_test_simple_1000', $skus));
+        $this->assertTrue(!in_array('athoscommerce_grouped_test_simple_1001', $skus));
+        $this->assertTrue(!in_array('athoscommerce_configurable_test_simple_10', $skus));
+        $this->assertTrue(!in_array('athoscommerce_configurable_test_simple_20', $skus));
+        
         $this->assertTrue(in_array('athoscommerce_simple_visibility_search', $skus));
         $this->assertTrue(in_array('athoscommerce_simple_1', $skus));
         $this->assertTrue(in_array('athoscommerce_simple_2', $skus));

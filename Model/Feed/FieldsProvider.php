@@ -55,7 +55,7 @@ class FieldsProvider
         'rating_count',
         'child_sku',
         'child_name',
-        'parent_ids',
+        'parent_id',
         'parent_type_id'
     ];
     /**

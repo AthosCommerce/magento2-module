@@ -45,9 +45,10 @@ class Collection
         $productCollection = $this->collectionFactory->create();
         $productCollection->setStore($store)
             ->addStoreFilter($store)
-            ->addAttributeToSelect(['entity_id','name', 'visibility', 'url_key'])
+            ->addAttributeToSelect(['entity_id', 'name', 'visibility', 'url_key', 'status'])
             ->addFieldToFilter('entity_id', ['in' => $parentEntityIds])
-            ->addUrlRewrite();
+            ->addUrlRewrite()
+            ->addMediaGalleryData();
 
         return $productCollection;
     }
