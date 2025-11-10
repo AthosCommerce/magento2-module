@@ -57,6 +57,9 @@ class Executor implements ExecutorInterface
     public function execute(TaskInterface $task)
     {
         $specification = $this->specificationBuilder->build($task->getPayload());
-        $this->generateFeed->execute($specification, $task->getEntityId());
+        $this->generateFeed->execute(
+            $specification,
+            (int)$task->getEntityId()
+        );
     }
 }

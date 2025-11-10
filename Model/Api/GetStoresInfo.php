@@ -16,7 +16,7 @@
 
 declare(strict_types=1);
 
-namespace AthosCommerce\Feed\Model;
+namespace AthosCommerce\Feed\Model\Api;
 
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\View\ConfigInterface;
@@ -90,6 +90,7 @@ class GetStoresInfo implements GetStoresInfoInterface
             $result .= '</ul>';
         }
         $result .= '</ul>';
+
         return $result;
     }
 
@@ -112,7 +113,7 @@ class GetStoresInfo implements GetStoresInfoInterface
                     ScopeInterface::SCOPE_STORE,
                     $storeId
                 ),
-                'images' => $this->getViewConfigWithStoreEmulation($storeId)
+                'images' => $this->getViewConfigWithStoreEmulation($storeId),
             ];
         }
 
@@ -121,6 +122,7 @@ class GetStoresInfo implements GetStoresInfoInterface
 
     /**
      * @param int $storeId
+     *
      * @return array
      */
     private function getViewConfigWithStoreEmulation(int $storeId): array

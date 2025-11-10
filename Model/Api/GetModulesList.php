@@ -16,7 +16,7 @@
 
 declare(strict_types=1);
 
-namespace AthosCommerce\Feed\Model;
+namespace AthosCommerce\Feed\Model\Api;
 
 use Magento\Framework\Module\FullModuleList;
 use Magento\Framework\Module\Manager as ModuleManager;

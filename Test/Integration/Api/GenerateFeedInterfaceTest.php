@@ -72,7 +72,7 @@ class GenerateFeedInterfaceTest extends TestCase
     public function testExecute() : void
     {
         $specification = $this->feedSpecificationBuilder->build($this->getPayload());
-        $this->generateFeed->execute($specification);
+        $this->generateFeed->execute($specification, 1);
         // check that we achieve this place and dont have any exceptions
         $this->assertEquals(1,1);
     }

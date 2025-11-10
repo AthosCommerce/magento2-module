@@ -16,7 +16,7 @@
 
 declare(strict_types=1);
 
-namespace AthosCommerce\Feed\Model;
+namespace AthosCommerce\Feed\Model\Api;
 
 use AthosCommerce\Feed\Api\GetApplicationLogInterface;
 use AthosCommerce\Feed\Exception\ValidationException;

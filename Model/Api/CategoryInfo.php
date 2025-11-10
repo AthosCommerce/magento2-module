@@ -1,6 +1,6 @@
 <?php
 
-namespace AthosCommerce\Feed\Model;
+namespace AthosCommerce\Feed\Model\Api;
 
 use Magento\Framework\Exception\LocalizedException;
 use AthosCommerce\Feed\Api\CategoryInfoInterface as CategoryInfoApi;

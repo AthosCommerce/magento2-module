@@ -23,24 +23,40 @@
                 type="AthosCommerce\Feed\Model\SalesData"/>
     <preference for="AthosCommerce\Feed\Api\TaskRepositoryInterface"
                 type="AthosCommerce\Feed\Model\TaskRepository"/>
-    <preference for="AthosCommerce\Feed\Api\CreateTaskInterface"
-                type="AthosCommerce\Feed\Model\CreateTask"/>
-    <preference for="AthosCommerce\Feed\Api\GenerateFeedInterface"
-                type="AthosCommerce\Feed\Model\GenerateFeed"/>
     <preference for="AthosCommerce\Feed\Api\ExecutePendingTasksInterface"
                 type="AthosCommerce\Feed\Model\ExecutePendingTasks"/>
-    <preference for="AthosCommerce\Feed\Api\GetVersionInterface"
-                type="AthosCommerce\Feed\Model\GetVersion"/>
-    <preference for="AthosCommerce\Feed\Api\GetApplicationLogInterface"
-                type="AthosCommerce\Feed\Model\GetApplicationLog"/>
-    <preference for="AthosCommerce\Feed\Api\GetCustomersInterface"
-                type="AthosCommerce\Feed\Model\GetCustomers"/>
-    <preference for="AthosCommerce\Feed\Api\GetSalesInterface"
-                type="AthosCommerce\Feed\Model\GetSales"/>
+    <preference for="AthosCommerce\Feed\Api\GenerateFeedInterface"
+                type="AthosCommerce\Feed\Model\GenerateFeed"/>
     <preference for="AthosCommerce\Feed\Api\ExecuteTaskInterface"
                 type="AthosCommerce\Feed\Model\ExecuteTask"/>
+
+    <preference for="AthosCommerce\Feed\Api\CreateTaskInterface"
+                type="AthosCommerce\Feed\Model\Api\CreateTask"/>
+    <preference for="AthosCommerce\Feed\Api\GetVersionInterface"
+                type="AthosCommerce\Feed\Model\Api\GetVersion"/>
+    <preference for="AthosCommerce\Feed\Api\GetApplicationLogInterface"
+                type="AthosCommerce\Feed\Model\Api\GetApplicationLog"/>
+    <preference for="AthosCommerce\Feed\Api\GetCustomersInterface"
+                type="AthosCommerce\Feed\Model\Api\GetCustomers"/>
+    <preference for="AthosCommerce\Feed\Api\GetSalesInterface"
+                type="AthosCommerce\Feed\Model\Api\GetSales"/>
     <preference for="AthosCommerce\Feed\Api\GetStoresInfoInterface"
-                type="AthosCommerce\Feed\Model\GetStoresInfo"/>
+                type="AthosCommerce\Feed\Model\Api\GetStoresInfo"/>
+    <preference for="AthosCommerce\Feed\Api\CategoryInfoInterface"
+                type="AthosCommerce\Feed\Model\Api\CategoryInfo"/>
+    <preference for="AthosCommerce\Feed\Api\ProductInterface"
+                type="AthosCommerce\Feed\Model\Api\ProductInfo"/>
+    <preference for="AthosCommerce\Feed\Api\GetModulesListInterface"
+                type="AthosCommerce\Feed\Model\Api\GetModulesList"/>
+    <preference for="AthosCommerce\Feed\Api\Data\ModulesListInterface"
+                type="AthosCommerce\Feed\Model\Data\ModulesList"/>
+    <preference for="AthosCommerce\Feed\Api\GetCronStatusInterface"
+                type="AthosCommerce\Feed\Model\Api\GetCronStatus"/>
+    <preference for="AthosCommerce\Feed\Api\Data\CronStatusInterface"
+                type="AthosCommerce\Feed\Model\Data\CronStatus"/>
+    <preference for="AthosCommerce\Feed\Api\Data\CronStatusSearchResultsInterface"
+                type="AthosCommerce\Feed\Model\CronStatusSearchResults"/>
+
     <preference for="AthosCommerce\Feed\Api\AppConfigInterface"
                 type="AthosCommerce\Feed\Model\AppConfig"/>
     <preference for="AthosCommerce\Feed\Model\Metric\CollectorInterface"
@@ -71,18 +87,6 @@
                 type="AthosCommerce\Feed\Model\Aws\Client\Client"/>
     <preference for="AthosCommerce\Feed\Model\Aws\Client\ResponseInterface"
                 type="AthosCommerce\Feed\Model\Aws\Client\Response"/>
-    <preference for="AthosCommerce\Feed\Api\CategoryInfoInterface"
-                type="AthosCommerce\Feed\Model\CategoryInfo"/>
-    <preference for="AthosCommerce\Feed\Api\GetModulesListInterface"
-                type="AthosCommerce\Feed\Model\GetModulesList"/>
-    <preference for="AthosCommerce\Feed\Api\Data\ModulesListInterface"
-                type="AthosCommerce\Feed\Model\Data\ModulesList"/>
-    <preference for="AthosCommerce\Feed\Api\GetCronStatusInterface"
-                type="AthosCommerce\Feed\Model\GetCronStatus"/>
-    <preference for="AthosCommerce\Feed\Api\Data\CronStatusInterface"
-                type="AthosCommerce\Feed\Model\Data\CronStatus"/>
-    <preference for="AthosCommerce\Feed\Api\Data\CronStatusSearchResultsInterface"
-                type="AthosCommerce\Feed\Model\CronStatusSearchResults"/>
 
     <type name="AthosCommerce\Feed\Model\Task\TypeList">
         <arguments>
@@ -97,7 +101,6 @@
             <argument name="directoryList" xsi:type="object">Magento\Framework\Filesystem\DirectoryList</argument>
         </arguments>
     </type>
-
 
     <type name="AthosCommerce\Feed\Model\Task\ValidatorPool">
         <arguments>

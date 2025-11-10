@@ -26,9 +26,9 @@ interface GenerateFeedInterface
 {
     /**
      * @param FeedSpecificationInterface $feedSpecification
-     * @param $id
+     * @param int $id
      * @throws GenericException
      * @throws Exception
      */
-    public function execute(FeedSpecificationInterface $feedSpecification, $id): void;
+    public function execute(FeedSpecificationInterface $feedSpecification, int $id): void;
 }

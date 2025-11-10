@@ -27,9 +27,11 @@ class GenerateFeedInvalidMock implements GenerateFeedInterface
 
     /**
      * @param FeedSpecificationInterface $feedSpecification
+     * @param int $id
+     *
      * @throws GenericException
      */
-    public function execute(FeedSpecificationInterface $feedSpecification): void
+    public function execute(FeedSpecificationInterface $feedSpecification, int $id): void
     {
         throw new GenericException('exception message');
     }

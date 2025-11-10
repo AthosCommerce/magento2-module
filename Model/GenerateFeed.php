@@ -27,12 +27,8 @@ use AthosCommerce\Feed\Api\AppConfigInterface;
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Api\GenerateFeedInterface;
 use AthosCommerce\Feed\Api\MetadataInterface;
-use AthosCommerce\Feed\Model\Feed\Collection\ProcessorPool;
 use AthosCommerce\Feed\Model\Feed\CollectionConfigInterface;
-use AthosCommerce\Feed\Model\Feed\CollectionProviderInterface;
 use AthosCommerce\Feed\Model\Feed\ContextManagerInterface;
-use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
-use AthosCommerce\Feed\Model\Feed\DataProviderPool;
 use AthosCommerce\Feed\Model\Feed\StorageInterface;
 use AthosCommerce\Feed\Model\Feed\SystemFieldsList;
 use AthosCommerce\Feed\Model\Metric\CollectorInterface;
@@ -42,14 +38,6 @@ use Psr\Log\LoggerInterface;
 class GenerateFeed implements GenerateFeedInterface
 {
     /**
-     * @var CollectionProviderInterface
-     */
-    private $collectionProvider;
-    /**
-     * @var DataProviderPool
-     */
-    private $dataProviderPool;
-    /**
      * @var CollectionConfigInterface
      */
     private $collectionConfig;
@@ -58,17 +46,9 @@ class GenerateFeed implements GenerateFeedInterface
      */
     private $storage;
     /**
-     * @var SystemFieldsList
-     */
-    private $systemFieldsList;
-    /**
      * @var ContextManagerInterface
      */
     private $contextManager;
-    /**
-     * @var ProcessorPool
-     */
-    private $afterLoadProcessorPool;
     /**
      * @var CollectorInterface
      */
@@ -84,6 +64,9 @@ class GenerateFeed implements GenerateFeedInterface
      * @var TaskRepository
      */
     private $taskRepository;
+    /**
+     * @var string
+     */
     private $productCount = '';
     /**
      * @var LoggerInterface
@@ -91,39 +74,42 @@ class GenerateFeed implements GenerateFeedInterface
     private $logger;
 
     /**
-     * GenerateFeed constructor.
-     *
-     * @param CollectionProviderInterface $collectionProvider
-     * @param DataProviderPool $dataProviderPool
+     * @var ItemsGenerator
+     */
+    private $itemsGenerator;
+
+    /**
+     * @var CollectionProcessor
+     */
+    private $collectionProcessor;
+
+    /**
+     * @param CollectionProcessor $collectionProcessor
+     * @param ItemsGenerator $itemsGenerator
      * @param CollectionConfigInterface $collectionConfig
      * @param StorageInterface $storage
-     * @param SystemFieldsList $systemFieldsList
      * @param ContextManagerInterface $contextManager
-     * @param ProcessorPool $afterLoadProcessorPool
      * @param CollectorInterface $metricCollector
      * @param AppConfigInterface $appConfig
      * @param TaskRepositoryInterface $taskRepository
+     * @param LoggerInterface $logger
      */
     public function __construct(
-        CollectionProviderInterface $collectionProvider,
-        DataProviderPool $dataProviderPool,
+        \AthosCommerce\Feed\Model\CollectionProcessor $collectionProcessor,
+        \AthosCommerce\Feed\Model\ItemsGenerator $itemsGenerator,
         CollectionConfigInterface $collectionConfig,
         StorageInterface $storage,
-        SystemFieldsList $systemFieldsList,
         ContextManagerInterface $contextManager,
-        ProcessorPool $afterLoadProcessorPool,
         CollectorInterface $metricCollector,
         AppConfigInterface $appConfig,
         TaskRepositoryInterface $taskRepository,
         LoggerInterface $logger
     ) {
-        $this->collectionProvider = $collectionProvider;
-        $this->dataProviderPool = $dataProviderPool;
+        $this->collectionProcessor = $collectionProcessor;
+        $this->itemsGenerator = $itemsGenerator;
         $this->collectionConfig = $collectionConfig;
         $this->storage = $storage;
-        $this->systemFieldsList = $systemFieldsList;
         $this->contextManager = $contextManager;
-        $this->afterLoadProcessorPool = $afterLoadProcessorPool;
         $this->metricCollector = $metricCollector;
         $this->appConfig = $appConfig;
         $this->taskRepository = $taskRepository;
@@ -135,7 +121,7 @@ class GenerateFeed implements GenerateFeedInterface
      *
      * @throws Exception
      */
-    public function execute(FeedSpecificationInterface $feedSpecification, $id): void
+    public function execute(FeedSpecificationInterface $feedSpecification, int $id): void
     {
         $format = $feedSpecification->getFormat();
         $this->logger->info('Product feed generation started with entity id', [
@@ -144,7 +130,19 @@ class GenerateFeed implements GenerateFeedInterface
             'format' => $format,
         ]);
         $startTime = microtime(true);
-        $this->setPresignUrlFileFormat($feedSpecification);
+        $isPreSignUrlFileFormatStatus = $this->setPresignUrlFileFormat($feedSpecification);
+        if (false === $isPreSignUrlFileFormatStatus) {
+            $this->logger->error(
+                'Not able to set the format from PreSignedUrl',
+                [
+                    'method' => __METHOD__,
+                    'entityId' => $id,
+                    'format' => $format,
+                    'feedSpecification' => $feedSpecification,
+                ]
+            );
+            throw new Exception((string)__('%1 Not able to set the format from PreSignedUrl', $format));
+        }
 
         if (!$this->storage->isSupportedFormat($format)) {
             $this->logger->error('Feed format not supported', [
@@ -156,7 +154,10 @@ class GenerateFeed implements GenerateFeedInterface
         }
 
         $this->initialize($feedSpecification);
-        $collection = $this->collectionProvider->getCollection($feedSpecification);
+        //\AthosCommerce\Feed\Model\CollectionProcessor::getCollection
+        //$collection = $this->collectionProvider->getCollection($feedSpecification);
+        $collection = $this->collectionProcessor->getCollection($feedSpecification);
+
         $pageSize = $this->collectionConfig->getPageSize();
         $collection->setPageSize($pageSize);
         $pageCount = $this->getPageCount($collection);
@@ -175,7 +176,10 @@ class GenerateFeed implements GenerateFeedInterface
             try {
                 $collection->setCurPage($currentPageNumber);
                 $collection->load();
-                $this->processAfterLoad($collection, $feedSpecification);
+                //Moved to \AthosCommerce\Feed\Model\CollectionProcessor::processAfterLoad
+                //$this->processAfterLoad($collection, $feedSpecification);
+                $this->collectionProcessor->processAfterLoad($collection, $feedSpecification);
+
                 if ($currentPageNumber === 1) {
                     $this->logger->info(
                         'Product collection after loading',
@@ -186,7 +190,9 @@ class GenerateFeed implements GenerateFeedInterface
                         ]
                     );
                 }
-                $itemsData = $this->getItemsData($collection->getItems(), $feedSpecification);
+                //Moved to vendor/athoscommerce/magento2-module/Model/ItemsGenerator.php:76
+                //$itemsData = $this->getItemsData($collection->getItems(), $feedSpecification);
+                $itemsData = $this->itemsGenerator->generate($collection->getItems(), $feedSpecification);
                 $productCount += count($itemsData);
                 $title = 'Products: ' . $pageSize * $metrics . ' - ' . $pageSize * ($metrics + 1);
                 $metrics++;
@@ -201,9 +207,15 @@ class GenerateFeed implements GenerateFeedInterface
                 $this->storage->addData($itemsData, $id);
                 $itemsData = [];
                 $currentPageNumber++;
-                $this->resetDataProvidersAfterFetchItems($feedSpecification);
+                //\AthosCommerce\Feed\Model\ItemsGenerator::resetDataProvidersAfterFetchItems
+                //$this->resetDataProvidersAfterFetchItems($feedSpecification);
+                $this->itemsGenerator->resetDataProvidersAfterFetchItems($feedSpecification);
                 $collection->clear();
-                $this->processAfterFetchItems($collection, $feedSpecification);
+
+                //moved to \AthosCommerce\Feed\Model\CollectionProcessor::processAfterFetchItems
+                //$this->processAfterFetchItems($collection, $feedSpecification);
+                $this->collectionProcessor->processAfterFetchItems($collection, $feedSpecification);
+
                 gc_collect_cycles();
             } catch (Exception $exception) {
                 $this->storage->rollback();
@@ -256,7 +268,8 @@ class GenerateFeed implements GenerateFeedInterface
         }
 
         $this->collectMetrics('Initial');
-        $this->resetDataProviders($feedSpecification);
+        //$this->resetDataProviders($feedSpecification);
+        $this->itemsGenerator->resetDataProviders($feedSpecification);
         $this->contextManager->setContextFromSpecification($feedSpecification);
         $this->storage->initiate($feedSpecification);
     }
@@ -269,7 +282,8 @@ class GenerateFeed implements GenerateFeedInterface
      */
     private function reset(FeedSpecificationInterface $feedSpecification, int $id): void
     {
-        $this->resetDataProviders($feedSpecification);
+        //$this->resetDataProviders($feedSpecification);
+        $this->itemsGenerator->resetDataProviders($feedSpecification);
         $this->collectMetrics('Before Send File');
         $this->logger->info('File storage in s3 started', [
             'method' => __METHOD__,
@@ -356,120 +370,16 @@ class GenerateFeed implements GenerateFeedInterface
     }
 
     /**
-     * @param Collection $collection
-     * @param FeedSpecificationInterface $feedSpecification
-     */
-    private function processAfterLoad(Collection $collection, FeedSpecificationInterface $feedSpecification): void
-    {
-        foreach ($this->afterLoadProcessorPool->getAll() as $processor) {
-            $processor->processAfterLoad($collection, $feedSpecification);
-        }
-    }
-
-    /**
-     * @param Collection $collection
-     * @param FeedSpecificationInterface $feedSpecification
-     */
-    private function processAfterFetchItems(Collection $collection, FeedSpecificationInterface $feedSpecification): void
-    {
-        foreach ($this->afterLoadProcessorPool->getAll() as $processor) {
-            $processor->processAfterFetchItems($collection, $feedSpecification);
-        }
-    }
-
-    /**
-     * @param FeedSpecificationInterface $feedSpecification
-     */
-    private function resetDataProviders(FeedSpecificationInterface $feedSpecification): void
-    {
-        $dataProviders = $this->getDataProviders($feedSpecification);
-        foreach ($dataProviders as $dataProvider) {
-            $dataProvider->reset();
-        }
-    }
-
-    /**
-     * @param FeedSpecificationInterface $feedSpecification
-     */
-    private function resetDataProvidersAfterFetchItems(FeedSpecificationInterface $feedSpecification): void
-    {
-        $dataProviders = $this->getDataProviders($feedSpecification);
-        foreach ($dataProviders as $dataProvider) {
-            $dataProvider->resetAfterFetchItems();
-        }
-    }
-
-    /**
-     * @param FeedSpecificationInterface $feedSpecification
-     *
-     * @return DataProviderInterface[]
-     */
-    private function getDataProviders(FeedSpecificationInterface $feedSpecification): array
-    {
-        $ignoredFields = $feedSpecification->getIgnoreFields();
-
-        return $this->dataProviderPool->get($ignoredFields);
-    }
-
-    /**
-     * @param Product[] $items
-     * @param FeedSpecificationInterface $feedSpecification
-     *
-     * @return array
-     */
-    private function getItemsData(array $items, FeedSpecificationInterface $feedSpecification): array
-    {
-        if (empty($items)) {
-            return [];
-        }
-
-        $data = [];
-        foreach ($items as $item) {
-            $data[] = [
-                'entity_id' => $item->getEntityId(),
-                'product_model' => $item,
-            ];
-        }
-
-        $this->systemFieldsList->add('product_model');
-        $dataProviders = $this->getDataProviders($feedSpecification);
-        foreach ($dataProviders as $dataProvider) {
-            $data = $dataProvider->getData($data, $feedSpecification);
-        }
-
-        //TODO:: To check some variants are part of next batch
-        $data = $this->cleanupItemsData($data);
-
-        return $data;
-    }
-
-    /**
-     * @param array $items
-     *
-     * @return array
-     */
-    private function cleanupItemsData(array $items): array
-    {
-        $systemFields = $this->systemFieldsList->get();
-        foreach ($items as &$item) {
-            foreach ($systemFields as $field) {
-                if (isset($item[$field])) {
-                    unset($item[$field]);
-                }
-            }
-        }
-
-        return $items;
-    }
-
-    /**
      * @param FeedSpecificationInterface $feedSpecification
      *
      * @return void
      */
-    private function setPresignUrlFileFormat(FeedSpecificationInterface $feedSpecification): void
+    private function setPresignUrlFileFormat(FeedSpecificationInterface $feedSpecification): bool
     {
         $urlPath = parse_url($feedSpecification->getPreSignedUrl(), PHP_URL_PATH);
+        if (!$urlPath) {
+            return false;
+        }
         $fileBaseExtension = strtolower(pathinfo($urlPath, PATHINFO_EXTENSION));
         $secondExtension = strtolower(pathinfo($urlPath, PATHINFO_EXTENSION));
 
@@ -483,5 +393,7 @@ class GenerateFeed implements GenerateFeedInterface
         } else {
             $feedSpecification->setFormat($fileBaseExtension);
         }
+
+        return true;
     }
 }

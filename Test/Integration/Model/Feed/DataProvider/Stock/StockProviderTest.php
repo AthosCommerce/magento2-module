@@ -64,26 +64,28 @@ abstract class StockProviderTest extends TestCase
      * @param array $config
      * @param array $specificationConfig
      * @param int|null $storeId
+     *
      * @throws NoSuchEntityException
      */
     protected function executeTest(
         StockProviderInterface $provider,
         array $config,
         array $specificationConfig = [],
-        int $storeId = null
-    ) : void {
+        ?int $storeId = null
+    ): void {
         $specification = $this->specificationBuilder->build($specificationConfig);
         $products = $this->getProducts->get($specification);
-        $storeId = $storeId ?? (int) $this->storeManager->getStore()->getId();
+        $storeId = $storeId ?? (int)$this->storeManager->getStore()->getId();
         $data = $provider->getStock($this->getProductIds($products), $storeId);
         $this->assertStock($data, $this->getProductIdSkuMap($products), $config);
     }
 
     /**
      * @param array $products
+     *
      * @return array
      */
-    protected function getProductIdSkuMap(array $products) : array
+    protected function getProductIdSkuMap(array $products): array
     {
         $result = [];
         foreach ($products as $product) {
@@ -93,7 +95,7 @@ abstract class StockProviderTest extends TestCase
                 continue;
             }
 
-            $result[(int) $productModel->getId()] = $productModel->getSku();
+            $result[(int)$productModel->getId()] = $productModel->getSku();
         }
 
         return $result;
@@ -101,14 +103,15 @@ abstract class StockProviderTest extends TestCase
 
     /**
      * @param array $products
+     *
      * @return array
      */
-    protected function getProductIds(array $products) : array
+    protected function getProductIds(array $products): array
     {
         $productIds = [];
         foreach ($products as $product) {
             if (isset($product['entity_id'])) {
-                $productIds[] = (int) $product['entity_id'];
+                $productIds[] = (int)$product['entity_id'];
             }
         }
 
@@ -120,7 +123,7 @@ abstract class StockProviderTest extends TestCase
      * @param array $productIdSkuMap
      * @param array $config
      */
-    protected function assertStock(array $items, array $productIdSkuMap, array $config) : void
+    protected function assertStock(array $items, array $productIdSkuMap, array $config): void
     {
         foreach ($items as $productId => $item) {
             $sku = $productIdSkuMap[$productId] ?? null;

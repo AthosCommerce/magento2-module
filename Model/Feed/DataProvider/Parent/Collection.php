@@ -47,8 +47,7 @@ class Collection
             ->addStoreFilter($store)
             ->addAttributeToSelect(['entity_id', 'name', 'visibility', 'url_key', 'status'])
             ->addFieldToFilter('entity_id', ['in' => $parentEntityIds])
-            ->addUrlRewrite()
-            ->addMediaGalleryData();
+            ->addUrlRewrite();
 
         return $productCollection;
     }

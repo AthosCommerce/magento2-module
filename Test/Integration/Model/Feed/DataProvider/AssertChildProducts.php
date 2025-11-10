@@ -27,7 +27,7 @@ class AssertChildProducts extends TestCase
      * @param array $products
      * @param array $config
      */
-    public function assertChildProducts(array $products, array $config) : void
+    public function assertChildProducts(array $products, array $config): void
     {
         $productsConfig = $config['products'] ?? [];
         $requiredAttributes = $config['required_attributes'] ?? [];
@@ -55,7 +55,7 @@ class AssertChildProducts extends TestCase
                 $namePrefix = $productsConfig[$sku]['name_prefix'] ?? null;
                 $valueMap = $productsConfig[$sku]['value_map'] ?? null;
                 if (!is_null($childCount)) {
-                    $this->assertCount((int) $childCount, $product['child_sku'] ?? []);
+                    $this->assertCount((int)$childCount, $product['child_sku'] ?? []);
                 }
 
                 if (!is_null($skuPrefix)) {
@@ -83,7 +83,7 @@ class AssertChildProducts extends TestCase
      * @param array $data
      * @param array $valueMap
      */
-    private function assertValueMap(array $data, array $valueMap) : void
+    private function assertValueMap(array $data, array $valueMap): void
     {
         foreach ($valueMap as $field => $value) {
             $fieldValues = $data[$field] ?? [];
@@ -101,7 +101,7 @@ class AssertChildProducts extends TestCase
      * @param array $data
      * @param array $attributes
      */
-    private function assertAttributesExist(array $data, array $attributes) : void
+    private function assertAttributesExist(array $data, array $attributes): void
     {
         foreach ($attributes as $attribute) {
             $this->assertArrayHasKey($attribute, $data);
@@ -112,7 +112,7 @@ class AssertChildProducts extends TestCase
      * @param array $data
      * @param array $attributes
      */
-    private function assertAttributesNotExist(array $data, array $attributes) : void
+    private function assertAttributesNotExist(array $data, array $attributes): void
     {
         foreach ($attributes as $attribute) {
             $this->assertArrayNotHasKey($attribute, $data);

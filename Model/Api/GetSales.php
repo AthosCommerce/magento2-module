@@ -16,59 +16,58 @@
 
 declare(strict_types=1);
 
-namespace AthosCommerce\Feed\Model;
+namespace AthosCommerce\Feed\Model\Api;
 
-use AthosCommerce\Feed\Api\GetCustomersInterface;
-use AthosCommerce\Feed\Api\Data\CustomersInterface;
-use AthosCommerce\Feed\Api\Data\CustomersInterfaceFactory;
+use AthosCommerce\Feed\Api\GetSalesInterface;
+use AthosCommerce\Feed\Api\Data\SalesInterface;
+use AthosCommerce\Feed\Api\Data\SalesInterfaceFactory;
 use AthosCommerce\Feed\Exception\ValidationException;
-use AthosCommerce\Feed\Helper\Customer;
+use AthosCommerce\Feed\Helper\Sale;
 use AthosCommerce\Feed\Helper\Utils;
 
-class GetCustomers implements GetCustomersInterface
+class GetSales implements GetSalesInterface
 {
-    /** @var Customer */
+    /** @var Sale */
     private $helper;
 
-    /** @var CustomersInterfaceFactory */
-    private $customersFactory;
+    /** @var SalesInterfaceFactory */
+    private $salesFactory;
 
     /**
-     * @param Customer $helper
-     * @param CustomersInterfaceFactory $customersFactory
+     * @param Sale $helper
      */
-    public function __construct(Customer $helper, CustomersInterfaceFactory $customersFactory)
+    public function __construct(Sale $helper, SalesInterfaceFactory $salesFactory)
     {
         $this->helper = $helper;
-        $this->customersFactory = $customersFactory;
+        $this->salesFactory = $salesFactory;
     }
 
     /**
      * @param string $dateRange
      * @param string $rowRange
      *
-     * @return CustomersInterface
+     * @return SalesInterface
      *
      * @throws ValidationException
      */
-    public function getList(string $dateRange = "All", string $rowRange = "All"): CustomersInterface
+    public function getList(string $dateRange = "All", string $rowRange = "All"): SalesInterface
     {
         $errors = [];
-        if (!Utils::validateDateRange($dateRange)){
+        if (!Utils::validateDateRange($dateRange)) {
             $errors[] = "Invalid date range $dateRange";
         }
 
-        if (!Utils::validateRowRange($rowRange)){
+        if (!Utils::validateRowRange($rowRange)) {
             $errors[] = "Invalid row range $rowRange";
         }
 
-        if (!empty($errors)){
+        if (!empty($errors)) {
             throw new ValidationException($errors, 400);
         }
 
-        $customers = $this->customersFactory->create();
-        $customers->setCustomers($this->helper->getCustomers($dateRange, $rowRange));
+        $sales = $this->salesFactory->create();
+        $sales->setSales($this->helper->getSales($dateRange, $rowRange));
 
-        return $customers;
+        return $sales;
     }
 }
