@@ -64,6 +64,10 @@ class GroupedDataProvider implements DataProviderInterface
             return $products;
         }
         $parentChildIds = $this->relationsProvider->getGroupRelationIds($childIds);
+
+        $childToParent = [];
+        $allParentIds = [];
+
         if (!$parentChildIds) {
             return $products;
         }
@@ -73,6 +77,7 @@ class GroupedDataProvider implements DataProviderInterface
 
         $childToParent = [];
         $allParentIds = [];
+
         foreach ($parentChildIds as $productIndex => $parentChildRow) {
             if (!isset($parentChildRow['product_id'], $parentChildRow['parent_id'])) {
                 continue;
