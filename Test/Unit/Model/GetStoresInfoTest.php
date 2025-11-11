@@ -25,7 +25,7 @@ use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\Store;
 use Magento\Store\Model\StoreManagerInterface;
 use PHPUnit\Framework\MockObject\MockObject;
-use AthosCommerce\Feed\Model\GetStoresInfo;
+use AthosCommerce\Feed\Model\Api\GetStoresInfo;
 
 class GetStoresInfoTest extends \PHPUnit\Framework\TestCase
 {

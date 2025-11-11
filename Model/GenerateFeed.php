@@ -23,6 +23,8 @@ use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\ResourceModel\Product\Collection;
 use Magento\Framework\Exception\FileSystemException;
 use Magento\Framework\Exception\RuntimeException;
+use AthosCommerce\Feed\Model\CollectionProcessor;
+use AthosCommerce\Feed\Model\ItemsGenerator;
 use AthosCommerce\Feed\Api\AppConfigInterface;
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Api\GenerateFeedInterface;
@@ -72,12 +74,10 @@ class GenerateFeed implements GenerateFeedInterface
      * @var LoggerInterface
      */
     private $logger;
-
     /**
      * @var ItemsGenerator
      */
     private $itemsGenerator;
-
     /**
      * @var CollectionProcessor
      */
@@ -95,8 +95,8 @@ class GenerateFeed implements GenerateFeedInterface
      * @param LoggerInterface $logger
      */
     public function __construct(
-        \AthosCommerce\Feed\Model\CollectionProcessor $collectionProcessor,
-        \AthosCommerce\Feed\Model\ItemsGenerator $itemsGenerator,
+        CollectionProcessor $collectionProcessor,
+        ItemsGenerator $itemsGenerator,
         CollectionConfigInterface $collectionConfig,
         StorageInterface $storage,
         ContextManagerInterface $contextManager,
@@ -141,7 +141,7 @@ class GenerateFeed implements GenerateFeedInterface
                     'feedSpecification' => $feedSpecification,
                 ]
             );
-            throw new Exception((string)__('%1 Not able to set the format from PreSignedUrl', $format));
+            throw new Exception((string)__('Not able to set the format(%1) from PreSignedUrl', $format));
         }
 
         if (!$this->storage->isSupportedFormat($format)) {
@@ -154,8 +154,6 @@ class GenerateFeed implements GenerateFeedInterface
         }
 
         $this->initialize($feedSpecification);
-        //\AthosCommerce\Feed\Model\CollectionProcessor::getCollection
-        //$collection = $this->collectionProvider->getCollection($feedSpecification);
         $collection = $this->collectionProcessor->getCollection($feedSpecification);
 
         $pageSize = $this->collectionConfig->getPageSize();
@@ -176,8 +174,6 @@ class GenerateFeed implements GenerateFeedInterface
             try {
                 $collection->setCurPage($currentPageNumber);
                 $collection->load();
-                //Moved to \AthosCommerce\Feed\Model\CollectionProcessor::processAfterLoad
-                //$this->processAfterLoad($collection, $feedSpecification);
                 $this->collectionProcessor->processAfterLoad($collection, $feedSpecification);
 
                 if ($currentPageNumber === 1) {
@@ -190,8 +186,6 @@ class GenerateFeed implements GenerateFeedInterface
                         ]
                     );
                 }
-                //Moved to vendor/athoscommerce/magento2-module/Model/ItemsGenerator.php:76
-                //$itemsData = $this->getItemsData($collection->getItems(), $feedSpecification);
                 $itemsData = $this->itemsGenerator->generate($collection->getItems(), $feedSpecification);
                 $productCount += count($itemsData);
                 $title = 'Products: ' . $pageSize * $metrics . ' - ' . $pageSize * ($metrics + 1);
@@ -207,13 +201,8 @@ class GenerateFeed implements GenerateFeedInterface
                 $this->storage->addData($itemsData, $id);
                 $itemsData = [];
                 $currentPageNumber++;
-                //\AthosCommerce\Feed\Model\ItemsGenerator::resetDataProvidersAfterFetchItems
-                //$this->resetDataProvidersAfterFetchItems($feedSpecification);
                 $this->itemsGenerator->resetDataProvidersAfterFetchItems($feedSpecification);
                 $collection->clear();
-
-                //moved to \AthosCommerce\Feed\Model\CollectionProcessor::processAfterFetchItems
-                //$this->processAfterFetchItems($collection, $feedSpecification);
                 $this->collectionProcessor->processAfterFetchItems($collection, $feedSpecification);
 
                 gc_collect_cycles();
@@ -268,7 +257,6 @@ class GenerateFeed implements GenerateFeedInterface
         }
 
         $this->collectMetrics('Initial');
-        //$this->resetDataProviders($feedSpecification);
         $this->itemsGenerator->resetDataProviders($feedSpecification);
         $this->contextManager->setContextFromSpecification($feedSpecification);
         $this->storage->initiate($feedSpecification);
@@ -282,7 +270,6 @@ class GenerateFeed implements GenerateFeedInterface
      */
     private function reset(FeedSpecificationInterface $feedSpecification, int $id): void
     {
-        //$this->resetDataProviders($feedSpecification);
         $this->itemsGenerator->resetDataProviders($feedSpecification);
         $this->collectMetrics('Before Send File');
         $this->logger->info('File storage in s3 started', [

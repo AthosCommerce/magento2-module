@@ -180,7 +180,7 @@ class CategoriesProviderTest extends TestCase
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
      * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products_with_categories.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/categories_store_specific_data.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/categories/categories_store_specific_data.php
      *
      * @throws \Exception
      */

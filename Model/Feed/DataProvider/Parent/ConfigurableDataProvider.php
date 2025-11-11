@@ -60,6 +60,9 @@ class ConfigurableDataProvider implements DataProviderInterface
             return $products;
         }
 
+        //TODO:: Check needed against the each field.
+        $ignoredFields = $feedSpecification->getIgnoreFields();
+
         $childToParent = [];
         $allParentIds = [];
         foreach ($parentChildIds as $relationRow) {

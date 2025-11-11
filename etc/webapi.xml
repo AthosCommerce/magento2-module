@@ -32,6 +32,12 @@
             <resource ref="AthosCommerce_Feed::general" />
         </resources>
     </route>
+    <route url="/V1/athoscommerce/groupcronlog" method="GET">
+        <service class="AthosCommerce\Feed\Api\GetApplicationLogInterface" method="getCronLog" />
+        <resources>
+            <resource ref="AthosCommerce_Feed::general" />
+        </resources>
+    </route>
     <route url="/V1/athoscommerce/customers" method="GET">
         <service class="AthosCommerce\Feed\Api\GetCustomersInterface" method="getList" />
         <resources>

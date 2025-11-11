@@ -78,7 +78,6 @@ class AppConfig implements AppConfigInterface
         if (is_null($result)) {
             $result = $this->deploymentConfig->get($envPath);
         }
-
         if (is_null($result)) {
             $result = $this->defaults[$code] ?? null;
         }

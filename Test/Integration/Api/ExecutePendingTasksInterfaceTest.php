@@ -72,8 +72,16 @@ class ExecutePendingTasksInterfaceTest extends TestCase
      * @throws LocalizedException
      * @throws NoSuchEntityException
      */
-    public function testExecute() : void
+    public function testExecute(): void
     {
+        $searchCriteria = $this->searchCriteriaBuilder
+            ->addFilter(TaskInterface::TYPE, MetadataInterface::FEED_GENERATION_TASK_CODE)
+            ->create();
+        $tasks = $this->taskRepository->getList($searchCriteria)->getItems();
+        foreach ($tasks as $task) {
+            $this->taskRepository->delete($task);
+        }
+
         $task = $this->createPendingTask();
         $result = $this->executePendingTasks->execute();
         $this->assertCount(1, $result);
@@ -81,6 +89,7 @@ class ExecutePendingTasksInterfaceTest extends TestCase
         $this->assertEquals(MetadataInterface::TASK_STATUS_SUCCESS, $task->getStatus());
         $this->taskRepository->delete($task);
     }
+
     /**
      * @magentoAppIsolation enabled
      * @magentoDataFixture AthosCommerce_Feed::Test/_files/configure_generate_feed_mock.php
@@ -88,14 +97,23 @@ class ExecutePendingTasksInterfaceTest extends TestCase
      * @return void
      * @throws LocalizedException
      */
-    public function testExecuteWithNoTaskInDb() : void
+    public function testExecuteWithNoTaskInDb(): void
     {
         $result = $this->executePendingTasks->execute();
         $this->assertEmpty($result);
-        $searchCriteria = $this->searchCriteriaBuilder->create();
+
+        $searchCriteria = $this->searchCriteriaBuilder
+            ->addFilter(TaskInterface::TYPE, MetadataInterface::FEED_GENERATION_TASK_CODE)
+            ->addFilter(
+                TaskInterface::STATUS,
+                [MetadataInterface::TASK_STATUS_PENDING],
+                'in'
+            )
+            ->create();
         $tasks = $this->taskRepository->getList($searchCriteria)->getItems();
         $this->assertEmpty($tasks);
     }
+
     /**
      * @magentoAppIsolation enabled
      * @magentoDataFixture AthosCommerce_Feed::Test/_files/configure_generate_feed_mock.php
@@ -106,7 +124,7 @@ class ExecutePendingTasksInterfaceTest extends TestCase
      * @throws LocalizedException
      * @throws NoSuchEntityException
      */
-    public function testExecuteWithNoPendingTaskInDb() : void
+    public function testExecuteWithNoPendingTaskInDb(): void
     {
         $result = $this->executePendingTasks->execute();
         $this->assertEmpty($result);
@@ -119,7 +137,7 @@ class ExecutePendingTasksInterfaceTest extends TestCase
      * @return TaskInterface
      * @throws \Magento\Framework\Exception\CouldNotSaveException
      */
-    private function createPendingTask() : TaskInterface
+    private function createPendingTask(): TaskInterface
     {
         /** @var TaskInterface $task */
         $task = $this->objectManager->create(TaskInterface::class);
@@ -133,10 +151,10 @@ class ExecutePendingTasksInterfaceTest extends TestCase
     /**
      * @return array
      */
-    private function getPayload() : array
+    private function getPayload(): array
     {
         return [
-            'preSignedUrl' => 'https://testurl.com'
+            'preSignedUrl' => 'https://testurl.com',
         ];
     }
 }

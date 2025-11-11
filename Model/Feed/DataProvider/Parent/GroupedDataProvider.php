@@ -64,13 +64,15 @@ class GroupedDataProvider implements DataProviderInterface
             return $products;
         }
         $parentChildIds = $this->relationsProvider->getGroupRelationIds($childIds);
-
-        $childToParent = [];
-        $allParentIds = [];
         if (!$parentChildIds) {
             return $products;
         }
 
+        //TODO:: Check needed against the each field.
+        $ignoredFields = $feedSpecification->getIgnoreFields();
+
+        $childToParent = [];
+        $allParentIds = [];
         foreach ($parentChildIds as $productIndex => $parentChildRow) {
             if (!isset($parentChildRow['product_id'], $parentChildRow['parent_id'])) {
                 continue;

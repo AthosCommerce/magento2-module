@@ -66,4 +66,12 @@ class GetApplicationLog implements GetApplicationLogInterface
     {
         return $this->helper->deleteExceptionLogFile();
     }
+
+    /**
+     * @return string
+     */
+    public function getCronLog(bool $compressOutput = false) : string
+    {
+        return $this->helper->getCronLogFile($compressOutput);
+    }
 }

@@ -143,7 +143,9 @@ class CreateTask implements CreateTaskInterface
                 'method' => __METHOD__,
                 'type' => $type,
                 'payload' => $payload,
-                'isMsiEnabledViaPayload' => array_key_exists('isMsiEnabled', $payload),
+                'isMsiEnabledViaPayload' => array_key_exists('isMsiEnabled', $payload)
+                    ? $payload['isMsiEnabled']
+                    : '',
                 'isMsiModuleEnabled' => $this->isMsiEnabled(),
                 'message' => $message
             ]
