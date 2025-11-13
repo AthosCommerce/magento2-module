@@ -63,12 +63,12 @@ class PreSignedUrlStorageTest extends TestCase
      * @return void
      * @throws \Exception
      */
-    public function testInitiate() : void
+    public function testInitiate(): void
     {
         $feed = $this->getFeedSpecification();
         $this->preSignedUrlStorage->initiate($feed);
         // check that we achieve this place and dont have any exceptions
-        $this->assertEquals(1,1);
+        $this->assertEquals(1, 1);
     }
 
     /**
@@ -77,12 +77,12 @@ class PreSignedUrlStorageTest extends TestCase
      * @return void
      * @throws \Exception
      */
-    public function testInitiateWithEmptyFormat() : void
+    public function testInitiateWithEmptyFormat(): void
     {
         /** @var Feed $feed */
         $feed = $this->getFeedSpecification();
         $feed->setData(FeedSpecificationInterface::FORMAT, null);
-        $this->expectExceptionObject(new Exception((string) __('format cannot be empty')));
+        $this->expectExceptionObject(new Exception((string)__('format cannot be empty')));
         $this->preSignedUrlStorage->initiate($feed);
     }
 
@@ -92,13 +92,13 @@ class PreSignedUrlStorageTest extends TestCase
      * @return void
      * @throws \Exception
      */
-    public function testInitiateWithInvalidFormat() : void
+    public function testInitiateWithInvalidFormat(): void
     {
         /** @var Feed $feed */
         $feed = $this->getFeedSpecification();
         $format = '___test___';
         $feed->setData(FeedSpecificationInterface::FORMAT, $format);
-        $this->expectExceptionObject(new Exception((string) __('%1 is not supported format', $format)));
+        $this->expectExceptionObject(new Exception((string)__('%1 is not supported format', $format)));
         $this->preSignedUrlStorage->initiate($feed);
     }
 
@@ -108,14 +108,14 @@ class PreSignedUrlStorageTest extends TestCase
      * @return void
      * @throws \Exception
      */
-    public function testAddData() : void
+    public function testAddData(): void
     {
         $feed = $this->getFeedSpecification();
         $this->preSignedUrlStorage->initiate($feed);
         $data = $this->getData();
-        $this->preSignedUrlStorage->addData($data);
+        $this->preSignedUrlStorage->addData($data, 1);
         // check that we achieve this place and dont have any exceptions
-        $this->assertEquals(1,1);
+        $this->assertEquals(1, 1);
         $file = $this->preSignedUrlStorage->getFile();
         $file->commit();
         $path = $file->getAbsolutePath();
@@ -129,11 +129,11 @@ class PreSignedUrlStorageTest extends TestCase
      * @return void
      * @throws \Exception
      */
-    public function testAddDataToNotInitiatedStorage() : void
+    public function testAddDataToNotInitiatedStorage(): void
     {
         $data = $this->getData();
         $this->expectExceptionObject(new Exception('file is not initialized yet'));
-        $this->preSignedUrlStorage->addData($data);
+        $this->preSignedUrlStorage->addData($data, 1);
     }
 
     /**
@@ -143,13 +143,13 @@ class PreSignedUrlStorageTest extends TestCase
      * @return void
      * @throws \Exception
      */
-    public function testCommit() : void
+    public function testCommit(): void
     {
         $feed = $this->getFeedSpecification();
         $this->preSignedUrlStorage->initiate($feed);
         $data = $this->getData();
-        $this->preSignedUrlStorage->addData($data);
-        $this->preSignedUrlStorage->commit();
+        $this->preSignedUrlStorage->addData($data, 1);
+        $this->preSignedUrlStorage->commit(1, true);
         // check that file was deleted
         $this->assertEquals(1, count($this->preSignedUrlStorage->getAdditionalData()));
     }
@@ -161,10 +161,10 @@ class PreSignedUrlStorageTest extends TestCase
      * @return void
      * @throws \Exception
      */
-    public function testCommitNotInitiatedStorage() : void
+    public function testCommitNotInitiatedStorage(): void
     {
         $this->expectExceptionObject(new Exception('file is not initialized yet'));
-        $this->preSignedUrlStorage->commit();
+        $this->preSignedUrlStorage->commit(1, false);
     }
 
     /**
@@ -174,12 +174,12 @@ class PreSignedUrlStorageTest extends TestCase
      * @return void
      * @throws \Exception
      */
-    public function testRollback() : void
+    public function testRollback(): void
     {
         $feed = $this->getFeedSpecification();
         $this->preSignedUrlStorage->initiate($feed);
         $data = $this->getData();
-        $this->preSignedUrlStorage->addData($data);
+        $this->preSignedUrlStorage->addData($data, 1);
         $this->preSignedUrlStorage->rollback();
         // check that file was deleted
         $this->assertEquals(1, count($this->preSignedUrlStorage->getAdditionalData()));
@@ -192,7 +192,7 @@ class PreSignedUrlStorageTest extends TestCase
      * @return void
      * @throws \Exception
      */
-    public function testRollbackNotInitiatedStorage() : void
+    public function testRollbackNotInitiatedStorage(): void
     {
         $this->expectExceptionObject(new Exception('file is not initialized yet'));
         $this->preSignedUrlStorage->rollback();
@@ -204,12 +204,12 @@ class PreSignedUrlStorageTest extends TestCase
      * @return void
      * @throws \Exception
      */
-    public function testGetAdditionalData() : void
+    public function testGetAdditionalData(): void
     {
         $feed = $this->getFeedSpecification();
         $this->preSignedUrlStorage->initiate($feed);
         $data = $this->getData();
-        $this->preSignedUrlStorage->addData($data);
+        $this->preSignedUrlStorage->addData($data, 1);
         $this->assertGreaterThan(1, count($this->preSignedUrlStorage->getAdditionalData()));
     }
 
@@ -219,7 +219,7 @@ class PreSignedUrlStorageTest extends TestCase
      * @return void
      * @throws \Exception
      */
-    public function testGetAdditionalDataNotInitiatedStorage() : void
+    public function testGetAdditionalDataNotInitiatedStorage(): void
     {
         $this->expectExceptionObject(new Exception('file is not initialized yet'));
         $this->preSignedUrlStorage->getAdditionalData();
@@ -232,7 +232,7 @@ class PreSignedUrlStorageTest extends TestCase
      * @return void
      * @throws \Exception
      */
-    public function testIsSupportedFormat() : void
+    public function testIsSupportedFormat(): void
     {
         $this->assertTrue($this->preSignedUrlStorage->isSupportedFormat(MetadataInterface::FORMAT_JSON));
         $this->assertFalse($this->preSignedUrlStorage->isSupportedFormat('___test____'));
@@ -241,23 +241,26 @@ class PreSignedUrlStorageTest extends TestCase
     /**
      * @return FeedSpecificationInterface
      */
-    private function getFeedSpecification() : FeedSpecificationInterface
+    private function getFeedSpecification(): FeedSpecificationInterface
     {
-        return $this->feedSpecificationBuilder->build(['preSignedUrl' => 'https://testurl.com', 'format' => MetadataInterface::FORMAT_JSON]);
+        return $this->feedSpecificationBuilder->build([
+            'preSignedUrl' => 'https://testurl.com',
+            'format' => MetadataInterface::FORMAT_JSON,
+        ]);
     }
 
     /**
      * @return array
      */
-    private function getData() : array
+    private function getData(): array
     {
         return [
             [
-                'test_key' => 'Test Value'
+                'test_key' => 'Test Value',
             ],
             [
-                'test_key' => 'Different Test Value'
-            ]
+                'test_key' => 'Different Test Value',
+            ],
         ];
     }
 }

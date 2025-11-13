@@ -71,7 +71,7 @@ class StockProviderTest extends TestCase
      *
      * @throws \Exception
      */
-    public function testGetData() : void
+    public function testGetData(): void
     {
         $specification = $this->specificationBuilder->build(['includeOutOfStock' => true]);
         $products = $this->getProducts->get($specification);
@@ -104,7 +104,7 @@ class StockProviderTest extends TestCase
      *
      * @throws \Exception
      */
-    public function testReset() : void
+    public function testReset(): void
     {
         $specification = $this->specificationBuilder->build([]);
         $products = $this->getProducts->get($specification);
@@ -117,7 +117,7 @@ class StockProviderTest extends TestCase
      * @param array $items
      * @param array $config
      */
-    private function assertStock(array $items, array $config) : void
+    private function assertStock(array $items, array $config): void
     {
         foreach ($items as $item) {
             /** @var Product $product */

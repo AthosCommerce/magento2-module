@@ -73,9 +73,10 @@ class CreateTaskInterfaceTest extends TestCase
      * @throws UniqueTaskException
      * @throws ValidationException
      */
-    public function testCreateTask() : void
+    public function testCreateTask(): void
     {
         $payload = $this->getPayload();
+        $payload['format'] = 'json';
         $type = MetadataInterface::FEED_GENERATION_TASK_CODE;
         $result = $this->createTask->execute($type, $payload);
         $this->assertEquals(MetadataInterface::TASK_STATUS_PENDING, $result->getStatus());
@@ -91,13 +92,13 @@ class CreateTaskInterfaceTest extends TestCase
      * @throws ValidationException
      * @throws CouldNotSaveException
      */
-    public function testCreateTaskWithInvalidType() : void
+    public function testCreateTaskWithInvalidType(): void
     {
         $payload = $this->getPayload();
         $type = '___test_invalid___';
         $allTypes = implode(', ', $this->typeList->getAll());
         $message = [
-            (string) __('Invalid task type \'%1\', available task types: %2', $type, $allTypes)
+            (string)__('Invalid task type \'%1\', available task types: %2', $type, $allTypes),
         ];
         $this->expectExceptionObject(new ValidationException($message));
         $this->createTask->execute($type, $payload);
@@ -111,7 +112,7 @@ class CreateTaskInterfaceTest extends TestCase
      * @throws UniqueTaskException
      * @throws ValidationException
      */
-    public function testCreateTaskWithInvalidPayload() : void
+    public function testCreateTaskWithInvalidPayload(): void
     {
         $payload = $this->getPayload();
         $payload['format'] = '___invalid_format___';
@@ -128,7 +129,7 @@ class CreateTaskInterfaceTest extends TestCase
      * @throws UniqueTaskException
      * @throws ValidationException
      */
-    public function testCreateNotUniqueTask() : void
+    public function testCreateNotUniqueTask(): void
     {
         $payload = $this->getPayload();
         $type = MetadataInterface::FEED_GENERATION_TASK_CODE;
@@ -140,10 +141,10 @@ class CreateTaskInterfaceTest extends TestCase
     /**
      * @return array
      */
-    private function getPayload() : array
+    private function getPayload(): array
     {
         return [
-            'preSignedUrl' => 'https://testurl.com'
+            'preSignedUrl' => 'https://testurl.com',
         ];
     }
 }

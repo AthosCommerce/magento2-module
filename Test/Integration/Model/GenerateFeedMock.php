@@ -26,8 +26,9 @@ class GenerateFeedMock implements GenerateFeedInterface
 
     /**
      * @param FeedSpecificationInterface $feedSpecification
+     * @param int $id
      */
-    public function execute(FeedSpecificationInterface $feedSpecification): void
+    public function execute(FeedSpecificationInterface $feedSpecification, int $id): void
     {
         return;
     }

@@ -16,7 +16,7 @@
 
 declare(strict_types=1);
 
-namespace AthosCommerce\Feed\Model;
+namespace AthosCommerce\Feed\Model\Api;
 
 use Magento\Cron\Model\ResourceModel\Schedule\CollectionFactory as ScheduleCollectionFactory;
 use AthosCommerce\Feed\Api\GetCronStatusInterface;

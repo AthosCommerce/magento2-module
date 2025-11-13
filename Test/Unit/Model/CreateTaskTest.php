@@ -24,7 +24,7 @@ use AthosCommerce\Feed\Api\Data\TaskInterfaceFactory;
 use AthosCommerce\Feed\Api\TaskRepositoryInterface;
 use AthosCommerce\Feed\Exception\UniqueTaskException;
 use AthosCommerce\Feed\Exception\ValidationException;
-use AthosCommerce\Feed\Model\CreateTask;
+use AthosCommerce\Feed\Model\Api\CreateTask;
 use AthosCommerce\Feed\Model\Task;
 use AthosCommerce\Feed\Model\Task\TypeList;
 use AthosCommerce\Feed\Model\Task\UniqueCheckerInterface;

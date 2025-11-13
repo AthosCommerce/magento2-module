@@ -32,6 +32,7 @@ class ClientMock implements ClientInterface
 
     /**
      * ClientMock constructor.
+     *
      * @param ResponseInterfaceFactory $responseFactory
      */
     public function __construct(
@@ -45,14 +46,19 @@ class ClientMock implements ClientInterface
      * @param string $url
      * @param array|null $content
      * @param array $headers
+     *
      * @return ResponseInterface
      */
-    public function execute(string $method, string $url, ?array $content = null, array $headers = []): ResponseInterface
-    {
+    public function execute(
+        string $method,
+        string $url,
+        ?array $content = null,
+        array $headers = []
+    ): ResponseInterface {
         return $this->responseFactory->create([
             'code' => 200,
             'headers' => [],
-            'body' => ''
+            'body' => '',
         ]);
     }
 }

@@ -14,30 +14,48 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-declare(strict_types=1);
+namespace AthosCommerce\Feed\Model\Feed\DataProvider\Product;
 
-namespace AthosCommerce\Feed\Model;
+use Magento\Catalog\Api\Data\ProductInterface;
 
-use AthosCommerce\Feed\Api\Data\CustomersDataInterface;
-use AthosCommerce\Feed\Api\Data\CustomersInterface;
-
-class Customers implements CustomersInterface
+class ProductStorage
 {
-    private $customers;
+    /**
+     * @var array
+     */
+    private $products = [];
 
     /**
-     * @return CustomersDataInterface[]
+     * @param ProductInterface[] $items
      */
-    public function getCustomers(): array
+    public function set(array $items): void
     {
-        return $this->customers;
+        $this->products = $items;
     }
 
     /**
-     * @param $value CustomersDataInterface[]
+     * @param int $id
+     *
+     * @return ProductInterface[]|null
      */
-    public function setCustomers(array $value)
+    public function getById(int $id): ?array
     {
-        $this->customers = $value;
+        return $this->products[$id] ?? null;
+    }
+
+    /**
+     * @return array
+     */
+    public function get(): array
+    {
+        return $this->products;
+    }
+
+    /**
+     *
+     */
+    public function reset(): void
+    {
+        $this->products = [];
     }
 }

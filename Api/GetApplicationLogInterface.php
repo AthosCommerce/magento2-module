@@ -58,4 +58,12 @@ interface GetApplicationLogInterface
      * @throws LocalizedException
      */
     public function clearExceptionLog() : bool;
+    /**
+     * @param bool $compressOutput
+     *
+     * @return string
+     *
+     * @throws LocalizedException
+     */
+    public function getCronLog(bool $compressOutput = false) : string;
 }

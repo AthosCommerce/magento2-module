@@ -16,7 +16,7 @@
 
 declare(strict_types=1);
 
-namespace AthosCommerce\Feed\Model;
+namespace AthosCommerce\Feed\Model\Api;
 
 use AthosCommerce\Feed\Api\GetApplicationLogInterface;
 use AthosCommerce\Feed\Exception\ValidationException;
@@ -65,5 +65,13 @@ class GetApplicationLog implements GetApplicationLogInterface
     public function clearExceptionLog() : bool
     {
         return $this->helper->deleteExceptionLogFile();
+    }
+
+    /**
+     * @return string
+     */
+    public function getCronLog(bool $compressOutput = false) : string
+    {
+        return $this->helper->getCronLogFile($compressOutput);
     }
 }

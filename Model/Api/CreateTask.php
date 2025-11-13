@@ -16,7 +16,7 @@
 
 declare(strict_types=1);
 
-namespace AthosCommerce\Feed\Model;
+namespace AthosCommerce\Feed\Model\Api;
 
 use Exception;
 use Magento\Framework\Exception\CouldNotSaveException;
@@ -143,7 +143,9 @@ class CreateTask implements CreateTaskInterface
                 'method' => __METHOD__,
                 'type' => $type,
                 'payload' => $payload,
-                'isMsiEnabledViaPayload' => $payload['isMsiEnabled'],
+                'isMsiEnabledViaPayload' => array_key_exists('isMsiEnabled', $payload)
+                    ? $payload['isMsiEnabled']
+                    : '',
                 'isMsiModuleEnabled' => $this->isMsiEnabled(),
                 'message' => $message
             ]

@@ -67,9 +67,16 @@ class GroupedDataProvider implements DataProviderInterface
 
         $childToParent = [];
         $allParentIds = [];
+
         if (!$parentChildIds) {
             return $products;
         }
+
+        //TODO:: Check needed against the each field.
+        $ignoredFields = $feedSpecification->getIgnoreFields();
+
+        $childToParent = [];
+        $allParentIds = [];
 
         foreach ($parentChildIds as $productIndex => $parentChildRow) {
             if (!isset($parentChildRow['product_id'], $parentChildRow['parent_id'])) {

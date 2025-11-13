@@ -16,41 +16,42 @@
 
 declare(strict_types=1);
 
-namespace AthosCommerce\Feed\Model;
+namespace AthosCommerce\Feed\Model\Api;
 
-use AthosCommerce\Feed\Api\GetSalesInterface;
-use AthosCommerce\Feed\Api\Data\SalesInterface;
-use AthosCommerce\Feed\Api\Data\SalesInterfaceFactory;
+use AthosCommerce\Feed\Api\GetCustomersInterface;
+use AthosCommerce\Feed\Api\Data\CustomersInterface;
+use AthosCommerce\Feed\Api\Data\CustomersInterfaceFactory;
 use AthosCommerce\Feed\Exception\ValidationException;
-use AthosCommerce\Feed\Helper\Sale;
+use AthosCommerce\Feed\Helper\Customer;
 use AthosCommerce\Feed\Helper\Utils;
 
-class GetSales implements GetSalesInterface
+class GetCustomers implements GetCustomersInterface
 {
-    /** @var Sale */
+    /** @var Customer */
     private $helper;
 
-    /** @var SalesInterfaceFactory */
-    private $salesFactory;
+    /** @var CustomersInterfaceFactory */
+    private $customersFactory;
 
     /**
-     * @param Sale $helper
+     * @param Customer $helper
+     * @param CustomersInterfaceFactory $customersFactory
      */
-    public function __construct(Sale $helper, SalesInterfaceFactory $salesFactory)
+    public function __construct(Customer $helper, CustomersInterfaceFactory $customersFactory)
     {
         $this->helper = $helper;
-        $this->salesFactory = $salesFactory;
+        $this->customersFactory = $customersFactory;
     }
 
     /**
      * @param string $dateRange
      * @param string $rowRange
      *
-     * @return SalesInterface
+     * @return CustomersInterface
      *
      * @throws ValidationException
      */
-    public function getList(string $dateRange = "All", string $rowRange = "All"): SalesInterface
+    public function getList(string $dateRange = "All", string $rowRange = "All"): CustomersInterface
     {
         $errors = [];
         if (!Utils::validateDateRange($dateRange)){
@@ -65,9 +66,9 @@ class GetSales implements GetSalesInterface
             throw new ValidationException($errors, 400);
         }
 
-        $sales = $this->salesFactory->create();
-        $sales->setSales($this->helper->getSales($dateRange, $rowRange));
+        $customers = $this->customersFactory->create();
+        $customers->setCustomers($this->helper->getCustomers($dateRange, $rowRange));
 
-        return $sales;
+        return $customers;
     }
 }
