@@ -57,7 +57,7 @@ class UrlProcessorTest extends TestCase
     /**
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products_with_url.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_products_with_url.php
      */
     public function testProcessAfterLoad() : void
     {

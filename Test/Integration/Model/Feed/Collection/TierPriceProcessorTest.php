@@ -55,7 +55,7 @@ class TierPriceProcessorTest extends TestCase
 
     /**
      * @magentoAppIsolation enabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products_tierprice.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_products_tierprice.php
      */
     public function testProcessAfterLoad() : void
     {
@@ -77,7 +77,7 @@ class TierPriceProcessorTest extends TestCase
 
     /**
      * @magentoAppIsolation enabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products_tierprice.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_products_tierprice.php
      */
     public function testProcessWithAddTierPriceDataIsFalse() : void
     {

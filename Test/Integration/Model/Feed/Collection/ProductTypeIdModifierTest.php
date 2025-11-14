@@ -55,12 +55,12 @@ class ProductTypeIdModifierTest extends TestCase
     /**
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_product_not_visible.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_product_visibility_catalog.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_product_visibility_search.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable_products.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/grouped_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_product_not_visible.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_product_visibility_catalog.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_product_visibility_search.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable/configurable_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/grouped/grouped_products.php
      */
     public function testModify() : void
     {
@@ -76,7 +76,7 @@ class ProductTypeIdModifierTest extends TestCase
         $this->assertTrue(!in_array('athoscommerce_grouped_test_simple_1001', $skus));
         $this->assertTrue(!in_array('athoscommerce_configurable_test_simple_10', $skus));
         $this->assertTrue(!in_array('athoscommerce_configurable_test_simple_20', $skus));
-        
+
         $this->assertTrue(in_array('athoscommerce_simple_visibility_search', $skus));
         $this->assertTrue(in_array('athoscommerce_simple_1', $skus));
         $this->assertTrue(in_array('athoscommerce_simple_2', $skus));

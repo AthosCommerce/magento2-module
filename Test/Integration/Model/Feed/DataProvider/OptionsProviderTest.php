@@ -67,7 +67,7 @@ class OptionsProviderTest extends TestCase
     /**
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products_with_options.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_products_with_options.php
      *
      * @throws \Exception
      */
@@ -102,7 +102,7 @@ class OptionsProviderTest extends TestCase
     /**
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products_with_options_multistore.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_products_with_options_multistore.php
      *
      * @throws \Exception
      */

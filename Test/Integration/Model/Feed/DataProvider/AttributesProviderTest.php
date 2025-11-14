@@ -63,7 +63,7 @@ class AttributesProviderTest extends TestCase
      * @magentoDbIsolation disabled
      * @magentoDataFixture AthosCommerce_Feed::Test/_files/product_boolean_attribute.php
      * @magentoDataFixture AthosCommerce_Feed::Test/_files/product_decimal_attribute.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_products.php
      */
     public function testGetData() : void
     {
@@ -84,7 +84,7 @@ class AttributesProviderTest extends TestCase
      * @magentoAppIsolation enabled
      * @magentoDataFixture AthosCommerce_Feed::Test/_files/product_boolean_attribute.php
      * @magentoDataFixture AthosCommerce_Feed::Test/_files/product_decimal_attribute.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_products.php
      */
     public function testReset() : void
     {

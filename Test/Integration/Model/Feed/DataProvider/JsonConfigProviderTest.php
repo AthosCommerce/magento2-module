@@ -67,9 +67,9 @@ class JsonConfigProviderTest extends TestCase
     /**
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable_products.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable_product_two_swatches_attributes.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable/configurable_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable/configurable_product_two_swatches_attributes.php
      *
      * @throws \Exception
      */
@@ -118,7 +118,7 @@ class JsonConfigProviderTest extends TestCase
     /**
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable/configurable_products.php
      *
      * @throws \Exception
      */

@@ -281,7 +281,8 @@
     <type name="AthosCommerce\Feed\Model\Feed\DataProvider\Price\ProviderResolver">
         <arguments>
             <argument name="priceProviders" xsi:type="array">
-                <item name="configurable" xsi:type="object">AthosCommerce\Feed\Model\Feed\DataProvider\Price\ConfigurablePriceProvider</item>
+                <item name="simple" xsi:type="object">AthosCommerce\Feed\Model\Feed\DataProvider\Price\SimplePriceProvider</item>
+                <item name="virtual" xsi:type="object">AthosCommerce\Feed\Model\Feed\DataProvider\Price\SimplePriceProvider</item>
             </argument>
             <argument name="basePriceProvider" xsi:type="object">AthosCommerce\Feed\Model\Feed\DataProvider\Price\BasePriceProvider</argument>
         </arguments>
