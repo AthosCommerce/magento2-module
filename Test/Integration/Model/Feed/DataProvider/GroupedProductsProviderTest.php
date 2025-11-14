@@ -70,8 +70,8 @@ class GroupedProductsProviderTest extends TestCase
     /**
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/grouped_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/grouped/grouped_products.php
      *
      * @throws \Exception
      */
@@ -105,7 +105,7 @@ class GroupedProductsProviderTest extends TestCase
      * @magentoDbIsolation disabled
      * @magentoDataFixture AthosCommerce_Feed::Test/_files/product_boolean_attribute.php
      * @magentoDataFixture AthosCommerce_Feed::Test/_files/product_decimal_attribute.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/grouped_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/grouped/grouped_products.php
      *
      * @throws \Exception
      */
@@ -149,7 +149,7 @@ class GroupedProductsProviderTest extends TestCase
     /**
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/grouped_products_with_store_value.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/grouped/grouped_products_with_store_value.php
      *
      * @throws \Exception
      */
@@ -181,7 +181,7 @@ class GroupedProductsProviderTest extends TestCase
     /**
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/grouped_products_disabled_simple.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/grouped/grouped_products_disabled_simple.php
      *
      * @throws \Exception
      */
@@ -199,8 +199,8 @@ class GroupedProductsProviderTest extends TestCase
     /**
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/grouped_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/grouped/grouped_products.php
      *
      * @throws \Exception
      */

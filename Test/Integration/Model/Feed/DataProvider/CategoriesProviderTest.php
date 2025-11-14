@@ -69,7 +69,7 @@ class CategoriesProviderTest extends TestCase
     /**
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products_with_categories.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_products_with_categories.php
      *
      * @throws \Exception
      */
@@ -90,7 +90,7 @@ class CategoriesProviderTest extends TestCase
     /**
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products_with_categories.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_products_with_categories.php
      *
      * @throws \Exception
      */
@@ -108,7 +108,7 @@ class CategoriesProviderTest extends TestCase
     /**
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products_with_categories.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_products_with_categories.php
      *
      * @throws \Exception
      */
@@ -126,7 +126,7 @@ class CategoriesProviderTest extends TestCase
     /**
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products_with_categories.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_products_with_categories.php
      *
      * @throws \Exception
      */
@@ -146,7 +146,7 @@ class CategoriesProviderTest extends TestCase
     /**
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products_with_categories_in_different_websites.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_products_with_categories_in_different_websites.php
      *
      * @throws \Exception
      */
@@ -179,7 +179,7 @@ class CategoriesProviderTest extends TestCase
     /**
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products_with_categories.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_products_with_categories.php
      * @magentoDataFixture AthosCommerce_Feed::Test/_files/categories/categories_store_specific_data.php
      *
      * @throws \Exception
@@ -207,7 +207,7 @@ class CategoriesProviderTest extends TestCase
     /**
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products_with_categories.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_products_with_categories.php
      *
      * @throws \Exception
      */

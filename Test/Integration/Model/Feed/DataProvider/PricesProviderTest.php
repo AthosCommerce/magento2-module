@@ -127,9 +127,9 @@ class PricesProviderTest extends TestCase
     /**
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products_tierprice.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable_products.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/grouped_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_products_tierprice.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable/configurable_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/grouped/grouped_products.php
      *
      * @throws \Exception
      */
@@ -146,9 +146,9 @@ class PricesProviderTest extends TestCase
     /**
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products_specialprice.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable_products_specialprice.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/grouped_products_specialprice.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_products_specialprice.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable/configurable_products_specialprice.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/grouped/grouped_products_specialprice.php
      *
      * @throws \Exception
      */
@@ -179,9 +179,9 @@ class PricesProviderTest extends TestCase
     /**
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products_catalogrule.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable_products_catalogrule.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/grouped_products_catalogrule.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_products_catalogrule.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable/configurable_products_catalogrule.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/grouped/grouped_products_catalogrule.php
      *
      * @throws \Exception
      */
@@ -224,9 +224,9 @@ class PricesProviderTest extends TestCase
     /**
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products_catalogrule_with_customer_group.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable_products_catalogrule.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/grouped_products_catalogrule.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_products_catalogrule_with_customer_group.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable/configurable_products_catalogrule.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/grouped/grouped_products_catalogrule.php
      * @magentoDataFixture AthosCommerce_Feed::Test/_files/customer.php
      *
      * @throws \Exception
@@ -258,7 +258,7 @@ class PricesProviderTest extends TestCase
      * @magentoDbIsolation disabled
      * @magentoConfigFixture current_store catalog/price/scope 1
      * @magentoDataFixture AthosCommerce_Feed::Test/_files/change_price_attributes_scope.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products_multiwebsite.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_products_multiwebsite.php
      *
      * @throws \Exception
      */

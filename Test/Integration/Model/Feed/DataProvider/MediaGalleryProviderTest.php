@@ -72,7 +72,7 @@ class MediaGalleryProviderTest extends TestCase
     /**
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products_with_images.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_products_with_images.php
      *
      * @throws \Exception
      */
@@ -115,7 +115,7 @@ class MediaGalleryProviderTest extends TestCase
     /**
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products_with_images_multistore.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_products_with_images_multistore.php
      *
      * @throws \Exception
      */

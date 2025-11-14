@@ -4,6 +4,7 @@ namespace AthosCommerce\Feed\Model\Feed\DataProvider\Parent;
 
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\Collection as ParentProductCollection;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentDataContextManager;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Option\Visibility;
 use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
 use Magento\Catalog\Api\Data\ProductInterface;
@@ -22,9 +23,9 @@ class ConfigurableDataProvider implements DataProviderInterface
      */
     private $relationsProvider;
     /**
-     * @var ParentProductCollection
+     * @var ParentDataContextManager
      */
-    private $parentProductCollection;
+    private $parentProductContextManager;
     /**
      * @var Visibility
      */
@@ -33,21 +34,28 @@ class ConfigurableDataProvider implements DataProviderInterface
     /**
      * @param MetadataPool $metadataPool
      * @param RelationsProvider $relationsProvider
-     * @param Collection $parentProductCollection
+     * @param ParentDataContextManager $parentProductContextManager
      * @param Visibility $visibility
      */
     public function __construct(
         MetadataPool $metadataPool,
         RelationsProvider $relationsProvider,
-        ParentProductCollection $parentProductCollection,
-        Visibility $visibility,
+        ParentDataContextManager $parentProductContextManager,
+        Visibility $visibility
     ) {
         $this->metadataPool = $metadataPool;
         $this->relationsProvider = $relationsProvider;
-        $this->parentProductCollection = $parentProductCollection;
+        $this->parentProductContextManager = $parentProductContextManager;
         $this->visibility = $visibility;
     }
 
+    /**
+     * @param array $products
+     * @param FeedSpecificationInterface $feedSpecification
+     *
+     * @return array
+     * @throws \Exception
+     */
     public function getData(array $products, FeedSpecificationInterface $feedSpecification): array
     {
         $childIds = $this->getChildIds($products);
@@ -77,18 +85,7 @@ class ConfigurableDataProvider implements DataProviderInterface
             $allParentIds[] = $parentId;
         }
 
-        $uniqueParentIds = array_values(array_unique($allParentIds));
-        $parentCollection = $this->parentProductCollection->execute(
-            $uniqueParentIds,
-            $feedSpecification
-        );
 
-        $parentsDataById = [];
-        /** @var ProductInterface $parentProduct */
-        foreach ($parentCollection as $parentProduct) {
-            $parentsDataById[(int)$parentProduct->getId()] = $parentProduct;
-        }
-        unset($parentChildIds);
 
         $linkField = $this->getLinkField();
         $finalProducts = [];
@@ -108,11 +105,17 @@ class ConfigurableDataProvider implements DataProviderInterface
 
             $parent = null;
             foreach ($parentIds as $parentId) {
-                $parent = $parentsDataById[$parentId] ?? null;
+                /*$parent = $parentsDataById[$parentId] ?? null;
                 if (!$parent) {
                     continue;
+                }*/
+                $parentsDataById = $this->parentProductContextManager->getParentsDataByProductId(
+                    (int)$childEntityId,
+                );
+                if (!$parentsDataById) {
+                    continue;
                 }
-                $shouldExclude = $this->shouldExcludeProduct($productModel, $product, $parent);
+                $shouldExclude = $this->shouldExcludeProduct($productModel, $product, $parentsDataById);
                 if ($shouldExclude) {
                     unset($products[$productIndex]);
                 }

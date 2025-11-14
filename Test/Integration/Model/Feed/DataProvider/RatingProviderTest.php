@@ -67,7 +67,7 @@ class RatingProviderTest extends TestCase
      *
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products_with_rating.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_products_with_rating.php
      *
      * @throws \Exception
      */
@@ -94,7 +94,7 @@ class RatingProviderTest extends TestCase
      *
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products_with_rating_multistore.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_products_with_rating_multistore.php
      *
      * @throws \Exception
      */
@@ -137,7 +137,7 @@ class RatingProviderTest extends TestCase
      *
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products_with_rating.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_products_with_rating.php
      *
      * @throws \Exception
      */

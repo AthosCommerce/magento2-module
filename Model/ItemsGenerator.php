@@ -19,10 +19,15 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Model;
 
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentDataContextManager;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\RelationsProvider;
 use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
 use AthosCommerce\Feed\Model\Feed\DataProviderPool;
 use AthosCommerce\Feed\Model\Feed\SystemFieldsList;
+use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Catalog\Model\Product;
+use Magento\Catalog\Model\Product\Type as MagentoProductType;
+use Magento\Framework\EntityManager\MetadataPool;
 
 class ItemsGenerator
 {
@@ -34,6 +39,18 @@ class ItemsGenerator
      * @var SystemFieldsList
      */
     private $systemFieldsList;
+    /**
+     * @var MetadataPool
+     */
+    private $metadataPool;
+    /**
+     * @var RelationsProvider
+     */
+    private $relationsProvider;
+    /**
+     * @var ParentDataContextManager
+     */
+    private $parentDataContextManager;
 
     /**
      * @param DataProviderPool $dataProviderPool
@@ -41,10 +58,16 @@ class ItemsGenerator
      */
     public function __construct(
         DataProviderPool $dataProviderPool,
-        SystemFieldsList $systemFieldsList
+        SystemFieldsList $systemFieldsList,
+        MetadataPool $metadataPool,
+        RelationsProvider $relationsProvider,
+        ParentDataContextManager $parentDataContextManager
     ) {
         $this->dataProviderPool = $dataProviderPool;
         $this->systemFieldsList = $systemFieldsList;
+        $this->metadataPool = $metadataPool;
+        $this->relationsProvider = $relationsProvider;
+        $this->parentDataContextManager = $parentDataContextManager;
     }
 
     /**
@@ -62,12 +85,14 @@ class ItemsGenerator
         }
 
         $data = [];
-        foreach ($items as $item) {
-            $data[] = [
+        foreach ($items as $index => $item) {
+            $data[$index] = [
                 'entity_id' => $item->getEntityId(),
                 'product_model' => $item,
             ];
         }
+
+        $parentsData = $this->preloadParentContext($items, $feedSpecification);
 
         $this->systemFieldsList->add('product_model');
         $dataProviders = $this->dataProviderPool->get($feedSpecification->getIgnoreFields());
@@ -82,6 +107,7 @@ class ItemsGenerator
                 unset($row[$field]);
             }
         }
+        $this->parentDataContextManager->resetContext();
 
         return $data;
     }
@@ -121,5 +147,57 @@ class ItemsGenerator
         return $this->dataProviderPool->get(
             $feedSpecification->getIgnoreFields()
         );
+    }
+
+    /**
+     * @return string
+     * @throws \Exception
+     */
+    public function getLinkField(): string
+    {
+        return $this->metadataPool->getMetadata(ProductInterface::class)->getLinkField();
+    }
+
+    /**
+     * @param ProductInterface[] $items
+     * @param FeedSpecificationInterface $feedSpecification
+     *
+     * @return array
+     */
+    private function preloadParentContext(
+        array $items,
+        FeedSpecificationInterface $feedSpecification
+    ): array {
+        $childIds = [];
+        foreach ($items as $item) {
+            if (in_array(
+                $item->getTypeId(),
+                [MagentoProductType::TYPE_SIMPLE, MagentoProductType::TYPE_VIRTUAL],
+                true
+            )) {
+                $childIds[] = (int)$item->getId();
+            }
+        }
+
+        if (empty($childIds)) {
+            return [];
+        }
+
+        $relations = $this->relationsProvider->getConfigurableRelationIds($childIds);
+        if (empty($relations)) {
+            return [];
+        }
+        $parentIds = [];
+        foreach ($relations as $relation) {
+            if (isset($relation['parent_id'])) {
+                $parentIds[] = (int)$relation['parent_id'];
+            }
+        }
+
+        if (empty($parentIds)) {
+            return [];
+        }
+
+        return $this->parentDataContextManager->execute(array_unique($parentIds), $feedSpecification);
     }
 }

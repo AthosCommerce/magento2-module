@@ -10,15 +10,15 @@
     </type>
 
     <type name="AthosCommerce\Feed\Api\CreateTaskInterface">
-        <plugin name="AthosCommerce_Feed::convert_exceptions" type="AthosCommerce\Feed\Plugin\Rest\CreateTaskConvertException"/>
+        <plugin name="AthosCommerce_Feed::createtask_exceptions" type="AthosCommerce\Feed\Plugin\Rest\CreateTaskConvertException"/>
     </type>
 
     <type name="AthosCommerce\Feed\Api\TaskRepositoryInterface">
-        <plugin name="AthosCommerce_Feed::convert_exceptions" type="AthosCommerce\Feed\Plugin\Rest\GetTaskConvertException"/>
+        <plugin name="AthosCommerce_Feed::taskrepository_exceptions" type="AthosCommerce\Feed\Plugin\Rest\GetTaskConvertException"/>
     </type>
 
     <type name="AthosCommerce\Feed\Api\GetStoresInfoInterface">
-        <plugin name="AthosCommerce_Feed::convert_exceptions" type="AthosCommerce\Feed\Plugin\Rest\GetStoreInfoConvertException"/>
+        <plugin name="AthosCommerce_Feed::getstoreinfo_exceptions" type="AthosCommerce\Feed\Plugin\Rest\GetStoreInfoConvertException"/>
     </type>
 
     <type name="AthosCommerce\Feed\Plugin\Rest\CreateTaskConvertException">
