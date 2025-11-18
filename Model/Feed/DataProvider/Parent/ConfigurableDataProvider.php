@@ -7,6 +7,8 @@ use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\Collection as ParentProduc
 use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentDataContextManager;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Option\Visibility;
 use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
+use AthosCommerce\Feed\Model\Feed\ProductExclusionInterface;
+use AthosCommerce\Feed\Model\Feed\ProductTypeIdInterface;
 use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\Product\Type as MagentoProductType;
@@ -30,23 +32,37 @@ class ConfigurableDataProvider implements DataProviderInterface
      * @var Visibility
      */
     private $visibility;
+    /**
+     * @var ProductExclusionInterface
+     */
+    private $productExclusion;
+    /**
+     * @var ProductTypeIdInterface
+     */
+    private $productTypeId;
 
     /**
      * @param MetadataPool $metadataPool
      * @param RelationsProvider $relationsProvider
      * @param ParentDataContextManager $parentProductContextManager
      * @param Visibility $visibility
+     * @param ProductExclusionInterface $productExclusion
+     * @param ProductTypeIdInterface $productTypeId
      */
     public function __construct(
         MetadataPool $metadataPool,
         RelationsProvider $relationsProvider,
         ParentDataContextManager $parentProductContextManager,
-        Visibility $visibility
+        Visibility $visibility,
+        ProductExclusionInterface $productExclusion,
+        ProductTypeIdInterface $productTypeId
     ) {
         $this->metadataPool = $metadataPool;
         $this->relationsProvider = $relationsProvider;
         $this->parentProductContextManager = $parentProductContextManager;
         $this->visibility = $visibility;
+        $this->productExclusion = $productExclusion;
+        $this->productTypeId = $productTypeId;
     }
 
     /**
@@ -56,13 +72,15 @@ class ConfigurableDataProvider implements DataProviderInterface
      * @return array
      * @throws \Exception
      */
-    public function getData(array $products, FeedSpecificationInterface $feedSpecification): array
-    {
-        $childIds = $this->getChildIds($products);
+    public function getData(
+        array $products,
+        FeedSpecificationInterface $feedSpecification
+    ): array {
+        $childTypeIdsList = $this->productTypeId->getChildTypeIdsList();
+        $childIds = $this->getChildIds($products, $childTypeIdsList);
         if (empty($childIds)) {
             return $products;
         }
-
         $parentChildIds = $this->relationsProvider->getConfigurableRelationIds($childIds);
         if (!$parentChildIds) {
             return $products;
@@ -73,19 +91,18 @@ class ConfigurableDataProvider implements DataProviderInterface
 
         $childToParent = [];
         $allParentIds = [];
-        foreach ($parentChildIds as $relationRow) {
-            if (!isset($relationRow['product_id'], $relationRow['parent_id'])) {
+
+        foreach ($parentChildIds as $parentChildRow) {
+            if (!isset($parentChildRow['product_id'], $parentChildRow['parent_id'])) {
                 continue;
             }
 
-            $childId = (int)$relationRow['product_id'];
-            $parentId = (int)$relationRow['parent_id'];
+            $childId = (int)$parentChildRow['product_id'];
+            $parentId = (int)$parentChildRow['parent_id'];
 
             $childToParent[$childId][] = $parentId;
             $allParentIds[] = $parentId;
         }
-
-
 
         $linkField = $this->getLinkField();
         $finalProducts = [];
@@ -105,38 +122,34 @@ class ConfigurableDataProvider implements DataProviderInterface
 
             $parent = null;
             foreach ($parentIds as $parentId) {
-                /*$parent = $parentsDataById[$parentId] ?? null;
+                $parent = $this->parentProductContextManager->getParentsDataByProductId(
+                    (int)$parentId,
+                );
                 if (!$parent) {
                     continue;
-                }*/
-                $parentsDataById = $this->parentProductContextManager->getParentsDataByProductId(
-                    (int)$childEntityId,
-                );
-                if (!$parentsDataById) {
-                    continue;
                 }
-                $shouldExclude = $this->shouldExcludeProduct($productModel, $product, $parentsDataById);
+                $shouldExclude = $this->productExclusion->shouldExclude($productModel, $parent);
                 if ($shouldExclude) {
                     unset($products[$productIndex]);
                 }
                 $childClone = $product;
-                //TODO:: Refactor via separate provider as needed
+
                 if (in_array(
                     $productModel->getTypeId(),
-                    [MagentoProductType::TYPE_SIMPLE, MagentoProductType::TYPE_VIRTUAL],
+                    $childTypeIdsList,
                     true
                 )) {
-                    $childClone['parent_id'] = $parentId;
+                    $childClone['parent_id'] = $parent->getData($this->getLinkField());
                     if (method_exists($parent, 'getName') && $parent->getName()) {
                         $childClone['parent_name'] = $parent->getName();
                     }
-                    if (method_exists($parent, 'getTypeId') && $parent->getTypeId()) {
-                        $childClone['parent_type_id'] = $parent->getTypeId();
-                    }
-                    if (method_exists($parent, 'getStatus') && $parent->getStatus()) {
+                    if (method_exists($parent, 'getStatus')) {
                         $childClone['parent_status'] = $parent->getStatus()
                             ? __('Enabled')
                             : __('Disabled');
+                    }
+                    if (method_exists($parent, 'getTypeId')) {
+                        $childClone['parent_type_id'] = $parent->getTypeId();
                     }
                     if (method_exists($parent, 'getProductUrl') && $parent->getProductUrl()) {
                         $childClone['parent_url'] = $parent->getProductUrl();
@@ -153,30 +166,9 @@ class ConfigurableDataProvider implements DataProviderInterface
                 $finalProducts[] = $childClone;
             }
         }
-        unset($childToParent, $parentsDataById);
+        unset($childToParent);
 
         return array_values($finalProducts);
-    }
-
-    /**
-     * @param array $product
-     * @param ProductInterface $parent
-     *
-     * @return bool
-     */
-    private function shouldExcludeProduct(
-        Product $productModel,
-        array $product,
-        ProductInterface $parent
-    ): bool {
-        $isExclude = false;
-        if (($productModel->getVisibility() == 1 && $parent->getVisibility() == 1)
-            || ($parent->isDisabled() && $productModel->getVisibility() == 1)
-        ) {
-            $isExclude = true;
-        }
-
-        return $isExclude;
     }
 
     /**
@@ -184,7 +176,7 @@ class ConfigurableDataProvider implements DataProviderInterface
      *
      * @return array
      */
-    public function getChildIds(array $products): array
+    public function getChildIds(array $products, array $childTypeIdsList): array
     {
         $childIds = [];
         foreach ($products as $product) {
@@ -193,10 +185,7 @@ class ConfigurableDataProvider implements DataProviderInterface
             if (!$productModel) {
                 continue;
             }
-            //TODO:: If any product types are belongs to parents. check for composites and 3rd Party
-            if (MagentoProductType::TYPE_SIMPLE === $productModel->getTypeId()
-                || MagentoProductType::TYPE_VIRTUAL === $productModel->getTypeId()
-            ) {
+            if (in_array($productModel->getTypeId(), $childTypeIdsList, true)) {
                 $childIds[] = $productModel->getId();
             }
         }

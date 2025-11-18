@@ -145,10 +145,13 @@ class DataProvider
         ) {
             return $this->childStorage->get();
         }
-
+        //Passing parent id array to return attribute collection
         $attributesCollection = $this->getAttributesCollection->execute($configurableProducts);
+        //Child attribute codes
         $childAttributeCodes = $this->getChildAttributeCodes($attributesCollection->getItems(), $feedSpecification);
+        //All child product collection based on parentIds and attributeCodes
         $childProductsCollection = $this->getChildCollection->execute($configurableProducts, $childAttributeCodes);
+        //
         $childProducts = $this->processChildProducts($childProductsCollection->getItems());
         $this->childStorage->set($childProducts);
 
