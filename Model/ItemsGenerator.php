@@ -105,6 +105,8 @@ class ItemsGenerator
             ];
         }
 
+        $parentsData = $this->preloadParentContext($items, $feedSpecification);
+
         $this->systemFieldsList->add('product_model');
         $dataProviders = $this->dataProviderPool->get($feedSpecification->getIgnoreFields());
         foreach ($dataProviders as $dataProvider) {

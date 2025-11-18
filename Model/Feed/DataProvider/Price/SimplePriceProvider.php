@@ -28,6 +28,7 @@ use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentRelationsContext;
 use AthosCommerce\Feed\Model\Feed\DataProvider\PricesProvider;
 use Magento\ConfigurableProduct\Pricing\Price\ConfigurableOptionsProviderInterface;
 
+
 class SimplePriceProvider implements PriceProviderInterface
 {
     /**
@@ -42,7 +43,6 @@ class SimplePriceProvider implements PriceProviderInterface
      * @var ConfigurableOptionsProviderInterface
      */
     private $configurableOptionsProvider;
-
     /**
      * @param ParentDataContextManager $parentDataContextManager
      */
@@ -77,7 +77,6 @@ class SimplePriceProvider implements PriceProviderInterface
         }
         //$parent = $this->parentDataContextManager->getParentsDataByProductId((int)$product->getId());
         $parent = $this->parentRelationsContext->getParentsByChildId((int)$product->getId());
-
         if (!in_array(PricesProvider::FINAL_PRICE_KEY, $ignoredFields, true)) {
             $result[PricesProvider::FINAL_PRICE_KEY] = $this->getPriceValueByCode(
                 $product,
