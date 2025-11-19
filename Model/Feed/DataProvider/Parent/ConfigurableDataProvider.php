@@ -104,7 +104,6 @@ class ConfigurableDataProvider implements DataProviderInterface
             $allParentIds[] = $parentId;
         }
 
-
         $linkField = $this->getLinkField();
         $finalProducts = [];
 
@@ -126,16 +125,7 @@ class ConfigurableDataProvider implements DataProviderInterface
                 $parent = $this->parentProductContextManager->getParentsDataByProductId(
                     (int)$parentId,
                 );
-
-                /*$parent = $parentsDataById[$parentId] ?? null;
- 
                 if (!$parent) {
-                    continue;
-                }*/
-                $parentsDataById = $this->parentProductContextManager->getParentsDataByProductId(
-                    (int)$childEntityId,
-                );
-                if (!$parentsDataById) {
                     continue;
                 }
 
