@@ -19,14 +19,13 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Model;
 
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
-use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentDataContextManager;
-use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\RelationsProvider;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentRelationsContext;
 use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
 use AthosCommerce\Feed\Model\Feed\DataProviderPool;
+use AthosCommerce\Feed\Model\Feed\ProductTypeIdInterface;
 use AthosCommerce\Feed\Model\Feed\SystemFieldsList;
 use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Catalog\Model\Product;
-use Magento\Catalog\Model\Product\Type as MagentoProductType;
 use Magento\Framework\EntityManager\MetadataPool;
 
 class ItemsGenerator
@@ -44,30 +43,33 @@ class ItemsGenerator
      */
     private $metadataPool;
     /**
-     * @var RelationsProvider
+     * @var ParentRelationsContext
      */
-    private $relationsProvider;
+    private $parentRelationsContext;
     /**
-     * @var ParentDataContextManager
+     * @var ProductTypeIdInterface
      */
-    private $parentDataContextManager;
+    private $productTypeId;
 
     /**
      * @param DataProviderPool $dataProviderPool
      * @param SystemFieldsList $systemFieldsList
+     * @param MetadataPool $metadataPool
+     * @param ParentRelationsContext $parentRelationsContext
+     * @param ProductTypeIdInterface $productTypeId
      */
     public function __construct(
         DataProviderPool $dataProviderPool,
         SystemFieldsList $systemFieldsList,
         MetadataPool $metadataPool,
-        RelationsProvider $relationsProvider,
-        ParentDataContextManager $parentDataContextManager
+        ParentRelationsContext $parentRelationsContext,
+        ProductTypeIdInterface $productTypeId
     ) {
         $this->dataProviderPool = $dataProviderPool;
         $this->systemFieldsList = $systemFieldsList;
         $this->metadataPool = $metadataPool;
-        $this->relationsProvider = $relationsProvider;
-        $this->parentDataContextManager = $parentDataContextManager;
+        $this->parentRelationsContext = $parentRelationsContext;
+        $this->productTypeId = $productTypeId;
     }
 
     /**
@@ -83,6 +85,17 @@ class ItemsGenerator
         if (empty($items)) {
             return [];
         }
+        $childIds = [];
+        $result = [];
+        $childTypeIds = $this->productTypeId->getChildTypeIdsList();
+        foreach ($items as $item) {
+            if (in_array($item->getTypeId(), $childTypeIds, true)) {
+                $childIds[] = (int)$item->getId();
+            }
+        }
+        if (!empty($childIds)) {
+            $this->parentRelationsContext->buildContext($childIds, $feedSpecification);
+        }
 
         $data = [];
         foreach ($items as $index => $item) {
@@ -96,7 +109,6 @@ class ItemsGenerator
 
         $this->systemFieldsList->add('product_model');
         $dataProviders = $this->dataProviderPool->get($feedSpecification->getIgnoreFields());
-
         foreach ($dataProviders as $dataProvider) {
             $data = $dataProvider->getData($data, $feedSpecification);
         }
@@ -107,7 +119,7 @@ class ItemsGenerator
                 unset($row[$field]);
             }
         }
-        $this->parentDataContextManager->resetContext();
+        $this->parentRelationsContext->reset();
 
         return $data;
     }
@@ -156,48 +168,5 @@ class ItemsGenerator
     public function getLinkField(): string
     {
         return $this->metadataPool->getMetadata(ProductInterface::class)->getLinkField();
-    }
-
-    /**
-     * @param ProductInterface[] $items
-     * @param FeedSpecificationInterface $feedSpecification
-     *
-     * @return array
-     */
-    private function preloadParentContext(
-        array $items,
-        FeedSpecificationInterface $feedSpecification
-    ): array {
-        $childIds = [];
-        foreach ($items as $item) {
-            if (in_array(
-                $item->getTypeId(),
-                [MagentoProductType::TYPE_SIMPLE, MagentoProductType::TYPE_VIRTUAL],
-                true
-            )) {
-                $childIds[] = (int)$item->getId();
-            }
-        }
-
-        if (empty($childIds)) {
-            return [];
-        }
-
-        $relations = $this->relationsProvider->getConfigurableRelationIds($childIds);
-        if (empty($relations)) {
-            return [];
-        }
-        $parentIds = [];
-        foreach ($relations as $relation) {
-            if (isset($relation['parent_id'])) {
-                $parentIds[] = (int)$relation['parent_id'];
-            }
-        }
-
-        if (empty($parentIds)) {
-            return [];
-        }
-
-        return $this->parentDataContextManager->execute(array_unique($parentIds), $feedSpecification);
     }
 }

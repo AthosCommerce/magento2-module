@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Model\Feed\DataProvider\Context;
 
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
+use AthosCommerce\Feed\Model\Feed\Context\StoreContextManager;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\Collection as ParentProductCollection;
 use Magento\Catalog\Api\Data\ProductInterface;
 
@@ -32,16 +33,23 @@ class ParentDataContextManager
      * @var ParentProductCollection
      */
     private $parentProductCollection;
+    /**
+     * @var StoreContextManager
+     */
+    private $storeContextManager;
     /** @var int[] */
     private $loadedParentIds = [];
 
     /**
-     * @param Collection $parentProductCollection
+     * @param ParentProductCollection $parentProductCollection
+     * @param StoreContextManager $storeContextManager
      */
     public function __construct(
         ParentProductCollection $parentProductCollection,
+        StoreContextManager $storeContextManager,
     ) {
         $this->parentProductCollection = $parentProductCollection;
+        $this->storeContextManager = $storeContextManager;
     }
 
     /**
@@ -54,22 +62,26 @@ class ParentDataContextManager
         array $allParentIds,
         FeedSpecificationInterface $feedSpecification
     ): array {
-        if (empty(array_diff(array_unique($allParentIds), $this->loadedParentIds))) {
-            return $this->productData;
+        $storeId = $this->getCurrentStoreId();
+        $loaded = $this->loadedParentIds[$storeId] ?? [];
+        $loadParentIds = array_values(array_diff(array_unique($allParentIds), $loaded));
+        if (!$loadParentIds) {
+            return $this->loadedParentIds[$storeId] ?? [];
         }
+
         $parentCollection = $this->parentProductCollection->execute(
-            array_values(array_unique($allParentIds)),
+            $loadParentIds,
             $feedSpecification
         );
 
         /** @var ProductInterface $parentProduct */
         foreach ($parentCollection as $parentProduct) {
             $parentId = (int)$parentProduct->getId();
-            $this->productData[$parentId] = $parentProduct;
-            $this->loadedParentIds[] = $parentId;
+            $this->productData[$storeId][$parentId] = $parentProduct;
+            $this->loadedParentIds[$storeId][] = $parentId;
         }
 
-        return $this->productData;
+        return $this->productData[$storeId];
     }
 
     /**
@@ -77,11 +89,22 @@ class ParentDataContextManager
      *
      * @return ProductInterface[]|null
      */
-    public function getParentsDataByProductId(int $productId)
+    public function getParentsDataByProductId(int $parentId, ?int $storeId = null)
     {
-        return isset($this->productData[$productId])
-            ? $this->productData[$productId]
-            : null;
+        $storeId = $this->getCurrentStoreId();
+
+        return $this->productData[$storeId][$parentId] ?? null;
+    }
+
+    /**
+     * @return int
+     */
+    private function getCurrentStoreId(): int
+    {
+        $currentStore = $this->storeContextManager->getStoreFromContext();
+        if ($currentStore) {
+            return (int)$currentStore->getId();
+        }
     }
 
     /**

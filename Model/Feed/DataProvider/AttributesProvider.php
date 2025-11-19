@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Model\Feed\DataProvider;
 
+use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentRelationsContext;
 use Exception;
 use Magento\Catalog\Api\Data\ProductAttributeInterface;
 use Magento\Catalog\Model\Product;
@@ -47,26 +48,35 @@ class AttributesProvider implements DataProviderInterface
      * @var AttributesProviderInterface
      */
     private $attributesProvider;
+    /**
+     * @var ParentRelationsContext
+     */
+    private $parentRelationsContext;
 
     /**
      * AttributesProvider constructor.
+     *
      * @param SystemFieldsList $systemFieldsList
      * @param ValueProcessor $valueProcessor
      * @param AttributesProviderInterface $attributesProvider
+     * @param ParentRelationsContext $parentRelationsContext
      */
     public function __construct(
         SystemFieldsList $systemFieldsList,
         ValueProcessor $valueProcessor,
-        AttributesProviderInterface $attributesProvider
+        AttributesProviderInterface $attributesProvider,
+        ParentRelationsContext $parentRelationsContext
     ) {
         $this->systemFieldsList = $systemFieldsList;
         $this->valueProcessor = $valueProcessor;
         $this->attributesProvider = $attributesProvider;
+        $this->parentRelationsContext = $parentRelationsContext;
     }
 
     /**
      * @param array $products
      * @param FeedSpecificationInterface $feedSpecification
+     *
      * @return array
      * @throws Exception
      */
@@ -85,15 +95,26 @@ class AttributesProvider implements DataProviderInterface
     }
 
     /**
+     * @return string[]
+     */
+    private function getPriceRelatedAttributes(): array
+    {
+        return ['sku','price', 'final_price', 'tier_price', 'cost', 'special_price'];
+    }
+
+    /**
      * @param Product $product
+     *
      * @return array
      * @throws LocalizedException
      * @throws Exception
      */
-    private function getProductData(Product $product) : array
+    private function getProductData(Product $product): array
     {
         $productData = $product->getData();
+        $productId = (int)$product->getData('entity_id');
         $result = [];
+
         foreach ($productData as $key => $fieldValue) {
             /*
             For some reason the system fields does not show up
@@ -107,6 +128,19 @@ class AttributesProvider implements DataProviderInterface
             }
             /** @var Attribute $attribute */
             $attribute = $this->attributes[$key];
+
+            $parentProduct = $this->parentRelationsContext->getParentsByChildId($productId);
+            if ($parentProduct) {
+                $parentValue = $parentProduct->getData($key);
+                //TODO: check for true/false or 0/1
+                if (!in_array($key, $this->getPriceRelatedAttributes())
+                    && $parentValue !== null
+                    && $parentValue !== ''
+                ) {
+                    $fieldValue = $parentValue;
+                }
+            }
+
             $result[$key] = $this->valueProcessor->getValue($attribute, $fieldValue, $product);
         }
 
@@ -116,7 +150,7 @@ class AttributesProvider implements DataProviderInterface
     /**
      * @param FeedSpecificationInterface $feedSpecification
      */
-    private function loadAttributes(FeedSpecificationInterface $feedSpecification) : void
+    private function loadAttributes(FeedSpecificationInterface $feedSpecification): void
     {
         if (is_null($this->attributes)) {
             $attributes = $this->attributesProvider->getAttributes($feedSpecification);

@@ -21,6 +21,7 @@ namespace AthosCommerce\Feed\Model\Feed\Context;
 use Magento\Framework\App\Area;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Store\Model\App\Emulation;
+use Magento\Store\Model\Store;
 use Magento\Store\Model\StoreManagerInterface;
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Model\Feed\ContextManagerInterface;
@@ -35,9 +36,14 @@ class StoreContextManager implements ContextManagerInterface
      * @var Emulation
      */
     private $emulation;
+    /**
+     * @var Store|null
+     */
+    private $currentStore = null;
 
     /**
      * StoreContextManager constructor.
+     *
      * @param StoreManagerInterface $storeManager
      * @param Emulation $emulation
      */
@@ -51,6 +57,7 @@ class StoreContextManager implements ContextManagerInterface
 
     /**
      * @param FeedSpecificationInterface $feedSpecification
+     *
      * @throws NoSuchEntityException
      */
     public function setContextFromSpecification(FeedSpecificationInterface $feedSpecification): void
@@ -61,14 +68,36 @@ class StoreContextManager implements ContextManagerInterface
         }
 
         $store = $this->storeManager->getStore($storeCode);
-        $this->emulation->startEnvironmentEmulation((int) $store->getId(), Area::AREA_FRONTEND, true);
+        $this->currentStore = $store;
+        $this->emulation->startEnvironmentEmulation(
+            (int)$store->getId(),
+            Area::AREA_FRONTEND,
+            true
+        );
     }
 
     /**
+     * Get currently active store for the running context.
      *
+     * @return Store|null
+     */
+    public function getStoreFromContext(): ?Store
+    {
+        if (null === $this->currentStore) {
+            return $this->storeManager->getStore();
+        }
+
+        return $this->currentStore;
+    }
+
+    /**
+     * Resetting the environment and current store reference
+     *
+     * @return void
      */
     public function resetContext(): void
     {
         $this->emulation->stopEnvironmentEmulation();
+        $this->currentStore = null;
     }
 }
