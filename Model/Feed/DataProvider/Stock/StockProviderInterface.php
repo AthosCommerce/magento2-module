@@ -25,6 +25,7 @@ interface StockProviderInterface
      *      product_id => [
      *          'qty' => float,
      *          'in_stock' => bool
+     *          'is_stock_managed' => bool
      *      ],
      *      .........
      * ]
@@ -33,5 +34,5 @@ interface StockProviderInterface
      * @param int $storeId
      * @return array
      */
-    public function getStock(array $productIds, int $storeId) : array;
+    public function getStock(array $productIds) : array;
 }

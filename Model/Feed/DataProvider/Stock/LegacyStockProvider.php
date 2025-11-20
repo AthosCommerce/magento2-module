@@ -18,10 +18,12 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Model\Feed\DataProvider\Stock;
 
+use AthosCommerce\Feed\Model\Feed\Context\StoreContextManager;
 use Magento\CatalogInventory\Api\StockConfigurationInterface;
 use Magento\CatalogInventory\Api\StockItemCriteriaInterfaceFactory;
 use Magento\CatalogInventory\Api\StockItemRepositoryInterface;
 use Magento\CatalogInventory\Model\Stock\Item;
+use Psr\Log\LoggerInterface;
 
 class LegacyStockProvider implements StockProviderInterface
 {
@@ -37,58 +39,75 @@ class LegacyStockProvider implements StockProviderInterface
      * @var StockConfigurationInterface
      */
     private $stockConfiguration;
+    /**
+     * @var StoreContextManager
+     */
+    private $storeContextManager;
+    /**
+     * @var LoggerInterface
+     */
+    private $logger;
 
     /**
-     * LegacyStockProvider constructor.
      * @param StockItemCriteriaInterfaceFactory $legacyStockItemCriteriaFactory
      * @param StockItemRepositoryInterface $legacyStockItemRepository
      * @param StockConfigurationInterface $stockConfiguration
+     * @param StoreContextManager $storeContextManager
+     * @param LoggerInterface $logger
      */
     public function __construct(
         StockItemCriteriaInterfaceFactory $legacyStockItemCriteriaFactory,
         StockItemRepositoryInterface $legacyStockItemRepository,
-        StockConfigurationInterface $stockConfiguration
+        StockConfigurationInterface $stockConfiguration,
+        StoreContextManager $storeContextManager,
+        LoggerInterface $logger,
     ) {
         $this->legacyStockItemCriteriaFactory = $legacyStockItemCriteriaFactory;
         $this->legacyStockItemRepository = $legacyStockItemRepository;
         $this->stockConfiguration = $stockConfiguration;
+        $this->storeContextManager = $storeContextManager;
+        $this->logger = $logger;
     }
 
     /**
      * [
      *      product_id => [
      *          'qty' => float,
-     *          'in_stock' => bool
+     *          'in_stock' => bool,
+     *          'is_stock_managed' => bool
      *      ],
      *      .........
      * ]
      *
      * @param array $productIds
-     * @param int $storeId
+     *
      * @return array
      */
-    public function getStock(array $productIds, int $storeId): array
+    public function getStock(array $productIds): array
     {
         if (!$productIds) {
             return [];
         }
-
+        $store = $this->storeContextManager->getStoreFromContext();
+        $storeId = (int)$store->getStoreId();
         $searchCriteria = $this->legacyStockItemCriteriaFactory->create();
         $searchCriteria->setScopeFilter($this->stockConfiguration->getDefaultScopeId());
         $searchCriteria->setProductsFilter($productIds);
         $items = $this->legacyStockItemRepository->getList($searchCriteria)->getItems();
         $result = [];
         foreach ($items as $item) {
-            if ($item) {
-                /** @var Item $item */
-                $item->setStoreId($storeId);
-
-                $result[$item->getProductId()] = [
-                    'qty' => $item->getQty(),
-                    'in_stock' => $item->getIsInStock(),
-                    'is_stock_managed' => $item->getManageStock()
-                ];
+            if (!$item) {
+                continue;
             }
+
+            /** @var Item $item */
+            $item->setStoreId($storeId);
+
+            $result[$item->getProductId()] = [
+                'qty' => $item->getQty(),
+                'in_stock' => $item->getIsInStock(),
+                'is_stock_managed' => $item->getManageStock(),
+            ];
         }
 
         return $result;
