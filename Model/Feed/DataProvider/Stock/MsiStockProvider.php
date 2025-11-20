@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Model\Feed\DataProvider\Stock;
 
+use AthosCommerce\Feed\Model\Feed\Context\StoreContextManager;
 use Magento\Catalog\Model\Product\Type;
 use Magento\Catalog\Model\ResourceModel\Product;
 use Magento\CatalogInventory\Api\Data\StockItemInterface;
@@ -25,22 +26,21 @@ use Magento\CatalogInventory\Api\StockConfigurationInterface;
 use Magento\CatalogInventory\Api\StockItemCriteriaInterfaceFactory;
 use Magento\CatalogInventory\Api\StockItemRepositoryInterface;
 use Magento\CatalogInventory\Model\Stock\Item;
-use Magento\Framework\App\ObjectManager;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\InventoryReservationsApi\Model\GetReservationsQuantityInterface;
 use Magento\InventorySalesApi\Api\Data\SalesChannelInterface;
 use Magento\InventorySalesApi\Api\StockResolverInterface as MsiStockResolverInterface;
 use Magento\InventorySalesApi\Model\GetStockItemDataInterface;
 use Magento\Store\Api\WebsiteRepositoryInterface;
-use Magento\Store\Model\StoreManagerInterface;
 use Magento\Framework\Filesystem\DirectoryList;
 use Psr\Log\LoggerInterface;
+
 class MsiStockProvider implements StockProviderInterface
 {
     /**
-     * @var StoreManagerInterface
+     * @var StoreContextManager
      */
-    private $storeManager;
+    private $storeContextManager;
     /**
      * @var WebsiteRepositoryInterface
      */
@@ -82,10 +82,10 @@ class MsiStockProvider implements StockProviderInterface
      */
     private $logger;
 
-
     /**
      * MsiStockProvider constructor.
-     * @param StoreManagerInterface $storeManager
+     *
+     * @param StoreContextManager $storeContextManager
      * @param WebsiteRepositoryInterface $websiteRepository
      * @param Product $productResource
      * @param StockItemCriteriaInterfaceFactory $legacyStockItemCriteriaFactory
@@ -98,7 +98,7 @@ class MsiStockProvider implements StockProviderInterface
      * @param LoggerInterface $logger
      */
     public function __construct(
-        StoreManagerInterface $storeManager,
+        StoreContextManager $storeContextManager,
         WebsiteRepositoryInterface $websiteRepository,
         Product $productResource,
         StockItemCriteriaInterfaceFactory $legacyStockItemCriteriaFactory,
@@ -107,20 +107,20 @@ class MsiStockProvider implements StockProviderInterface
         Type $typeManager,
         GetReservationsQuantityInterface $getReservationsQuantity,
         MsiStockResolverInterface $stockResolver,
-        GetStockItemDataInterface  $getStockItemData,
+        GetStockItemDataInterface $getStockItemData,
         LoggerInterface $logger,
     ) {
-        $this->storeManager = $storeManager;
+        $this->storeContextManager = $storeContextManager;
         $this->websiteRepository = $websiteRepository;
         $this->productResource = $productResource;
         $this->legacyStockItemCriteriaFactory = $legacyStockItemCriteriaFactory;
         $this->legacyStockItemRepository = $legacyStockItemRepository;
         $this->stockConfiguration = $stockConfiguration;
         $this->typeManager = $typeManager;
-        $this->getReservationsQuantity =  $getReservationsQuantity;
-        $this->stockResolver =  $stockResolver;
-        $this->getStockItemData =  $getStockItemData;
-        $this->logger =  $logger;
+        $this->getReservationsQuantity = $getReservationsQuantity;
+        $this->stockResolver = $stockResolver;
+        $this->getStockItemData = $getStockItemData;
+        $this->logger = $logger;
     }
 
     /**
@@ -128,25 +128,28 @@ class MsiStockProvider implements StockProviderInterface
      *      product_id => [
      *          'qty' => float,
      *          'in_stock' => bool,
-     *          'is_stock_managed' =>bool
+     *          'is_stock_managed' => bool
      *      ],
      *      .........
      * ]
      *
      * @param array $productIds
-     * @param int $storeId
+     *
      * @return array
-     * @throws NoSuchEntityException
      */
-    public function getStock(array $productIds, int $storeId): array
+    public function getStock(array $productIds): array
     {
         if (empty($productIds)) {
             return [];
         }
-
-        $websiteId = $this->storeManager->getStore($storeId)->getWebsiteId();
+        $store = (int)$this->storeContextManager->getStoreFromContext();
+        $storeId = $store->getStoreId();
+        $websiteId = $store->getWebsiteId();
         $website = $this->websiteRepository->getById($websiteId);
-        $stock = $this->stockResolver->execute(SalesChannelInterface::TYPE_WEBSITE, $website->getCode());
+        $stock = $this->stockResolver->execute(
+            SalesChannelInterface::TYPE_WEBSITE,
+            $website->getCode()
+        );
         $stockId = $stock->getStockId();
         $skus = $this->getSkus($productIds);
         $configurations = $this->getItemConfigurations($productIds);
@@ -157,14 +160,20 @@ class MsiStockProvider implements StockProviderInterface
                 continue;
             }
 
-            $sku = (string) $sku;
+            $sku = (string)$sku;
             try {
                 $stockData = $this->getStockItemData->execute($sku, $stockId) ?? [];
                 $reservation = $this->getReservationsQuantity->execute($sku, $stockId);
             } catch (\Exception $exception) {
                 $this->logger->error(
                     "Error processing stock data for SKU: {$sku}",
-                    ['exception' => $exception]
+                    [
+                        'method' => __METHOD__,
+                        'productId' => $productId,
+                        'stockId' => $stockId,
+                        'storeId' => $storeId,
+                        'exception' => $exception,
+                    ]
                 );
                 continue;
             }
@@ -175,7 +184,7 @@ class MsiStockProvider implements StockProviderInterface
             $result[$productId] = [
                 'qty' => $this->getQty($stockData, $reservation),
                 'in_stock' => $this->getIsInStock($stockData, $reservation, $configuration),
-                'is_stock_managed' => $configuration->getManageStock()
+                'is_stock_managed' => $configuration->getManageStock(),
             ];
         }
 
@@ -185,9 +194,10 @@ class MsiStockProvider implements StockProviderInterface
     /**
      * @param array $stockData
      * @param float $reservation
+     *
      * @return float
      */
-    private function getQty(array $stockData, float $reservation) : float
+    private function getQty(array $stockData, float $reservation): float
     {
         if (!isset($stockData[GetStockItemDataInterface::QUANTITY])) {
             return 0;
@@ -200,10 +210,14 @@ class MsiStockProvider implements StockProviderInterface
      * @param array $stockData
      * @param float $reservation
      * @param StockItemInterface|null $configuration
+     *
      * @return bool
      */
-    private function getIsInStock(array $stockData, float $reservation, ?StockItemInterface $configuration = null) : bool
-    {
+    private function getIsInStock(
+        array $stockData,
+        float $reservation,
+        ?StockItemInterface $configuration = null
+    ): bool {
         if (!$configuration) {
             return false;
         }
@@ -214,8 +228,8 @@ class MsiStockProvider implements StockProviderInterface
 
         $isSalable = $stockData['is_salable'] ?? null;
         // composite products (configurable, grouped, bundle) always have 0 qty
-        if (!is_null($isSalable) && in_array($configuration->getTypeId(),  $this->typeManager->getCompositeTypes())) {
-            return (bool) $isSalable;
+        if (!is_null($isSalable) && in_array($configuration->getTypeId(), $this->typeManager->getCompositeTypes())) {
+            return (bool)$isSalable;
         }
 
         if (!is_null($isSalable) && $isSalable == 0) {
@@ -227,9 +241,10 @@ class MsiStockProvider implements StockProviderInterface
 
     /**
      * @param array $productIds
+     *
      * @return StockItemInterface[]
      */
-    private function getItemConfigurations(array $productIds) : array
+    private function getItemConfigurations(array $productIds): array
     {
         $searchCriteria = $this->legacyStockItemCriteriaFactory->create();
         $searchCriteria->setScopeFilter($this->stockConfiguration->getDefaultScopeId());
@@ -245,9 +260,10 @@ class MsiStockProvider implements StockProviderInterface
 
     /**
      * @param array $productIds
+     *
      * @return array
      */
-    private function getSkus(array $productIds) : array
+    private function getSkus(array $productIds): array
     {
         $skus = $this->productResource->getProductsSku($productIds);
         $result = [];

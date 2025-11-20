@@ -35,6 +35,7 @@ class CompositeStockResolver implements StockResolverInterface
 
     /**
      * CompositeStockResolver constructor.
+     *
      * @param array $resolvers
      * @param LoggerInterface $logger
      */
@@ -43,7 +44,7 @@ class CompositeStockResolver implements StockResolverInterface
         array $resolvers = [],
     ) {
         $this->resolvers = $resolvers;
-        $this->logger =  $logger;
+        $this->logger = $logger;
     }
 
     /**
@@ -65,8 +66,11 @@ class CompositeStockResolver implements StockResolverInterface
                 $provider = $resolverInstance->resolve($isMsiEnabled);
             } catch (NoSuchEntityException $exception) {
                 $this->logger->error(
-                    "could not resolve stock provider for feed generation",
-                    ['exception' => $exception]
+                    "Could not resolve stock provider for feed generation",
+                    [
+                        'method' => __METHOD__,
+                        'exception' => $exception,
+                    ]
                 );
             }
 
@@ -76,7 +80,9 @@ class CompositeStockResolver implements StockResolverInterface
         }
 
         if (!$provider) {
-            throw new NoSuchEntityException(__('No available stock provider for feed generation'));
+            throw new NoSuchEntityException(
+                __('There is no stock provider available for feed generation')
+            );
         }
 
         return $provider;
@@ -86,6 +92,7 @@ class CompositeStockResolver implements StockResolverInterface
      * Sorting modifiers according to sort order
      *
      * @param array $data
+     *
      * @return array
      */
     private function sort(array $data)
@@ -101,10 +108,13 @@ class CompositeStockResolver implements StockResolverInterface
      * Retrieve sort order from array
      *
      * @param array $variable
+     *
      * @return int
      */
     private function getSortOrder(array $variable)
     {
-        return !empty($variable['sortOrder']) ? $variable['sortOrder'] : 0;
+        return !empty($variable['sortOrder'])
+            ? $variable['sortOrder']
+            : 0;
     }
 }

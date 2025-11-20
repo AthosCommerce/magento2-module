@@ -246,6 +246,27 @@
         </arguments>
     </type>
 
+    <virtualType name="AthosCommerceFeedBaseLogHandler" type="Magento\Framework\Logger\Handler\Base">
+        <arguments>
+            <argument name="fileName" xsi:type="string">/var/log/athoscommerce_feed.log</argument>
+        </arguments>
+    </virtualType>
+
+    <virtualType name="AthosCommerceFeedSystemLogHandler" type="Magento\Framework\Logger\Handler\System">
+        <arguments>
+            <argument name="fileName" xsi:type="string">/var/log/athoscommerce_feed.log</argument>
+        </arguments>
+    </virtualType>
+
+    <virtualType name="AthosCommerceLogger" type="Magento\Framework\Logger\Monolog">
+        <arguments>
+            <argument name="handlers" xsi:type="array">
+                <item name="debug" xsi:type="object">AthosCommerceFeedBaseLogHandler</item>
+                <item name="system" xsi:type="object">AthosCommerceFeedSystemLogHandler</item>
+            </argument>
+        </arguments>
+    </virtualType>
+
     <type name="AthosCommerce\Feed\Model\Feed\DataProviderPool">
         <arguments>
             <argument name="dataProviders" xsi:type="array">
@@ -269,6 +290,7 @@
 
     <type name="AthosCommerce\Feed\Model\Feed\DataProvider\Stock\CompositeStockResolver">
         <arguments>
+            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
             <argument name="resolvers" xsi:type="array">
                 <item name="msi" xsi:type="array">
                     <item name="sortOrder" xsi:type="number">100</item>
@@ -317,27 +339,6 @@
         </arguments>
     </virtualType>
 
-    <virtualType name="AthosCommerceFeedBaseLogHandler" type="Magento\Framework\Logger\Handler\Base">
-        <arguments>
-            <argument name="fileName" xsi:type="string">/var/log/athoscommerce_feed.log</argument>
-        </arguments>
-    </virtualType>
-
-    <virtualType name="AthosCommerceFeedSystemLogHandler" type="Magento\Framework\Logger\Handler\System">
-        <arguments>
-            <argument name="fileName" xsi:type="string">/var/log/athoscommerce_feed.log</argument>
-        </arguments>
-    </virtualType>
-
-    <virtualType name="AthosCommerceLogger" type="Magento\Framework\Logger\Monolog">
-        <arguments>
-            <argument name="handlers" xsi:type="array">
-                <item name="debug" xsi:type="object">AthosCommerceFeedBaseLogHandler</item>
-                <item name="system" xsi:type="object">AthosCommerceFeedSystemLogHandler</item>
-            </argument>
-        </arguments>
-    </virtualType>
-
     <type name="AthosCommerce\Feed\Model\ExecutePendingTasks">
         <arguments>
             <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
@@ -364,6 +365,16 @@
         </arguments>
     </type>
     <type name="AthosCommerce\Feed\Model\Feed\DataProvider\Stock\MsiStockResolver">
+        <arguments>
+            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
+        </arguments>
+    </type>
+    <type name="AthosCommerce\Feed\Model\Feed\DataProvider\Stock\LegacyStockProvider">
+        <arguments>
+            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
+        </arguments>
+    </type>
+    <type name="AthosCommerce\Feed\Model\Feed\DataProvider\Stock\MsiStockProvider">
         <arguments>
             <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
         </arguments>

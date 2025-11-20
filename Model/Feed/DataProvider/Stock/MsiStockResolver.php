@@ -29,20 +29,22 @@ class MsiStockResolver implements StockResolverInterface
      * @var Manager
      */
     private $moduleManager;
-
     /**
      * @var LoggerInterface
      */
     protected $logger;
-
+    /**
+     * @var array
+     */
     private $moduleList = [
         'Magento_InventoryReservationsApi',
         'Magento_InventorySalesApi',
-        'Magento_InventoryCatalogApi'
+        'Magento_InventoryCatalogApi',
     ];
 
     /**
      * MsiStockResolver constructor.
+     *
      * @param Manager $moduleManager
      * @param array $moduleList
      * @param LoggerInterface $logger
@@ -96,7 +98,7 @@ class MsiStockResolver implements StockResolverInterface
     /**
      * @return bool
      */
-    private function isMsiEnabled() : bool
+    private function isMsiEnabled(): bool
     {
         $moduleExists = true;
         foreach ($this->moduleList as $moduleName) {

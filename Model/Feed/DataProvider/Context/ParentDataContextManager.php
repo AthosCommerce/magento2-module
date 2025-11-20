@@ -101,10 +101,7 @@ class ParentDataContextManager
      */
     private function getCurrentStoreId(): int
     {
-        $currentStore = $this->storeContextManager->getStoreFromContext();
-        if ($currentStore) {
-            return (int)$currentStore->getId();
-        }
+        return (int)$this->storeContextManager->getStoreFromContext()->getId();
     }
 
     /**
