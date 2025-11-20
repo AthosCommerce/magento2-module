@@ -14,8 +14,15 @@ use Magento\CatalogInventory\Api\StockRegistryInterface;
 
 class AllVariantsProvider implements DataProviderInterface
 {
-    private StockRegistryInterface $stockRegistry;
-    private Configurable $configurableType;
+    /**
+     * @var StockRegistryInterface
+     */
+    private  $stockRegistry;
+
+    /**
+     * @var Configurable
+     */
+    private  $configurableType;
 
     /**
      * @var LoggerInterface
@@ -43,7 +50,7 @@ class AllVariantsProvider implements DataProviderInterface
         LoggerInterface          $logger,
         ParentDataContextManager $parentProductContextManager,
         Configurable             $configurableType,
-        StockRegistryInterface $stockRegistry,
+        StockRegistryInterface $stockRegistry
     )
     {
         $this->provider = $provider;
@@ -67,6 +74,7 @@ class AllVariantsProvider implements DataProviderInterface
             'method' => __METHOD__,
             'format' => $feedSpecification->getFormat(),
         ]);
+
         foreach ($products as &$product) {
             /** @var \Magento\Catalog\Model\Product $productModel */
             $productModel = $product['product_model'] ?? null;

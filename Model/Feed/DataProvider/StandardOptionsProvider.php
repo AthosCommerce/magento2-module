@@ -14,7 +14,10 @@ use Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable;
 
 class StandardOptionsProvider implements DataProviderInterface
 {
-    private Configurable $configurableType;
+    /**
+     * @var Configurable
+     */
+    private $configurableType;
 
     /**
      * @var LoggerInterface
@@ -40,7 +43,7 @@ class StandardOptionsProvider implements DataProviderInterface
         DataProvider $provider,
         LoggerInterface $logger,
         ParentDataContextManager $parentProductContextManager,
-        Configurable $configurableType,
+        Configurable $configurableType
     ) {
         $this->provider = $provider;
         $this->logger = $logger;
@@ -62,6 +65,7 @@ class StandardOptionsProvider implements DataProviderInterface
             'method' => __METHOD__,
             'format' => $feedSpecification->getFormat(),
         ]);
+
         foreach ($products as &$product) {
 
             /** @var Product $productModel */
@@ -70,41 +74,19 @@ class StandardOptionsProvider implements DataProviderInterface
                 continue;
             }
 
-//            $this->logger->debug('Processing product in __standard_options generator', [
-//                'product_id' => $productModel->getId(),
-//                'sku'        => $productModel->getSku(),
-//                'type'       => $productModel->getTypeId()
-//            ]);
-
             // Only SIMPLE products get __standard_options
             if ($productModel->getTypeId() !== 'simple') {
-                $this->logger->debug('Skipping non-simple product', [
-                    'sku' => $productModel->getSku()
-                ]);
                 continue;
             }
 
-
             $parentIds = $this->configurableType->getParentIdsByChild($productModel->getId());
 
-//            $this->logger->debug('Parent check for simple product', [
-//                'child_id'   => $productModel->getId(),
-//                'child_sku'  => $productModel->getSku(),
-//                'parent_ids' => $parentIds
-//            ]);
-
             if (empty($parentIds)) {
-                $this->logger->debug('Simple product has no configurable parent', [
-                    'sku' => $productModel->getSku()
-                ]);
-
                 $product['standard_options'] = [];
                 continue;
             }
 
             $parentId = (int)$parentIds[0];
-
-
             $parentProduct = $this->parentProductContextManager->getParentsDataByProductId($parentId);
 
             if (!$parentProduct) {
@@ -113,46 +95,19 @@ class StandardOptionsProvider implements DataProviderInterface
                 ]);
             }
 
-
-            $configurableAttributes =
-                $parentProduct->getTypeInstance()->getConfigurableAttributes($parentProduct);
-
-//            $this->logger->debug('Configurable attribute metadata', [
-//                'parent_sku'    => $parentProduct->getSku(),
-//                'attribute_cnt' => count($configurableAttributes)
-//            ]);
-
-
+            $configurableAttributes = $parentProduct->getTypeInstance()->getConfigurableAttributes($parentProduct);
             $standardOptions = [];
 
-
             foreach ($configurableAttributes as $attribute) {
-
                 $attr = $attribute->getProductAttribute();
                 if (!$attr) {
-                    $this->logger->warning('Attribute instance missing for parent', [
-                        'parent_sku' => $parentProduct->getSku()
-                    ]);
                     continue;
                 }
-
                 $attrCode  = $attr->getAttributeCode();
                 $attrLabel = $attr->getStoreLabel();
-
-//                $this->logger->debug('Processing attribute', [
-//                    'child_sku' => $productModel->getSku(),
-//                    'attribute_code'  => $attrCode,
-//                    'attribute_label' => $attrLabel,
-//                ]);
-
                 // Selected value for this simple product
                 $value = $productModel->getAttributeText($attrCode);
-
                 if (!$value) {
-                    $this->logger->debug('Simple product missing attribute value', [
-                        'child_sku' => $productModel->getSku(),
-                        'attribute_code' => $attrCode
-                    ]);
                     continue;
                 }
 
@@ -160,21 +115,8 @@ class StandardOptionsProvider implements DataProviderInterface
                     'label' => $attrLabel,
                     'value' => $value
                 ];
-
-//                $this->logger->debug('Added __standard_option value', [
-//                    'child_sku' => $productModel->getSku(),
-//                    'attribute_code' => $attrCode,
-//                    'selected_value' => $value
-//                ]);
             }
-
-
             $product['__standard_options'] = $standardOptions;
-
-            $this->logger->debug('Final __standard_options generated', [
-                'child_sku' => $productModel->getSku(),
-                'options'   => $standardOptions
-            ]);
         }
 
         return $products;

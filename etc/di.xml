@@ -384,6 +384,12 @@
             <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
         </arguments>
     </type>
+    <type name="AthosCommerce\Feed\Model\Feed\DataProvider\JsonConfigProvider">
+        <arguments>
+            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
+        </arguments>
+    </type>
+
 
 
     <virtualType name="AthosCommerceFeedGenerateFeedConfigurableChildStorage" type="AthosCommerce\Feed\Model\Feed\DataProvider\Product\ChildStorage" />

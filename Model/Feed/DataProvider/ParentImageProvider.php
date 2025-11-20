@@ -14,8 +14,15 @@ use Magento\CatalogInventory\Api\StockRegistryInterface;
 
 class ParentImageProvider implements DataProviderInterface
 {
-    private StockRegistryInterface $stockRegistry;
-    private Configurable $configurableType;
+    /**
+     * @var StockRegistryInterface
+     */
+    private $stockRegistry;
+
+    /**
+     * @var Configurable
+     */
+    private $configurableType;
 
     /**
      * @var LoggerInterface
@@ -43,7 +50,7 @@ class ParentImageProvider implements DataProviderInterface
         LoggerInterface          $logger,
         ParentDataContextManager $parentProductContextManager,
         Configurable             $configurableType,
-        StockRegistryInterface $stockRegistry,
+        StockRegistryInterface $stockRegistry
     )
     {
         $this->provider = $provider;
@@ -85,24 +92,11 @@ class ParentImageProvider implements DataProviderInterface
                     if (is_array($parentProduct)) {
                         $parentProduct = $parentProduct[0] ?? null;
                     }
-                    $this->logger->info('Parent product debug', [
-                        'child_sku' => $productModel->getSku(),
-                        'parent_id' => $parentId,
-                        'parentProduct' => $parentProduct[0],
-                    ]);
 
                     if ($parentProduct instanceof \Magento\Catalog\Model\Product) {
                         $image = $parentProduct->getImage()
                             ?: $parentProduct->getSmallImage()
                                 ?: $parentProduct->getThumbnail();
-
-
-//                        $this->logger->info('Parent product debug', [
-//                            'child_sku' => $productModel->getSku(),
-//                            'parent_id' => $parentId,
-//                            'parent_image_field' => $image,
-//                        ]);
-
                         if ($image && $image !== 'no_selection') {
                             $parent_image = $parentProduct->getMediaConfig()->getMediaUrl($image);
                         }
@@ -111,15 +105,9 @@ class ParentImageProvider implements DataProviderInterface
             }
 
             $product['parent_image'] = $parent_image;
-
-            $this->logger->debug('Final ParentImageProvider generated', [
-                'child_sku' => $productModel->getSku(),
-                'parent_image' => $parent_image
-            ]);
         }
 
         return $products;
-
     }
 
     /**

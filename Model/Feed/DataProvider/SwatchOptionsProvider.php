@@ -14,8 +14,15 @@ use Magento\CatalogInventory\Api\StockRegistryInterface;
 
 class SwatchOptionsProvider implements DataProviderInterface
 {
-    private StockRegistryInterface $stockRegistry;
-    private Configurable $configurableType;
+    /**
+     * @var StockRegistryInterface
+     */
+    private $stockRegistry;
+
+    /**
+     * @var Configurable
+     */
+    private $configurableType;
 
     /**
      * @var LoggerInterface
@@ -43,7 +50,7 @@ class SwatchOptionsProvider implements DataProviderInterface
         LoggerInterface          $logger,
         ParentDataContextManager $parentProductContextManager,
         Configurable             $configurableType,
-        StockRegistryInterface $stockRegistry,
+        StockRegistryInterface   $stockRegistry
     )
     {
         $this->provider = $provider;
@@ -67,6 +74,7 @@ class SwatchOptionsProvider implements DataProviderInterface
             'method' => __METHOD__,
             'format' => $feedSpecification->getFormat(),
         ]);
+
         foreach ($products as &$product) {
 
             /** @var Product $productModel */
@@ -74,12 +82,6 @@ class SwatchOptionsProvider implements DataProviderInterface
             if (!$productModel) {
                 continue;
             }
-
-//            $this->logger->debug('Processing product in SwatchOptionsProvider generator', [
-//                'product_id' => $productModel->getId(),
-//                'sku' => $productModel->getSku(),
-//                'type' => $productModel->getTypeId()
-//            ]);
 
             // Only SIMPLE products get SwatchOptionsProvider
             if ($productModel->getTypeId() !== 'simple') {
@@ -89,80 +91,43 @@ class SwatchOptionsProvider implements DataProviderInterface
                 continue;
             }
 
-
             $parentIds = $this->configurableType->getParentIdsByChild($productModel->getId());
 
-//            $this->logger->debug('Parent check for simple product', [
-//                'child_id' => $productModel->getId(),
-//                'child_sku' => $productModel->getSku(),
-//                'parent_ids' => $parentIds
-//            ]);
-
             if (empty($parentIds)) {
-                $this->logger->debug('Simple product has no configurable parent', [
-                    'sku' => $productModel->getSku()
-                ]);
-
                 $product['standard_options'] = [];
                 continue;
             }
 
             $parentId = (int)$parentIds[0];
-
-
             $parentProduct = $this->parentProductContextManager->getParentsDataByProductId($parentId);
-
-            if (!$parentProduct) {
-                $this->logger->warning('Parent product missing in context, loading from repository', [
-                    'parent_id' => $parentId
-                ]);
-            }
-
 
             $configurableAttributes =
                 $parentProduct->getTypeInstance()->getConfigurableAttributes($parentProduct);
-
-//            $this->logger->debug('Configurable attribute metadata', [
-//                'parent_sku' => $parentProduct->getSku(),
-//                'attribute_cnt' => count($configurableAttributes)
-//            ]);
 
             $swatchOptions = [
                 'options' => [],
                 'fields' => []
             ];
 
-
             foreach ($configurableAttributes as $attribute) {
-
                 $attr = $attribute->getProductAttribute();
                 if (!$attr) {
                     continue;
                 }
-
                 $attrCode = $attr->getAttributeCode();
                 $attrLabel = $attr->getStoreLabel();
-
-
                 $simpleValue = $productModel->getAttributeText($attrCode);
                 if (!$simpleValue) {
                     continue;
                 }
-
-
                 $swatchOptions['options'][$attrCode] = [
                     'label' => $attrLabel,
                     'value' => $simpleValue,
                 ];
-
-//                $this->logger->debug('Added __swatch_options option', [
-//                    'child_sku' => $productModel->getSku(),
-//                    'attribute' => $attrCode,
-//                    'value' => $simpleValue
-//                ]);
             }
+
             $stockItem = $this->stockRegistry->getStockItem($productModel->getId());
-            $qty = (int) $stockItem->getQty();
+            $qty = (int)$stockItem->getQty();
             $available = $stockItem->getIsInStock();
             $swatchOptions['fields'] = [
                 'uid' => $productModel->getId(),
@@ -175,16 +140,6 @@ class SwatchOptionsProvider implements DataProviderInterface
                 'title' => implode(' / ', array_column($swatchOptions['options'], 'value')),
                 'available' => $available
             ];
-
-//            $this->logger->debug('Final __swatch_options fields generated', [
-//                'child_sku' => $productModel->getSku(),
-//                'fields' => $swatchOptions['fields']
-//            ]);
-
-            $this->logger->debug('Final __swatch_options fields generated', [
-                'child_sku' => $productModel->getSku(),
-                '__swatch_options' => $swatchOptions
-            ]);
 
             $product['__swatch_options'] = $swatchOptions;
         }

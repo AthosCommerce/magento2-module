@@ -25,6 +25,8 @@ use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Category\CollectionBuilder;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Category\GetCategoriesByProductIds;
 use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
+use Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable as ConfigurableType;
+use Psr\Log\LoggerInterface;
 
 class CategoriesProvider implements DataProviderInterface
 {
@@ -46,17 +48,30 @@ class CategoriesProvider implements DataProviderInterface
      */
     private $getCategoriesByProductIds;
 
+    /** @var ConfigurableType */
+    private $configurableType;
+
+    /** @var LoggerInterface */
+    private $logger;
+
     /**
      * CategoriesProvider constructor.
      * @param CollectionBuilder $collectionBuilder
      * @param GetCategoriesByProductIds $getCategoriesByProductIds
+     * @param ConfigurableType $configurableType
+     * @param LoggerInterface $logger
      */
     public function __construct(
-        CollectionBuilder $collectionBuilder,
-        GetCategoriesByProductIds $getCategoriesByProductIds
-    ) {
+        CollectionBuilder         $collectionBuilder,
+        GetCategoriesByProductIds $getCategoriesByProductIds,
+        ConfigurableType          $configurableType,
+        LoggerInterface           $logger
+    )
+    {
         $this->collectionBuilder = $collectionBuilder;
         $this->getCategoriesByProductIds = $getCategoriesByProductIds;
+        $this->configurableType = $configurableType;
+        $this->logger = $logger;
     }
 
     /**
@@ -68,11 +83,26 @@ class CategoriesProvider implements DataProviderInterface
     public function getData(array $products, FeedSpecificationInterface $feedSpecification): array
     {
         $productIds = [];
+        $parentMap = []; // simpleId → parentId
+
         foreach ($products as $product) {
-            if (isset($product['entity_id'])) {
-                $productIds[] = (int) $product['entity_id'];
+            if (!isset($product['entity_id'])) {
+                continue;
+            }
+
+            $simpleId = (int)$product['entity_id'];
+            $productIds[] = $simpleId;
+
+            $parentIds = $this->configurableType->getParentIdsByChild($simpleId);
+
+            if (!empty($parentIds)) {
+                $parentId = (int)$parentIds[0];
+                $parentMap[$simpleId] = $parentId;
+                $productIds[] = $parentId;
             }
         }
+
+        $productIds = array_unique($productIds);
 
         if (empty($productIds)) {
             return $products;
@@ -87,7 +117,17 @@ class CategoriesProvider implements DataProviderInterface
                 continue;
             }
 
+            $categorySourceId = $parentMap[$entityId] ?? $entityId;
+
+            if (!isset($productsCategories[$categorySourceId])) {
+                continue;
+            }
+
             $productCategories = $this->buildProductCategories($productsCategories[$entityId]);
+            $parentCategories = isset($parentMap[$entityId])
+                ? $this->buildProductCategories($productsCategories[$categorySourceId])
+                : null;
+
             if (!in_array('categories', $ignoredFields) && isset($productCategories['categories'])) {
                 $product['categories'] = $productCategories['categories'];
             }
@@ -112,6 +152,15 @@ class CategoriesProvider implements DataProviderInterface
                 && $feedSpecification->getIncludeUrlHierarchy()
             ) {
                 $product['url_hierarchy'] = $productCategories['url_hierarchy'];
+            }
+
+            if ($parentCategories) {
+                $product['parent_id'] = $categorySourceId;
+                $product['parent_categories'] = $parentCategories['categories'];
+                $product['parent_category_ids'] = $parentCategories['category_ids'];
+                $product['parent_category_hierarchy'] = $parentCategories['category_hierarchy'];
+                $product['parent_menu_hierarchy'] = $parentCategories['menu_hierarchy'];
+                $product['parent_url_hierarchy'] = $parentCategories['url_hierarchy'];
             }
         }
 
@@ -140,26 +189,36 @@ class CategoriesProvider implements DataProviderInterface
                 continue;
             }
 
-            $ids[] = (int) $productCategory['category_id'];
+            $ids[] = (int)$categoryId;
             $categoryNames[] = $category['name'];
-            $categoryHierarchy = array_merge($categoryHierarchy, $category['hierarchy']);
-            if (isset($category['include_menu']) ?? $category['include_menu']) {
-                $menuHierarchy = array_merge($menuHierarchy, $category['hierarchy']);
-            }
 
-            if(isset($category['url_hierarchy'])) {
-                $urlHierarchy = array_merge($urlHierarchy, $category['url_hierarchy']);
+            $categoryHierarchy = $this->mergeUniquePreserveOrder($categoryHierarchy, $category['hierarchy'] ?? []);
+            if (($category['include_menu'] ?? false)) {
+                $menuHierarchy = $this->mergeUniquePreserveOrder($menuHierarchy, $category['hierarchy'] ?? []);
+            }
+            if (isset($category['url_hierarchy'])) {
+                $urlHierarchy = $this->mergeUniquePreserveOrder($urlHierarchy, $category['url_hierarchy']);
             }
 
         }
 
         return [
-            'categories' => $categoryNames,
-            'category_ids' => $ids,
+            'categories' => array_values(array_unique($categoryNames)),
+            'category_ids' => array_values(array_unique($ids)),
             'category_hierarchy' => $categoryHierarchy,
             'menu_hierarchy' => $menuHierarchy,
             'url_hierarchy' => $urlHierarchy
         ];
+    }
+
+    private function mergeUniquePreserveOrder(array $base, array $new): array
+    {
+        foreach ($new as $item) {
+            if (!in_array($item, $base, true)) {
+                $base[] = $item;
+            }
+        }
+        return $base;
     }
 
     /**
@@ -212,6 +271,9 @@ class CategoriesProvider implements DataProviderInterface
     private function buildCategoryData(Category $category, FeedSpecificationInterface $feedSpecification) : array
     {
         $pathIds = $category->getPathIds();
+        $hierarchySeparator = $feedSpecification->getHierarchySeparator();
+        $includeUrlHierarchy = $feedSpecification->getIncludeUrlHierarchy();
+
         $result = [
             'name' => $category->getName(),
             'include_menu' => $category->getIncludeInMenu()
@@ -228,22 +290,29 @@ class CategoriesProvider implements DataProviderInterface
                 continue;
             }
 
+            // Skip root categories
+            if ($pathId <= 2) {
+                continue;
+            }
+
             $name = $pathCategory->getName();
             $currentHierarchy[] = $name;
-            $hierarchy = implode($hierarchySeparator, $currentHierarchy);
-            $categoryHierarchy[] = $hierarchy;
+
+            $levelPath = implode($hierarchySeparator, $currentHierarchy);
+
+            if (!in_array($levelPath, $categoryHierarchy, true)) {
+                $categoryHierarchy[] = $levelPath;
+            }
 
             if ($includeUrlHierarchy) {
-                $url = $pathCategory->getUrl();
-                $urlHierarchy[] = $hierarchy . '[' . $url . ']';
+                $urlHierarchy[] = $levelPath . '[' . $pathCategory->getUrl() . ']';
             }
         }
 
-        $result['hierarchy'] = $categoryHierarchy;
-
-        if($includeUrlHierarchy) {
+        $result['hierarchy'] = array_values(array_unique($categoryHierarchy));
+        if ($includeUrlHierarchy) {
             $result['url'] = $category->getUrl();
-            $result['url_hierarchy'] = $urlHierarchy;
+            $result['url_hierarchy'] = array_values(array_unique($urlHierarchy));
         }
 
         return $result;
@@ -265,8 +334,7 @@ class CategoriesProvider implements DataProviderInterface
 
             $result[] = (int) $categoryId;
             if ($path) {
-                $pathCategories = explode('/', $path);
-                $pathCategories = array_map('intval', $pathCategories);
+                $pathCategories = array_map('intval', explode('/', $path));
                 $result = array_merge($result, $pathCategories);
             }
         }
