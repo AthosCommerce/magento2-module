@@ -88,8 +88,8 @@ class LegacyStockProvider implements StockProviderInterface
         if (!$productIds) {
             return [];
         }
-        $store = (int)$this->storeContextManager->getStoreFromContext();
-        $storeId = $store->getStoreId();
+        $store = $this->storeContextManager->getStoreFromContext();
+        $storeId = (int)$store->getStoreId();
         $searchCriteria = $this->legacyStockItemCriteriaFactory->create();
         $searchCriteria->setScopeFilter($this->stockConfiguration->getDefaultScopeId());
         $searchCriteria->setProductsFilter($productIds);

@@ -142,8 +142,8 @@ class MsiStockProvider implements StockProviderInterface
         if (empty($productIds)) {
             return [];
         }
-        $store = (int)$this->storeContextManager->getStoreFromContext();
-        $storeId = $store->getStoreId();
+        $store = $this->storeContextManager->getStoreFromContext();
+        $storeId = (int)$store->getStoreId();
         $websiteId = $store->getWebsiteId();
         $website = $this->websiteRepository->getById($websiteId);
         $stock = $this->stockResolver->execute(

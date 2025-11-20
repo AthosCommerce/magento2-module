@@ -408,6 +408,7 @@
                     <item name="file_size" xsi:type="object">AthosCommerce\Feed\Model\Metric\MetricProvider\FileSizeProvider</item>
                 </item>
             </argument>
+            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
         </arguments>
     </type>
 
