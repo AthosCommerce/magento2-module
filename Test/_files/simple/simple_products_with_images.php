@@ -19,7 +19,7 @@ use Magento\Catalog\Model\Product;
 use Magento\Framework\Api\SearchCriteriaBuilder;
 use Magento\TestFramework\Helper\Bootstrap;
 
-require __DIR__ . '/simple_products.php';
+require __DIR__ . '/01_simple_products.php';
 
 $objectManager = Bootstrap::getObjectManager();
 /** @var ProductRepositoryInterface $productRepository */

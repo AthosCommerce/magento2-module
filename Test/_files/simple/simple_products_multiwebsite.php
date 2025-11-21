@@ -22,7 +22,7 @@ use Magento\Store\Model\StoreManagerInterface;
 use Magento\TestFramework\Helper\Bootstrap;
 
 require __DIR__ . '/second_website_with_store_group_and_store.php';
-require __DIR__ . '/simple_products.php';
+require __DIR__ . '/01_simple_products.php';
 $objectManager = Bootstrap::getObjectManager();
 /** @var StoreManagerInterface $storeManager */
 $storeManager = $objectManager->get(StoreManagerInterface::class);

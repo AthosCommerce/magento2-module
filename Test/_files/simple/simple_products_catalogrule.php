@@ -27,7 +27,7 @@ use Magento\Store\Model\StoreManagerInterface;
 use Magento\TestFramework\Helper\Bootstrap;
 use Magento\TestFramework\ObjectManager;
 
-require __DIR__ . '/simple_products.php';
+require __DIR__ . '/01_simple_products.php';
 
 Bootstrap::getInstance()->loadArea(Area::AREA_ADMINHTML);
 /** @var ObjectManager $objectManager */

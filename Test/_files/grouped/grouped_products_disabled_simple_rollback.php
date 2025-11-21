@@ -34,9 +34,13 @@ $productRepository = Bootstrap::getObjectManager()
     ->get(ProductRepositoryInterface::class);
 /** @var SearchCriteriaBuilder $searchCriteriaBuilder */
 $searchCriteriaBuilder = $objectManager->get(SearchCriteriaBuilder::class);
-$searchCriteria = $searchCriteriaBuilder->addFilter('sku', 'athoscommerce_grouped_test%', 'like')
+$searchCriteria = $searchCriteriaBuilder->addFilter(
+    'sku',
+    '
+    athoscommerce_grouped_test%',
+    'like'
+)
     ->create();
-
 
 foreach ($productRepository->getList($searchCriteria)->getItems() as $product) {
     try {

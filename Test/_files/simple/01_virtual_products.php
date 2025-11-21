@@ -25,10 +25,10 @@ $storeManager = Magento\TestFramework\Helper\Bootstrap::getObjectManager()
     ->get(StoreManagerInterface::class);
 $product = Bootstrap::getObjectManager()->create(Product::class);
 $productRepository = Bootstrap::getObjectManager()->get(ProductRepositoryInterface::class);
-$product->setTypeId('simple')
+$product->setTypeId('virtual')
     ->setAttributeSetId(4)
-    ->setName('Simple 1')
-    ->setSku('athoscommerce_simple_1')
+    ->setName('Virtual Simple 1')
+    ->setSku('athoscommerce_virtual_1')
     ->setPrice(10)
     ->setTaxClassId(0)
     ->setMetaTitle('meta title')
@@ -48,13 +48,14 @@ $product->setTypeId('simple')
     ->setCategoryIds([2])
     ->setData('boolean_attribute', true)
     ->setData('decimal_attribute', 50);
-$productRepository->save($product);
+$productSaved = $productRepository->save($product);
+
 $product = Bootstrap::getObjectManager()->create(Product::class);
-$product->setTypeId('simple')
+$product->setTypeId('virtual')
     ->setAttributeSetId(4)
-    ->setName('Simple 2')
-    ->setSku('athoscommerce_simple_2')
-    ->setPrice(10)
+    ->setName('Virtual 2')
+    ->setSku('athoscommerce_virtual_2')
+    ->setPrice(10.02)
     ->setTaxClassId(0)
     ->setMetaTitle('meta title')
     ->setMetaKeyword('meta keyword')

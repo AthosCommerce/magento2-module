@@ -16,28 +16,34 @@
 
 use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Catalog\Model\Product;
-use Magento\Store\Model\Store;
+use Magento\Catalog\Model\Product\Attribute\Source\Status;
+use Magento\Catalog\Model\Product\Visibility;
 use Magento\Store\Model\StoreManagerInterface;
 use Magento\TestFramework\Helper\Bootstrap;
 
-require __DIR__ . '/core_fixturestore.php';
-require __DIR__ . '/01_simple_products.php';
 $storeManager = Magento\TestFramework\Helper\Bootstrap::getObjectManager()
     ->get(StoreManagerInterface::class);
 $product = Bootstrap::getObjectManager()->create(Product::class);
 $productRepository = Bootstrap::getObjectManager()->get(ProductRepositoryInterface::class);
-$currentStoreId = $storeManager->getStore()->getId();
-$secondStoreId = $storeManager->getStore('fixturestore')->getId();
-try {
-    $storeManager->setCurrentStore($secondStoreId);
-    $product = $productRepository->get('athoscommerce_simple_1');
-    $product->setStoreId($secondStoreId)
-        ->setName('StoreTitle');
-    $productRepository->save($product);
-    $product = $productRepository->get('athoscommerce_simple_2');
-    $product->setStoreId($secondStoreId)
-        ->setName('StoreTitle');
-    $productRepository->save($product);
-} finally {
-    $storeManager->setCurrentStore($currentStoreId);
-}
+$product->setTypeId('virtual')
+    ->setAttributeSetId(4)
+    ->setName('Virtual Disabled')
+    ->setSku('athoscommerce_virtual_disabled')
+    ->setPrice(10)
+    ->setTaxClassId(0)
+    ->setMetaTitle('meta title')
+    ->setMetaKeyword('meta keyword')
+    ->setMetaDescription('meta description')
+    ->setVisibility(Visibility::VISIBILITY_BOTH)
+    ->setStatus(Status::STATUS_DISABLED)
+    ->setStockData(
+        [
+            'qty' => 100,
+            'is_in_stock' => 1,
+            'manage_stock' => 1,
+        ]
+    )
+    ->setWebsiteIds([$storeManager->getStore()->getWebsiteId()])
+    ->setData('boolean_attribute', true)
+    ->setData('decimal_attribute', 50);
+$productRepository->save($product);

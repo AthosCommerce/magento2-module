@@ -22,7 +22,7 @@ use Magento\CatalogRule\Model\ResourceModel\Rule\CollectionFactory;
 use Magento\CatalogRule\Model\Rule;
 use Magento\TestFramework\Helper\Bootstrap;
 
-require __DIR__ . '/simple_products_rollback.php';
+require __DIR__ . '/01_simple_products_rollback.php';
 
 $objectManager = Bootstrap::getObjectManager();
 /** @var CatalogRuleRepositoryInterface $ruleRepository */
