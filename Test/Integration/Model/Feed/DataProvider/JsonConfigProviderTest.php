@@ -96,7 +96,7 @@ class JsonConfigProviderTest extends TestCase
                 $this->fail('product_model is not exist');
             }
 
-            if ($model->getTypeId() === 'configurable') {
+            if ($model->getTypeId() === 'simple') {
                 $sku = $model->getSku();
                 $id = $model->getId();
                 $this->assertArrayHasKey('json_config', $item);

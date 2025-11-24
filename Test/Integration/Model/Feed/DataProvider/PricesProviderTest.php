@@ -64,32 +64,32 @@ class PricesProviderTest extends TestCase
         'athoscommerce_simple_1' => [
             'final_price' => 10.0,
             'regular_price' => 10.0,
-            'max_price' => 10.0
+            'max_price' => 10.0,
         ],
         'athoscommerce_simple_2' => [
             'final_price' => 10.0,
             'regular_price' => 10.0,
-            'max_price' => 10.0
+            'max_price' => 10.0,
         ],
         'athoscommerce_configurable_test_configurable' => [
             'final_price' => 10.0,
             'regular_price' => 10.0,
-            'max_price' => 40.0
+            'max_price' => 40.0,
         ],
         'athoscommerce_configurable_test_configurable_2_attributes' => [
             'final_price' => 50.0,
             'regular_price' => 50.0,
-            'max_price' => 60.0
+            'max_price' => 60.0,
         ],
         'athoscommerce_grouped_test_grouped_1' => [
             'final_price' => 1000.0,
             'regular_price' => 0,
-            'max_price' => 1000.0
+            'max_price' => 1000.0,
         ],
         'athoscommerce_grouped_test_grouped_2' => [
             'final_price' => 1010.0,
             'regular_price' => 0,
-            'max_price' => 1010.0
+            'max_price' => 1010.0,
         ],
     ];
 
@@ -98,19 +98,19 @@ class PricesProviderTest extends TestCase
             [
                 'cust_group' => Group::CUST_GROUP_ALL,
                 'price_qty' => 2,
-                'price' => 8
+                'price' => 8,
             ],
             [
                 'cust_group' => Group::CUST_GROUP_ALL,
                 'price_qty' => 5,
-                'price' => 5
+                'price' => 5,
             ],
             [
                 'cust_group' => Group::NOT_LOGGED_IN_ID,
                 'price_qty' => 3,
-                'price' => 5
+                'price' => 5,
             ],
-        ]
+        ],
     ];
 
     protected function setUp(): void
@@ -133,7 +133,7 @@ class PricesProviderTest extends TestCase
      *
      * @throws \Exception
      */
-    public function testGetData() : void
+    public function testGetData(): void
     {
         $specification = $this->specificationBuilder->build(['includeTierPricing' => true]);
         $products = $this->getProducts->get($specification);
@@ -152,15 +152,16 @@ class PricesProviderTest extends TestCase
      *
      * @throws \Exception
      */
-    public function testGetDataWithSpecialPrice() : void
+    public function testGetDataWithSpecialPrice(): void
     {
         $specification = $this->specificationBuilder->build([]);
         $products = $this->getProducts->get($specification);
         $data = $this->pricesProvider->getData($products, $specification);
-        $config = [
+
+        $expectedConfig = [
             'athoscommerce_simple_2' => [
                 'final_price' => 6,
-                'max_price' => 6
+                'max_price' => 6,
             ],
             'athoscommerce_configurable_test_configurable' => [
                 'final_price' => 6,
@@ -172,8 +173,8 @@ class PricesProviderTest extends TestCase
             ]
         ];
 
-        $config = $this->buildConfig($config);
-        $this->assertPrices($data, $config);
+        $expectedConfig = $this->buildConfig($expectedConfig);
+        $this->assertPrices($data, $expectedConfig);
     }
 
     /**
@@ -185,7 +186,7 @@ class PricesProviderTest extends TestCase
      *
      * @throws \Exception
      */
-    public function testGetDataWithCatalogRule() : void
+    public function testGetDataWithCatalogRule(): void
     {
         $specification = $this->specificationBuilder->build([]);
         $products = $this->getProducts->get($specification);
@@ -193,28 +194,28 @@ class PricesProviderTest extends TestCase
         $config = [
             'athoscommerce_simple_1' => [
                 'final_price' => 3,
-                'max_price' => 3
+                'max_price' => 3,
             ],
             'athoscommerce_simple_2' => [
                 'final_price' => 6,
-                'max_price' => 6
+                'max_price' => 6,
             ],
             'athoscommerce_configurable_test_configurable' => [
                 'final_price' => 8,
-                'max_price' => 30
+                'max_price' => 30,
             ],
             'athoscommerce_configurable_test_configurable_2_attributes' => [
                 'final_price' => 15,
-                'max_price' => 30
+                'max_price' => 30,
             ],
             'athoscommerce_grouped_test_grouped_1' => [
                 'final_price' => 900,
-                'max_price' => 900
+                'max_price' => 900,
             ],
             'athoscommerce_grouped_test_grouped_2' => [
                 'final_price' => 811,
-                'max_price' => 811
-            ]
+                'max_price' => 811,
+            ],
         ];
 
         $config = $this->buildConfig($config);
@@ -231,7 +232,7 @@ class PricesProviderTest extends TestCase
      *
      * @throws \Exception
      */
-    public function testGetDataWithCatalogRuleAndCustomer() : void
+    public function testGetDataWithCatalogRuleAndCustomer(): void
     {
         $specification = $this->specificationBuilder->build(['customerId' => 1]);
         $this->contextManager->setContextFromSpecification($specification);
@@ -240,12 +241,12 @@ class PricesProviderTest extends TestCase
         $config = [
             'athoscommerce_simple_1' => [
                 'final_price' => 7,
-                'max_price' => 7
+                'max_price' => 7,
             ],
             'athoscommerce_simple_2' => [
                 'final_price' => 2,
-                'max_price' => 2
-            ]
+                'max_price' => 2,
+            ],
         ];
 
         $config = $this->buildConfig($config);
@@ -262,7 +263,7 @@ class PricesProviderTest extends TestCase
      *
      * @throws \Exception
      */
-    public function testGetDataMultistore() : void
+    public function testGetDataMultistore(): void
     {
         $specification = $this->specificationBuilder->build([]);
         $products = $this->getProducts->get($specification);
@@ -273,32 +274,35 @@ class PricesProviderTest extends TestCase
         $this->contextManager->setContextFromSpecification($specification);
         $products = $this->getProducts->get($specification);
         $data = $this->pricesProvider->getData($products, $specification);
-        $config = [
+        $expectedConfig = [
             'athoscommerce_simple_1' => [
                 'final_price' => 20,
                 'regular_price' => 20,
-                'max_price' => 20
+                'max_price' => 20,
             ],
             'athoscommerce_simple_2' => [
                 'final_price' => 20,
                 'regular_price' => 20,
-                'max_price' => 20
-            ]
+                'max_price' => 20,
+            ],
         ];
 
-        $config = $this->buildConfig($config);
-        $this->assertPrices($data, $config);
+        $expectedConfig = $this->buildConfig($expectedConfig);
+        $this->assertPrices($data, $expectedConfig);
         $this->contextManager->resetContext();
     }
 
     /**
      * @param array $config
      * @param bool $useTierPrice
+     *
      * @return array
      */
-    private function buildConfig(array $config = [], bool $useTierPrice = false) : array
+    private function buildConfig(array $config = [], bool $useTierPrice = false): array
     {
-        $result = $useTierPrice ? $this->defaultTierPriceConfig : $this->defaultPriceConfig;
+        $result = $useTierPrice
+            ? $this->defaultTierPriceConfig
+            : $this->defaultPriceConfig;
         foreach ($config as $sku => $skuConfig) {
             if (!isset($result[$sku])) {
                 $result[$sku] = $skuConfig;
@@ -320,7 +324,7 @@ class PricesProviderTest extends TestCase
      * @param array $items
      * @param array $config
      */
-    private function assertPrices(array $items, array $config) : void
+    private function assertPrices(array $items, array $config): void
     {
         foreach ($items as $item) {
             /** @var Product $product */
@@ -331,9 +335,18 @@ class PricesProviderTest extends TestCase
 
             $sku = $product->getSku();
             $skuConfig = $config[$sku] ?? [];
+
             foreach ($skuConfig as $priceCode => $priceValue) {
-                $this->assertArrayHasKey($priceCode, $item, 'sku ' . $sku);
-                $this->assertEquals($priceValue, $item[$priceCode], 'sku ' . $sku);
+                $this->assertArrayHasKey(
+                    $priceCode,
+                    $item,
+                    sprintf('Missing key (%s) for SKU(%s) in item', $priceCode, $sku),
+                );
+                $this->assertEquals(
+                    $priceValue,
+                    $item[$priceCode],
+                    sprintf('SKU (%s) value mismatched for key (%s)', $sku, $priceCode),
+                );
             }
         }
     }
@@ -342,7 +355,7 @@ class PricesProviderTest extends TestCase
      * @param array $items
      * @param array $config
      */
-    private function assertTierPrice(array $items, array $config) : void
+    private function assertTierPrice(array $items, array $config): void
     {
         foreach ($items as $item) {
             /** @var Product $product */
@@ -383,9 +396,10 @@ class PricesProviderTest extends TestCase
     /**
      * @param array $tierPrice
      * @param array $tierPricesConfig
+     *
      * @return array
      */
-    private function findTierPrice(array $tierPrice, array $tierPricesConfig) : array
+    private function findTierPrice(array $tierPrice, array $tierPricesConfig): array
     {
         $result = [];
         foreach ($tierPricesConfig as $tierPriceKey => $tierPriceConfig) {

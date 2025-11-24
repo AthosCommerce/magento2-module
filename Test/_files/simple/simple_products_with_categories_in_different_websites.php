@@ -20,7 +20,7 @@ use Magento\Store\Api\WebsiteRepositoryInterface;
 use Magento\TestFramework\Helper\Bootstrap;
 
 require __DIR__ . '/simple_products_with_categories.php';
-require __DIR__ . '/categories/categories_second_website.php';
+require __DIR__ . '/../categories/categories_second_website.php';
 $objectManager = Bootstrap::getObjectManager();
 
 /** @var WebsiteRepositoryInterface $websiteRepository */

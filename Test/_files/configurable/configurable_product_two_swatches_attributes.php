@@ -31,8 +31,8 @@ use Magento\Framework\ObjectManagerInterface;
 use Magento\Store\Api\WebsiteRepositoryInterface;
 use Magento\TestFramework\Helper\Bootstrap;
 
-require __DIR__ . '/product_text_swatch_attribute.php';
-require __DIR__ . '/product_visual_swatch_attribute.php';
+require __DIR__ . '/../product_text_swatch_attribute.php';
+require __DIR__ . '/../product_visual_swatch_attribute.php';
 
 /** @var ObjectManagerInterface $objectManager */
 $objectManager = Bootstrap::getObjectManager();

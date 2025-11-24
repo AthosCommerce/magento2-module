@@ -15,4 +15,4 @@
  */
 
 require __DIR__ . '/01_simple_products_rollback.php';
-require __DIR__ . '/product_image_rollback.php';
+require __DIR__ . '/../product_image_rollback.php';

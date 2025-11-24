@@ -166,7 +166,8 @@ class SimplePriceProvider implements PriceProviderInterface
                 } else {
                     $value = $product
                         ->getPriceInfo()
-                        ->getPrice(RegularPrice::PRICE_CODE)
+                        ->getPrice(FinalPrice::PRICE_CODE)
+                        ->getMaximalPrice()
                         ->getValue();
                 }
 

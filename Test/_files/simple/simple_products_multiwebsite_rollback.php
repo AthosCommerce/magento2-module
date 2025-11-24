@@ -20,7 +20,7 @@ use Magento\Framework\Event\Observer;
 use Magento\Store\Model\Store;
 use Magento\TestFramework\Helper\Bootstrap;
 
-require __DIR__ . '/second_website_with_store_group_and_store_rollback.php';
+require __DIR__ . '/../second_website_with_store_group_and_store_rollback.php';
 require __DIR__ . '/01_simple_products_rollback.php';
 /** @var ReinitableConfigInterface $reinitiableConfig */
 $reinitiableConfig = Bootstrap::getObjectManager()->get(

@@ -29,7 +29,7 @@ $searchCriteriaBuilder = $objectManager->get(SearchCriteriaBuilder::class);
 $searchCriteria = $searchCriteriaBuilder->addFilter('sku', 'athoscommerce_simple%', 'like')
     ->create();
 foreach ($productRepository->getList($searchCriteria)->getItems() as $product) {
-    require __DIR__ . '/product_image.php';
+    require __DIR__ . '/../product_image.php';
     $sku = $product->getSku();
     /** @var $product Product */
     $product->setStoreId(0)
