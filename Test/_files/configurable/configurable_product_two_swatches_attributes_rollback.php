@@ -59,5 +59,5 @@ foreach ($productsArray as $sku) {
 $registry->unregister('isSecureArea');
 $registry->register('isSecureArea', false);
 
-require __DIR__ . '/product_text_swatch_attribute_rollback.php';
-require __DIR__ . '/product_visual_swatch_attribute_rollback.php';
+require __DIR__ . '/../product_text_swatch_attribute_rollback.php';
+require __DIR__ . '/../product_visual_swatch_attribute_rollback.php';

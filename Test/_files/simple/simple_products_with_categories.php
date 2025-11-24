@@ -18,7 +18,7 @@ use Magento\Catalog\Api\CategoryLinkManagementInterface;
 use Magento\TestFramework\Helper\Bootstrap;
 
 require __DIR__ . '/01_simple_products.php';
-require __DIR__ . '/categories/categories.php';
+require __DIR__ . '/../categories/categories.php';
 
 $objectManager = Bootstrap::getObjectManager();
 /** @var CategoryLinkManagementInterface $categoryLinkManagement */

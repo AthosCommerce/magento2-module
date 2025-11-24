@@ -16,12 +16,15 @@
 
 use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Catalog\Model\Product;
+use Magento\CatalogRule\Model\Indexer\IndexBuilder;
 use Magento\TestFramework\Helper\Bootstrap;
 use Magento\TestFramework\ObjectManager;
 
 require __DIR__ . '/01_simple_products.php';
 /** @var ObjectManager $objectManager */
 $objectManager = Bootstrap::getObjectManager();
+/** @var IndexBuilder $indexerBuilder */
+$indexerBuilder = $objectManager->get(IndexBuilder::class);
 $productRepository = $objectManager->get(ProductRepositoryInterface::class);
 /** @var Product $product1 */
 $product1 = $productRepository->get('athoscommerce_simple_1');
@@ -30,8 +33,13 @@ $product2 = $productRepository->get('athoscommerce_simple_2');
 $product1->setSpecialPrice(5);
 $product1->setSpecialFromDate(date('Y-m-d', strtotime('+3 day')));
 $product1->setSpecialToDate(date('Y-m-d', strtotime('+5 day')));
+
 $product2->setSpecialPrice(6);
 $product2->setSpecialFromDate(date('Y-m-d', strtotime('-3 day')));
 $product2->setSpecialToDate(date('Y-m-d', strtotime('+5 day')));
+
+$indexerBuilder->reindexById((int)$product1->getId());
+$indexerBuilder->reindexById((int)$product2->getId());
+
 $productRepository->save($product1);
 $productRepository->save($product2);
