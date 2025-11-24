@@ -56,7 +56,7 @@ class ExecutorTest extends TestCase
     /**
      * @magentoAppIsolation enabled
      * @magentoDataFixture AthosCommerce_Feed::Test/_files/configure_aws_client_mock.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/01_simple_products.php
      *
      * @return void
      * @throws CouldNotSaveException

@@ -24,7 +24,7 @@ use Magento\Review\Model\ReviewFactory;
 use Magento\Store\Model\StoreManagerInterface;
 use Magento\TestFramework\Helper\Bootstrap;
 
-require __DIR__ . '/simple_products.php';
+require __DIR__ . '/01_simple_products.php';
 
 $objectManager = Bootstrap::getObjectManager();
 /** @var StoreManagerInterface $storeManager */

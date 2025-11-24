@@ -63,7 +63,7 @@ class StockProviderTest extends TestCase
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
      * @magentoConfigFixture current_store cataloginventory/options/show_out_of_stock 1
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/01_simple_products.php
      * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_product_oos.php
      * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable/configurable_products.php
      * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable/configurable_products_oos_simples.php
@@ -100,7 +100,7 @@ class StockProviderTest extends TestCase
      *
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/01_simple_products.php
      *
      * @throws \Exception
      */

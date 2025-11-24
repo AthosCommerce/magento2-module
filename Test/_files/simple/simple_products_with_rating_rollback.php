@@ -53,4 +53,4 @@ foreach ($productRepository->getList($searchCriteria)->getItems() as $item) {
 $registry->unregister('isSecureArea');
 $registry->register('isSecureArea', $currentArea);
 
-require __DIR__ . '/simple_products_rollback.php';
+require __DIR__ . '/01_simple_products_rollback.php';

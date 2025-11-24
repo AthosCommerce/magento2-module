@@ -70,7 +70,7 @@ class GroupedProductsProviderTest extends TestCase
     /**
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/01_simple_products.php
      * @magentoDataFixture AthosCommerce_Feed::Test/_files/grouped/grouped_products.php
      *
      * @throws \Exception
@@ -199,7 +199,7 @@ class GroupedProductsProviderTest extends TestCase
     /**
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/01_simple_products.php
      * @magentoDataFixture AthosCommerce_Feed::Test/_files/grouped/grouped_products.php
      *
      * @throws \Exception
