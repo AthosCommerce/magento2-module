@@ -160,7 +160,23 @@ class JsonConfigProvider implements DataProviderInterface
                     'productId' => $parentId
                 ];
 
+                $selectedOptions = [];
+                if (!empty($options['index'][$simpleId])) {
+                    foreach ($options['index'][$simpleId] as $attributeId => $optionId) {
+                        if (isset($attributesData['attributes'][$attributeId])) {
+                            $attrCode = $attributesData['attributes'][$attributeId]['code'];
+                            foreach ($attributesData['attributes'][$attributeId]['options'] as $option) {
+                                if ($option['id'] == $optionId) {
+                                    $selectedOptions[$attrCode] = ['value' => $option['label']];
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+                $product['__selected_options'] = json_encode($selectedOptions);
                 $product['json_config'] = json_encode($jsonConfigArr);
+                $product['__variant_position'] = $this->getPosition($options['index'],$simpleId);
 
             } catch (\Exception $e) {
                 $product['json_config'] = '{}';
@@ -195,5 +211,21 @@ class JsonConfigProvider implements DataProviderInterface
     public function resetAfterFetchItems(): void
     {
         // do nothing
+    }
+
+    /**
+     * @param $index
+     * @param $simpleId
+     * @return int|string|void
+     */
+    private function getPosition($index, $simpleId)
+    {
+        if (!empty($index)) {
+            $keys = array_keys($index);
+            $pos = array_search($simpleId, $keys);
+            if ($pos !== false) {
+                return $pos + 1; // 1-based
+            }
+        }
     }
 }

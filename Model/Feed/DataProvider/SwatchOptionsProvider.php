@@ -10,14 +10,20 @@ use Magento\Catalog\Model\Product;
 use Magento\Framework\Exception\LocalizedException;
 use Psr\Log\LoggerInterface;
 use Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable;
-use Magento\CatalogInventory\Api\StockRegistryInterface;
+use Magento\Swatches\Helper\Data as SwatchHelper;
+use Magento\Store\Model\StoreManagerInterface;
 
 class SwatchOptionsProvider implements DataProviderInterface
 {
     /**
-     * @var StockRegistryInterface
+     * @var SwatchHelper
      */
-    private $stockRegistry;
+    protected $swatchHelper;
+
+    /**
+     * @var StoreManagerInterface
+     */
+    protected $storeManager;
 
     /**
      * @var Configurable
@@ -44,20 +50,24 @@ class SwatchOptionsProvider implements DataProviderInterface
      * @param ParentDataContextManager $parentProductContextManager
      * @param Configurable $configurableType
      * @param StockRegistryInterface $stockRegistry
+     * @param SwatchHelper $swatchHelper
+     * @param StoreManagerInterface $storeManager
      */
     public function __construct(
         DataProvider             $provider,
         LoggerInterface          $logger,
         ParentDataContextManager $parentProductContextManager,
         Configurable             $configurableType,
-        StockRegistryInterface   $stockRegistry
+        SwatchHelper $swatchHelper,
+        StoreManagerInterface $storeManager
     )
     {
         $this->provider = $provider;
         $this->logger = $logger;
         $this->parentProductContextManager = $parentProductContextManager;
         $this->configurableType = $configurableType;
-        $this->stockRegistry = $stockRegistry;
+        $this->swatchHelper = $swatchHelper;
+        $this->storeManager = $storeManager;
     }
 
     /**
@@ -70,10 +80,12 @@ class SwatchOptionsProvider implements DataProviderInterface
      */
     public function getData(array $products, FeedSpecificationInterface $feedSpecification): array
     {
-        $this->logger->info('Returns SwatchOptionsProvider JSON for configurable product', [
-            'method' => __METHOD__,
-            'format' => $feedSpecification->getFormat(),
-        ]);
+        $ignoredFields = $feedSpecification->getIgnoreFields();
+        $swatch = [];
+        if ($feedSpecification->getSwatchOptionFieldsNames() && !in_array('swatchOptionSourceFieldNames', $ignoredFields)) {
+            $swatch = $feedSpecification->getSwatchOptionFieldsNames();
+        }
+
 
         foreach ($products as &$product) {
 
@@ -101,47 +113,74 @@ class SwatchOptionsProvider implements DataProviderInterface
             $parentId = (int)$parentIds[0];
             $parentProduct = $this->parentProductContextManager->getParentsDataByProductId($parentId);
 
-            $configurableAttributes =
-                $parentProduct->getTypeInstance()->getConfigurableAttributes($parentProduct);
-
-            $swatchOptions = [
-                'options' => [],
-                'fields' => []
-            ];
-
-            foreach ($configurableAttributes as $attribute) {
-                $attr = $attribute->getProductAttribute();
-                if (!$attr) {
-                    continue;
-                }
-                $attrCode = $attr->getAttributeCode();
-                $attrLabel = $attr->getStoreLabel();
-                $simpleValue = $productModel->getAttributeText($attrCode);
-                if (!$simpleValue) {
-                    continue;
-                }
-                $swatchOptions['options'][$attrCode] = [
-                    'label' => $attrLabel,
-                    'value' => $simpleValue,
-                ];
+            if(!$parentProduct) {
+                continue;
+            }
+            // todo  performance check pending
+            if (is_array($parentProduct)) {
+                $parentProduct = $parentProduct[0] ?? null;
             }
 
-            $stockItem = $this->stockRegistry->getStockItem($productModel->getId());
-            $qty = (int)$stockItem->getQty();
-            $available = $stockItem->getIsInStock();
-            $swatchOptions['fields'] = [
-                'uid' => $productModel->getId(),
-                'sku' => $productModel->getSku(),
-                'msrp' => (float)$productModel->getMsrp(),
-                'price' => (float)$productModel->getFinalPrice(),
-                'url' => $productModel->getProductUrl(),
-                'image_url' => $productModel->getMediaGalleryImages()->getFirstItem()->getUrl() ?? null,
-                'quantity' => $qty,
-                'title' => implode(' / ', array_column($swatchOptions['options'], 'value')),
-                'available' => $available
-            ];
+            if ($parentProduct instanceof \Magento\Catalog\Model\Product) {
+                $configurableAttributes = $parentProduct->getTypeInstance()->getConfigurableAttributes($parentProduct);
 
-            $product['__swatch_options'] = $swatchOptions;
+                $swatchOptions = [];
+
+                foreach ($configurableAttributes as $attribute) {
+                    $attr = $attribute->getProductAttribute();
+                    if (!$attr) continue;
+
+                    $attrCode = $attr->getAttributeCode();
+                    $attrLabel = $attr->getStoreLabel();
+                    $defaultValue = $attribute->getProductAttribute()->getDefaultValue();
+                    $simpleValue = $productModel->getAttributeText($attrCode);
+
+                    $optionId = $productModel->getData($attrCode);
+
+                    $this->logger->info('Processing attribute', [
+                        'sku' => $productModel->getSku(),
+                        'attr_code' => $attrCode,
+                        'simple_value' => $simpleValue,
+                        'option_id' => $optionId
+                    ]);
+
+                    if (!$simpleValue) continue;
+
+                    // Check against feedSpecification array
+                    if (!in_array($attrCode, $swatch)) {
+                        $this->logger->info('Skipping attribute because it is not in swatch array', [
+                            'sku' => $productModel->getSku(),
+                            'attr_code' => $attrCode
+                        ]);
+                        continue;
+                    }
+
+                    $entry = [
+                        'label' => $attrLabel,
+                        'value' => $simpleValue,
+                        'default' => $defaultValue
+                    ];
+
+                    if ($optionId) {
+                        $swatchInfo = $this->swatchHelper->getSwatchesByOptionsId([$optionId]);
+                        $swatchDetail = $swatchInfo[$optionId] ?? [];
+
+                        if ($swatchDetail) {
+                            $entry['id'] = $optionId;
+                            $entry['colors'] = isset($swatchDetail['value']) ? [$swatchDetail['value']] : [];
+                            $entry['image'] = isset($swatchDetail['thumbnail'])
+                                ? $this->storeManager->getStore()->getBaseUrl(
+                                    \Magento\Framework\UrlInterface::URL_TYPE_MEDIA
+                                ) . 'attribute/swatch/' . $swatchDetail['thumbnail']
+                                : null;
+                        }
+                    }
+
+                    $swatchOptions[$attrCode] = $entry;
+                }
+
+                $product['__swatch_options'] = $swatchOptions;
+            }
         }
 
         return $products;

@@ -284,7 +284,7 @@
                 <item name="__json_config__" xsi:type="object">AthosCommerce\Feed\Model\Feed\DataProvider\JsonConfigProvider</item>
                 <item name="__standard_options" xsi:type="object">AthosCommerce\Feed\Model\Feed\DataProvider\StandardOptionsProvider</item>
                 <item name="__swatch_options" xsi:type="object">AthosCommerce\Feed\Model\Feed\DataProvider\SwatchOptionsProvider</item>
-                <item name="__all_variants" xsi:type="object">AthosCommerce\Feed\Model\Feed\DataProvider\AllVariantsProvider</item>
+<!--                <item name="__all_variants" xsi:type="object">AthosCommerce\Feed\Model\Feed\DataProvider\AllVariantsProvider</item>-->
                 <item name="__parent_image" xsi:type="object">AthosCommerce\Feed\Model\Feed\DataProvider\ParentImageProvider</item>
             </argument>
         </arguments>

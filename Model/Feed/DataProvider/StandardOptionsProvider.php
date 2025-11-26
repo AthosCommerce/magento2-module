@@ -93,30 +93,39 @@ class StandardOptionsProvider implements DataProviderInterface
                 $this->logger->warning('Parent product missing in context', [
                     'parent_id' => $parentId
                 ]);
+                continue;
+            }
+            // todo  performance check pending
+            if (is_array($parentProduct)) {
+                $parentProduct = $parentProduct[0] ?? null;
             }
 
-            $configurableAttributes = $parentProduct->getTypeInstance()->getConfigurableAttributes($parentProduct);
-            $standardOptions = [];
+            if ($parentProduct instanceof \Magento\Catalog\Model\Product) {
+                $configurableAttributes = $parentProduct->getTypeInstance()->getConfigurableAttributes($parentProduct);
 
-            foreach ($configurableAttributes as $attribute) {
-                $attr = $attribute->getProductAttribute();
-                if (!$attr) {
-                    continue;
-                }
-                $attrCode  = $attr->getAttributeCode();
-                $attrLabel = $attr->getStoreLabel();
-                // Selected value for this simple product
-                $value = $productModel->getAttributeText($attrCode);
-                if (!$value) {
-                    continue;
-                }
+                $standardOptions = [];
 
-                $standardOptions[$attrCode] = [
-                    'label' => $attrLabel,
-                    'value' => $value
-                ];
+                foreach ($configurableAttributes as $attribute) {
+                    $attr = $attribute->getProductAttribute();
+                    if (!$attr) {
+                        continue;
+                    }
+                    $attrCode = $attr->getAttributeCode();
+                    $attrLabel = $attr->getStoreLabel();
+                    // Selected value for this simple product
+                    $value = $productModel->getAttributeText($attrCode);
+                    if (!$value) {
+                        continue;
+                    }
+
+                    $standardOptions[$attrCode] = [
+                        'label' => $attrLabel,
+                        'value' => $value
+                    ];
+                }
+                $product['__standard_options'] = $standardOptions;
             }
-            $product['__standard_options'] = $standardOptions;
+
         }
 
         return $products;
