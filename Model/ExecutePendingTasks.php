@@ -48,6 +48,7 @@ class ExecutePendingTasks implements ExecutePendingTasksInterface
 
     /**
      * ExecutePendingTasks constructor.
+     *
      * @param TaskRepositoryInterface $taskRepository
      * @param SearchCriteriaBuilder $searchCriteriaBuilder
      * @param ExecuteTaskInterface $executeTask
@@ -76,13 +77,16 @@ class ExecutePendingTasks implements ExecutePendingTasksInterface
             ->addFilter(TaskInterface::STATUS, MetadataInterface::TASK_STATUS_PENDING)
             ->create();
         $taskList = $this->taskRepository->getList($searchCriteria);
+        $taskItems = $taskList->getItems();
+        $this->logger->info('Total tasks count: ' . $taskList->getTotalCount());
+
         $result = [];
-        foreach ($taskList->getItems() as $task) {
+        foreach ($taskItems as $task) {
             try {
                 $this->logger->info('Task execution with the entity id started', [
                     'method' => __METHOD__,
-                    'entityId'=> $task->getEntityId(),
-                    'status' => $task->getStatus()
+                    'entityId' => $task->getEntityId(),
+                    'status' => $task->getStatus(),
                 ]);
                 $result[$task->getEntityId()] = $this->executeTask->execute($task);
             } catch (\Throwable $exception) {

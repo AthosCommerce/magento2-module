@@ -75,7 +75,7 @@ class SimplePriceProvider implements PriceProviderInterface
         if (empty(array_diff($priceKeys, $ignoredFields))) {
             return $result;
         }
-        //$parent = $this->parentDataContextManager->getParentsDataByProductId((int)$product->getId());
+
         $parent = $this->parentRelationsContext->getParentsByChildId((int)$product->getId());
         if (!in_array(PricesProvider::FINAL_PRICE_KEY, $ignoredFields, true)) {
             $result[PricesProvider::FINAL_PRICE_KEY] = $this->getPriceValueByCode(

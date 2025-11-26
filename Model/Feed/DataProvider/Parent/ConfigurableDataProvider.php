@@ -6,12 +6,14 @@ use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\Collection as ParentProductCollection;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentDataContextManager;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Option\Visibility;
+use AthosCommerce\Feed\Model\Feed\DataProvider\PricesProvider;
 use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
 use AthosCommerce\Feed\Model\Feed\ProductExclusionInterface;
 use AthosCommerce\Feed\Model\Feed\ProductTypeIdInterface;
 use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\Product\Type as MagentoProductType;
+use Magento\Catalog\Pricing\Price\FinalPrice;
 use Magento\Framework\EntityManager\MetadataPool;
 
 class ConfigurableDataProvider implements DataProviderInterface
@@ -120,8 +122,27 @@ class ConfigurableDataProvider implements DataProviderInterface
                 continue;
             }
 
+            //For variants, JSON will add child_name, child_sku, child_final_price
+            //This supports ignored field support
+            if (!in_array('child_name', $ignoredFields, true)) {
+                $product['child_name'] = $productModel->getName();
+            }
+            if (!in_array('child_sku', $ignoredFields, true)) {
+                $product['child_sku'] = $productModel->getSku();
+            }
+            if ($feedSpecification->getIncludeChildPrices()
+                && !in_array('child_final_price', $ignoredFields, true)
+            ) {
+                $product['child_final_price'] = $productModel
+                    ->getPriceInfo()
+                    ->getPrice(FinalPrice::PRICE_CODE)
+                    ->getMinimalPrice()
+                    ->getValue();
+            }
+
             $parent = null;
             foreach ($parentIds as $parentId) {
+                /** @var Product $parent */
                 $parent = $this->parentProductContextManager->getParentsDataByProductId(
                     (int)$parentId,
                 );
@@ -140,28 +161,44 @@ class ConfigurableDataProvider implements DataProviderInterface
                     $childTypeIdsList,
                     true
                 )) {
-                    $childClone['parent_id'] = $parent->getData($this->getLinkField());
-                    if (method_exists($parent, 'getName') && $parent->getName()) {
+                    //Required, so not part of ignoredFields
+                    $childClone['parent_id'] = $parent->getDataUsingMethod($this->getLinkField());
+
+                    if (!in_array('parent_name', $ignoredFields, true)
+                        && method_exists($parent, 'getName')
+                        && $parent->getName()
+                    ) {
                         $childClone['parent_name'] = $parent->getName();
                     }
-                    if (method_exists($parent, 'getStatus')) {
+
+                    if (!in_array('parent_status', $ignoredFields, true)
+                        && method_exists($parent, 'getStatus')
+                    ) {
                         $childClone['parent_status'] = $parent->getStatus()
                             ? __('Enabled')
                             : __('Disabled');
                     }
-                    if (method_exists($parent, 'getTypeId')) {
+
+                    if (!in_array('parent_type_id', $ignoredFields, true)
+                        && method_exists($parent, 'getTypeId')
+                    ) {
                         $childClone['parent_type_id'] = $parent->getTypeId();
                     }
-                    if (method_exists($parent, 'getProductUrl') && $parent->getProductUrl()) {
+
+                    if (!in_array('parent_url', $ignoredFields, true)
+                        && method_exists($parent, 'getProductUrl')
+                        && $parent->getProductUrl()
+                    ) {
                         $childClone['parent_url'] = $parent->getProductUrl();
                     }
-                    if (method_exists($parent, 'getVisibility') && $parent->getVisibility()) {
+
+                    if (!in_array('parent_visibility', $ignoredFields, true)
+                        && method_exists($parent, 'getVisibility')
+                        && $parent->getVisibility()
+                    ) {
                         $childClone['parent_visibility'] = $this->visibility->getVisibilityTextValue(
                             $parent->getVisibility()
                         );
-                    }
-                    if (method_exists($parent, 'getImage') && $parent->getImage()) {
-                        $childClone['parent_image'] = $parent->getImage();
                     }
                 }
                 $finalProducts[] = $childClone;

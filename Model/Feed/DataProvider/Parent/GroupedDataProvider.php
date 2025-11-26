@@ -136,19 +136,34 @@ class GroupedDataProvider implements DataProviderInterface
                     $childTypeIdsList,
                     true
                 )) {
-                    $childClone['parent_id'] = $parentId;
-                    if (method_exists($parent, 'getName') && $parent->getName()) {
+                    //Required, so not part of ignoredFields
+                    $childClone['parent_id'] = $parent->getDataUsingMethod($this->getLinkField());
+
+                    if (!in_array('parent_name', $ignoredFields, true)
+                        && method_exists($parent, 'getName')
+                        && $parent->getName()
+                    ) {
                         $childClone['parent_name'] = $parent->getName();
                     }
-                    if (method_exists($parent, 'getStatus')) {
+
+                    if (!in_array('parent_status', $ignoredFields, true)
+                        && method_exists($parent, 'getStatus')
+                    ) {
                         $childClone['parent_status'] = $parent->getStatus()
                             ? __('Enabled')
                             : __('Disabled');
                     }
-                    if (method_exists($parent, 'getTypeId')) {
+
+                    if (!in_array('parent_type_id', $ignoredFields, true)
+                        && method_exists($parent, 'getTypeId')
+                    ) {
                         $childClone['parent_type_id'] = $parent->getTypeId();
                     }
-                    if (method_exists($parent, 'getProductUrl') && $parent->getProductUrl()) {
+
+                    if (!in_array('parent_url', $ignoredFields, true)
+                        && method_exists($parent, 'getProductUrl')
+                        && $parent->getProductUrl()
+                    ) {
                         $childClone['parent_url'] = $parent->getProductUrl();
                     }
                     if (method_exists($parent, 'getVisibility') && $parent->getVisibility()) {
