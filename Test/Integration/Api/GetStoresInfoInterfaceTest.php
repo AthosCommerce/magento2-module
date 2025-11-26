@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Test\Integration\Api;
 
+use Magento\Store\Model\StoreManagerInterface;
 use PHPUnit\Framework\TestCase;
 use Magento\TestFramework\Helper\Bootstrap;
 use AthosCommerce\Feed\Api\GetStoresInfoInterface;
@@ -33,33 +34,59 @@ class GetStoresInfoInterfaceTest extends TestCase
      * @var GetStoresInfoInterface
      */
     private $getStoresInfo;
+    /**
+     * @var StoreManagerInterface
+     */
+    private $storeManager;
 
     protected function setUp(): void
     {
         $this->getStoresInfo = Bootstrap::getObjectManager()->get(GetStoresInfoInterface::class);
+        $this->storeManager = Bootstrap::getObjectManager()->get(StoreManagerInterface::class);
         parent::setUp();
     }
 
     /**
-     * @magentoAppIsolation enabled
+     * @magentoAppIsolation disabled
      * @magentoDataFixture AthosCommerce_Feed::Test/_files/store.php
      */
-    public function testExecute() : void
+    public function testExecute(): void
     {
         $storesInfo = $this->getStoresInfo->getAsHtml();
+        $this->assertStringContainsString('Test Store - test', $storesInfo);
         $this->assertStoreCodeInResult($storesInfo, 'test', 'Test Store');
     }
 
     /**
-     * @magentoAppIsolation enabled
+     * @magentoAppIsolation disabled
      * @magentoDataFixture AthosCommerce_Feed::Test/_files/store.php
      * @magentoDataFixture AthosCommerce_Feed::Test/_files/second_store.php
      */
-    public function testExecuteWithMultiStore() : void
+    public function testExecuteWithMultiStore(): void
     {
         $storesInfo = $this->getStoresInfo->getAsHtml();
+        $this->assertStringContainsString('Test Store - test', $storesInfo);
+        $this->assertStringContainsString('Fixture Store - fixture_second_store', $storesInfo);
         $this->assertStoreCodeInResult($storesInfo, 'test', 'Test Store');
         $this->assertStoreCodeInResult($storesInfo, 'fixture_second_store', 'Fixture Store');
+    }
+
+    /**
+     * @magentoAppIsolation disabled
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/store.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/second_store.php
+     */
+    public function testExecuteWithMultiStoreForJSON(): void
+    {
+        $storesInfo = $this->getStoresInfo->getAsJson();
+        $this->assertIsArray($storesInfo);
+        $storeCodes = array_column($storesInfo, 'code');
+        $this->assertContains('test', $storeCodes);
+        $this->assertContains('fixture_second_store', $storeCodes);
+        $images = array_column($storesInfo, 'images');
+        $this->assertIsArray($images);
+        $smallImages = array_column($images, 'product_small_image');
+        $this->assertIsArray($smallImages);
     }
 
     /**
@@ -67,9 +94,9 @@ class GetStoresInfoInterfaceTest extends TestCase
      * @param string $storeCode
      * @param string $name
      */
-    private function assertStoreCodeInResult(string $result, string $storeCode, string $name) : void
+    private function assertStoreCodeInResult(string $result, string $storeCode, string $name): void
     {
-        $substr = "<li>$name - $storeCode</li>";
+        $substr = "$name - $storeCode</li>";
         $this->assertEquals(1, substr_count($result, $substr));
     }
 }

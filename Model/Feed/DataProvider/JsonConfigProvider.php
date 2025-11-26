@@ -134,7 +134,7 @@ class JsonConfigProvider implements DataProviderInterface
             }
 
             $parentId = (int)$parentIds[0];
-            $product['parent_id'] = $parentId;
+            //$product['parent_id'] = $parentId;
 
             /**
              * Load Parent Product
