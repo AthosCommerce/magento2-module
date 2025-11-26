@@ -113,69 +113,77 @@ class SwatchOptionsProvider implements DataProviderInterface
             $parentId = (int)$parentIds[0];
             $parentProduct = $this->parentProductContextManager->getParentsDataByProductId($parentId);
 
-            $configurableAttributes = $parentProduct->getTypeInstance()->getConfigurableAttributes($parentProduct);
-
-
-            $swatchOptions = [];
-
-            foreach ($configurableAttributes as $attribute) {
-                $attr = $attribute->getProductAttribute();
-                if (!$attr) continue;
-
-                $attrCode = $attr->getAttributeCode();
-                $attrLabel = $attr->getStoreLabel();
-                $defaultValue = $attribute->getProductAttribute()->getDefaultValue();
-                $simpleValue = $productModel->getAttributeText($attrCode);
-
-                $optionId = $productModel->getData($attrCode);
-
-                $this->logger->info('Processing attribute', [
-                    'sku' => $productModel->getSku(),
-                    'attr_code' => $attrCode,
-                    'simple_value' => $simpleValue,
-                    'option_id' => $optionId
-                ]);
-
-                if (!$simpleValue) continue;
-
-                // Check against feedSpecification array
-                if (!in_array($attrCode, $swatch)) {
-                    $this->logger->info('Skipping attribute because it is not in swatch array', [
-                        'sku' => $productModel->getSku(),
-                        'attr_code' => $attrCode
-                    ]);
-                    continue;
-                }
-
-                $entry = [
-                    'label' => $attrLabel,
-                    'value' => $simpleValue,
-                    'default' => $defaultValue
-                ];
-
-                if ($optionId) {
-                    $swatchInfo = $this->swatchHelper->getSwatchesByOptionsId([$optionId]);
-                    $swatchDetail = $swatchInfo[$optionId] ?? [];
-
-                    if ($swatchDetail) {
-                        $entry['id'] = $optionId;
-                        $entry['colors'] = isset($swatchDetail['value']) ? [$swatchDetail['value']] : [];
-                        $entry['image'] = isset($swatchDetail['thumbnail'])
-                            ? $this->storeManager->getStore()->getBaseUrl(
-                                \Magento\Framework\UrlInterface::URL_TYPE_MEDIA
-                            ) . 'attribute/swatch/' . $swatchDetail['thumbnail']
-                            : null;
-                    }
-                }
-
-                $swatchOptions[$attrCode] = $entry;
+            if(!$parentProduct) {
+                continue;
+            }
+            // todo  performance check pending
+            if (is_array($parentProduct)) {
+                $parentProduct = $parentProduct[0] ?? null;
             }
 
-            $product['__swatch_options'] = $swatchOptions;
+            if ($parentProduct instanceof \Magento\Catalog\Model\Product) {
+                $configurableAttributes = $parentProduct->getTypeInstance()->getConfigurableAttributes($parentProduct);
+
+                $swatchOptions = [];
+
+                foreach ($configurableAttributes as $attribute) {
+                    $attr = $attribute->getProductAttribute();
+                    if (!$attr) continue;
+
+                    $attrCode = $attr->getAttributeCode();
+                    $attrLabel = $attr->getStoreLabel();
+                    $defaultValue = $attribute->getProductAttribute()->getDefaultValue();
+                    $simpleValue = $productModel->getAttributeText($attrCode);
+
+                    $optionId = $productModel->getData($attrCode);
+
+                    $this->logger->info('Processing attribute', [
+                        'sku' => $productModel->getSku(),
+                        'attr_code' => $attrCode,
+                        'simple_value' => $simpleValue,
+                        'option_id' => $optionId
+                    ]);
+
+                    if (!$simpleValue) continue;
+
+                    // Check against feedSpecification array
+                    if (!in_array($attrCode, $swatch)) {
+                        $this->logger->info('Skipping attribute because it is not in swatch array', [
+                            'sku' => $productModel->getSku(),
+                            'attr_code' => $attrCode
+                        ]);
+                        continue;
+                    }
+
+                    $entry = [
+                        'label' => $attrLabel,
+                        'value' => $simpleValue,
+                        'default' => $defaultValue
+                    ];
+
+                    if ($optionId) {
+                        $swatchInfo = $this->swatchHelper->getSwatchesByOptionsId([$optionId]);
+                        $swatchDetail = $swatchInfo[$optionId] ?? [];
+
+                        if ($swatchDetail) {
+                            $entry['id'] = $optionId;
+                            $entry['colors'] = isset($swatchDetail['value']) ? [$swatchDetail['value']] : [];
+                            $entry['image'] = isset($swatchDetail['thumbnail'])
+                                ? $this->storeManager->getStore()->getBaseUrl(
+                                    \Magento\Framework\UrlInterface::URL_TYPE_MEDIA
+                                ) . 'attribute/swatch/' . $swatchDetail['thumbnail']
+                                : null;
+                        }
+                    }
+
+                    $swatchOptions[$attrCode] = $entry;
+                }
+
+                $product['__swatch_options'] = $swatchOptions;
+            }
         }
 
         return $products;
-
     }
 
     /**
