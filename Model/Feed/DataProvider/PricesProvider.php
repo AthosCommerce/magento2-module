@@ -31,6 +31,7 @@ class PricesProvider implements DataProviderInterface
     const REGULAR_PRICE_KEY = 'regular_price';
     const FINAL_PRICE_KEY = 'final_price';
     const MAX_PRICE_KEY = 'max_price';
+
     /**
      * @var Json
      */
@@ -42,6 +43,7 @@ class PricesProvider implements DataProviderInterface
 
     /**
      * PricesProvider constructor.
+     *
      * @param Json $json
      * @param ProviderResolverInterface $priceProviderResolver
      */
@@ -56,6 +58,7 @@ class PricesProvider implements DataProviderInterface
     /**
      * @param array $products
      * @param FeedSpecificationInterface $feedSpecification
+     *
      * @return array
      */
     public function getData(array $products, FeedSpecificationInterface $feedSpecification): array

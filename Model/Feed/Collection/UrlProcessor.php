@@ -26,10 +26,13 @@ class UrlProcessor implements ProcessCollectionInterface
     /**
      * @param Collection $collection
      * @param FeedSpecificationInterface $feedSpecification
+     *
      * @return Collection
      */
-    public function processAfterLoad(Collection $collection, FeedSpecificationInterface $feedSpecification): Collection
-    {
+    public function processAfterLoad(
+        Collection $collection,
+        FeedSpecificationInterface $feedSpecification
+    ): Collection {
         $ignoredFields = $feedSpecification->getIgnoreFields();
         if (!in_array('url', $ignoredFields)) {
             $collection->addUrlRewrite();
@@ -41,10 +44,13 @@ class UrlProcessor implements ProcessCollectionInterface
     /**
      * @param Collection $collection
      * @param FeedSpecificationInterface $feedSpecification
+     *
      * @return Collection
      */
-    public function processAfterFetchItems(Collection $collection, FeedSpecificationInterface $feedSpecification): Collection
-    {
+    public function processAfterFetchItems(
+        Collection $collection,
+        FeedSpecificationInterface $feedSpecification
+    ): Collection {
         return $collection;
     }
 }

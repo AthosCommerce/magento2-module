@@ -10,7 +10,6 @@
             <module name="Magento_Eav"/>
             <module name="Magento_Review"/>
             <module name="Magento_GroupedProduct"/>
-            <module name="Magento_Bundle"/>
         </sequence>
     </module>
 </config>

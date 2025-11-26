@@ -33,6 +33,7 @@ use AthosCommerce\Feed\Api\TaskRepositoryInterface;
 use AthosCommerce\Feed\Model\ResourceModel\Task as TaskResource;
 use AthosCommerce\Feed\Model\ResourceModel\Task\Collection;
 use AthosCommerce\Feed\Model\ResourceModel\Task\CollectionFactory;
+use Psr\Log\LoggerInterface;
 
 class TaskRepository implements TaskRepositoryInterface
 {
@@ -64,9 +65,12 @@ class TaskRepository implements TaskRepositoryInterface
      * @var JoinProcessorInterface
      */
     private $joinProcessor;
+    /**
+     * @var LoggerInterface
+     */
+    private $logger;
 
     /**
-     * TaskRepository constructor.
      * @param TaskFactory $taskFactory
      * @param TaskResource $taskResource
      * @param CollectionFactory $collectionFactory
@@ -74,6 +78,7 @@ class TaskRepository implements TaskRepositoryInterface
      * @param TaskSearchResultsInterfaceFactory $searchResultsFactory
      * @param CollectionProcessorInterface $collectionProcessor
      * @param JoinProcessorInterface $joinProcessor
+     * @param LoggerInterface $logger
      */
     public function __construct(
         TaskFactory $taskFactory,
@@ -82,7 +87,8 @@ class TaskRepository implements TaskRepositoryInterface
         SearchCriteriaBuilder $searchCriteriaBuilder,
         TaskSearchResultsInterfaceFactory $searchResultsFactory,
         CollectionProcessorInterface $collectionProcessor,
-        JoinProcessorInterface $joinProcessor
+        JoinProcessorInterface $joinProcessor,
+        LoggerInterface $logger
     ) {
         $this->taskFactory = $taskFactory;
         $this->taskResource = $taskResource;
@@ -91,13 +97,15 @@ class TaskRepository implements TaskRepositoryInterface
         $this->searchResultsFactory = $searchResultsFactory;
         $this->collectionProcessor = $collectionProcessor;
         $this->joinProcessor = $joinProcessor;
+        $this->logger = $logger;
     }
 
     /**
      * @param int $id
+     *
+     * @return TaskInterface
      * @return TaskInterface
      * @throws NoSuchEntityException
-     * @return TaskInterface
      */
     public function get(int $id): TaskInterface
     {
@@ -113,9 +121,10 @@ class TaskRepository implements TaskRepositoryInterface
 
     /**
      * @param SearchCriteriaInterface|null $searchCriteria
+     *
+     * @return TaskSearchResultsInterface
      * @return TaskSearchResultsInterface
      * @throws LocalizedException
-     * @return TaskSearchResultsInterface
      */
     public function getList(?SearchCriteriaInterface $searchCriteria = null): TaskSearchResultsInterface
     {
@@ -136,14 +145,22 @@ class TaskRepository implements TaskRepositoryInterface
         $searchResults->setSearchCriteria($searchCriteria);
         $searchResults->setItems($collection->getItems());
         $searchResults->setTotalCount($collection->getSize());
+        $this->logger->info('TaskRepository collection',
+            [
+                'method' => __METHOD__,
+                'query' => $collection->getSelect()->__toString(),
+            ]
+        );
+
         return $searchResults;
     }
 
     /**
      * @param TaskInterface $task
+     *
+     * @return TaskInterface
      * @return TaskInterface
      * @throws CouldNotSaveException
-     * @return TaskInterface
      */
     public function save(TaskInterface $task): TaskInterface
     {
@@ -158,8 +175,9 @@ class TaskRepository implements TaskRepositoryInterface
 
     /**
      * @param TaskInterface $task
-     * @throws CouldNotDeleteException
+     *
      * @return void
+     * @throws CouldNotDeleteException
      */
     public function delete(TaskInterface $task): void
     {
@@ -172,9 +190,10 @@ class TaskRepository implements TaskRepositoryInterface
 
     /**
      * @param int $id
-     * @throws CouldNotDeleteException
-     * @throws NoSuchEntityException
+     *
      * @return void
+     * @throws NoSuchEntityException
+     * @throws CouldNotDeleteException
      */
     public function deleteById(int $id): void
     {
