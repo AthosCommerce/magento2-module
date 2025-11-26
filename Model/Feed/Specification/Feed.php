@@ -346,4 +346,39 @@ class Feed extends AbstractExtensibleObject implements FeedSpecificationInterfac
     {
         return $this->setData(self::MSI_STATUS, $value);
     }
+
+
+    /**
+     * @return array
+     */
+    public function getSwatchOptionFieldsNames(): array
+    {
+        return $this->_get(self::SETTING_NAME_SWATCH_OPTION_FIELD_NAMES) ?? [];
+    }
+
+    /**
+     * @param array $fields
+     * @return FeedSpecificationInterface
+     */
+    public function setSwatchOptionFieldsNames(array $fields): FeedSpecificationInterface
+    {
+        return $this->setData(self::SETTING_NAME_SWATCH_OPTION_FIELD_NAMES, $fields);
+    }
+
+    /**
+     * @return array
+     */
+    public function getVariantAdditionalFields(): array
+    {
+        return $this->_get(self::SETTING_NAME_VARIANT_ADDITIONAL_FIELDS) ?? [];
+    }
+
+    /**
+     * @param array $fields
+     * @return FeedSpecificationInterface
+     */
+    public function setVariantAdditionalFields(array $fields): FeedSpecificationInterface
+    {
+        return $this->setData(self::SETTING_NAME_VARIANT_ADDITIONAL_FIELDS, $fields);
+    }
 }

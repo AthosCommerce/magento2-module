@@ -83,6 +83,7 @@ class ParentImageProvider implements DataProviderInterface
             }
 
             $parent_image = null;
+            $parent_title = null;
 
             if ($productModel->getTypeId() === 'simple') {
                 $parentIds = $this->configurableType->getParentIdsByChild($productModel->getId());
@@ -94,6 +95,7 @@ class ParentImageProvider implements DataProviderInterface
                     }
 
                     if ($parentProduct instanceof \Magento\Catalog\Model\Product) {
+                        $parent_title = $parentProduct->getName();
                         $image = $parentProduct->getImage()
                             ?: $parentProduct->getSmallImage()
                                 ?: $parentProduct->getThumbnail();
@@ -104,7 +106,8 @@ class ParentImageProvider implements DataProviderInterface
                 }
             }
 
-            $product['parent_image'] = $parent_image;
+            $product['__parent_image'] = $parent_image;
+            $product['__parent_title'] = $parent_title;
         }
 
         return $products;

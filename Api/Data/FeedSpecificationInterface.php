@@ -92,6 +92,14 @@ interface FeedSpecificationInterface extends ExtensibleDataInterface
      */
     const MSI_STATUS = true;
     /**
+     *
+     */
+    const SETTING_NAME_SWATCH_OPTION_FIELD_NAMES = 'swatch_option_Fields';
+    /**
+     *
+     */
+    const SETTING_NAME_VARIANT_ADDITIONAL_FIELDS = 'variant_additional_fields';
+    /**
      * @return string|null
      */
     public function getStoreCode() : ?string;
@@ -288,4 +296,27 @@ interface FeedSpecificationInterface extends ExtensibleDataInterface
      * @return FeedSpecificationInterface
      */
     public function setMsiStatus(bool $value) : self;
+
+    /**
+     * @return array
+     */
+    public function getSwatchOptionFieldsNames() : array;
+
+    /**
+     * @param array $fields
+     * @return FeedSpecificationInterface
+     */
+    public function setSwatchOptionFieldsNames(array $fields) : self;
+
+    /**
+     * @return array
+     */
+    public function getVariantAdditionalFields() : array;
+
+    /**
+     * @param array $fields
+     * @return FeedSpecificationInterface
+     */
+    public function setVariantAdditionalFields(array $fields) : self;
+
 }
