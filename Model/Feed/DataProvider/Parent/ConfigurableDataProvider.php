@@ -162,7 +162,7 @@ class ConfigurableDataProvider implements DataProviderInterface
                     true
                 )) {
                     //Required, so not part of ignoredFields
-                    $childClone['parent_id'] = $parent->getDataUsingMethod($this->getLinkField());
+                    //$childClone['parent_id'] = $parent->getDataUsingMethod($this->getLinkField());
 
                     if (!in_array('parent_name', $ignoredFields, true)
                         && method_exists($parent, 'getName')

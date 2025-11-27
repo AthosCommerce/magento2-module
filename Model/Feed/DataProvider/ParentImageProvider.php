@@ -6,18 +6,19 @@ use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Configurable\DataProvider;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentDataContextManager;
 use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
+use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Catalog\Model\Product;
+use Magento\Framework\EntityManager\MetadataPool;
 use Magento\Framework\Exception\LocalizedException;
 use Psr\Log\LoggerInterface;
 use Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable;
-use Magento\CatalogInventory\Api\StockRegistryInterface;
 
 class ParentImageProvider implements DataProviderInterface
 {
     /**
-     * @var StockRegistryInterface
+     * @var MetadataPool
      */
-    private $stockRegistry;
+    private $metadataPool;
 
     /**
      * @var Configurable
@@ -43,33 +44,35 @@ class ParentImageProvider implements DataProviderInterface
      * @param LoggerInterface $logger
      * @param ParentDataContextManager $parentProductContextManager
      * @param Configurable $configurableType
-     * @param StockRegistryInterface $stockRegistry
+     * @param MetadataPool $metadataPool
      */
     public function __construct(
-        DataProvider             $provider,
-        LoggerInterface          $logger,
+        DataProvider $provider,
+        LoggerInterface $logger,
         ParentDataContextManager $parentProductContextManager,
-        Configurable             $configurableType,
-        StockRegistryInterface $stockRegistry
-    )
-    {
+        Configurable $configurableType,
+        MetadataPool $metadataPool
+    ) {
         $this->provider = $provider;
         $this->logger = $logger;
         $this->parentProductContextManager = $parentProductContextManager;
         $this->configurableType = $configurableType;
-        $this->stockRegistry = $stockRegistry;
+        $this->metadataPool = $metadataPool;
     }
 
     /**
      * Returns parent_image JSON for configurable product
+     *
      * @param array $products
      * @param FeedSpecificationInterface $feedSpecification
+     *
      * @return array
      * @throws LocalizedException
      * @throws \Exception
      */
     public function getData(array $products, FeedSpecificationInterface $feedSpecification): array
     {
+        //TODO:: IgnoreFields check required
         $this->logger->info('Generating ParentImageProvider JSON for configurable products', [
             'method' => __METHOD__,
             'format' => $feedSpecification->getFormat(),
@@ -84,6 +87,7 @@ class ParentImageProvider implements DataProviderInterface
 
             $parent_image = null;
             $parent_title = null;
+            $parentLinkId = null;
 
             if ($productModel->getTypeId() === 'simple') {
                 $parentIds = $this->configurableType->getParentIdsByChild($productModel->getId());
@@ -95,6 +99,7 @@ class ParentImageProvider implements DataProviderInterface
                     }
 
                     if ($parentProduct instanceof \Magento\Catalog\Model\Product) {
+                        $parentLinkId = $parentProduct->getDataUsingMethod($this->getLinkField());
                         $parent_title = $parentProduct->getName();
                         $image = $parentProduct->getImage()
                             ?: $parentProduct->getSmallImage()
@@ -105,9 +110,10 @@ class ParentImageProvider implements DataProviderInterface
                     }
                 }
             }
-
+            $product['__parent_id'] = $parentLinkId;
             $product['__parent_image'] = $parent_image;
             $product['__parent_title'] = $parent_title;
+            $product['linked_field'] = $this->getLinkField();
         }
 
         return $products;
@@ -127,5 +133,14 @@ class ParentImageProvider implements DataProviderInterface
     public function resetAfterFetchItems(): void
     {
         //
+    }
+
+    /**
+     * @return string
+     * @throws \Exception
+     */
+    public function getLinkField(): string
+    {
+        return $this->metadataPool->getMetadata(ProductInterface::class)->getLinkField();
     }
 }
