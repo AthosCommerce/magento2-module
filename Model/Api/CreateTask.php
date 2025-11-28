@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Model\Api;
 
 use Exception;
+use Magento\Framework\Event\ManagerInterface as EventManagerInterface;
 use Magento\Framework\Exception\CouldNotSaveException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Module\Manager;
@@ -56,7 +57,6 @@ class CreateTask implements CreateTaskInterface
      * @var UniqueCheckerPool
      */
     private $uniqueCheckerPool;
-
     /**
      * @var Manager
      */
@@ -65,6 +65,10 @@ class CreateTask implements CreateTaskInterface
      * @var LoggerInterface
      */
     private $logger;
+    /**
+     * @var EventManagerInterface
+     */
+    private $eventManager;
 
     private $moduleList = [
         'Magento_InventoryReservationsApi',
@@ -81,19 +85,20 @@ class CreateTask implements CreateTaskInterface
      * @param UniqueCheckerPool $uniqueCheckerPool
      * @param Manager $moduleManager
      * @param LoggerInterface $logger
+     * @param EventManagerInterface $eventManager
      * @param array $moduleList
      */
     public function __construct(
         TaskRepositoryInterface $taskRepository,
-        TaskInterfaceFactory    $taskFactory,
-        ValidatorPool           $validatorPool,
-        TypeList                $typeList,
-        UniqueCheckerPool       $uniqueCheckerPool,
-        Manager                 $moduleManager,
-        LoggerInterface         $logger,
-        array                   $moduleList = []
-    )
-    {
+        TaskInterfaceFactory $taskFactory,
+        ValidatorPool $validatorPool,
+        TypeList $typeList,
+        UniqueCheckerPool $uniqueCheckerPool,
+        Manager $moduleManager,
+        LoggerInterface $logger,
+        EventManagerInterface $eventManager,
+        array $moduleList = []
+    ) {
         $this->taskRepository = $taskRepository;
         $this->taskFactory = $taskFactory;
         $this->validatorPool = $validatorPool;
@@ -102,6 +107,7 @@ class CreateTask implements CreateTaskInterface
         $this->moduleManager = $moduleManager;
         $this->moduleList = array_merge($this->moduleList, $moduleList);
         $this->logger = $logger;
+        $this->eventManager = $eventManager;
     }
 
     /**
@@ -208,16 +214,30 @@ class CreateTask implements CreateTaskInterface
             'payloadType' => gettype($payload)
         ]);
 
+        $this->eventManager->dispatch(
+            'athos_create_task_api_save_before',
+            [
+                'payload' => $payload,
+                'task' => $task,
+            ],
+        );
         $savedTask = $this->taskRepository->save($task);
-
         $this->logger->info('Task saved and created successfully', [
             'method' => __METHOD__,
             'type' => $type,
             'payload' => $payload,
             'payloadType' => gettype($payload),
             'taskId' => $savedTask->getId(),
-            'status' => $savedTask->getStatus()
+            'status' => $savedTask->getStatus(),
         ]);
+
+        $this->eventManager->dispatch(
+            'athos_create_task_api_save_after',
+            [
+                'payload' => $payload,
+                'task' => $savedTask,
+            ],
+        );
 
         return $savedTask;
     }
