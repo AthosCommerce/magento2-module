@@ -148,19 +148,19 @@ class IndexingEntity extends AbstractExtensibleModel implements IndexingEntityIn
     }
 
     /**
-     * @return Actions
+     * @return string
      */
-    public function getNextAction(): Actions
+    public function getNextAction(): string
     {
         return $this->getData(static::NEXT_ACTION);
     }
 
     /**
-     * @param Actions $nextAction
+     * @param string $nextAction
      *
      * @return void
      */
-    public function setNextAction(Actions $nextAction): void
+    public function setNextAction(string $nextAction): void
     {
         $this->setData(static::NEXT_ACTION, $nextAction);
     }
@@ -188,19 +188,19 @@ class IndexingEntity extends AbstractExtensibleModel implements IndexingEntityIn
     }
 
     /**
-     * @return \AthosCommerce\Feed\Model\Source\Actions
+     * @return string
      */
-    public function getLastAction(): Actions
+    public function getLastAction(): string
     {
         return $this->getData(static::LAST_ACTION);
     }
 
     /**
-     * @param Actions $lastAction
+     * @param string $lastAction
      *
      * @return void
      */
-    public function setLastAction(Actions $lastAction): void
+    public function setLastAction(string $lastAction): void
     {
         $this->setData(static::LAST_ACTION, $lastAction);
     }

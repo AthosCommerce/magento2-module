@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Model\ResourceModel;
 
 use AthosCommerce\Feed\Model\IndexingEntity as IndexingEntityModel;
+use AthosCommerce\Feed\Traits\CastIndexingEntityPropertiesToCorrectType;
 use Magento\Framework\Model\AbstractModel;
 use Magento\Framework\Model\ResourceModel\Db\Context;
 use Magento\Framework\Model\ResourceModel\Db\VersionControl\AbstractDb;
@@ -32,6 +33,8 @@ use AthosCommerce\Feed\Model\Task as TaskModel;
 
 class IndexingEntity extends AbstractDb
 {
+    use CastIndexingEntityPropertiesToCorrectType;
+
     const TABLE = 'athoscommerce_indexing_entity';
     const ID_FIELD_NAME = 'entity_id';
 
@@ -56,12 +59,12 @@ class IndexingEntity extends AbstractDb
         $lastAction = $object->getData(IndexingEntityModel::LAST_ACTION);
         $object->setData(
             IndexingEntityModel::LAST_ACTION,
-            $lastAction->value,
+            $lastAction,
         );
         $nextAction = $object->getData(IndexingEntityModel::NEXT_ACTION);
         $object->setData(
             IndexingEntityModel::NEXT_ACTION,
-            $nextAction->value,
+            $nextAction,
         );
 
         return parent::_beforeSave($object);

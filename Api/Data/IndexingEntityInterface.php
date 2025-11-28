@@ -18,11 +18,8 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Api\Data;
 
-use AthosCommerce\Feed\Model\Source\Actions;
-
 interface IndexingEntityInterface
 {
-
     /**
      * @return int
      */
@@ -97,16 +94,16 @@ interface IndexingEntityInterface
     public function setSiteId(string $siteId): void;
 
     /**
-     * @return \AthosCommerce\Feed\Model\Source\Actions
+     * @return string
      */
-    public function getNextAction(): Actions;
+    public function getNextAction(): string;
 
     /**
-     * @param \AthosCommerce\Feed\Model\Source\Actions $nextAction
+     * @param string $nextAction
      *
      * @return void
      */
-    public function setNextAction(Actions $nextAction): void;
+    public function setNextAction(string $nextAction): void;
 
     /**
      * @return string|null
@@ -121,16 +118,16 @@ interface IndexingEntityInterface
     public function setLockTimestamp(?string $lockTimestamp = null): void;
 
     /**
-     * @return \AthosCommerce\Feed\Model\Source\Actions
+     * @return string
      */
-    public function getLastAction(): Actions;
+    public function getLastAction(): string;
 
     /**
-     * @param \AthosCommerce\Feed\Model\Source\Actions $lastAction
+     * @param string $lastAction
      *
      * @return void
      */
-    public function setLastAction(Actions $lastAction): void;
+    public function setLastAction(string $lastAction): void;
 
     /**
      * @return string|null
