@@ -26,19 +26,11 @@ use Magento\ConfigurableProduct\Helper\Data as ConfigurableHelper;
 use Magento\ConfigurableProduct\Model\ConfigurableAttributeData;
 use Magento\ConfigurableProduct\Model\Product\Type\Configurable as ConfigurableType;
 use Magento\Framework\Exception\LocalizedException;
-use Magento\Swatches\Helper\Data as SwatchHelper;
 use Psr\Log\LoggerInterface;
 use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
-use Magento\Swatches\Model\SwatchAttributesProvider;
-use Magento\Swatches\Block\Product\Renderer\Configurable as SwatchRenderer;
 
-class JsonConfigProvider implements DataProviderInterface
+class SelectedOptionsProvider implements DataProviderInterface
 {
-    /**
-     * @var SwatchRenderer
-     */
-    protected $swatchRenderer;
-
     /**
      * @var ProductRepositoryInterface
      */
@@ -64,20 +56,12 @@ class JsonConfigProvider implements DataProviderInterface
      */
     protected $configurableType;
 
-    /**
-     * @var SwatchHelper
-     */
-    protected $swatchHelper;
 
     /**
      * @var LoggerInterface
      */
     protected $logger;
 
-    /**
-     * @var SwatchAttributesProvider
-     */
-    protected $swatchAttributesProvider;
 
     public function __construct(
         ProductRepositoryInterface $productRepository,
@@ -85,10 +69,7 @@ class JsonConfigProvider implements DataProviderInterface
         ConfigurableHelper         $configurableHelper,
         ConfigurableAttributeData  $configurableAttributeData,
         ConfigurableType           $configurableType,
-        SwatchHelper               $swatchHelper,
         LoggerInterface            $logger,
-        SwatchAttributesProvider   $swatchAttributesProvider,
-        SwatchRenderer             $swatchRenderer,
     )
     {
         $this->productRepository = $productRepository;
@@ -96,10 +77,7 @@ class JsonConfigProvider implements DataProviderInterface
         $this->configurableHelper = $configurableHelper;
         $this->configurableAttributeData = $configurableAttributeData;
         $this->configurableType = $configurableType;
-        $this->swatchHelper = $swatchHelper;
-        $this->swatchAttributesProvider = $swatchAttributesProvider;
         $this->logger = $logger;
-        $this->swatchRenderer = $swatchRenderer;
     }
 
     /**
@@ -111,8 +89,7 @@ class JsonConfigProvider implements DataProviderInterface
     public function getData(array $products, FeedSpecificationInterface $feedSpecification): array
     {
         $ignoredFields = $feedSpecification->getIgnoreFields();
-        if (in_array('json_config', $ignoredFields)
-            || in_array('swatch_json_config', $ignoredFields)
+        if (in_array('__selected_options', $ignoredFields)
         ) {
             return $products;
         }
@@ -128,13 +105,12 @@ class JsonConfigProvider implements DataProviderInterface
             $simpleId = (int)$simpleProduct->getId();
 
             /**
-             * Get Parent Configurable Product ID (NO BLOCKS)
+             * Get Parent Configurable Product ID
              */
             $parentIds = $this->configurableResource->getParentIdsByChild($simpleId);
 
             if (empty($parentIds)) {
-                $product['json_config'] = null;
-                $product['swatch_json_config'] = null;
+                $product['__selected_options'] = null;
                 continue;
             }
 
@@ -157,31 +133,31 @@ class JsonConfigProvider implements DataProviderInterface
                 $options = $this->configurableHelper->getOptions($parentProduct, $allowedProducts);
                 $attributesData = $this->configurableAttributeData->getAttributesData($parentProduct, $options);
 
-                $jsonConfigArr = [
-                    'attributes' => $attributesData['attributes'],
-                    'index' => $options['index'] ?? [],
-                    'salable' => $options['salable'] ?? [],
-                    'productId' => $parentId
-                ];
+                $selectedOptions = [];
+                if (!empty($options['index'][$simpleId])) {
+                    foreach ($options['index'][$simpleId] as $attributeId => $optionId) {
+                        if (isset($attributesData['attributes'][$attributeId])) {
+                            $attrCode = $attributesData['attributes'][$attributeId]['code'];
+                            foreach ($attributesData['attributes'][$attributeId]['options'] as $option) {
+                                if ($option['id'] == $optionId) {
+                                    $selectedOptions[$attrCode] = ['value' => $option['label']];
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
 
-                $product['json_config'] = json_encode($jsonConfigArr);
+                $product['__selected_options'] = json_encode($selectedOptions);
 
             } catch (\Exception $e) {
-                $product['json_config'] = '{}';
-            }
-
-            try {
-                $swatchRenderer = clone $this->swatchRenderer;
-                $swatchRenderer->setProduct($parentProduct);
-                $product['swatch_json_config'] = $swatchRenderer->getJsonConfig();
-
-            } catch (\Exception $e) {
-                $product['swatch_json_config'] = '{}';
+                $product['__selected_options'] = '{}';
             }
         }
 
         return $products;
     }
+
 
     /**
      *

@@ -111,7 +111,7 @@ class StockProvider implements DataProviderInterface
             if (isset($childStockData[$childId])) {
                 $stockItem = $childStockData[$childId];
                 if (!in_array('__in_stock', $ignoreFields) && isset($stockItem['in_stock'])) {
-                    $product['__in_stock'] = (int)$stockItem['in_stock'];
+                    $product['__in_stock'] = (boolean)$stockItem['in_stock'];
                 }
                 if (!in_array('in_stock', $ignoreFields) && isset($stockItem['in_stock'])) {
                     $product['in_stock'] = (int)$stockItem['in_stock'];
