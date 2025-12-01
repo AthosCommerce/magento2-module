@@ -13,7 +13,7 @@ use Magento\Framework\Exception\LocalizedException;
 use Psr\Log\LoggerInterface;
 use Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable;
 
-class ParentImageProvider implements DataProviderInterface
+class ParentInfoProvider implements DataProviderInterface
 {
     /**
      * @var MetadataPool
@@ -72,7 +72,15 @@ class ParentImageProvider implements DataProviderInterface
      */
     public function getData(array $products, FeedSpecificationInterface $feedSpecification): array
     {
-        //TODO:: IgnoreFields check required
+        $ignoredFields = $feedSpecification->getIgnoreFields();
+        if (in_array('__parent_id', $ignoredFields)
+            && in_array('__parent_image', $ignoredFields)
+            && in_array('__parent_title', $ignoredFields)
+            && in_array('linked_field', $ignoredFields)
+        ) {
+            return $products;
+        }
+
         $this->logger->info('Generating ParentImageProvider JSON for configurable products', [
             'method' => __METHOD__,
             'format' => $feedSpecification->getFormat(),
