@@ -81,6 +81,11 @@ class SwatchOptionsProvider implements DataProviderInterface
     public function getData(array $products, FeedSpecificationInterface $feedSpecification): array
     {
         $ignoredFields = $feedSpecification->getIgnoreFields();
+
+        if (empty($feedSpecification->getSwatchOptionFieldsNames()) || in_array('swatchOptionSourceFieldNames', $ignoredFields)) {
+            return $products;
+        }
+
         $swatch = [];
         if ($feedSpecification->getSwatchOptionFieldsNames() && !in_array('swatchOptionSourceFieldNames', $ignoredFields)) {
             $swatch = $feedSpecification->getSwatchOptionFieldsNames();
