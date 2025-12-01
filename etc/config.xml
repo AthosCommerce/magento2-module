@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <athoscommerce>
+            <configuration>
+                <siteid/>
+                <endpoint/>
+                <secretkey/>
+                <feedid/>
+            </configuration>
+            <indexing>
+                <enable_live_indexing>0</enable_live_indexing>
+                <entity_cron_expr>*/30 * * * *</entity_cron_expr>
+            </indexing>
+        </athoscommerce>
+    </default>
+</config>

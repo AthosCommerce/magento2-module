@@ -40,6 +40,7 @@ class Collection extends AbstractCollection
 
     /**
      * Collection constructor.
+     *
      * @param EntityFactoryInterface $entityFactory
      * @param LoggerInterface $logger
      * @param FetchStrategyInterface $fetchStrategy
@@ -59,7 +60,13 @@ class Collection extends AbstractCollection
         ?AdapterInterface $connection = null,
         ?AbstractDb $resource = null
     ) {
-        parent::__construct($entityFactory, $logger, $fetchStrategy, $eventManager, $entitySnapshot, $connection, $resource);
+        parent::__construct($entityFactory,
+            $logger,
+            $fetchStrategy,
+            $eventManager,
+            $entitySnapshot,
+            $connection,
+            $resource);
         $this->loadErrors = $loadErrors;
     }
 
@@ -78,13 +85,14 @@ class Collection extends AbstractCollection
     protected function _afterLoad()
     {
         $this->loadErrors();
+
         return parent::_afterLoad();
     }
 
     /**
      * @throws Exception
      */
-    private function loadErrors() : void
+    private function loadErrors(): void
     {
         $items = $this->getItems();
         if (empty($items)) {

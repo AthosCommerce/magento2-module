@@ -30,6 +30,9 @@
     <preference for="AthosCommerce\Feed\Api\ExecuteTaskInterface"
                 type="AthosCommerce\Feed\Model\ExecuteTask"/>
 
+    <preference for="AthosCommerce\Feed\Api\LiveIndexingInterface"
+                type="AthosCommerce\Feed\Model\LiveIndexing"/>
+
     <preference for="AthosCommerce\Feed\Api\CreateTaskInterface"
                 type="AthosCommerce\Feed\Model\Api\CreateTask"/>
     <preference for="AthosCommerce\Feed\Api\GetVersionInterface"
@@ -93,6 +96,13 @@
                 type="AthosCommerce\Feed\Model\Feed\ProductExclusion"/>
     <preference for="AthosCommerce\Feed\Model\Feed\DataProvider\Attribute\ValueProcessorInterface"
                 type="AthosCommerce\Feed\Model\Feed\DataProvider\Attribute\ValueProcessor" />
+
+    <preference for="AthosCommerce\Feed\Service\EntityUpdateResponderServiceInterface"
+                type="AthosCommerce\Feed\Service\EntityUpdateResponderService"/>
+    <preference for="AthosCommerce\Feed\Api\Data\IndexingEntityInterface"
+                type="AthosCommerce\Feed\Model\IndexingEntity"/>
+    <preference for="AthosCommerce\Feed\Api\IndexingEntityRepositoryInterface"
+                type="AthosCommerce\Feed\Model\IndexingEntityRepository"/>
 
     <type name="AthosCommerce\Feed\Model\Task\TypeList">
         <arguments>
@@ -413,6 +423,14 @@
             <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
         </arguments>
     </type>
+
+    <type name="AthosCommerce\Feed\Model\IndexingEntityRepository">
+        <arguments>
+            <argument name="indexingEntityValidator"
+                      xsi:type="object">AthosCommerce\Feed\Validator\IndexingEntityValidator</argument>
+            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
+        </arguments>
+    </type>
     <type name="AthosCommerce\Feed\Model\Feed\DataProvider\SelectedOptionsProvider">
         <arguments>
             <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
@@ -456,6 +474,14 @@
             <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
         </arguments>
     </type>
+
+    <type name="AthosCommerce\Feed\Observer\Product\UpdateObserver">
+        <arguments>
+            <argument name="logger"
+                      xsi:type="object">AthosCommerceLogger</argument>
+        </arguments>
+    </type>
+
 
     <type name="AthosCommerce\Feed\Model\Metric\MetricProvider\TimerProvider" shared="false"/>
     <type name="AthosCommerce\Feed\Model\Metric\MetricProvider\FileSizeProvider" shared="false"/>
