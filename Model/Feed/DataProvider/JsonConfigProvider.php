@@ -112,7 +112,7 @@ class JsonConfigProvider implements DataProviderInterface
     {
         $ignoredFields = $feedSpecification->getIgnoreFields();
         if (in_array('json_config', $ignoredFields)
-            || in_array('swatch_json_config', $ignoredFields)
+            && in_array('swatch_json_config', $ignoredFields)
         ) {
             return $products;
         }
@@ -152,31 +152,35 @@ class JsonConfigProvider implements DataProviderInterface
             /**
              *  Generate JSON CONFIG (NO BLOCKS)
              */
-            try {
-                $allowedProducts = $this->configurableType->getUsedProducts($parentProduct);
-                $options = $this->configurableHelper->getOptions($parentProduct, $allowedProducts);
-                $attributesData = $this->configurableAttributeData->getAttributesData($parentProduct, $options);
+            if (!in_array('json_config', $ignoredFields)) {
+                try {
+                    $allowedProducts = $this->configurableType->getUsedProducts($parentProduct);
+                    $options = $this->configurableHelper->getOptions($parentProduct, $allowedProducts);
+                    $attributesData = $this->configurableAttributeData->getAttributesData($parentProduct, $options);
 
-                $jsonConfigArr = [
-                    'attributes' => $attributesData['attributes'],
-                    'index' => $options['index'] ?? [],
-                    'salable' => $options['salable'] ?? [],
-                    'productId' => $parentId
-                ];
+                    $jsonConfigArr = [
+                        'attributes' => $attributesData['attributes'],
+                        'index' => $options['index'] ?? [],
+                        'salable' => $options['salable'] ?? [],
+                        'productId' => $parentId
+                    ];
 
-                $product['json_config'] = json_encode($jsonConfigArr);
+                    $product['json_config'] = json_encode($jsonConfigArr);
 
-            } catch (\Exception $e) {
-                $product['json_config'] = '{}';
+                } catch (\Exception $e) {
+                    $product['json_config'] = '{}';
+                }
             }
 
-            try {
-                $swatchRenderer = clone $this->swatchRenderer;
-                $swatchRenderer->setProduct($parentProduct);
-                $product['swatch_json_config'] = $swatchRenderer->getJsonConfig();
+            if (!in_array('swatch_json_config', $ignoredFields)) {
+                try {
+                    $swatchRenderer = clone $this->swatchRenderer;
+                    $swatchRenderer->setProduct($parentProduct);
+                    $product['swatch_json_config'] = $swatchRenderer->getJsonConfig();
 
-            } catch (\Exception $e) {
-                $product['swatch_json_config'] = '{}';
+                } catch (\Exception $e) {
+                    $product['swatch_json_config'] = '{}';
+                }
             }
         }
 
