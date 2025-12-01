@@ -133,12 +133,126 @@ class IndexingEntityTest extends TestCase
 
     public function testCanSaveAndLoad_WithTimestamps(): void
     {
-        $this->markTestSkipped();
+        $indexingEntity = $this->createIndexingEntity([
+            'target_id' => 100,
+            'target_parent_id' => 500,
+            'target_entity_subtype' => 'virtual',
+            'lock_timestamp' => date('Y-m-d H:i:s', time()),
+            'last_action_timestamp' => date('Y-m-d H:i:s', time() - 3600),
+        ]);
+        /** @var AbstractModel $indexingEntityToLoad */
+        $indexingEntityToLoad = $this->instantiateTestObject();
+        $resourceModel = $this->instantiateSyncResourceModel();
+        $resourceModel->load(
+            $indexingEntityToLoad,
+            $indexingEntity->getId(),
+        );
+
+        $this->assertSame(
+            (int)$indexingEntity->getId(),
+            $indexingEntityToLoad->getId(),
+        );
+        $this->assertSame(
+            '__PRODUCT',
+            $indexingEntity->getTargetEntityType(),
+        );
+        $this->assertSame(
+            $indexingEntity->getTargetEntityType(),
+            $indexingEntityToLoad->getTargetEntityType(),
+        );
+        $this->assertSame(
+            'virtual',
+            $indexingEntity->getTargetEntitySubtype(),
+        );
+        $this->assertSame(
+            $indexingEntity->getTargetEntitySubtype(),
+            $indexingEntityToLoad->getTargetEntitySubtype(),
+        );
+        $this->assertSame(
+            100,
+            $indexingEntity->getTargetId(),
+        );
+        $this->assertSame(
+            $indexingEntity->getTargetId(),
+            $indexingEntityToLoad->getTargetId(),
+        );
+        $this->assertSame(
+            500,
+            $indexingEntity->getTargetParentId(),
+        );
+        $this->assertSame(
+            $indexingEntity->getTargetParentId(),
+            $indexingEntityToLoad->getTargetParentId(),
+        );
+        $this->assertStringContainsString(
+            'site-id',
+            $indexingEntity->getSiteId(),
+        );
+        $this->assertSame(
+            $indexingEntity->getApiKey(),
+            $indexingEntityToLoad->getApiKey(),
+        );
+        $this->assertSame(
+            'Upsert',
+            $indexingEntityToLoad->getNextAction(),
+        );
+        $this->assertSame(
+            $indexingEntity->getNextAction(),
+            $indexingEntityToLoad->getNextAction(),
+        );
+        $this->assertNotNull(
+            $indexingEntity->getLockTimestamp(),
+        );
+        $this->assertSame(
+            $indexingEntity->getLockTimestamp(),
+            $indexingEntityToLoad->getLockTimestamp(),
+        );
+        $this->assertSame(
+            'Upsert',
+            $indexingEntityToLoad->getLastAction(),
+        );
+        $this->assertSame(
+            $indexingEntity->getLastAction(),
+            $indexingEntityToLoad->getLastAction(),
+        );
+        $this->assertNotNull($indexingEntity->getLastActionTimestamp());
+        $this->assertSame(
+            $indexingEntity->getLastActionTimestamp(),
+            $indexingEntityToLoad->getLastActionTimestamp(),
+        );
+        $this->assertTrue(
+            $indexingEntity->getIsIndexable(),
+        );
+        $this->assertSame(
+            $indexingEntity->getIsIndexable(),
+            $indexingEntityToLoad->getIsIndexable(),
+        );
     }
 
     public function testCanLoadMultipleIndexingEntities(): void
     {
-        $this->markTestSkipped();
+        $indexingEntityA = $this->createIndexingEntity();
+        $indexingEntityB = $this->createIndexingEntity([
+            'target_entity_type' => '__PRODUCT',
+            'target_entity_subtype' => null,
+            'target_id' => 2,
+            'target_parent_id' => 3,
+            'next_action' => Actions::UPSERT,
+            'lock_timestamp' => date('Y-m-d H:i:s', time()),
+            'last_action' => Actions::NO_ACTION,
+            'last_action_timestamp' => date('Y-m-d H:i:s', time() - 3600),
+        ]);
+
+        $collection = $this->objectManager->get( IndexingEntityCollection::class);
+        $items = $collection->getItems();
+        $this->assertContains(
+            (int)$indexingEntityA->getId(),
+            array_keys($items),
+        );
+        $this->assertContains(
+            (int)$indexingEntityB->getId(),
+            array_keys($items),
+        );
     }
 
     /**

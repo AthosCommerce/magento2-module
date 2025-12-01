@@ -102,9 +102,6 @@ class Entity implements EntityInterface
             case static::ENTITY_IDS:
                 $this->setEntityIds($value);
                 break;
-            case static::STORE_IDS:
-                $this->setStoreIds($value);
-                break;
             default:
                 throw new \InvalidArgumentException(
                     sprintf(

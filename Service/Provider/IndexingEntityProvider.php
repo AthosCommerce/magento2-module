@@ -44,31 +44,31 @@ class IndexingEntityProvider implements IndexingEntityProviderInterface
     /**
      * @var SearchCriteriaBuilderFactory
      */
-    private SearchCriteriaBuilderFactory $searchCriteriaBuilderFactory;
+    private $searchCriteriaBuilderFactory;
     /**
      * @var IndexingEntityRepositoryInterface
      */
-    private IndexingEntityRepositoryInterface $indexingEntityRepository;
+    private $indexingEntityRepository;
     /**
      * @var FilterGroupBuilderFactory
      */
-    private FilterGroupBuilderFactory $filterGroupBuilderFactory;
+    private $filterGroupBuilderFactory;
     /**
      * @var FilterBuilderFactory
      */
-    private FilterBuilderFactory $filterBuilderFactory;
+    private $filterBuilderFactory;
     /**
      * @var CollectionFactory
      */
-    private CollectionFactory $collectionFactory;
+    private $collectionFactory;
     /**
      * @var ResourceConnection
      */
-    private ResourceConnection $resourceConnection;
+    private $resourceConnection;
     /**
      * @var SortOrderBuilderFactory
      */
-    private SortOrderBuilderFactory $sortOrderBuilderFactory;
+    private $sortOrderBuilderFactory;
 
     /**
      * @param SearchCriteriaBuilderFactory $searchCriteriaBuilderFactory

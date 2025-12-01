@@ -99,6 +99,10 @@
 
     <preference for="AthosCommerce\Feed\Service\EntityUpdateResponderServiceInterface"
                 type="AthosCommerce\Feed\Service\EntityUpdateResponderService"/>
+    <preference for="AthosCommerce\Feed\Api\Data\IndexingEntityInterface"
+                type="AthosCommerce\Feed\Model\IndexingEntity"/>
+    <preference for="AthosCommerce\Feed\Api\IndexingEntityRepositoryInterface"
+                type="AthosCommerce\Feed\Model\IndexingEntityRepository"/>
 
     <type name="AthosCommerce\Feed\Model\Task\TypeList">
         <arguments>
@@ -417,7 +421,13 @@
             <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
         </arguments>
     </type>
-
+    <type name="AthosCommerce\Feed\Model\IndexingEntityRepository">
+        <arguments>
+            <argument name="indexingEntityValidator"
+                      xsi:type="object">AthosCommerce\Feed\Validator\IndexingEntityValidator</argument>
+            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
+        </arguments>
+    </type>
 
 
     <virtualType name="AthosCommerceFeedGenerateFeedConfigurableChildStorage" type="AthosCommerce\Feed\Model\Feed\DataProvider\Product\ChildStorage"/>
