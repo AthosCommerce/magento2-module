@@ -78,7 +78,6 @@ class ConfigUpdate implements ConfigUpdateInterface
                     );
                 }
             } else {
-
                 throw new LocalizedException(
                     __("Invalid config path '%1'. Allowed paths must start with '%2' and match module structure.", $path, json_encode(self::Allowed_PATHS))
                 );
@@ -100,8 +99,8 @@ class ConfigUpdate implements ConfigUpdateInterface
                     'success' => true,
                     'path' => $path,
                     'value' => $value,
-                    'scope' => 'default',
-                    'scope_id' => 0,
+                    'scope' => $scope,
+                    'scope_id' => $scopeId,
                     'message' => 'Config saved successfully'
                 ]
             ];
@@ -114,7 +113,6 @@ class ConfigUpdate implements ConfigUpdateInterface
                 ],
             ];
         }
-
     }
 
     /**
