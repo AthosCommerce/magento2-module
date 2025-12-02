@@ -4,7 +4,6 @@ namespace AthosCommerce\Feed\Model\Api;
 
 use AthosCommerce\Feed\Api\ConfigUpdateInterface;
 use Magento\Framework\App\Config\Storage\WriterInterface;
-use Magento\Framework\App\Cache\TypeListInterface;
 use Magento\Framework\Exception\LocalizedException;
 
 class ConfigUpdate implements ConfigUpdateInterface
@@ -25,18 +24,11 @@ class ConfigUpdate implements ConfigUpdateInterface
      */
     protected $configWriter;
 
-    /**
-     * @var TypeListInterface
-     */
-    protected $cacheTypeList;
-
     public function __construct(
-        WriterInterface   $configWriter,
-        TypeListInterface $cacheTypeList
+        WriterInterface   $configWriter
     )
     {
         $this->configWriter = $configWriter;
-        $this->cacheTypeList = $cacheTypeList;
     }
 
     /**
