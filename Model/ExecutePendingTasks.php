@@ -72,7 +72,7 @@ class ExecutePendingTasks implements ExecutePendingTasksInterface
      */
     public function execute(): array
     {
-        $this->logger->info('TaskExecution: Pending tasks execution started by cron');
+        $this->logger->info('TaskExecution: Pending tasks execution started.');
         $searchCriteria = $this->searchCriteriaBuilder
             ->addFilter(TaskInterface::STATUS, MetadataInterface::TASK_STATUS_PENDING)
             ->create();
@@ -82,21 +82,29 @@ class ExecutePendingTasks implements ExecutePendingTasksInterface
 
         $result = [];
         foreach ($taskItems as $task) {
+            $taskId = $task->getEntityId();
             try {
-                $this->logger->info('TaskExecution: Execution started for each task', [
-                    'method' => __METHOD__,
-                    'entityId' => $task->getEntityId(),
-                    'status' => $task->getStatus(),
-                ]);
-                $result[$task->getEntityId()] = $this->executeTask->execute($task);
+                $this->logger->info(
+                    'TaskExecution: Execution started for each task',
+                    [
+                        'method' => __METHOD__,
+                        'taskId' => $taskId,
+                        'status' => $task->getStatus(),
+                    ]
+                );
+                $result[$taskId] = $this->executeTask->execute($task);
             } catch (\Throwable $exception) {
                 $this->logger->error(
-                    $exception->getMessage(),
-                    ['trace' => $exception->getTraceAsString()]
+                    sprintf('Task ID %d failed. Error: %s', $taskId, $exception->getMessage()),
+                    [
+                        'taskId' => $taskId,
+                        'trace' => $exception->getTraceAsString()
+                    ]
                 );
+                $result[$taskId] = 'ERROR';
             }
         }
-        $this->logger->info('TaskExecution: Pending tasks execution completed by cron');
+        $this->logger->info('TaskExecution: Pending tasks execution completed.');
 
         return $result;
     }

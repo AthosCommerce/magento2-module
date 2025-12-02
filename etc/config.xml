@@ -13,7 +13,9 @@
             </configuration>
             <indexing>
                 <enable_live_indexing>0</enable_live_indexing>
+                <discovery_cron_expr>*/30 * * * *</discovery_cron_expr>
                 <entity_cron_expr>*/30 * * * *</entity_cron_expr>
+                <batch_size>100</batch_size>
             </indexing>
         </athoscommerce>
     </default>

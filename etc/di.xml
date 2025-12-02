@@ -358,6 +358,11 @@
             <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
         </arguments>
     </type>
+    <type name="AthosCommerce\Feed\Cron\ExecuteTasksCron">
+        <arguments>
+            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
+        </arguments>
+    </type>
     <type name="AthosCommerce\Feed\Model\Feed\DataProvider\Attribute\ValueProcessor">
         <arguments>
             <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
@@ -448,12 +453,28 @@
     <type name="Magento\Framework\Console\CommandListInterface">
         <arguments>
             <argument name="commands" xsi:type="array">
-                <item name="AthosCommerceFeedExecutePendingTasks" xsi:type="object">AthosCommerce\Feed\Console\Command\ExecutePendingTasks\Proxy</item>
+                <item name="AthosCommerceFeedExecutePendingTasksCommand" xsi:type="object">AthosCommerce\Feed\Console\Command\ExecutePendingTasksCommand\Proxy</item>
+                <item name="AthosCommerceFeedEntityDiscoveryCommand" xsi:type="object">AthosCommerce\Feed\Console\Command\EntityDiscoveryCommand\Proxy</item>
+                <item name="AthosCommerceFeedEntitySyncCommand" xsi:type="object">AthosCommerce\Feed\Console\Command\EntitySyncCommand\Proxy</item>
             </argument>
         </arguments>
     </type>
 
-    <type name="AthosCommerce\Feed\Console\Command\ExecutePendingTasks">
+    <type name="AthosCommerce\Feed\Console\Command\ExecutePendingTasksCommand">
+        <arguments>
+            <argument name="state" xsi:type="object">Magento\Framework\App\State\Proxy</argument>
+            <argument name="cliOutput" xsi:type="object">AthosCommerce\Feed\Model\Metric\Output\CliOutput\Proxy</argument>
+            <argument name="metricCollector" xsi:type="object">AthosCommerce\Feed\Model\Metric\CollectorInterface\Proxy</argument>
+        </arguments>
+    </type>
+    <type name="AthosCommerce\Feed\Console\Command\EntityDiscoveryCommand">
+        <arguments>
+            <argument name="state" xsi:type="object">Magento\Framework\App\State\Proxy</argument>
+            <argument name="cliOutput" xsi:type="object">AthosCommerce\Feed\Model\Metric\Output\CliOutput\Proxy</argument>
+            <argument name="metricCollector" xsi:type="object">AthosCommerce\Feed\Model\Metric\CollectorInterface\Proxy</argument>
+        </arguments>
+    </type>
+    <type name="AthosCommerce\Feed\Console\Command\EntitySyncCommand">
         <arguments>
             <argument name="state" xsi:type="object">Magento\Framework\App\State\Proxy</argument>
             <argument name="cliOutput" xsi:type="object">AthosCommerce\Feed\Model\Metric\Output\CliOutput\Proxy</argument>

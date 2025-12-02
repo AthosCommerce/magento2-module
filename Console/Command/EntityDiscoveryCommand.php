@@ -29,9 +29,9 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class LiveIndexingCommand extends Command
+class EntityDiscoveryCommand extends Command
 {
-    const COMMAND_NAME = 'athoscommerce:indexing:entity-sync';
+    const COMMAND_NAME = 'athoscommerce:indexing:entity-discovery';
     const OPTION_SITE_IDS = 'site-ids';
 
     /**
@@ -77,15 +77,30 @@ class LiveIndexingCommand extends Command
     protected function configure(): void
     {
         $this->setName(static::COMMAND_NAME)
-            ->setDescription('AthosCommerce: Live Indexing for products');
+            ->setDescription('AthosCommerce: Find products and add them to "athoscommerce_indexing_entity" table so they can be indexed.');
 
         $this->addOption(
             static::OPTION_SITE_IDS,
+            null,
             InputOption::VALUE_OPTIONAL,
             (string)__(
-                'Sync Entities only for these Site IDs (optional). Comma separated list '
+                'Entities only for these Site IDs (optional). Comma separated list '
                 . 'e.g. --site-id site-id-1,site-id-2',
             ),
+        );
+        $this->setHelp(
+            <<<HELP
+
+Execute discovery for all site-ids:
+    <comment>%command.full_name%</comment>
+
+Execute discovery for a single store/site id:
+    <comment>%command.full_name% --site-id</comment>
+
+Execute discovery for a multiple stores/site ids:
+    <comment>%command.full_name% --site-id,site-id-1</comment>
+
+HELP
         );
 
         parent::configure();

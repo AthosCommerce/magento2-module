@@ -18,30 +18,11 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Cron;
 
-use AthosCommerce\Feed\Api\ExecutePendingTasksInterface;
-
-class ExecuteTasks
+class EntityDiscoveryCron
 {
-    /**
-     * @var ExecutePendingTasksInterface
-     */
-    private $executePendingTasks;
-
-    /**
-     * ExecuteTasks constructor.
-     * @param ExecutePendingTasksInterface $executePendingTasks
-     */
-    public function __construct(
-        ExecutePendingTasksInterface $executePendingTasks
-    ) {
-        $this->executePendingTasks = $executePendingTasks;
-    }
-
-    /**
-     *
-     */
-    public function execute() : void
+    
+    public function execute(): void
     {
-        $this->executePendingTasks->execute();
+        //TODO:: to implement
     }
 }

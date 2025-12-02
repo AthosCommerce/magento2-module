@@ -20,7 +20,7 @@ namespace AthosCommerce\Feed\Cron;
 
 use AthosCommerce\Feed\Api\LiveIndexingInterface;
 
-class LiveIndexingCron
+class EntitySyncCron
 {
     /**
      * @var LiveIndexingInterface
