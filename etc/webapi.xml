@@ -92,4 +92,10 @@
             <resource ref="AthosCommerce_Feed::general" />
         </resources>
     </route>
+    <route url="/V1/athoscommerce/configupdate" method="POST">
+        <service class="AthosCommerce\Feed\Api\ConfigUpdateInterface" method="update" />
+        <resources>
+            <resource ref="AthosCommerce_Feed::general" />
+        </resources>
+    </route>
 </routes>

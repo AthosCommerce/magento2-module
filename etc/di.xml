@@ -104,6 +104,9 @@
     <preference for="AthosCommerce\Feed\Api\IndexingEntityRepositoryInterface"
                 type="AthosCommerce\Feed\Model\IndexingEntityRepository"/>
 
+    <preference for="AthosCommerce\Feed\Api\ConfigUpdateInterface"
+                type="AthosCommerce\Feed\Model\Api\ConfigUpdate"/>
+
     <type name="AthosCommerce\Feed\Model\Task\TypeList">
         <arguments>
             <argument name="types" xsi:type="array">
@@ -476,6 +479,27 @@
     </type>
 
     <type name="AthosCommerce\Feed\Observer\Product\UpdateObserver">
+        <arguments>
+            <argument name="logger"
+                      xsi:type="object">AthosCommerceLogger</argument>
+        </arguments>
+    </type>
+
+    <type name="AthosCommerce\Feed\Observer\Product\DeleteObserver">
+        <arguments>
+            <argument name="logger"
+                      xsi:type="object">AthosCommerceLogger</argument>
+        </arguments>
+    </type>
+
+    <type name="AthosCommerce\Feed\Observer\Product\BunchSaveObserver">
+        <arguments>
+            <argument name="logger"
+                      xsi:type="object">AthosCommerceLogger</argument>
+        </arguments>
+    </type>
+
+    <type name="AthosCommerce\Feed\Observer\Product\BunchDeleteObserver">
         <arguments>
             <argument name="logger"
                       xsi:type="object">AthosCommerceLogger</argument>
