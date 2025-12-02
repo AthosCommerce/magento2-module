@@ -91,9 +91,6 @@ class ConfigUpdate implements ConfigUpdateInterface
                 $scopeId
             );
 
-            // Flush config cache
-            $this->cacheTypeList->cleanType('config');
-
             return [
                 'data' => [
                     'success' => true,
