@@ -104,6 +104,15 @@
     <preference for="AthosCommerce\Feed\Api\IndexingEntityRepositoryInterface"
                 type="AthosCommerce\Feed\Model\IndexingEntityRepository"/>
 
+    <preference for="AthosCommerce\Feed\Service\Action\AddIndexingEntitiesActionInterface"
+                type="AthosCommerce\Feed\Service\Action\AddIndexingEntitiesAction"/>
+    <preference for="AthosCommerce\Feed\Service\Action\SetIndexingEntitiesToDeleteActionInterface"
+                type="AthosCommerce\Feed\Service\Action\SetIndexingEntitiesToDeleteAction"/>
+    <preference for="AthosCommerce\Feed\Service\Action\SetIndexingEntitiesToUpdateActionInterface"
+                type="AthosCommerce\Feed\Service\Action\SetIndexingEntitiesToUpdateAction"/>
+    <preference for="AthosCommerce\Feed\Service\Action\UpdateIndexingEntitiesActionsActionInterface"
+                type="AthosCommerce\Feed\Service\Action\UpdateIndexingEntitiesActionsAction"/>
+
     <type name="AthosCommerce\Feed\Model\Task\TypeList">
         <arguments>
             <argument name="types" xsi:type="array">

@@ -587,7 +587,7 @@ class IndexingEntityRepositoryTest extends TestCase
         $this->assertCount(0, $result);
     }
 
-    public function testGetUniqueEntityTypes_ReturnsArrayOfTypesForApiKey(): void
+    public function testGetUniqueEntityTypes_ReturnsArrayOfTypesForSiteId(): void
     {
         $siteId = 'site-id';
         $this->cleanIndexingEntities($siteId);
