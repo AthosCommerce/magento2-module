@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Observer\Product;
 
+use AthosCommerce\Feed\Model\Source\Actions;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
 use AthosCommerce\Feed\Observer\BaseProductObserver;
@@ -26,16 +27,24 @@ use Psr\Log\LoggerInterface;
 class DeleteObserver implements ObserverInterface
 {
     /**
+     * @var BaseProductObserver
+     */
+    private $baseProductObserver;
+
+    /**
      * @var LoggerInterface
      */
     private $logger;
 
     /**
+     * @param BaseProductObserver $baseProductObserver
      * @param LoggerInterface $logger
      */
     public function __construct(
+        BaseProductObserver $baseProductObserver,
         LoggerInterface $logger
     ) {
+        $this->baseProductObserver = $baseProductObserver;
         $this->logger = $logger;
     }
 
@@ -49,7 +58,11 @@ class DeleteObserver implements ObserverInterface
         $event = $observer->getEvent();
         $product = $event->getProduct();
 
-        // TODO: Implement execute() method.
+        $nextAction = ($product->getStatus() != 1 || $product->getVisibility() == 1)
+            ? Actions::DELETE
+            : Actions::UPSERT;
+
+        $this->baseProductObserver->execute([$product->getId], $nextAction);
 
         $this->logger->debug(
             'DeleteObserver executed',
