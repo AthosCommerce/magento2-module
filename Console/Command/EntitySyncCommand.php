@@ -26,15 +26,14 @@ use AthosCommerce\Feed\Model\Metric\CollectorInterface;
 use AthosCommerce\Feed\Model\Metric\Output\CliOutput;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class ExecutePendingTasks extends Command
+class EntitySyncCommand extends Command
 {
-    const COMMAND_NAME = 'athoscommerce:feed:execute-pending-tasks';
-    /**
-     * @var ExecutePendingTasksInterfaceFactory
-     */
-    private $executePendingTasksFactory;
+    const COMMAND_NAME = 'athoscommerce:indexing:entity-sync';
+    const OPTION_SITE_IDS = 'site-ids';
+
     /**
      * @var DateTimeFactory
      */
@@ -53,17 +52,12 @@ class ExecutePendingTasks extends Command
     private $metricCollector;
 
     /**
-     * ExecutePendingTasks constructor.
-     *
-     * @param ExecutePendingTasksInterfaceFactory $executePendingTasksFactory
      * @param DateTimeFactory $dateTimeFactory
      * @param State $state
      * @param CliOutput $cliOutput
      * @param CollectorInterface $metricCollector
-     * @param string|null $name
      */
     public function __construct(
-        ExecutePendingTasksInterfaceFactory $executePendingTasksFactory,
         DateTimeFactory $dateTimeFactory,
         State $state,
         CliOutput $cliOutput,
@@ -71,7 +65,6 @@ class ExecutePendingTasks extends Command
         ?string $name = null
     ) {
         parent::__construct($name);
-        $this->executePendingTasksFactory = $executePendingTasksFactory;
         $this->dateTimeFactory = $dateTimeFactory;
         $this->state = $state;
         $this->cliOutput = $cliOutput;
@@ -83,8 +76,33 @@ class ExecutePendingTasks extends Command
      */
     protected function configure(): void
     {
-        $this->setName(self::COMMAND_NAME)
-            ->setDescription('Execute Pending Tasks');
+        $this->setName(static::COMMAND_NAME)
+            ->setDescription('AthosCommerce: Sync recent product changes in batches for all store views with Athos Commerce.');
+
+        $this->addOption(
+            static::OPTION_SITE_IDS,
+            null,
+            InputOption::VALUE_OPTIONAL,
+            (string)__(
+                'Sync Entities only for these Site IDs (optional). Comma separated list '
+                . 'e.g. --site-id site-id-1,site-id-2',
+            ),
+        );
+
+        $this->setHelp(
+            <<<HELP
+
+Execute sync for all site-ids:
+    <comment>%command.full_name%</comment>
+
+Execute sync for a single store/site id:
+    <comment>%command.full_name% --site-id</comment>
+
+Execute sync for a multiple stores/site ids:
+    <comment>%command.full_name% --site-id,site-id-1</comment>
+
+HELP
+        );
 
         parent::configure();
     }
@@ -94,12 +112,26 @@ class ExecutePendingTasks extends Command
      * @param OutputInterface $output
      *
      * @return int
-     * @throws \Magento\Framework\Exception\LocalizedException
      */
-    protected function execute(InputInterface $input, OutputInterface $output): int
-    {
+    protected function execute(
+        InputInterface $input,
+        OutputInterface $output
+    ): int {
         try {
-            // Area can already be set in some contexts (e.g., when invoked by other CLI flows)
+            $siteIds = $this->getSiteIds($input);
+            if ($siteIds) {
+                $filters[] = __('SITE IDs = %1', implode(', ', $siteIds));
+            }
+
+            $output->writeln('');
+            $output->writeln(
+                sprintf(
+                    '<comment>%s</comment>',
+                    __('Begin Sync with filters: %1.', implode(', ', $filters))
+                ),
+            );
+            $output->writeln('--------');
+
             try {
                 $this->state->setAreaCode(Area::AREA_FRONTEND);
             } catch (LocalizedException $e) {
@@ -111,22 +143,27 @@ class ExecutePendingTasks extends Command
             $output->writeln('<info>Execution started: ' . $dateTime->gmtDate() . '</info>');
             $this->cliOutput->setOutput($output);
             $this->metricCollector->setOutput($this->cliOutput);
-            $result = $this->executePendingTasksFactory->create()->execute();
-            if ($result === []) {
-                $output->writeln('<info>No pending tasks found.</info>');
-            } else {
-                foreach ($result as $taskId => $status) {
-                    $output->writeln(sprintf('<info>Task ID %d: %s</info>', $taskId, $status));
-                }
-            }
-
             $output->writeln('<info>Execution ended: ' . $dateTime->gmtDate() . '</info>');
-
-            return Command::SUCCESS; // 0
         } catch (\Throwable $e) {
             $output->writeln('<error>' . $e->getMessage() . '</error>');
 
-            return Command::FAILURE; // 1
+            return Command::FAILURE;
         }
+
+        return Command::SUCCESS;
+    }
+
+    /**
+     * @param InputInterface $input
+     *
+     * @return string[]
+     */
+    private function getSiteIds(InputInterface $input): array
+    {
+        $siteIds = $input->getOption(static::OPTION_SITE_IDS);
+
+        return $siteIds
+            ? array_map('trim', explode(',', $siteIds))
+            : [];
     }
 }

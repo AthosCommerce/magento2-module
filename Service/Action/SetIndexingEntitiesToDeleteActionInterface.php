@@ -7,7 +7,7 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
@@ -16,31 +16,14 @@
 
 declare(strict_types=1);
 
-namespace AthosCommerce\Feed\Cron;
+namespace AthosCommerce\Feed\Service\Action;
 
-use AthosCommerce\Feed\Api\LiveIndexingInterface;
-
-class LiveIndexingCron
+interface SetIndexingEntitiesToDeleteActionInterface
 {
     /**
-     * @var LiveIndexingInterface
-     */
-    private $liveIndexing;
-
-    /**
-     * @param LiveIndexingInterface $liveIndexing
-     */
-    public function __construct(
-        LiveIndexingInterface $liveIndexing,
-    ) {
-        $this->liveIndexing = $liveIndexing;
-    }
-
-    /**
+     * @param array $entityIds
+     *
      * @return void
      */
-    public function execute(): void
-    {
-        $this->liveIndexing->execute();
-    }
+    public function execute(array $entityIds): void;
 }

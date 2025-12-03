@@ -37,6 +37,8 @@ class IndexingEntity extends AbstractExtensibleModel implements IndexingEntityIn
     const LAST_ACTION = 'last_action';
     const LAST_ACTION_TIMESTAMP = 'last_action_timestamp';
     const IS_INDEXABLE = 'is_indexable';
+    const CREATED_AT = 'created_at';
+    const UPDATED_AT = 'updated_at';
 
     /**
      * @return void
@@ -243,6 +245,50 @@ class IndexingEntity extends AbstractExtensibleModel implements IndexingEntityIn
     public function setIsIndexable(bool $isIndexable): void
     {
         $this->setData(static::IS_INDEXABLE, (bool)$isIndexable);
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getCreatedAt(): ?string
+    {
+        $createdAt = $this->getData(static::CREATED_AT);
+
+        return $createdAt
+            ? (string)$createdAt
+            : null;
+    }
+
+    /**
+     * @param string|null $createdAt
+     *
+     * @return void
+     */
+    public function setCreatedAt(?string $createdAt = null): void
+    {
+        $this->setData(static::CREATED_AT, $createdAt);
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getUpdatedAt(): ?string
+    {
+        $updatedAt = $this->getData(static::UPDATED_AT);
+
+        return $updatedAt
+            ? (string)$updatedAt
+            : null;
+    }
+
+    /**
+     * @param string|null $updatedAt
+     *
+     * @return void
+     */
+    public function setUpdatedAt(?string $updatedAt = null): void
+    {
+        $this->setData(static::UPDATED_AT, $updatedAt);
     }
 
     /**

@@ -66,6 +66,17 @@ class IndexingEntity extends AbstractDb
             IndexingEntityModel::NEXT_ACTION,
             $nextAction,
         );
+        $createdAt = $object->getData(IndexingEntityModel::CREATED_AT);
+        if (!$createdAt) {
+            $object->setData(
+                IndexingEntityModel::CREATED_AT,
+                (new \DateTime())->format('Y-m-d H:i:s'),
+            );
+        }
+        $object->setData(
+            IndexingEntityModel::UPDATED_AT,
+            (new \DateTime())->format('Y-m-d H:i:s'),
+        );
 
         return parent::_beforeSave($object);
     }

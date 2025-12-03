@@ -95,8 +95,9 @@ class ExecuteTask implements ExecuteTaskInterface
                 'entityId'=> $task->getEntityId(),
                 'status' => $task->getStatus()
             ]);
-            $result = $executor->execute($task);
+            $executor->execute($task);
             $task->setStatus(MetadataInterface::TASK_STATUS_SUCCESS);
+            $result = MetadataInterface::TASK_STATUS_SUCCESS;
         } catch (\Throwable $exception) {
             /** @var TaskErrorInterface $error */
             $error = $this->taskErrorFactory->create();
@@ -111,6 +112,7 @@ class ExecuteTask implements ExecuteTaskInterface
                 ->setCode($code);
             $task->setStatus(MetadataInterface::TASK_STATUS_ERROR)
                 ->setError($error);
+            $result = MetadataInterface::TASK_STATUS_ERROR;
         }
         $this->logger->info('Task execution with the entity id completed successfully', [
             'method' => __METHOD__,

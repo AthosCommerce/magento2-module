@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Observer\Product;
 
+use AthosCommerce\Feed\Model\Source\Actions;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
 use AthosCommerce\Feed\Observer\BaseProductObserver;
@@ -26,16 +27,23 @@ use Psr\Log\LoggerInterface;
 class UpdateObserver implements ObserverInterface
 {
     /**
+     * @var BaseProductObserver
+     */
+    private $baseProductObserver;
+    /**
      * @var LoggerInterface
      */
     private $logger;
 
     /**
+     * @param BaseProductObserver $baseProductObserver
      * @param LoggerInterface $logger
      */
     public function __construct(
+        BaseProductObserver $baseProductObserver,
         LoggerInterface $logger
     ) {
+        $this->baseProductObserver = $baseProductObserver;
         $this->logger = $logger;
     }
 
@@ -48,8 +56,14 @@ class UpdateObserver implements ObserverInterface
     {
         $event = $observer->getEvent();
         $product = $event->getProduct();
+        if (!$product || !$product->getId()) {
+            return;
+        }
+        $nextAction = ($product->getStatus() != 1 || $product->getVisibility() == 1)
+            ? Actions::DELETE
+            : Actions::UPSERT;
 
-        // TODO: Implement execute() method.
+        $this->baseProductObserver->execute([$product->getId], $nextAction);
 
         $this->logger->debug(
             'UpdateObserver executed',

@@ -16,32 +16,15 @@
 
 declare(strict_types=1);
 
-namespace AthosCommerce\Feed\Cron;
+namespace AthosCommerce\Feed\Service\Action;
 
-use AthosCommerce\Feed\Api\ExecutePendingTasksInterface;
-
-class ExecuteTasks
+interface UpdateIndexingEntitiesActionsActionInterface
 {
     /**
-     * @var ExecutePendingTasksInterface
-     */
-    private $executePendingTasks;
-
-    /**
-     * ExecuteTasks constructor.
-     * @param ExecutePendingTasksInterface $executePendingTasks
-     */
-    public function __construct(
-        ExecutePendingTasksInterface $executePendingTasks
-    ) {
-        $this->executePendingTasks = $executePendingTasks;
-    }
-
-    /**
+     * @param array $entityIds
+     * @param string $lastAction
      *
+     * @return void
      */
-    public function execute() : void
-    {
-        $this->executePendingTasks->execute();
-    }
+    public function execute(array $entityIds, string $lastAction): void;
 }
