@@ -50,6 +50,8 @@
         <column xsi:type="varchar" name="last_action" length="6" nullable="false" default="" comment="Last Action"/>
         <column xsi:type="timestamp" name="last_action_timestamp" nullable="true" comment="Last action completed processing at"/>
         <column xsi:type="tinyint" name="is_indexable" unsigned="true" nullable="false" identity="false" default="1" comment="Is record indexable"/>
+        <column xsi:type="timestamp" name="created_at" nullable="true" default="CURRENT_TIMESTAMP" comment="Created Date Timestamp"/>
+        <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="true" default="CURRENT_TIMESTAMP" comment="Updated Date Timestamp"/>
         <constraint xsi:type="primary" referenceId="PRIMARY">
             <column name="entity_id"/>
         </constraint>

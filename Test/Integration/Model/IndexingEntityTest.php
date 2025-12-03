@@ -189,8 +189,8 @@ class IndexingEntityTest extends TestCase
             $indexingEntity->getSiteId(),
         );
         $this->assertSame(
-            $indexingEntity->getApiKey(),
-            $indexingEntityToLoad->getApiKey(),
+            $indexingEntity->getSiteId(),
+            $indexingEntityToLoad->getSiteId(),
         );
         $this->assertSame(
             'Upsert',
