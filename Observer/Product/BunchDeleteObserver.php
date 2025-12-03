@@ -57,14 +57,7 @@ class BunchDeleteObserver implements ObserverInterface
     public function execute(Observer $observer)
     {
         $event = $observer->getEvent();
-        $product = $event->getProduct();
         $productIdsToDelete = (array)$event->getIdsToDelete();
-
-        $nextAction = ($product->getStatus() != 1 || $product->getVisibility() == 1)
-            ? Actions::DELETE
-            : Actions::UPSERT;
-
-        $this->baseProductObserver->execute($productIdsToDelete, $nextAction);
 
         $this->logger->debug(
             'BunchDeleteObserver executed',
