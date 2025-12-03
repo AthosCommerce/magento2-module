@@ -8,5 +8,17 @@
         <observer name="athoscommerce_entitydiscovery_product_updateObserver"
                   instance="AthosCommerce\Feed\Observer\Product\UpdateObserver"/>
     </event>
+    <event name="catalog_product_delete_after_done">
+        <observer name="athoscommerce_entitydiscovery_product_deleteObserver"
+                  instance="AthosCommerce\Feed\Observer\Product\DeleteObserver" />
+    </event>
+    <event name="catalog_product_import_bunch_save_after">
+        <observer name="athoscommerce_entitydiscovery_product_bunchSaveObserver"
+                  instance="AthosCommerce\Feed\Observer\Product\BunchSaveObserver" />
+    </event>
+    <event name="catalog_product_import_bunch_delete_after">
+        <observer name="athoscommerce_entitydiscovery_product_bunchDeleteObserver"
+                  instance="AthosCommerce\Feed\Observer\Product\BunchDeleteObserver" />
+    </event>
 
 </config>
