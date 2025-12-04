@@ -20,21 +20,54 @@ namespace AthosCommerce\Feed\Model\Api;
 
 use AthosCommerce\Feed\Api\ProductInfoInterface;
 use AthosCommerce\Feed\Model\CollectionProcessor;
+use AthosCommerce\Feed\Model\Feed\SpecificationBuilderInterface;
 use AthosCommerce\Feed\Model\ItemsGenerator;
+use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Framework\Serialize\SerializerInterface;
+use Magento\Store\Model\ScopeInterface;
 
 class ProductInfo implements ProductInfoInterface
 {
     /**
+     * @var CollectionProcessor
+     */
+    private $collectionProcessor;
+    /**
+     * @var ItemsGenerator
+     */
+    private $itemsGenerator;
+    /**
+     * @var SpecificationBuilderInterface
+     */
+    private $specificationBuilder;
+    /**
+     * @var ScopeConfigInterface
+     */
+    private $scopeConfig;
+    /**
+     * @var SerializerInterface
+     */
+    private $serializer;
+
+    /**
      * @param CollectionProcessor $collectionProcessor
      * @param ItemsGenerator $itemsGenerator
+     * @param SpecificationBuilderInterface $specificationBuilder
+     * @param ScopeConfigInterface $scopeConfig
+     * @param SerializerInterface $serializer
      */
     public function __construct(
         CollectionProcessor $collectionProcessor,
         ItemsGenerator $itemsGenerator,
-    )
-    {
+        SpecificationBuilderInterface $specificationBuilder,
+        ScopeConfigInterface $scopeConfig,
+        SerializerInterface $serializer
+    ) {
         $this->collectionProcessor = $collectionProcessor;
         $this->itemsGenerator = $itemsGenerator;
+        $this->specificationBuilder = $specificationBuilder;
+        $this->scopeConfig = $scopeConfig;
+        $this->serializer = $serializer;
     }
 
     /**
@@ -51,6 +84,21 @@ class ProductInfo implements ProductInfoInterface
         try {
             $productIds = $this->getParentOrChildIds($productId);
             $response['productIds'] = $productIds;
+
+            $payload = $this->scopeConfig->getValue(
+                \AthosCommerce\Feed\Helper\Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD,
+                ScopeInterface::SCOPE_STORES,
+                $storeId
+            );
+            if (!$payload) {
+                $response['productInfo'] = 'Payload not available';
+
+                return $response;
+            }
+            if (is_string($payload)) {
+                $payload = $this->serializer->unserialize($payload);
+            }
+            $feedSpecification = $this->specificationBuilder->build($payload);
             $this->itemsGenerator->resetDataProviders($feedSpecification);
             //TODO:: Require to check with productTypes/StoreId.
             $productCollection = $this->collectionProcessor->getCollection($feedSpecification);
@@ -61,7 +109,7 @@ class ProductInfo implements ProductInfoInterface
             if (!$items) {
                 $response['productInfo'] = 'Provided items not available';
 
-                return $product;
+                return $response;
             }
             $itemsData = $this->itemsGenerator->generate($items, $feedSpecification);
             $this->itemsGenerator->resetDataProvidersAfterFetchItems($feedSpecification);
@@ -70,11 +118,11 @@ class ProductInfo implements ProductInfoInterface
             $response['productInfo'] = 'Not found due to exception';
             $response['message'] = $e->getMessage();
 
-            return $product;
+            return $response;
         }
-        $product['productInfo'] = $itemsData;
+        $response['productInfo'] = $itemsData;
 
-        return $product;
+        return $response;
     }
 
     /**

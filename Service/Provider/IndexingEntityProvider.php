@@ -104,7 +104,7 @@ class IndexingEntityProvider implements IndexingEntityProviderInterface
      * @param string|null $entityType
      * @param string[]|null $siteIds
      * @param int[]|null $entityIds
-     * @param Actions|null $nextAction
+     * @param string|null $nextAction
      * @param bool|null $isIndexable
      * @param array<string, string>|null $sorting [SortOrder::DIRECTION => SortOrder::SORT_ASC, SortOrder::FIELD => '']
      * @param int|null $pageSize
@@ -117,7 +117,7 @@ class IndexingEntityProvider implements IndexingEntityProviderInterface
         ?string $entityType = null,
         ?array $siteIds = [],
         ?array $entityIds = [],
-        ?Actions $nextAction = null,
+        ?string $nextAction = null,
         ?bool $isIndexable = null,
         ?array $sorting = [],
         ?int $pageSize = null,
@@ -166,7 +166,7 @@ class IndexingEntityProvider implements IndexingEntityProviderInterface
         if ($nextAction) {
             $searchCriteriaBuilder->addFilter(
                 IndexingEntity::NEXT_ACTION,
-                $nextAction->value,
+                $nextAction,
             );
         }
         if (null !== $isIndexable) {
@@ -186,13 +186,13 @@ class IndexingEntityProvider implements IndexingEntityProviderInterface
             $sortOrderBuilder = $this->sortOrderBuilderFactory->create();
             $sortOrderBuilder->setField(IndexingEntity::ENTITY_ID);
             $sortOrderBuilder->setDirection(SortOrder::SORT_ASC);
-            $searchCriteriaBuilder->addSortOrder(sortOrder: $sortOrderBuilder->create());
+            $searchCriteriaBuilder->addSortOrder($sortOrderBuilder->create());
         } elseif (($sorting[SortOrder::FIELD] ?? null) && ($sorting[SortOrder::DIRECTION] ?? null)) {
             /** @var SortOrderBuilder $sortOrderBuilder */
             $sortOrderBuilder = $this->sortOrderBuilderFactory->create();
             $sortOrderBuilder->setField($sorting[SortOrder::FIELD]);
             $sortOrderBuilder->setDirection(strtoupper($sorting[SortOrder::DIRECTION]));
-            $searchCriteriaBuilder->addSortOrder(sortOrder: $sortOrderBuilder->create());
+            $searchCriteriaBuilder->addSortOrder($sortOrderBuilder->create());
         }
         $searchCriteria = $searchCriteriaBuilder->create();
         $entitySearchResult = $this->indexingEntityRepository->getList($searchCriteria);
@@ -239,7 +239,7 @@ class IndexingEntityProvider implements IndexingEntityProviderInterface
     /**
      * @param string|null $entityType
      * @param string|null $siteId
-     * @param Actions|null $nextAction
+     * @param string|null $nextAction
      * @param bool|null $isIndexable
      *
      * @return int
@@ -247,7 +247,7 @@ class IndexingEntityProvider implements IndexingEntityProviderInterface
     public function count(
         ?string $entityType = null,
         ?string $siteId = null,
-        ?Actions $nextAction = null,
+        ?string $nextAction = null,
         ?bool $isIndexable = null,
     ): int {
         return $this->indexingEntityRepository->count(

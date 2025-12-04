@@ -18,7 +18,7 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Api;
 
-interface LiveIndexingInterface
+interface EntityDiscoveryInterface
 {
     /**
      * @param array|null $storeCodes

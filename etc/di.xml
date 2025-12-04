@@ -32,6 +32,10 @@
 
     <preference for="AthosCommerce\Feed\Api\LiveIndexingInterface"
                 type="AthosCommerce\Feed\Model\LiveIndexing"/>
+    <preference for="AthosCommerce\Feed\Api\EntityDiscoveryInterface"
+                type="AthosCommerce\Feed\Model\EntityDiscovery"/>
+    <preference for="AthosCommerce\Feed\Model\Api\MagentoEntityInterface"
+                type="AthosCommerce\Feed\Model\MagentoEntity"/>
 
     <preference for="AthosCommerce\Feed\Api\CreateTaskInterface"
                 type="AthosCommerce\Feed\Model\Api\CreateTask"/>
@@ -103,7 +107,8 @@
                 type="AthosCommerce\Feed\Model\IndexingEntity"/>
     <preference for="AthosCommerce\Feed\Api\IndexingEntityRepositoryInterface"
                 type="AthosCommerce\Feed\Model\IndexingEntityRepository"/>
-
+    <preference for="AthosCommerce\Feed\Service\Provider\Api\IndexingEntityProviderInterface"
+                type="AthosCommerce\Feed\Service\Provider\IndexingEntityProvider"/>
 
     <preference for="AthosCommerce\Feed\Service\Action\AddIndexingEntitiesActionInterface"
                 type="AthosCommerce\Feed\Service\Action\AddIndexingEntitiesAction"/>

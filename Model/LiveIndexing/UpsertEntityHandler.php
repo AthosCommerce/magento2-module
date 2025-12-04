@@ -16,14 +16,34 @@
 
 declare(strict_types=1);
 
-namespace AthosCommerce\Feed\Api;
+namespace AthosCommerce\Feed\Model\LiveIndexing;
 
-interface LiveIndexingInterface
+use AthosCommerce\Feed\Helper\Constants;
+use AthosCommerce\Feed\Service\Api\ApiClient;
+use Psr\Log\LoggerInterface;
+
+class UpsertEntityHandler
 {
-    /**
-     * @param array|null $storeCodes
-     *
-     * @return array
-     */
-    public function execute(?array $storeCodes) : array;
+    private $client;
+    private $logger;
+
+    public function __construct(
+        ApiClient $client,
+        LoggerInterface $logger
+    ) {
+        $this->client = $client;
+        $this->logger = $logger;
+    }
+
+    public function process($row): bool
+    {
+        $payload = [
+            'entity_id' => $row['entity_id']
+        ];
+
+        return $this->client->send(
+            $payload,
+            Constants::API_SCOPE_UPSERT
+        );
+    }
 }
