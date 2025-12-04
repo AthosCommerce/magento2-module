@@ -79,7 +79,7 @@ class AddIndexingEntitiesAction implements AddIndexingEntitiesActionInterface
                 [
                     'method' => __METHOD__,
                     'exception' => $exception->getMessage(),
-                    'indexingEntityIds' => $indexingEntityIds,
+                    'indexingEntityIds' => $magentoEntityIds,
                 ],
             );
         }

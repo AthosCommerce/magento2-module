@@ -7,7 +7,7 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
@@ -21,7 +21,7 @@ namespace AthosCommerce\Feed\Console\Command;
 use Magento\Framework\App\Area;
 use Magento\Framework\App\State;
 use Magento\Framework\Stdlib\DateTime\DateTimeFactory;
-use AthosCommerce\Feed\Api\ExecutePendingTasksInterfaceFactory;
+use AthosCommerce\Feed\Api\LiveIndexingInterfaceFactory as LiveIndexing;
 use AthosCommerce\Feed\Model\Metric\CollectorInterface;
 use AthosCommerce\Feed\Model\Metric\Output\CliOutput;
 use Symfony\Component\Console\Command\Command;
@@ -32,8 +32,11 @@ use Symfony\Component\Console\Output\OutputInterface;
 class EntitySyncCommand extends Command
 {
     const COMMAND_NAME = 'athoscommerce:indexing:entity-sync';
-    const OPTION_SITE_IDS = 'site-ids';
-
+    const OPTION_STORE_CODES = 'storecodes';
+    /**
+     * @var LiveIndexing
+     */
+    private $liveIndexingFactory;
     /**
      * @var DateTimeFactory
      */
@@ -52,12 +55,15 @@ class EntitySyncCommand extends Command
     private $metricCollector;
 
     /**
+     * @param LiveIndexing $liveIndexingFactory
      * @param DateTimeFactory $dateTimeFactory
      * @param State $state
      * @param CliOutput $cliOutput
      * @param CollectorInterface $metricCollector
+     * @param string|null $name
      */
     public function __construct(
+        LiveIndexing $liveIndexingFactory,
         DateTimeFactory $dateTimeFactory,
         State $state,
         CliOutput $cliOutput,
@@ -65,6 +71,7 @@ class EntitySyncCommand extends Command
         ?string $name = null
     ) {
         parent::__construct($name);
+        $this->liveIndexingFactory = $liveIndexingFactory;
         $this->dateTimeFactory = $dateTimeFactory;
         $this->state = $state;
         $this->cliOutput = $cliOutput;
@@ -80,26 +87,26 @@ class EntitySyncCommand extends Command
             ->setDescription('AthosCommerce: Sync recent product changes in batches for all store views with Athos Commerce.');
 
         $this->addOption(
-            static::OPTION_SITE_IDS,
+            static::OPTION_STORE_CODES,
             null,
             InputOption::VALUE_OPTIONAL,
             (string)__(
-                'Sync Entities only for these Site IDs (optional). Comma separated list '
-                . 'e.g. --site-id site-id-1,site-id-2',
+                'Sync Entities only for these stores (optional). Comma separated list '
+                . 'e.g. --storecodes=default,french etc',
             ),
         );
 
         $this->setHelp(
             <<<HELP
 
-Execute sync for all site-ids:
+Execute sync for all storecodes:
     <comment>%command.full_name%</comment>
 
-Execute sync for a single store/site id:
-    <comment>%command.full_name% --site-id</comment>
+Execute sync for a single storecodes:
+    <comment>%command.full_name% --storecodes=default</comment>
 
-Execute sync for a multiple stores/site ids:
-    <comment>%command.full_name% --site-id,site-id-1</comment>
+Execute sync for a multiple storecodes:
+    <comment>%command.full_name% --storecodes=default,french</comment>
 
 HELP
         );
@@ -117,10 +124,11 @@ HELP
         InputInterface $input,
         OutputInterface $output
     ): int {
+        $filters = [];
         try {
-            $siteIds = $this->getSiteIds($input);
-            if ($siteIds) {
-                $filters[] = __('SITE IDs = %1', implode(', ', $siteIds));
+            $storeCodes = $this->getStoreCodes($input);
+            if ($storeCodes) {
+                $filters[] = __('STORE Codes = %1', implode(', ', $storeCodes));
             }
 
             $output->writeln('');
@@ -142,6 +150,8 @@ HELP
             $dateTime = $this->dateTimeFactory->create();
             $output->writeln('<info>Execution started: ' . $dateTime->gmtDate() . '</info>');
             $this->cliOutput->setOutput($output);
+            $this->liveIndexingFactory->create()->execute($storeCodes);
+
             $this->metricCollector->setOutput($this->cliOutput);
             $output->writeln('<info>Execution ended: ' . $dateTime->gmtDate() . '</info>');
         } catch (\Throwable $e) {
@@ -158,12 +168,12 @@ HELP
      *
      * @return string[]
      */
-    private function getSiteIds(InputInterface $input): array
+    private function getStoreCodes(InputInterface $input): array
     {
-        $siteIds = $input->getOption(static::OPTION_SITE_IDS);
+        $codes = $input->getOption(static::OPTION_STORE_CODES);
 
-        return $siteIds
-            ? array_map('trim', explode(',', $siteIds))
+        return $codes
+            ? array_map('trim', explode(',', $codes))
             : [];
     }
 }

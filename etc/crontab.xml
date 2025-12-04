@@ -14,7 +14,7 @@
             <config_path>*/30 * * * *</config_path>
         </job>
         <job name="athoscommerce_live_indexing_sync" instance="AthosCommerce\Feed\Cron\EntitySyncCron" method="execute">
-            <config_path>athoscommerce/indexing/entity_cron_expr</config_path>
+            <config_path>athoscommerce/indexing/entity_sync_cron_expr</config_path>
         </job>
     </group>
 </config>

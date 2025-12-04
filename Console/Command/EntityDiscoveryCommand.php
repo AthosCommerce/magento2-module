@@ -7,7 +7,7 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Console\Command;
 
+use AthosCommerce\Feed\Api\EntityDiscoveryInterface;
 use Magento\Framework\App\Area;
 use Magento\Framework\App\State;
 use Magento\Framework\Stdlib\DateTime\DateTimeFactory;
@@ -32,8 +33,12 @@ use Symfony\Component\Console\Output\OutputInterface;
 class EntityDiscoveryCommand extends Command
 {
     const COMMAND_NAME = 'athoscommerce:indexing:entity-discovery';
-    const OPTION_SITE_IDS = 'site-ids';
+    const OPTION_STORE_CODES = 'storecodes';
 
+    /**
+     * @var EntityDiscoveryInterface
+     */
+    private $entityDiscovery;
     /**
      * @var DateTimeFactory
      */
@@ -58,6 +63,7 @@ class EntityDiscoveryCommand extends Command
      * @param CollectorInterface $metricCollector
      */
     public function __construct(
+        EntityDiscoveryInterface $entityDiscovery,
         DateTimeFactory $dateTimeFactory,
         State $state,
         CliOutput $cliOutput,
@@ -65,6 +71,7 @@ class EntityDiscoveryCommand extends Command
         ?string $name = null
     ) {
         parent::__construct($name);
+        $this->entityDiscovery = $entityDiscovery;
         $this->dateTimeFactory = $dateTimeFactory;
         $this->state = $state;
         $this->cliOutput = $cliOutput;
@@ -80,25 +87,25 @@ class EntityDiscoveryCommand extends Command
             ->setDescription('AthosCommerce: Find products and add them to "athoscommerce_indexing_entity" table so they can be indexed.');
 
         $this->addOption(
-            static::OPTION_SITE_IDS,
+            static::OPTION_STORE_CODES,
             null,
             InputOption::VALUE_OPTIONAL,
             (string)__(
-                'Entities only for these Site IDs (optional). Comma separated list '
-                . 'e.g. --site-id site-id-1,site-id-2',
+                'Sync Entities only for these stores (optional). Comma separated list '
+                . 'e.g. --storecodes=default,french etc',
             ),
         );
         $this->setHelp(
             <<<HELP
 
-Execute discovery for all site-ids:
+Execute sync for all storecodes:
     <comment>%command.full_name%</comment>
 
-Execute discovery for a single store/site id:
-    <comment>%command.full_name% --site-id</comment>
+Execute sync for a single storecodes:
+    <comment>%command.full_name% --storecodes=default</comment>
 
-Execute discovery for a multiple stores/site ids:
-    <comment>%command.full_name% --site-id,site-id-1</comment>
+Execute sync for a multiple storecodes:
+    <comment>%command.full_name% --storecodes=default,french</comment>
 
 HELP
         );
@@ -117,9 +124,10 @@ HELP
         OutputInterface $output
     ): int {
         try {
-            $siteIds = $this->getSiteIds($input);
-            if ($siteIds) {
-                $filters[] = __('SITE IDs = %1', implode(', ', $siteIds));
+            $filters = [];
+            $storeCodes = $this->getStoreCodes($input);
+            if ($storeCodes) {
+                $filters[] = __('STORE Codes = %1', implode(', ', $storeCodes));
             }
 
             $output->writeln('');
@@ -141,6 +149,8 @@ HELP
             $dateTime = $this->dateTimeFactory->create();
             $output->writeln('<info>Execution started: ' . $dateTime->gmtDate() . '</info>');
             $this->cliOutput->setOutput($output);
+            $this->entityDiscovery->execute($storeCodes);
+
             $this->metricCollector->setOutput($this->cliOutput);
             $output->writeln('<info>Execution ended: ' . $dateTime->gmtDate() . '</info>');
         } catch (\Throwable $e) {
@@ -157,12 +167,12 @@ HELP
      *
      * @return string[]
      */
-    private function getSiteIds(InputInterface $input): array
+    private function getStoreCodes(InputInterface $input): array
     {
-        $siteIds = $input->getOption(static::OPTION_SITE_IDS);
+        $codes = $input->getOption(static::OPTION_STORE_CODES);
 
-        return $siteIds
-            ? array_map('trim', explode(',', $siteIds))
+        return $codes
+            ? array_map('trim', explode(',', $codes))
             : [];
     }
 }

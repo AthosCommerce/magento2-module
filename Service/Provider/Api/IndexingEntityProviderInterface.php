@@ -32,7 +32,7 @@ interface IndexingEntityProviderInterface
      * @param string|null $entityType
      * @param string[]|null $siteIds
      * @param int[]|null $entityIds
-     * @param Actions|null $nextAction
+     * @param string|null $nextAction
      * @param bool|null $isIndexable
      * @param array<string, string>|null $sorting [SortOrder::DIRECTION => SortOrder::SORT_ASC, SortOrder::FIELD => '']
      * @param int|null $pageSize
@@ -45,7 +45,7 @@ interface IndexingEntityProviderInterface
         ?string $entityType = null,
         ?array $siteIds = [],
         ?array $entityIds = [],
-        ?Actions $nextAction = null,
+        ?string $nextAction = null,
         ?bool $isIndexable = null,
         ?array $sorting = [],
         ?int $pageSize = null,
@@ -69,7 +69,7 @@ interface IndexingEntityProviderInterface
     /**
      * @param string|null $entityType
      * @param string|null $siteIds
-     * @param Actions|null $nextAction
+     * @param string|null $nextAction
      * @param bool|null $isIndexable
      *
      * @return int
@@ -77,7 +77,7 @@ interface IndexingEntityProviderInterface
     public function count(
         ?string $entityType = null,
         ?string $siteIds = null,
-        ?Actions $nextAction = null,
+        ?string $nextAction = null,
         ?bool $isIndexable = null,
     ): int;
 

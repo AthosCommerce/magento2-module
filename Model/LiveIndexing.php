@@ -19,16 +19,114 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Model;
 
 use AthosCommerce\Feed\Api\LiveIndexingInterface;
+use AthosCommerce\Feed\Helper\Constants;
+use Magento\Store\Model\ScopeInterface;
+use Magento\Store\Model\StoreManagerInterface;
+use Magento\Framework\App\Config\ScopeConfigInterface;
+use AthosCommerce\Feed\Model\LiveIndexing\Processor;
+use Psr\Log\LoggerInterface;
 
 class LiveIndexing implements LiveIndexingInterface
 {
+    /**
+     * @var StoreManagerInterface
+     */
+    private $storeManager;
+    /**
+     * @var ScopeConfigInterface
+     */
+    private $scopeConfig;
+    /**
+     * @var Processor
+     */
+    private $processor;
+    /**
+     * @var LoggerInterface
+     */
+    private $logger;
 
-    public function __construct()
-    {
+    /**
+     * @param StoreManagerInterface $storeManager
+     * @param ScopeConfigInterface $scopeConfig
+     * @param Processor $processor
+     * @param LoggerInterface $logger
+     */
+    public function __construct(
+        StoreManagerInterface $storeManager,
+        ScopeConfigInterface $scopeConfig,
+        Processor $processor,
+        LoggerInterface $logger
+    ) {
+        $this->storeManager = $storeManager;
+        $this->scopeConfig = $scopeConfig;
+        $this->processor = $processor;
+        $this->logger = $logger;
     }
 
-    public function execute(): array
+    /**
+     * @param array|null $storeCodes
+     *
+     * @return array
+     */
+    public function execute(?array $storeCodes): array
     {
-        // TODO: Implement execute() method.
+        $storesToProcess = [];
+        $processCount = [];
+
+        if (!empty($storeCodes)) {
+            foreach ($storeCodes as $code) {
+                try {
+                    $store = $this->storeManager->getStore($code);
+                    $storesToProcess[] = $store;
+                } catch (\Exception $e) {
+                    $this->logger->info("Store code not found: {$code}");
+                }
+            }
+        } else {
+            $storesToProcess = $this->storeManager->getStores();
+        }
+
+        foreach ($storesToProcess as $store) {
+            if (!$store) {
+                continue;
+            }
+            $storeId = $store->getId();
+            $isEnabled = (bool)$this->scopeConfig->getValue(
+                Constants::XML_PATH_LIVE_INDEXING_ENABLED,
+                ScopeInterface::SCOPE_STORES,
+                $storeId
+            );
+            if (!$isEnabled) {
+                $this->logger->info(
+                    "Found indexing disabled   for store: " . $store->getCode()
+                );
+                continue;
+            }
+            $siteId = (string)$this->scopeConfig->getValue(
+                Constants::XML_PATH_CONFIG_SITE_ID,
+                ScopeInterface::SCOPE_STORES,
+                $storeId
+            );
+            if (!$siteId) {
+                $this->logger->info(
+                    "Found  site id not found for store: " . $store->getCode()
+                );
+                continue;
+            }
+            $batchSizePerJob = (int)$this->scopeConfig->getValue(
+                Constants::XML_PATH_LIVE_INDEXING_BATCH_SIZE_PER_JOB,
+                ScopeInterface::SCOPE_STORES,
+                $storeId
+            );
+            if (!$batchSizePerJob) {
+                $batchSizePerJob = 400;
+            }
+            $processCount[$storeId] = $this->processor->execute(
+                $batchSizePerJob,
+                $siteId
+            );
+        }
+
+        return $processCount;
     }
 }
