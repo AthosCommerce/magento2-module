@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Service\Api;
 
+use AthosCommerce\Feed\Model\Feed\Context\StoreContextManager;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\StoreManagerInterface;
@@ -31,9 +32,9 @@ class ApiClient
      */
     private $logger;
     /**
-     * @var StoreManagerInterface
+     * @var StoreContextManager
      */
-    private $storeManager;
+    private $storeContextManager;
     /**
      * @var ScopeConfigInterface
      */
@@ -41,16 +42,16 @@ class ApiClient
 
     /**
      * @param LoggerInterface $logger
-     * @param StoreManagerInterface $storeManager
+     * @param StoreContextManager $storeContextManager
      * @param ScopeConfigInterface $scopeConfig
      */
     public function __construct(
         LoggerInterface $logger,
-        StoreManagerInterface $storeManager,
+        StoreContextManager $storeContextManager,
         ScopeConfigInterface $scopeConfig
     ) {
         $this->logger = $logger;
-        $this->storeManager = $storeManager;
+        $this->storeContextManager = $storeContextManager;
         $this->scopeConfig = $scopeConfig;
     }
 
@@ -59,33 +60,23 @@ class ApiClient
      * @param string $topic
      *
      * @return bool
-     * @throws \Magento\Framework\Exception\NoSuchEntityException
      */
-    public function send(array $payload, string $topic): bool
-    {
-        $store = $this->storeManager->getStore();
-        $storeId = (int)$store->getId();
-
-        $endpoint = $this->scopeConfig->getValue(
-            Constants::XML_PATH_CONFIG_ENDPOINT,
+    public function send(
+        array $payload,
+        string $topic
+    ): bool {
+        $shopDomain = $this->scopeConfig->getValue(
+            Constants::XML_PATH_CONFIG_SHOP_DOMAIN,
             ScopeInterface::SCOPE_STORES,
             $storeId
         );
-
-        if (!$endpoint) {
-            $this->logger->error(
-                "Missing API Endpoint config for store: " . $store->getCode(),
-                [
-                    'payload' => $payload,
-                ]
-            );
-
-            return false;
-        }
-
-        $domain = $store->getBaseUrl();
         $secretKey = $this->scopeConfig->getValue(
             Constants::XML_PATH_CONFIG_SECRET_KEY,
+            ScopeInterface::SCOPE_STORES,
+            $storeId
+        );
+        $endpoint = $this->scopeConfig->getValue(
+            Constants::XML_PATH_CONFIG_ENDPOINT,
             ScopeInterface::SCOPE_STORES,
             $storeId
         );
@@ -99,11 +90,12 @@ class ApiClient
         $headers = [
             'Content-Type: application/json',
             'x-topic: ' . $topic,
-            'x-shop-domain: ' . $domain,
+            'x-shop-domain: ' . $shopDomain,
             'x-hmac-sha256: ' . $hmac,
         ];
 
-        $this->logger->debug('Sending API Request', [
+        $this->logger->info('Sending API Request', [
+            'headers' => $headers,
             'endpoint' => $endpoint,
             'payload' => $payload,
             'topic' => $topic,
@@ -120,11 +112,20 @@ class ApiClient
                 CURLOPT_TIMEOUT => 20,
             ]);
 
-        $resp = curl_exec($ch);
+        $response = curl_exec($ch);
         $errno = curl_errno($ch);
         $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
 
+        $this->logger->info(
+            'API Response',
+            [
+                'code' => $code,
+                'response' => $response,
+                'errorNo' => $errno,
+                'topic' => $topic,
+            ]
+        );
         if ($errno) {
             $this->logger->error('Curl error: ' . $errno);
 
@@ -135,7 +136,7 @@ class ApiClient
             return true;
         }
 
-        $this->logger->warning("HTTP $code | Response: $resp");
+        $this->logger->warning("HTTP $code | Response: $response");
 
         return false;
     }

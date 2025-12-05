@@ -68,7 +68,7 @@ class LiveIndexing implements LiveIndexingInterface
      *
      * @return array
      */
-    public function execute(?array $storeCodes): array
+    public function execute(?array $storeCodes = null): array
     {
         $storesToProcess = [];
         $processCount = [];
@@ -119,7 +119,31 @@ class LiveIndexing implements LiveIndexingInterface
                 $storeId
             );
             if (!$batchSizePerJob) {
-                $batchSizePerJob = 400;
+                $batchSizePerJob = Constants::DEFAULT_BATCH_LIMIT;
+            }
+
+            $endpoint = $this->scopeConfig->getValue(
+                Constants::XML_PATH_CONFIG_ENDPOINT,
+                ScopeInterface::SCOPE_STORES,
+                $storeId
+            );
+
+            if (!$endpoint) {
+                $this->logger->error(
+                    "Missing API Endpoint config for store: " . $store->getCode()
+                );
+                continue;
+            }
+            $shopDomain = $this->scopeConfig->getValue(
+                Constants::XML_PATH_CONFIG_SHOP_DOMAIN,
+                ScopeInterface::SCOPE_STORES,
+                $storeId
+            );
+            if (!$shopDomain) {
+                $this->logger->error(
+                    "Missing Shop Domain config for store: " . $store->getCode()
+                );
+                continue;
             }
             $processCount[$storeId] = $this->processor->execute(
                 $batchSizePerJob,
