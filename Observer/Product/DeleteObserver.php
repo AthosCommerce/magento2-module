@@ -18,7 +18,9 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Observer\Product;
 
+use AthosCommerce\Feed\Helper\Constants;
 use AthosCommerce\Feed\Model\Source\Actions;
+use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
 use AthosCommerce\Feed\Observer\BaseProductObserver;
@@ -37,15 +39,23 @@ class DeleteObserver implements ObserverInterface
     private $logger;
 
     /**
+     * @var ScopeConfigInterface
+     */
+    private $scopeConfig;
+
+    /**
      * @param BaseProductObserver $baseProductObserver
      * @param LoggerInterface $logger
+     * @param ScopeConfigInterface $scopeConfig
      */
     public function __construct(
         BaseProductObserver $baseProductObserver,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        ScopeConfigInterface $scopeConfig,
     ) {
         $this->baseProductObserver = $baseProductObserver;
         $this->logger = $logger;
+        $this->scopeConfig = $scopeConfig;
     }
 
     /**
@@ -58,17 +68,39 @@ class DeleteObserver implements ObserverInterface
         $event = $observer->getEvent();
         $product = $event->getProduct();
 
-        $nextAction = ($product->getStatus() != 1 || $product->getVisibility() == 1)
-            ? Actions::DELETE
-            : Actions::UPSERT;
 
-        $this->baseProductObserver->execute([$product->getId], $nextAction);
+        // Get store IDs for this product
+        $storeIds = $product->getStoreIds();
 
-        $this->logger->debug(
-            'DeleteObserver executed',
-            [
-                'ids' => $product->getId(),
-            ]
-        );
+        if (!$product || !$product->getId()) {
+            return;
+        }
+
+        foreach ($storeIds as $storeId) {
+            // Check the live indexing flag for this store
+            $liveIndexing = (bool)$this->scopeConfig->getValue(
+                Constants::XML_PATH_LIVE_INDEXING_ENABLED,
+                \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+                $storeId
+            );
+
+            if (!$liveIndexing) {
+                continue;
+            }
+
+            $nextAction = ($product->getStatus() != 1 || $product->getVisibility() == 1)
+                ? Actions::DELETE
+                : Actions::UPSERT;
+
+            $this->baseProductObserver->execute([$product->getId()], $nextAction);
+
+
+            $this->logger->debug(
+                'DeleteObserver executed',
+                [
+                    'ids' => $product->getId(),
+                ]
+            );
+        }
     }
 }

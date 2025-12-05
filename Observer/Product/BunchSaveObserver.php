@@ -18,7 +18,10 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Observer\Product;
 
+use AthosCommerce\Feed\Helper\Constants;
 use AthosCommerce\Feed\Model\Source\Actions;
+use Magento\Catalog\Api\ProductRepositoryInterface;
+use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
 use AthosCommerce\Feed\Observer\BaseProductObserver;
@@ -37,22 +40,41 @@ class BunchSaveObserver implements ObserverInterface
      */
     private $logger;
 
-    private ResourceConnection $resource;
+    /**
+     * @var ResourceConnection
+     */
+    private $resource;
+
+    /**
+     * @var ProductRepositoryInterface
+     */
+    private $productRepository;
+
+    /**
+     * @var ScopeConfigInterface
+     */
+    private $scopeConfig;
 
     /**
      * @param BaseProductObserver $baseProductObserver
      * @param LoggerInterface $logger
      * @param ResourceConnection $resourceConnection
+     * @param ProductRepositoryInterface $productRepository
+     * @param ScopeConfigInterface $scopeConfig
      */
     public function __construct(
-        BaseProductObserver $baseProductObserver,
-        LoggerInterface     $logger,
-        ResourceConnection  $resourceConnection
+        BaseProductObserver        $baseProductObserver,
+        LoggerInterface            $logger,
+        ResourceConnection         $resourceConnection,
+        ProductRepositoryInterface $productRepository,
+        ScopeConfigInterface       $scopeConfig
     )
     {
         $this->baseProductObserver = $baseProductObserver;
         $this->logger = $logger;
         $this->resource = $resourceConnection;
+        $this->productRepository = $productRepository;
+        $this->scopeConfig = $scopeConfig;
     }
 
     /**
@@ -70,8 +92,6 @@ class BunchSaveObserver implements ObserverInterface
             return;
         }
 
-      //  $nextAction = Actions::UPSERT;
-
         $skus = array_column($bunch, 'sku');
 
         $connection = $this->resource->getConnection();
@@ -81,22 +101,45 @@ class BunchSaveObserver implements ObserverInterface
             ->where('sku IN (?)', $skus);
 
         $skuToData = $connection->fetchAll($select);
-        $entityIds = [];
+
         foreach ($skuToData as $data) {
-            $entityIds[] = $data['entity_id'];
-//            $this->logger->debug(
-//                "Product SKU: {$data['sku']}, ID: {$data['entity_id']}, Next Action: $nextAction"
-//            );
+            $entityId = $data['entity_id'];
+
+            try {
+                $product = $this->productRepository->getById($entityId);
+
+                /** @var array $storeIds */
+                $storeIds = $product->getStoreIds();
+
+                foreach ($storeIds as $storeId) {
+                    // Check the live indexing flag for this store
+                    $liveIndexing = (bool)$this->scopeConfig->getValue(
+                        Constants::XML_PATH_LIVE_INDEXING_ENABLED,
+                        \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+                        $storeId
+                    );
+
+                    if (!$liveIndexing) {
+                        continue; // skip this store
+                    }
+
+                    // Execute your observer action
+                    $this->baseProductObserver->execute([$entityId], Actions::UPSERT);
+
+                    $this->logger->debug(
+                        'BunchSaveObserver executed: saved product ID',
+                        [
+                            'sku' => $data['sku'],
+                            'id' => $entityId,
+                            'storeId' => $storeId
+                        ]
+                    );
+                }
+            } catch (\Magento\Framework\Exception\NoSuchEntityException $e) {
+                $this->logger->error("Product not found: SKU {$data['sku']} ID {$entityId}");
+            } catch (\Exception $e) {
+                $this->logger->error("Error processing product ID {$entityId}: " . $e->getMessage());
+            }
         }
-
-        $this->baseProductObserver->execute($entityIds, Actions::UPSERT);
-
-        $this->logger->debug(
-            'BunchSaveObserver executed: saved product IDs',
-            [
-                'skus' => $skus,
-                'ids' => $entityIds
-            ]
-        );
     }
 }

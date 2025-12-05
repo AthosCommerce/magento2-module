@@ -122,6 +122,9 @@
     <preference for="AthosCommerce\Feed\Api\ConfigUpdateInterface"
                 type="AthosCommerce\Feed\Model\Api\ConfigUpdate"/>
 
+    <preference for="AthosCommerce\Feed\Api\GetConfigInfoInterface"
+                type="AthosCommerce\Feed\Model\Api\GetConfigInfo"/>
+
     <type name="AthosCommerce\Feed\Model\Task\TypeList">
         <arguments>
             <argument name="types" xsi:type="array">
@@ -542,6 +545,12 @@
         </arguments>
     </type>
 
+    <type name="AthosCommerce\Feed\Model\Api\GetConfigInfo">
+        <arguments>
+            <argument name="logger"
+                      xsi:type="object">AthosCommerceLogger</argument>
+        </arguments>
+    </type>
 
     <type name="AthosCommerce\Feed\Model\Metric\MetricProvider\TimerProvider" shared="false"/>
     <type name="AthosCommerce\Feed\Model\Metric\MetricProvider\FileSizeProvider" shared="false"/>

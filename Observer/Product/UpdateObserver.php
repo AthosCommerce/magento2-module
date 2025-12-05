@@ -18,7 +18,9 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Observer\Product;
 
+use AthosCommerce\Feed\Helper\Constants;
 use AthosCommerce\Feed\Model\Source\Actions;
+use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
 use AthosCommerce\Feed\Observer\BaseProductObserver;
@@ -36,15 +38,24 @@ class UpdateObserver implements ObserverInterface
     private $logger;
 
     /**
+     * @var ScopeConfigInterface
+     */
+    private $scopeConfig;
+
+    /**
      * @param BaseProductObserver $baseProductObserver
      * @param LoggerInterface $logger
+     * @param ScopeConfigInterface $scopeConfig
      */
     public function __construct(
-        BaseProductObserver $baseProductObserver,
-        LoggerInterface $logger
-    ) {
+        BaseProductObserver  $baseProductObserver,
+        LoggerInterface      $logger,
+        ScopeConfigInterface $scopeConfig,
+    )
+    {
         $this->baseProductObserver = $baseProductObserver;
         $this->logger = $logger;
+        $this->scopeConfig = $scopeConfig;
     }
 
     /**
@@ -56,20 +67,38 @@ class UpdateObserver implements ObserverInterface
     {
         $event = $observer->getEvent();
         $product = $event->getProduct();
+
+        // Get store IDs for this product
+        $storeIds = $product->getStoreIds();
+
         if (!$product || !$product->getId()) {
             return;
         }
-        $nextAction = ($product->getStatus() != 1 || $product->getVisibility() == 1)
-            ? Actions::DELETE
-            : Actions::UPSERT;
 
-        $this->baseProductObserver->execute([$product->getId], $nextAction);
+        foreach ($storeIds as $storeId) {
+            // Check the live indexing flag for this store
+            $liveIndexing = (bool)$this->scopeConfig->getValue(
+                Constants::XML_PATH_LIVE_INDEXING_ENABLED,
+                \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+                $storeId
+            );
 
-        $this->logger->debug(
-            'UpdateObserver executed',
-            [
-                'ids' => $product->getId(),
-            ]
-        );
+            if (!$liveIndexing) {
+                continue;
+            }
+
+            $nextAction = ($product->getStatus() != 1 || $product->getVisibility() == 1)
+                ? Actions::DELETE
+                : Actions::UPSERT;
+
+            $this->baseProductObserver->execute([$product->getId()], $nextAction);
+
+            $this->logger->debug(
+                'UpdateObserver executed',
+                [
+                    'ids' => $product->getId(),
+                ]
+            );
+        }
     }
 }

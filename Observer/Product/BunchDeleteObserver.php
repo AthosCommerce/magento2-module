@@ -18,10 +18,14 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Observer\Product;
 
+use AthosCommerce\Feed\Helper\Constants;
 use AthosCommerce\Feed\Model\Source\Actions;
+use Magento\Catalog\Api\ProductRepositoryInterface;
+use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
 use AthosCommerce\Feed\Observer\BaseProductObserver;
+use Magento\Store\Model\ScopeInterface;
 use Psr\Log\LoggerInterface;
 
 class BunchDeleteObserver implements ObserverInterface
@@ -37,16 +41,32 @@ class BunchDeleteObserver implements ObserverInterface
     private $logger;
 
     /**
+     * @var ProductRepositoryInterface
+     */
+    private $productRepository;
+
+    /**
+     * @var ScopeConfigInterface
+     */
+    private $scopeConfig;
+
+    /**
      * @param BaseProductObserver $baseProductObserver
      * @param LoggerInterface $logger
+     * @param ProductRepositoryInterface $productRepository
+     * @param ScopeConfigInterface $scopeConfig
      */
     public function __construct(
-        BaseProductObserver $baseProductObserver,
-        LoggerInterface     $logger
+        BaseProductObserver        $baseProductObserver,
+        LoggerInterface            $logger,
+        ProductRepositoryInterface $productRepository,
+        ScopeConfigInterface       $scopeConfig
     )
     {
         $this->baseProductObserver = $baseProductObserver;
         $this->logger = $logger;
+        $this->productRepository = $productRepository;
+        $this->scopeConfig = $scopeConfig;
     }
 
     /**
@@ -59,11 +79,39 @@ class BunchDeleteObserver implements ObserverInterface
         $event = $observer->getEvent();
         $productIdsToDelete = (array)$event->getIdsToDelete();
 
-        $this->logger->debug(
-            'BunchDeleteObserver executed',
-            [
-                'productIdsToDelete' => $productIdsToDelete,
-            ]
-        );
+        foreach ($productIdsToDelete as $productId) {
+            try {
+                // Load product
+                $product = $this->productRepository->getById($productId);
+
+                /** @var array $storeIds */
+                $storeIds = $product->getStoreIds();
+
+                foreach ($storeIds as $storeId) {
+                    // Check the live indexing flag for this store
+                    $liveIndexing = (bool)$this->scopeConfig->getValue(
+                        Constants::XML_PATH_LIVE_INDEXING_ENABLED,
+                        \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+                        $storeId
+                    );
+
+                    if (!$liveIndexing) {
+                        continue; // Skip this store
+                    }
+
+                    $this->logger->debug(
+                        'BunchDeleteObserver executed',
+                        [
+                            'productId' => $productId,
+                            'storeId' => $storeId
+                        ]
+                    );
+                }
+            } catch (\Magento\Framework\Exception\NoSuchEntityException $e) {
+                $this->logger->warning("Product not found: ID {$productId}");
+            } catch (\Exception $e) {
+                $this->logger->error("Error processing product ID {$productId}: " . $e->getMessage());
+            }
+        }
     }
 }
