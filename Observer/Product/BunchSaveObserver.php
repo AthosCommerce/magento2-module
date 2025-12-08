@@ -120,10 +120,9 @@ class BunchSaveObserver implements ObserverInterface
                     );
 
                     if (!$liveIndexing) {
-                        continue; // skip this store
+                        continue;
                     }
 
-                    // Execute your observer action
                     $this->baseProductObserver->execute([$entityId], Actions::UPSERT);
 
                     $this->logger->debug(

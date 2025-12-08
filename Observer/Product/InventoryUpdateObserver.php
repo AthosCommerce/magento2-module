@@ -20,62 +20,73 @@ namespace AthosCommerce\Feed\Observer\Product;
 
 use AthosCommerce\Feed\Helper\Constants;
 use AthosCommerce\Feed\Model\Source\Actions;
+use AthosCommerce\Feed\Observer\BaseProductObserver;
+use Magento\Catalog\Model\ProductRepository;
+use Magento\CatalogInventory\Model\Stock\Item;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
-use AthosCommerce\Feed\Observer\BaseProductObserver;
 use Psr\Log\LoggerInterface;
 
-class DeleteObserver implements ObserverInterface
+class InventoryUpdateObserver implements ObserverInterface
 {
+
     /**
      * @var BaseProductObserver
      */
     private $baseProductObserver;
-
     /**
      * @var LoggerInterface
      */
     private $logger;
 
     /**
+     * @var ProductRepository
+     */
+    protected $productRepository;
+
+    /**
      * @var ScopeConfigInterface
      */
     private $scopeConfig;
 
-    /**
-     * @param BaseProductObserver $baseProductObserver
-     * @param LoggerInterface $logger
-     * @param ScopeConfigInterface $scopeConfig
-     */
     public function __construct(
-        BaseProductObserver $baseProductObserver,
-        LoggerInterface $logger,
+        LoggerInterface      $logger,
+        ProductRepository    $productRepository,
         ScopeConfigInterface $scopeConfig,
-    ) {
-        $this->baseProductObserver = $baseProductObserver;
+        BaseProductObserver  $baseProductObserver
+    )
+    {
         $this->logger = $logger;
+        $this->productRepository = $productRepository;
         $this->scopeConfig = $scopeConfig;
+        $this->baseProductObserver = $baseProductObserver;
     }
 
     /**
      * @param Observer $observer
-     *
      * @return void
      */
     public function execute(Observer $observer)
     {
+        /** @var Item $stockItem */
+        $stockItem = $observer->getEvent()->getItem();
+        $productId = $stockItem->getProductId();
+
         try {
-            $event = $observer->getEvent();
-            $product = $event->getProduct();
 
-            $storeIds = $product->getStoreIds();
+            $qtyChanged = $stockItem->dataHasChangedFor('qty');
+            $inStockChanged = $stockItem->dataHasChangedFor('is_in_stock');
 
-            if (!$product || !$product->getId()) {
+            if (!$qtyChanged && !$inStockChanged) {
                 return;
             }
 
+            $product = $this->productRepository->getById($productId, false, null, true);
+            $storeIds = $product->getStoreIds();
+
             foreach ($storeIds as $storeId) {
+
                 try {
                     $liveIndexing = (bool)$this->scopeConfig->getValue(
                         Constants::XML_PATH_LIVE_INDEXING_ENABLED,
@@ -91,38 +102,29 @@ class DeleteObserver implements ObserverInterface
                         ? Actions::DELETE
                         : Actions::UPSERT;
 
-                    $this->baseProductObserver->execute([$product->getId()], $nextAction);
+                    $this->baseProductObserver->execute([$productId], $nextAction);
 
-                    $this->logger->debug(
-                        'DeleteObserver executed',
-                        [
-                            'ids' => $product->getId(),
-                            'store_id' => $storeId,
-                            'action' => $nextAction
-                        ]
-                    );
-                } catch (\Throwable $storeEx) {
-                    // Handle exceptions per store so the loop continues
-                    $this->logger->error(
-                        'DeleteObserver error for store',
-                        [
-                            'product_id' => $product->getId(),
-                            'store_id' => $storeId,
-                            'message' => $storeEx->getMessage(),
-                            'trace' => $storeEx->getTraceAsString()
-                        ]
-                    );
+                    $this->logger->debug('Stock Update Store Check', [
+                        'product_id'    => $productId,
+                        'store_id'      => $storeId,
+                        'live_indexing' => $liveIndexing,
+                        'action'        => $nextAction
+                    ]);
+
+                } catch (\Throwable $e) {
+                    $this->logger->error('Error processing stock for store ' . $storeId, [
+                        'product_id' => $productId,
+                        'message' => $e->getMessage(),
+                    ]);
+                    continue;
                 }
             }
+
         } catch (\Throwable $e) {
-            // Handle general observer exceptions
-            $this->logger->error(
-                'DeleteObserver general error',
-                [
-                    'message' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString()
-                ]
-            );
+            $this->logger->error('Stock observer failed', [
+                'product_id' => $productId,
+                'message' => $e->getMessage(),
+            ]);
         }
     }
 }

@@ -76,42 +76,61 @@ class BunchDeleteObserver implements ObserverInterface
      */
     public function execute(Observer $observer)
     {
-        $event = $observer->getEvent();
-        $productIdsToDelete = (array)$event->getIdsToDelete();
+        try {
+            $event = $observer->getEvent();
+            $productIdsToDelete = (array)$event->getIdsToDelete();
 
-        foreach ($productIdsToDelete as $productId) {
-            try {
-                // Load product
-                $product = $this->productRepository->getById($productId);
+            foreach ($productIdsToDelete as $productId) {
+                try {
+                    $product = $this->productRepository->getById($productId);
 
-                /** @var array $storeIds */
-                $storeIds = $product->getStoreIds();
+                    /** @var array $storeIds */
+                    $storeIds = $product->getStoreIds();
 
-                foreach ($storeIds as $storeId) {
-                    // Check the live indexing flag for this store
-                    $liveIndexing = (bool)$this->scopeConfig->getValue(
-                        Constants::XML_PATH_LIVE_INDEXING_ENABLED,
-                        \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
-                        $storeId
-                    );
+                    foreach ($storeIds as $storeId) {
+                        try {
+                            $liveIndexing = (bool)$this->scopeConfig->getValue(
+                                Constants::XML_PATH_LIVE_INDEXING_ENABLED,
+                                \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+                                $storeId
+                            );
 
-                    if (!$liveIndexing) {
-                        continue; // Skip this store
+                            if (!$liveIndexing) {
+                                continue;
+                            }
+
+                            $this->baseProductObserver->execute([$productId], Actions::DELETE);
+
+                            $this->logger->debug(
+                                'BunchDeleteObserver executed',
+                                [
+                                    'productId' => $productId,
+                                    'storeId' => $storeId
+                                ]
+                            );
+                        } catch (\Throwable $storeEx) {
+                            // Handle exceptions per store so loop continues
+                            $this->logger->error(
+                                "Error processing product ID {$productId} for store ID {$storeId}: " . $storeEx->getMessage(),
+                                ['trace' => $storeEx->getTraceAsString()]
+                            );
+                        }
                     }
-
-                    $this->logger->debug(
-                        'BunchDeleteObserver executed',
-                        [
-                            'productId' => $productId,
-                            'storeId' => $storeId
-                        ]
+                } catch (\Magento\Framework\Exception\NoSuchEntityException $e) {
+                    $this->logger->warning("Product not found: ID {$productId}");
+                } catch (\Throwable $productEx) {
+                    $this->logger->error(
+                        "Error processing product ID {$productId}: " . $productEx->getMessage(),
+                        ['trace' => $productEx->getTraceAsString()]
                     );
                 }
-            } catch (\Magento\Framework\Exception\NoSuchEntityException $e) {
-                $this->logger->warning("Product not found: ID {$productId}");
-            } catch (\Exception $e) {
-                $this->logger->error("Error processing product ID {$productId}: " . $e->getMessage());
             }
+        } catch (\Throwable $e) {
+            $this->logger->critical(
+                'BunchDeleteObserver general error: ' . $e->getMessage(),
+                ['trace' => $e->getTraceAsString()]
+            );
         }
+
     }
 }

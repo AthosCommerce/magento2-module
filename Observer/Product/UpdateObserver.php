@@ -65,38 +65,60 @@ class UpdateObserver implements ObserverInterface
      */
     public function execute(Observer $observer)
     {
-        $event = $observer->getEvent();
-        $product = $event->getProduct();
+        try {
+            $event = $observer->getEvent();
+            $product = $event->getProduct();
+            $storeIds = $product->getStoreIds();
 
-        // Get store IDs for this product
-        $storeIds = $product->getStoreIds();
-
-        if (!$product || !$product->getId()) {
-            return;
-        }
-
-        foreach ($storeIds as $storeId) {
-            // Check the live indexing flag for this store
-            $liveIndexing = (bool)$this->scopeConfig->getValue(
-                Constants::XML_PATH_LIVE_INDEXING_ENABLED,
-                \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
-                $storeId
-            );
-
-            if (!$liveIndexing) {
-                continue;
+            if (!$product || !$product->getId()) {
+                return;
             }
 
-            $nextAction = ($product->getStatus() != 1 || $product->getVisibility() == 1)
-                ? Actions::DELETE
-                : Actions::UPSERT;
+            foreach ($storeIds as $storeId) {
+                try {
+                    $liveIndexing = (bool)$this->scopeConfig->getValue(
+                        Constants::XML_PATH_LIVE_INDEXING_ENABLED,
+                        \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+                        $storeId
+                    );
 
-            $this->baseProductObserver->execute([$product->getId()], $nextAction);
+                    if (!$liveIndexing) {
+                        continue;
+                    }
 
-            $this->logger->debug(
-                'UpdateObserver executed',
+                    $nextAction = ($product->getStatus() != 1 || $product->getVisibility() == 1)
+                        ? Actions::DELETE
+                        : Actions::UPSERT;
+
+                    $this->baseProductObserver->execute([$product->getId()], $nextAction);
+
+                    $this->logger->debug(
+                        'UpdateObserver executed',
+                        [
+                            'ids' => $product->getId(),
+                            'store_id' => $storeId,
+                            'action' => $nextAction,
+                        ]
+                    );
+                } catch (\Throwable $storeEx) {
+                    $this->logger->error(
+                        'UpdateObserver error for store',
+                        [
+                            'product_id' => $product->getId(),
+                            'store_id' => $storeId,
+                            'message' => $storeEx->getMessage(),
+                            'trace' => $storeEx->getTraceAsString()
+                        ]
+                    );
+                }
+            }
+        } catch (\Throwable $e) {
+            $this->logger->error(
+                'UpdateObserver error: ' . $e->getMessage(),
                 [
-                    'ids' => $product->getId(),
+                    'product_id' => $product->getId() ?? null,
+                    'store_ids' => $storeIds ?? [],
+                    'trace' => $e->getTraceAsString()
                 ]
             );
         }

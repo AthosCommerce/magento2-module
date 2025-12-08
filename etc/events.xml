@@ -26,4 +26,8 @@
         <observer name="Athoscommerce_TaskSaveAfter"
                   instance="AthosCommerce\Feed\Observer\TaskSaveAfterObserver" />
     </event>
+    <event name="cataloginventory_stock_item_save_after">
+        <observer name="AthosCommerce:StockItemSaveAfter"
+                  instance="AthosCommerce\Feed\Observer\Product\InventoryUpdateObserver" />
+    </event>
 </config>

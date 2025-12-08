@@ -552,6 +552,13 @@
         </arguments>
     </type>
 
+    <type name="AthosCommerce\Feed\Observer\Product\InventoryUpdateObserver">
+        <arguments>
+            <argument name="logger"
+                      xsi:type="object">AthosCommerceLogger</argument>
+        </arguments>
+    </type>
+
     <type name="AthosCommerce\Feed\Model\Metric\MetricProvider\TimerProvider" shared="false"/>
     <type name="AthosCommerce\Feed\Model\Metric\MetricProvider\FileSizeProvider" shared="false"/>
 </config>

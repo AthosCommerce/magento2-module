@@ -4,6 +4,7 @@ namespace AthosCommerce\Feed\Model\Api;
 
 use AthosCommerce\Feed\Api\ConfigUpdateInterface;
 use Magento\Framework\App\Config\Storage\WriterInterface;
+use Magento\Framework\Encryption\EncryptorInterface;
 use Magento\Framework\Exception\LocalizedException;
 
 class ConfigUpdate implements ConfigUpdateInterface
@@ -14,9 +15,10 @@ class ConfigUpdate implements ConfigUpdateInterface
 
     const ALLOWED_INDEXING_VALUES = ['0', '1'];
 
-    const array Allowed_PATHS = [
+    const  Allowed_PATHS = [
         self::MODULE_PREFIX . 'indexing/enable_live_indexing',
-        self::MODULE_PREFIX . 'indexing/entity_cron_expr'
+        self::MODULE_PREFIX . 'indexing/entity_cron_expr',
+        self::MODULE_PREFIX . 'indexing/secret_key'
     ];
 
     /**
@@ -24,11 +26,18 @@ class ConfigUpdate implements ConfigUpdateInterface
      */
     protected $configWriter;
 
+    /**
+     * @var EncryptorInterface
+     */
+    private  $encryptor;
+
     public function __construct(
-        WriterInterface   $configWriter
+        WriterInterface   $configWriter,
+        EncryptorInterface $encryptor
     )
     {
         $this->configWriter = $configWriter;
+        $this->encryptor = $encryptor;
     }
 
     /**
@@ -62,6 +71,12 @@ class ConfigUpdate implements ConfigUpdateInterface
                     }
                 } elseif ($path === self::Allowed_PATHS[1]) {
                     $this->validateCronExpression($value);
+                } elseif ($path === self::Allowed_PATHS[2]) {
+                    if (!$value) {
+                        throw new LocalizedException(__('No secret key set'));
+                    }
+                    // Encrypt
+                    $value =  $this->encryptor->encrypt($value);
                 }
             } elseif ($isConfigPath) {
                 if (trim($value) === '') {
