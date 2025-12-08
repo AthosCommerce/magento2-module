@@ -31,7 +31,7 @@ class EntitySyncCron
      * @param LiveIndexingInterface $liveIndexing
      */
     public function __construct(
-        LiveIndexingInterface $liveIndexing,
+        LiveIndexingInterface $liveIndexing
     ) {
         $this->liveIndexing = $liveIndexing;
     }

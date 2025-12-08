@@ -25,5 +25,5 @@ interface LiveIndexingInterface
      *
      * @return array
      */
-    public function execute(?array $storeCodes) : array;
+    public function execute(?array $storeCodes = null): array;
 }

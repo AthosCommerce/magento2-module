@@ -24,9 +24,19 @@ use Psr\Log\LoggerInterface;
 
 class DeleteEntityHandler
 {
+    /**
+     * @var ApiClient
+     */
     private $client;
+    /**
+     * @var LoggerInterface
+     */
     private $logger;
 
+    /**
+     * @param ApiClient $client
+     * @param LoggerInterface $logger
+     */
     public function __construct(
         ApiClient $client,
         LoggerInterface $logger
@@ -39,12 +49,11 @@ class DeleteEntityHandler
      * @param $row
      *
      * @return bool
-     * @throws \Magento\Framework\Exception\NoSuchEntityException
      */
     public function process($row): bool
     {
         $payload = [
-            'entity_id' => $row->getId()
+            'entity_id' => $row->getId(),
         ];
 
         return $this->client->send(

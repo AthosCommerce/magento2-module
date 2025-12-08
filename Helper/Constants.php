@@ -25,6 +25,11 @@ class Constants
     const API_SCOPE_DELETE = 'products/delete';
     const API_SCOPE_UPSERT = 'products/update';
 
+    /**
+     * Setted default limit to avoid rate limit for store.
+     */
+    const DEFAULT_BATCH_LIMIT = 400;
+
     const XML_PATH_CONFIG_SITE_ID = 'athoscommerce/configuration/siteid';
     const XML_PATH_CONFIG_ENDPOINT = 'athoscommerce/configuration/endpoint';
     const XML_PATH_CONFIG_SECRET_KEY = 'athoscommerce/configuration/secretkey';
