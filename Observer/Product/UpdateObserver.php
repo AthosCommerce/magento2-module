@@ -63,7 +63,7 @@ class UpdateObserver implements ObserverInterface
             ? Actions::DELETE
             : Actions::UPSERT;
 
-        $this->baseProductObserver->execute([$product->getId], $nextAction);
+        $this->baseProductObserver->execute([$product->getId()], $nextAction);
 
         $this->logger->debug(
             'UpdateObserver executed',
