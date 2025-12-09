@@ -150,12 +150,18 @@ HELP
             $dateTime = $this->dateTimeFactory->create();
             $output->writeln('<info>Execution started: ' . $dateTime->gmtDate() . '</info>');
             $this->cliOutput->setOutput($output);
-            $this->liveIndexingFactory->create()->execute($storeCodes);
+            $liveIndexingFactory = $this->liveIndexingFactory->create();
+            $storeWiseStatus = $liveIndexingFactory->execute($storeCodes);
+            foreach ($storeWiseStatus as $storeCodeKey => $count) {
+                $output->writeln(
+                    '<info>Store count(' . $count . ') processed for store(' . $storeCodeKey . ') </info> '
+                );
+            }
 
             $this->metricCollector->setOutput($this->cliOutput);
-            $output->writeln('<info>Execution ended: ' . $dateTime->gmtDate() . '</info>');
+            $output->writeln('<info>Execution ended: ' . $dateTime->gmtDate() . ' </info> ');
         } catch (\Throwable $e) {
-            $output->writeln('<error>' . $e->getMessage() . '</error>');
+            $output->writeln('<error>Exception: ' . $e->getMessage() . ' </error> ');
 
             return Command::FAILURE;
         }

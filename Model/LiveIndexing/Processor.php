@@ -1,38 +1,29 @@
 <?php
-/**
- * Copyright (C) 2025 AthosCommerce <https://athoscommerce.com>
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, version 3 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-
 declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Model\LiveIndexing;
 
+use AthosCommerce\Feed\Api\LiveIndexing\DeleteEntityHandlerInterface;
+use AthosCommerce\Feed\Model\Feed\ContextManagerInterface;
+use AthosCommerce\Feed\Service\Provider\IndexingEntityProvider as IndexingEntityProvider;
+use AthosCommerce\Feed\Api\LiveIndexing\UpsertEntityHandlerInterface;
+use AthosCommerce\Feed\Api\RetryManagerInterface;
 use AthosCommerce\Feed\Helper\Constants;
 use AthosCommerce\Feed\Model\CollectionProcessor;
 use AthosCommerce\Feed\Model\Feed\SpecificationBuilderInterface;
 use AthosCommerce\Feed\Model\ItemsGenerator;
 use AthosCommerce\Feed\Model\Source\Actions;
-use AthosCommerce\Feed\Service\Provider\Api\IndexingEntityProviderInterface as IndexingEntityProvider;
 use AthosCommerce\Feed\Service\Action\UpdateIndexingEntitiesActionsActionInterface as UpdateIndexingEntitiesActionsAction;
-use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Serialize\SerializerInterface;
+use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use Psr\Log\LoggerInterface;
 
 class Processor
 {
+    private const MAX_DB_FETCH = 960;
+
     /**
      * @var IndexingEntityProvider
      */
@@ -53,15 +44,14 @@ class Processor
      * @var UpdateIndexingEntitiesActionsAction
      */
     private $updateIndexingEntitiesActionsAction;
-
     /**
-     * @var DeleteEntityHandler
+     * @var DeleteEntityHandlerInterface
      */
-    private $deleteEntityHandler;
+    private $deleteHandler;
     /**
-     * @var UpsertEntityHandler
+     * @var UpsertEntityHandlerInterface
      */
-    private $upsertEntityHandler;
+    private $upsertHandler;
     /**
      * @var CollectionProcessor
      */
@@ -78,6 +68,14 @@ class Processor
      * @var SerializerInterface
      */
     private $serializer;
+    /**
+     * @var RetryManagerInterface
+     */
+    private $retryManager;
+    /**
+     * @var ContextManagerInterface
+     */
+    private $contextManager;
 
     /**
      * @param IndexingEntityProvider $indexingEntityProvider
@@ -85,12 +83,14 @@ class Processor
      * @param StoreManagerInterface $storeManager
      * @param ScopeConfigInterface $scopeConfig
      * @param UpdateIndexingEntitiesActionsAction $updateIndexingEntitiesActionsAction
-     * @param DeleteEntityHandler $deleteEntityHandler
-     * @param UpsertEntityHandler $upsertEntityHandler
+     * @param DeleteEntityHandlerInterface $deleteHandler
+     * @param UpsertEntityHandlerInterface $upsertHandler
      * @param CollectionProcessor $collectionProcessor
      * @param ItemsGenerator $itemsGenerator
      * @param SpecificationBuilderInterface $specificationBuilder
      * @param SerializerInterface $serializer
+     * @param RetryManagerInterface $retryManager
+     * @param ContextManagerInterface $contextManager
      */
     public function __construct(
         IndexingEntityProvider $indexingEntityProvider,
@@ -98,130 +98,318 @@ class Processor
         StoreManagerInterface $storeManager,
         ScopeConfigInterface $scopeConfig,
         UpdateIndexingEntitiesActionsAction $updateIndexingEntitiesActionsAction,
-        DeleteEntityHandler $deleteEntityHandler,
-        UpsertEntityHandler $upsertEntityHandler,
+        DeleteEntityHandlerInterface $deleteHandler,
+        UpsertEntityHandlerInterface $upsertHandler,
         CollectionProcessor $collectionProcessor,
         ItemsGenerator $itemsGenerator,
         SpecificationBuilderInterface $specificationBuilder,
-        SerializerInterface $serializer
+        SerializerInterface $serializer,
+        RetryManagerInterface $retryManager,
+        ContextManagerInterface $contextManager
     ) {
         $this->indexingEntityProvider = $indexingEntityProvider;
         $this->logger = $logger;
         $this->storeManager = $storeManager;
         $this->scopeConfig = $scopeConfig;
         $this->updateIndexingEntitiesActionsAction = $updateIndexingEntitiesActionsAction;
-        $this->deleteEntityHandler = $deleteEntityHandler;
-        $this->upsertEntityHandler = $upsertEntityHandler;
+        $this->deleteHandler = $deleteHandler;
+        $this->upsertHandler = $upsertHandler;
         $this->collectionProcessor = $collectionProcessor;
         $this->itemsGenerator = $itemsGenerator;
         $this->specificationBuilder = $specificationBuilder;
         $this->serializer = $serializer;
+        $this->retryManager = $retryManager;
+        $this->contextManager = $contextManager;
     }
 
     /**
-     * @param int $limit
      * @param string|null $siteId
      *
      * @return int
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
      */
-    public function execute(
-        int $limit,
-        ?string $siteId = null
-    ): int {
-        $total = 0;
-        $operations = [
-            Actions::DELETE => $this->deleteEntityHandler,
-            Actions::UPSERT => $this->upsertEntityHandler,
-        ];
-        $storeId = $this->storeManager->getStore();
-        foreach ($operations as $action => $handler) {
-            $this->logger->info(sprintf('[%s] Operation started ', $action));
-            $entities = $this->indexingEntityProvider->get(
-                null,
-                [$siteId],
-                null,
-                $action,
-                null,
-                null,
-                $limit
-            );
+    public function execute($store, ?string $siteId = null): int
+    {
+        $storeId = (int)$store->getId();
+        $storeCode = $store->getCode();
 
-            if (!$entities) {
-                continue;
-            }
+        $perMinute = (int)$this->scopeConfig->getValue(
+            Constants::XML_PATH_LIVE_INDEXING_PER_MINUTE,
+            ScopeInterface::SCOPE_STORES,
+            $storeId
+        )
+            ?: Constants::DEFAULT_MAX_BATCH_LIMIT;
 
-            $success = [];
-            $fail = [];
+        //This is to avoid rate limit at receiving end
+        $maxLimit = (int)$perMinute * 2;
 
-            if ($action === Actions::UPSERT) {
-                $entityIds = array_map(
-                    static fn($entityRow) => (int)$entityRow->getEntityId(),
-                    $entities
-                );
-                $payload = $this->scopeConfig->getValue(
-                    Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD,
-                    ScopeInterface::SCOPE_STORES,
-                    $storeId
-                );
-                if (!$payload) {
-                    $this->logger->info(
-                        "Payload not found for store: " . $store->getCode()
-                    );
-                    continue;
-                }
-                if (is_string($payload)) {
-                    $payload = $this->serializer->unserialize($payload);
-                }
-                if (!is_array($payload)) {
-                    $this->logger->info(
-                        "Invalid payload type found for store: " . $store->getCode()
-                    );
-                    continue;
-                }
-                $feedSpecification = $this->specificationBuilder->build($payload);
-                $productCollection = $this->collectionProcessor->getCollection($feedSpecification);
-                $productCollection->addFieldToFilter('entity_id', ['in' => $entityIds]);
-                $productCollection->load();
-                $this->collectionProcessor->processAfterLoad($productCollection, $feedSpecification);
-                $items = $productCollection->getItems();
+        $this->logger->info(
+            sprintf(
+                '[LiveIndexing] starting for store(%s), siteId(%s), perMinutes(%s)',
+                $siteId,
+                $storeCode,
+                $perMinute
+            ),
+        );
 
-                $this->itemsGenerator->resetDataProviders($feedSpecification);
-                $itemsData = $this->itemsGenerator->generate($items, $feedSpecification);
-                $this->itemsGenerator->resetDataProvidersAfterFetchItems($feedSpecification);
-                foreach ($itemsData as $row) {
-                    $res = $handler->process($row);
-                    if ($res) {
-                        $success[] = $row['entity_id'];
-                    } else {
-                        $fail[] = $row['entity_id'];
-                    }
-                }
-            } else {
-                foreach ($entities as $row) {
-                    $res = $handler->process($row);
-                    if ($res) {
-                        $success[] = $row->getId();
-                    } else {
-                        $fail[] = $row->getId();
-                    }
-                }
-            }
+        $deleteRecords = $this->indexingEntityProvider->get(
+            null,
+            [$siteId],
+            null,
+            Actions::DELETE,
+            null,
+            null,
+            $maxLimit
+        );
 
-            if (!empty($success)) {
-                $this->updateIndexingEntitiesActionsAction->execute($success, $action);
-            }
-            $this->logger->debug(
-                "API Status",
+        $deleteCount = count($deleteRecords);
+
+        $this->logger->info(
+            sprintf(
+                '[LiveIndexing] Total delete records(%s) found for store(%s).',
+                $deleteCount,
+                $storeCode
+            ),
+        );
+
+        $skipUpsert = $deleteCount >= $maxLimit;
+        $upsertProductIds = [];
+
+        if ($skipUpsert) {
+            $this->logger->info(
+                '[LiveIndexing] Skipping Update operation fully because deletes saturate window',
                 [
-                    'operation' => $action,
-                    'successIds' => $success,
-                    'failureIds' => $fail,
+                    'store' => $storeCode,
+                    'deleteCount' => $deleteCount,
+                    'maxLimit' => $maxLimit,
                 ]
             );
+        } else {
+            $remainingRequests = (int)max(0, $maxLimit - $deleteCount);
+            if ($remainingRequests > 0) {
+                $this->logger->info('[LiveIndexing] fetching update ids.', [
+                    'store' => $storeCode,
+                    'remainingRequests' => $remainingRequests,
+                ]);
 
-            $total += count($success);
+                $upsertProductIds = $this->indexingEntityProvider->get(
+                    null,
+                    [$siteId],
+                    null,
+                    Actions::UPSERT,
+                    true,
+                    null,
+                    $remainingRequests
+                );
+                $this->logger->info(
+                    sprintf(
+                        '[LiveIndexing] Total update records(%s) found for store(%s).',
+                        count($upsertProductIds),
+                        $storeCode
+                    ),
+                );
+            }
         }
 
-        return $total;
+        $deleteIds = [];
+        foreach ($deleteRecords as $deleteRecord) {
+            if (method_exists($deleteRecord, 'getEntityId')) {
+                $deleteIds[] = (int)$deleteRecord->getEntityId();
+            } elseif (method_exists($deleteRecord, 'getId')) {
+                $deleteIds[] = (int)$deleteRecord->getId();
+            }
+        }
+
+        $successDeleteIds = [];
+        $failedDeleteIds = [];
+        if (!empty($deleteIds)) {
+            $this->logger->info('[LiveIndexing] DELETE operation started',
+                ['store' => $storeCode, 'count' => count($deleteIds)]
+            );
+
+            foreach ($deleteIds as $id) {
+                try {
+                    $deleteStatus = $this->deleteHandler->process($id);
+                    if ($deleteStatus) {
+                        //$this->retryManager->resetRetry($id, Actions::DELETE);
+                        $successDeleteIds[] = $id;
+                    } else {
+                        $failedDeleteIds[] = $id;
+                        /*$this->retryManager->markForRetry(
+                            $id,
+                            Actions::DELETE,
+                            'handler.process returned false'
+                        );*/
+                    }
+                } catch (\Throwable $e) {
+                    $failedDeleteIds[] = $id;
+                    //$this->retryManager->markForRetry($id, Actions::DELETE, $e->getMessage());
+
+                    $this->logger->error(
+                        sprintf('Exception thrown while DELETION for ID(%s)', $id),
+                        ['store' => $storeCode, 'error' => $e->getMessage()]
+                    );
+                }
+            }
+            $this->logger->info('[LiveIndexing] DELETE operation completed',
+                [
+                    'store' => $storeCode,
+                    'successIds' => $successDeleteIds,
+                    'failedIds' => $failedDeleteIds,
+                ]
+            );
+        }
+
+        $upsertPayloads = [];
+        if (!empty($upsertProductIds)) {
+            $entityIds = array_map(fn($row) => (int)$row->getEntityId(), $upsertProductIds);
+
+            $payloadConfig = $this->scopeConfig->getValue(
+                Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD,
+                ScopeInterface::SCOPE_STORES,
+                $storeId
+            );
+
+            if (!$payloadConfig) {
+                $this->logger->error('Missing payload config', ['store' => $storeCode]);
+
+                return 0;
+            }
+
+            if (is_string($payloadConfig)) {
+                $payloadConfig = $this->serializer->unserialize($payloadConfig);
+            }
+
+            if (!is_array($payloadConfig)) {
+                $this->logger->error('Invalid payload config type', ['store' => $storeCode]);
+
+                return 0;
+            }
+
+            $feedSpecification = $this->specificationBuilder->build($payloadConfig);
+            $collection = $this->collectionProcessor->getCollection($feedSpecification);
+            $collection->addFieldToFilter('entity_id', ['in' => $entityIds]);
+            $collection->setPageSize(min(count($entityIds), self::MAX_DB_FETCH));
+            $collection->load();
+
+            $this->collectionProcessor->processAfterLoad($collection, $feedSpecification);
+            $this->logger->debug(
+                '[Live Indexing][Collection Query]',
+                [
+                    'store' => $storeCode,
+                    'query' => $collection->getSelect()->__toString(),
+                ]
+            );
+            $this->itemsGenerator->resetDataProviders($feedSpecification);
+            $items = $this->itemsGenerator->generate($collection->getItems(), $feedSpecification);
+            $this->itemsGenerator->resetDataProvidersAfterFetchItems($feedSpecification);
+            $this->contextManager->setContextFromSpecification($feedSpecification);
+            foreach ($items as $item) {
+                $upsertPayloads[] = $item;
+            }
+        }
+
+        $successUpdateIds = [];
+        $failedUpdateIds = [];
+        if (!empty($upsertPayloads)) {
+            $this->logger->info('[LiveIndexing] UPDATE Operation started.',
+                ['store' => $storeCode, 'count' => count($upsertPayloads)]
+            );
+
+            foreach ($upsertPayloads as $updateProduct) {
+                try {
+                    $singleOk = $this->upsertHandler->process($updateProduct);
+                    $id = $this->extractEntityId($updateProduct);
+                    if ($singleOk) {
+                        //$this->retryManager->resetRetry($id, Actions::UPSERT);
+                        $successUpdateIds[] = $id;
+                    } else {
+                        $failedUpdateIds[] = $id;
+                        //$this->retryManager->markForRetry($id, Actions::UPSERT, 'handler.process returned false');
+                    }
+                } catch (\Throwable $e) {
+                    $id = $this->extractEntityId($updateProduct);
+                    $failedUpdateIds[] = $id;
+                    //$this->retryManager->markForRetry($id, Actions::UPSERT, $e->getMessage());
+
+                    $this->logger->error(
+                        sprintf('Exception thrown while UPDATE for ID(%s)', $id),
+                        ['store' => $storeCode, 'error' => $e->getMessage()]
+                    );
+                }
+            }
+            $this->logger->info('[LiveIndexing] UPDATE operation completed',
+                [
+                    'store' => $storeCode,
+                    'successIds' => $successUpdateIds,
+                    'failedIds' => $failedUpdateIds,
+                ]
+            );
+        }
+
+        $successDeleteIds = array_values(array_unique($successDeleteIds));
+        if (!empty($successDeleteIds)) {
+            $this->updateIndexingEntitiesActionsAction->execute(
+                $successDeleteIds,
+                Actions::DELETE
+            );
+        }
+        $this->logger->info('[LiveIndexing] DELETE next action completed',
+            [
+                'store' => $storeCode,
+                'successIds' => $successDeleteIds,
+            ]
+        );
+
+        $successUpdateIds = array_values(array_unique($successUpdateIds));
+        if (!empty($successUpdateIds)) {
+            $this->updateIndexingEntitiesActionsAction->execute(
+                $successUpdateIds,
+                Actions::UPSERT
+            );
+        }
+        $this->logger->info('[LiveIndexing] UPDATE next action completed',
+            [
+                'store' => $storeCode,
+                'successUpdateIds' => $successUpdateIds,
+            ]
+        );
+        $totalSuccessCount = count($successDeleteIds + $successUpdateIds);
+        $this->logger->info('[LiveIndexing] completed.',
+            [
+                'siteId' => $siteId,
+                'store' => $storeCode,
+                'totalSuccessCount' => $totalSuccessCount,
+                'totalFailedCount' => count($failedDeleteIds + $failedUpdateIds),
+            ]
+        );
+
+        return $totalSuccessCount;
+    }
+
+    /**
+     * @param $payload
+     *
+     * @return int
+     */
+    private function extractEntityId($payload): int
+    {
+        if (is_object($payload)) {
+            if (method_exists($payload, 'getEntityId')) {
+                return (int)$payload->getEntityId();
+            }
+            if (method_exists($payload, 'getId')) {
+                return (int)$payload->getId();
+            }
+            if (property_exists($payload, 'entity_id')) {
+                return (int)$payload->entity_id;
+            }
+        }
+
+        if (is_array($payload)) {
+            return (int)($payload['entity_id'] ?? $payload['id'] ?? 0);
+        }
+
+        return 0;
     }
 }

@@ -28,7 +28,7 @@ class Constants
     /**
      * Setted default limit to avoid rate limit for store.
      */
-    const DEFAULT_BATCH_LIMIT = 400;
+    const DEFAULT_MAX_BATCH_LIMIT = 480;
 
     const XML_PATH_CONFIG_SITE_ID = 'athoscommerce/configuration/siteid';
     const XML_PATH_CONFIG_ENDPOINT = 'athoscommerce/configuration/endpoint';
@@ -36,6 +36,6 @@ class Constants
     const XML_PATH_CONFIG_SHOP_DOMAIN = 'athoscommerce/configuration/shopdomain';
 
     const XML_PATH_LIVE_INDEXING_ENABLED = 'athoscommerce/indexing/enable_live_indexing';
-    const XML_PATH_LIVE_INDEXING_BATCH_SIZE_PER_JOB = 'athoscommerce/indexing/batch_size_per_job';
     const XML_PATH_LIVE_INDEXING_TASK_PAYLOAD = 'athoscommerce/indexing/task_payload';
+    const XML_PATH_LIVE_INDEXING_PER_MINUTE = 'athoscommerce/indexing/request_per_minute';
 }
