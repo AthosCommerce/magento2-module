@@ -18,7 +18,9 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Observer\Product;
 
+use AthosCommerce\Feed\Helper\Constants;
 use AthosCommerce\Feed\Model\Source\Actions;
+use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
 use AthosCommerce\Feed\Observer\BaseProductObserver;
@@ -36,15 +38,24 @@ class UpdateObserver implements ObserverInterface
     private $logger;
 
     /**
+     * @var ScopeConfigInterface
+     */
+    private $scopeConfig;
+
+    /**
      * @param BaseProductObserver $baseProductObserver
      * @param LoggerInterface $logger
+     * @param ScopeConfigInterface $scopeConfig
      */
     public function __construct(
-        BaseProductObserver $baseProductObserver,
-        LoggerInterface $logger
-    ) {
+        BaseProductObserver  $baseProductObserver,
+        LoggerInterface      $logger,
+        ScopeConfigInterface $scopeConfig,
+    )
+    {
         $this->baseProductObserver = $baseProductObserver;
         $this->logger = $logger;
+        $this->scopeConfig = $scopeConfig;
     }
 
     /**
@@ -54,22 +65,62 @@ class UpdateObserver implements ObserverInterface
      */
     public function execute(Observer $observer)
     {
-        $event = $observer->getEvent();
-        $product = $event->getProduct();
-        if (!$product || !$product->getId()) {
-            return;
+        try {
+            $event = $observer->getEvent();
+            $product = $event->getProduct();
+            $storeIds = $product->getStoreIds();
+
+            if (!$product || !$product->getId()) {
+                return;
+            }
+
+            foreach ($storeIds as $storeId) {
+                try {
+                    $liveIndexing = (bool)$this->scopeConfig->getValue(
+                        Constants::XML_PATH_LIVE_INDEXING_ENABLED,
+                        \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+                        $storeId
+                    );
+
+                    if (!$liveIndexing) {
+                        continue;
+                    }
+
+                    $nextAction = ($product->getStatus() != 1 || $product->getVisibility() == 1)
+                        ? Actions::DELETE
+                        : Actions::UPSERT;
+
+                    $this->baseProductObserver->execute([$product->getId()], $nextAction);
+
+                    $this->logger->debug(
+                        'UpdateObserver executed',
+                        [
+                            'ids' => $product->getId(),
+                            'store_id' => $storeId,
+                            'action' => $nextAction,
+                        ]
+                    );
+                } catch (\Throwable $storeEx) {
+                    $this->logger->error(
+                        'UpdateObserver error for store',
+                        [
+                            'product_id' => $product->getId(),
+                            'store_id' => $storeId,
+                            'message' => $storeEx->getMessage(),
+                            'trace' => $storeEx->getTraceAsString()
+                        ]
+                    );
+                }
+            }
+        } catch (\Throwable $e) {
+            $this->logger->error(
+                'UpdateObserver error: ' . $e->getMessage(),
+                [
+                    'product_id' => $product->getId() ?? null,
+                    'store_ids' => $storeIds ?? [],
+                    'trace' => $e->getTraceAsString()
+                ]
+            );
         }
-        $nextAction = ($product->getStatus() != 1 || $product->getVisibility() == 1)
-            ? Actions::DELETE
-            : Actions::UPSERT;
-
-        $this->baseProductObserver->execute([$product->getId()], $nextAction);
-
-        $this->logger->debug(
-            'UpdateObserver executed',
-            [
-                'ids' => $product->getId(),
-            ]
-        );
     }
 }

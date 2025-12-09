@@ -98,4 +98,10 @@
             <resource ref="AthosCommerce_Feed::general" />
         </resources>
     </route>
+    <route url="/V1/athoscommerce/configinfo" method="GET">
+        <service class="AthosCommerce\Feed\Api\GetConfigInfoInterface" method="GetConfigDetails" />
+        <resources>
+            <resource ref="AthosCommerce_Feed::general" />
+        </resources>
+    </route>
 </routes>

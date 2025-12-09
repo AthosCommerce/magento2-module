@@ -121,7 +121,8 @@
 
     <preference for="AthosCommerce\Feed\Api\ConfigUpdateInterface"
                 type="AthosCommerce\Feed\Model\Api\ConfigUpdate"/>
-
+    <preference for="AthosCommerce\Feed\Api\GetConfigInfoInterface"
+                type="AthosCommerce\Feed\Model\Api\GetConfigInfo"/>
     <preference for="AthosCommerce\Feed\Api\RateLimiterInterface"
                 type="AthosCommerce\Feed\Model\LiveIndexing\RateLimiter" />
     <preference for="AthosCommerce\Feed\Api\LiveIndexing\DeleteEntityHandlerInterface"
@@ -130,7 +131,6 @@
                 type="AthosCommerce\Feed\Model\LiveIndexing\UpsertEntityHandler" />
     <preference for="AthosCommerce\Feed\Api\RetryManagerInterface"
                 type="AthosCommerce\Feed\Model\LiveIndexing\RetryManager" />
-
 
     <type name="AthosCommerce\Feed\Model\Task\TypeList">
         <arguments>
@@ -573,6 +573,19 @@
         </arguments>
     </type>
 
+    <type name="AthosCommerce\Feed\Model\Api\GetConfigInfo">
+        <arguments>
+            <argument name="logger"
+                      xsi:type="object">AthosCommerceLogger</argument>
+        </arguments>
+    </type>
+
+    <type name="AthosCommerce\Feed\Observer\Product\InventoryUpdateObserver">
+        <arguments>
+            <argument name="logger"
+                      xsi:type="object">AthosCommerceLogger</argument>
+        </arguments>
+    </type>
 
     <type name="AthosCommerce\Feed\Model\Metric\MetricProvider\TimerProvider" shared="false"/>
     <type name="AthosCommerce\Feed\Model\Metric\MetricProvider\FileSizeProvider" shared="false"/>
