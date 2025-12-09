@@ -20,13 +20,13 @@ namespace AthosCommerce\Feed\Observer\Product;
 
 use AthosCommerce\Feed\Helper\Constants;
 use AthosCommerce\Feed\Model\Source\Actions;
-use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
 use AthosCommerce\Feed\Observer\BaseProductObserver;
-use Magento\Store\Model\ScopeInterface;
 use Psr\Log\LoggerInterface;
+use \Magento\Catalog\Model\ResourceModel\Product as ProductResource;
+use Magento\Store\Model\ResourceModel\Store as StoreResource;
 
 class BunchDeleteObserver implements ObserverInterface
 {
@@ -41,32 +41,40 @@ class BunchDeleteObserver implements ObserverInterface
     private $logger;
 
     /**
-     * @var ProductRepositoryInterface
-     */
-    private $productRepository;
-
-    /**
      * @var ScopeConfigInterface
      */
     private $scopeConfig;
 
     /**
+     * @var ProductResource
+     */
+    private $productResource;
+
+    /**
+     * @var StoreResource
+     */
+    private $storeResource;
+
+    /**
      * @param BaseProductObserver $baseProductObserver
      * @param LoggerInterface $logger
-     * @param ProductRepositoryInterface $productRepository
      * @param ScopeConfigInterface $scopeConfig
+     * @param ProductResource $productResource
+     * @param StoreResource $storeResource
      */
     public function __construct(
         BaseProductObserver        $baseProductObserver,
         LoggerInterface            $logger,
-        ProductRepositoryInterface $productRepository,
-        ScopeConfigInterface       $scopeConfig
+        ScopeConfigInterface       $scopeConfig,
+        ProductResource            $productResource,
+        StoreResource              $storeResource,
     )
     {
         $this->baseProductObserver = $baseProductObserver;
         $this->logger = $logger;
-        $this->productRepository = $productRepository;
         $this->scopeConfig = $scopeConfig;
+        $this->productResource = $productResource;
+        $this->storeResource = $storeResource;
     }
 
     /**
@@ -80,57 +88,125 @@ class BunchDeleteObserver implements ObserverInterface
             $event = $observer->getEvent();
             $productIdsToDelete = (array)$event->getIdsToDelete();
 
-            foreach ($productIdsToDelete as $productId) {
+            if (empty($productIdsToDelete)) {
+                $this->logger->debug('[BundleDeleteObserver] No products to delete.');
+                return;
+            }
+
+            $productIdsToProcess = [];
+
+            $chunks = array_chunk($productIdsToDelete, 100);
+
+            foreach ($chunks as $productIdChunk) {
                 try {
-                    $product = $this->productRepository->getById($productId);
+                    $productStores = $this->getStoreIdsForProducts($productIdChunk);
 
-                    /** @var array $storeIds */
-                    $storeIds = $product->getStoreIds();
+                    foreach ($productIdChunk as $productId) {
+                        $storeIds = $productStores[$productId] ?? [];
 
-                    foreach ($storeIds as $storeId) {
-                        try {
-                            $liveIndexing = (bool)$this->scopeConfig->getValue(
-                                Constants::XML_PATH_LIVE_INDEXING_ENABLED,
-                                \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
-                                $storeId
+                        if (empty($storeIds)) {
+                            $this->logger->warning(
+                                "[BundleDeleteObserver] No store IDs found for product ID {$productId}"
                             );
+                            continue;
+                        }
 
-                            if (!$liveIndexing) {
-                                continue;
+                        $shouldProcess = false;
+
+                        foreach ($storeIds as $storeId) {
+                            try {
+                                $liveIndexing = (bool)$this->scopeConfig->getValue(
+                                    Constants::XML_PATH_LIVE_INDEXING_ENABLED,
+                                    \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+                                    $storeId
+                                );
+
+                                if (!$liveIndexing) {
+                                    continue;
+                                }
+
+                                $shouldProcess = true;
+
+                                $this->logger->debug(
+                                    '[BundleDeleteObserver] Store check passed',
+                                    [
+                                        'productId' => $productId,
+                                        'storeId' => $storeId
+                                    ]
+                                );
+
+                            } catch (\Throwable $storeEx) {
+                                $this->logger->error(
+                                    "[BundleDeleteObserver] Error processing product {$productId} for store {$storeId}: "
+                                    . $storeEx->getMessage(),
+                                    ['trace' => $storeEx->getTraceAsString()]
+                                );
                             }
+                        }
 
-                            $this->baseProductObserver->execute([$productId], Actions::DELETE);
-
-                            $this->logger->debug(
-                                'BunchDeleteObserver executed',
-                                [
-                                    'productId' => $productId,
-                                    'storeId' => $storeId
-                                ]
-                            );
-                        } catch (\Throwable $storeEx) {
-                            // Handle exceptions per store so loop continues
-                            $this->logger->error(
-                                "Error processing product ID {$productId} for store ID {$storeId}: " . $storeEx->getMessage(),
-                                ['trace' => $storeEx->getTraceAsString()]
-                            );
+                        if ($shouldProcess) {
+                            $productIdsToProcess[] = $productId;
                         }
                     }
-                } catch (\Magento\Framework\Exception\NoSuchEntityException $e) {
-                    $this->logger->warning("Product not found: ID {$productId}");
-                } catch (\Throwable $productEx) {
+
+                } catch (\Throwable $chunkEx) {
                     $this->logger->error(
-                        "Error processing product ID {$productId}: " . $productEx->getMessage(),
-                        ['trace' => $productEx->getTraceAsString()]
+                        "[BundleDeleteObserver] Chunk processing error: " . $chunkEx->getMessage(),
+                        ['trace' => $chunkEx->getTraceAsString()]
                     );
                 }
             }
+
+            if (!empty($productIdsToProcess)) {
+                $this->baseProductObserver->execute($productIdsToProcess, Actions::DELETE);
+
+                $this->logger->info(
+                    '[BundleDeleteObserver] executed for products',
+                    ['productIds' => $productIdsToProcess]
+                );
+            } else {
+                $this->logger->info('[BundleDeleteObserver] No products to process.');
+            }
+
         } catch (\Throwable $e) {
             $this->logger->critical(
-                'BunchDeleteObserver general error: ' . $e->getMessage(),
+                '[BundleDeleteObserver] general error: ' . $e->getMessage(),
                 ['trace' => $e->getTraceAsString()]
             );
         }
+    }
 
+    /**
+     *
+     * @param int[] $productIds
+     * @return int[][]
+     */
+    private function getStoreIdsForProducts(array $productIds): array
+    {
+        if (empty($productIds)) {
+            return [];
+        }
+
+        $connection = $this->productResource->getConnection();
+        $productWebsiteTable = $this->productResource->getTable('catalog_product_website');
+        $storeTable = $this->productResource->getTable('store');
+
+        $select = $connection->select()
+            ->from(['pw' => $productWebsiteTable], ['product_id'])
+            ->join(
+                ['s' => $storeTable],
+                's.website_id = pw.website_id',
+                ['store_id']
+            )
+            ->where('pw.product_id IN (?)', $productIds);
+
+        $rows = $connection->fetchAll($select);
+
+        $result = [];
+        foreach ($rows as $row) {
+            $result[(int)$row['product_id']][] = (int)$row['store_id'];
+        }
+
+        return $result;
     }
 }
