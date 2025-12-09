@@ -18,48 +18,63 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Model\LiveIndexing;
 
-use AthosCommerce\Feed\Api\LiveIndexing\DeleteEntityHandlerInterface;
-use AthosCommerce\Feed\Helper\Constants;
-use AthosCommerce\Feed\Service\Api\ApiClient;
+use AthosCommerce\Feed\Api\RetryManagerInterface;
 use Psr\Log\LoggerInterface;
 
-class DeleteEntityHandler implements DeleteEntityHandlerInterface
+class RetryManager implements RetryManagerInterface
 {
-    /**
-     * @var ApiClient
-     */
-    private $client;
     /**
      * @var LoggerInterface
      */
     private $logger;
 
     /**
-     * @param ApiClient $client
      * @param LoggerInterface $logger
      */
     public function __construct(
-        ApiClient $client,
         LoggerInterface $logger
     ) {
-        $this->client = $client;
         $this->logger = $logger;
     }
 
     /**
-     * @param $row
+     * @param int $entityId
+     * @param string $action
+     * @param string|null $errorMessage
      *
-     * @return bool
+     * @return void
      */
-    public function process($id): bool
-    {
-        $payload = [
-            'entity_id' => $id,
-        ];
-
-        return $this->client->send(
-            $payload,
-            Constants::API_SCOPE_DELETE
+    public function markForRetry(
+        int $entityId,
+        string $action,
+        ?string $errorMessage = null
+    ): void {
+        $this->logger->info(
+            "Marking for retry",
+            [
+                'entityId' => $entityId,
+                'action' => $action,
+                'message' => $errorMessage,
+            ]
         );
+        // TODO: Implement markForRetry() method.
+    }
+
+    /**
+     * @param int $entityId
+     * @param string $action
+     *
+     * @return void
+     */
+    public function resetRetry(int $entityId, string $action): void
+    {
+        $this->logger->info(
+            "ResetRetry",
+            [
+                'entityId' => $entityId,
+                'action' => $action,
+            ]
+        );
+        // TODO: Implement resetRetry() method.
     }
 }

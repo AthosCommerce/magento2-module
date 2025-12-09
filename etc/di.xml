@@ -121,9 +121,16 @@
 
     <preference for="AthosCommerce\Feed\Api\ConfigUpdateInterface"
                 type="AthosCommerce\Feed\Model\Api\ConfigUpdate"/>
-
     <preference for="AthosCommerce\Feed\Api\GetConfigInfoInterface"
                 type="AthosCommerce\Feed\Model\Api\GetConfigInfo"/>
+    <preference for="AthosCommerce\Feed\Api\RateLimiterInterface"
+                type="AthosCommerce\Feed\Model\LiveIndexing\RateLimiter" />
+    <preference for="AthosCommerce\Feed\Api\LiveIndexing\DeleteEntityHandlerInterface"
+                type="AthosCommerce\Feed\Model\LiveIndexing\DeleteEntityHandler" />
+    <preference for="AthosCommerce\Feed\Api\LiveIndexing\UpsertEntityHandlerInterface"
+                type="AthosCommerce\Feed\Model\LiveIndexing\UpsertEntityHandler" />
+    <preference for="AthosCommerce\Feed\Api\RetryManagerInterface"
+                type="AthosCommerce\Feed\Model\LiveIndexing\RetryManager" />
 
     <type name="AthosCommerce\Feed\Model\Task\TypeList">
         <arguments>
@@ -450,6 +457,11 @@
             <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
         </arguments>
     </type>
+    <type name="AthosCommerce\Feed\Model\LiveIndexing\Processor">
+        <arguments>
+            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
+        </arguments>
+    </type>
 
     <type name="AthosCommerce\Feed\Model\IndexingEntityRepository">
         <arguments>
@@ -464,6 +476,21 @@
         </arguments>
     </type>
     <type name="AthosCommerce\Feed\Model\Feed\DataProvider\VariantPosition">
+        <arguments>
+            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
+        </arguments>
+    </type>
+    <type name="AthosCommerce\Feed\Api\RetryManagerInterface">
+        <arguments>
+            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
+        </arguments>
+    </type>
+    <type name="AthosCommerce\Feed\Service\Api\ApiClient">
+        <arguments>
+            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
+        </arguments>
+    </type>
+    <type name="AthosCommerce\Feed\Api\LiveIndexingInterface">
         <arguments>
             <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
         </arguments>

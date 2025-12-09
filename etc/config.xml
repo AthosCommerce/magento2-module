@@ -15,7 +15,6 @@
                 <enable_live_indexing>0</enable_live_indexing>
                 <discovery_cron_expr>*/30 * * * *</discovery_cron_expr>
                 <entity_sync_cron_expr>*/2 * * * *</entity_sync_cron_expr>
-                <batch_size_per_job>100</batch_size_per_job>
                 <task_payload></task_payload>
             </indexing>
         </athoscommerce>

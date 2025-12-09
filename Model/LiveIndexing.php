@@ -83,7 +83,7 @@ class LiveIndexing implements LiveIndexingInterface
                 }
             }
         } else {
-            $storesToProcess = $this->storeManager->getStores();
+            $storesToProcess = $this->storeManager->getStores(false);
         }
 
         foreach ($storesToProcess as $store) {
@@ -91,6 +91,7 @@ class LiveIndexing implements LiveIndexingInterface
                 continue;
             }
             $storeId = $store->getId();
+            $storeCode = $store->getCode();
             $isEnabled = (bool)$this->scopeConfig->getValue(
                 Constants::XML_PATH_LIVE_INDEXING_ENABLED,
                 ScopeInterface::SCOPE_STORES,
@@ -98,7 +99,7 @@ class LiveIndexing implements LiveIndexingInterface
             );
             if (!$isEnabled) {
                 $this->logger->info(
-                    "Found indexing disabled   for store: " . $store->getCode()
+                    "Found indexing disabled   for store: " . $storeCode
                 );
                 continue;
             }
@@ -109,28 +110,20 @@ class LiveIndexing implements LiveIndexingInterface
             );
             if (!$siteId) {
                 $this->logger->info(
-                    "Found  site id not found for store: " . $store->getCode()
+                    "Found  site id not found for store: " . $storeCode
                 );
                 continue;
             }
-            $batchSizePerJob = (int)$this->scopeConfig->getValue(
-                Constants::XML_PATH_LIVE_INDEXING_BATCH_SIZE_PER_JOB,
-                ScopeInterface::SCOPE_STORES,
-                $storeId
-            );
-            if (!$batchSizePerJob) {
-                $batchSizePerJob = Constants::DEFAULT_BATCH_LIMIT;
-            }
 
-            $endpoint = $this->scopeConfig->getValue(
+            $endPoint = $this->scopeConfig->getValue(
                 Constants::XML_PATH_CONFIG_ENDPOINT,
                 ScopeInterface::SCOPE_STORES,
                 $storeId
             );
 
-            if (!$endpoint) {
+            if (!$endPoint) {
                 $this->logger->error(
-                    "Missing API Endpoint config for store: " . $store->getCode()
+                    "Missing API Endpoint config for store: " . $storeCode
                 );
                 continue;
             }
@@ -141,12 +134,15 @@ class LiveIndexing implements LiveIndexingInterface
             );
             if (!$shopDomain) {
                 $this->logger->error(
-                    "Missing Shop Domain config for store: " . $store->getCode()
+                    "Missing Shop Domain config for store: " . $storeCode
                 );
                 continue;
             }
-            $processCount[$storeId] = $this->processor->execute(
-                $batchSizePerJob,
+            $this->logger->info(
+                "Processing start for store: " . $storeCode
+            );
+            $processCount[$storeCode] = $this->processor->execute(
+                $store,
                 $siteId
             );
         }
