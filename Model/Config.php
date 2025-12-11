@@ -28,6 +28,10 @@ class Config
      * @var ScopeConfigInterface
      */
     private $scopeConfig;
+    /**
+     * @var EncryptorInterface
+     */
+    private $encryptor;
 
     /**
      * @param ScopeConfigInterface $scopeConfig
@@ -90,13 +94,13 @@ class Config
      */
     public function getSecretKeyByStoreId(?int $storeId = null): string
     {
-        $plaintextSecretKey = (string)$this->scopeConfig->getValue(
+        $secretKey = (string)$this->scopeConfig->getValue(
             Constants::XML_PATH_CONFIG_SECRET_KEY,
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
             $storeId
         );
 
-        return $this->encryptor->decrypt($plaintextSecretKey);
+        return $this->encryptor->decrypt($secretKey);
     }
 
     /**
@@ -113,17 +117,54 @@ class Config
         );
     }
 
+    public function getRequestPerMinuteByStoreId(?int $storeId = null): int
+    {
+        return (int)$this->scopeConfig->getValue(
+            Constants::XML_PATH_LIVE_INDEXING_PER_MINUTE,
+            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+            $storeId
+        ) ?? Constants::DEFAULT_MAX_REQUEST_LIMIT;
+    }
+
     /**
      * @param int|null $storeId
      *
      * @return string
      */
-    public function getBatchPerSizeByStoreId(?int $storeId = null): int
+    public function getChunkSizeByStoreId(?int $storeId = null): int
     {
         return (int)$this->scopeConfig->getValue(
-            Constants::XML_PATH_LIVE_INDEXING_BATCH_PER_SIZE,
+            Constants::XML_PATH_LIVE_INDEXING_CHUNK_PER_SIZE,
+            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+            $storeId
+        ) ?? 100;
+    }
+
+    /**
+     * @param int|null $storeId
+     *
+     * @return string
+     */
+    public function getPayloadByStoreId(?int $storeId = null): string
+    {
+        return (string)$this->scopeConfig->getValue(
+            Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD,
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
             $storeId
         );
+    }
+
+    /**
+     * @param int|null $storeId
+     *
+     * @return int
+     */
+    public function getMillisecondsDelayByStoreId(?int $storeId = null): int
+    {
+        return (int)$this->scopeConfig->getValue(
+            Constants::XML_PATH_LIVE_INDEXING_MILLISECONDS_DELAY,
+            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+            $storeId
+        ) ?? 50;
     }
 }

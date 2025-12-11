@@ -23,9 +23,9 @@ interface DeleteEntityHandlerInterface
     /**
      * Process a single entity id.
      *
-     * @param string $entityId
+     * @param int $entityId
      *
      * @return bool True if success
      */
-    public function process(string $entityId): bool;
+    public function process(int $entityId): bool;
 }

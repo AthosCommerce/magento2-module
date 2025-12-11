@@ -462,6 +462,11 @@
             <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
         </arguments>
     </type>
+    <type name="AthosCommerce\Feed\Api\EntityDiscoveryInterface">
+        <arguments>
+            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
+        </arguments>
+    </type>
 
     <type name="AthosCommerce\Feed\Model\IndexingEntityRepository">
         <arguments>

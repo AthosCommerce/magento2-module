@@ -47,11 +47,11 @@ class DeleteEntityHandler implements DeleteEntityHandlerInterface
     }
 
     /**
-     * @param string $id
+     * @param int $id
      *
      * @return bool
      */
-    public function process(string $id): bool
+    public function process(int $id): bool
     {
         try {
             return $this->client->send(
