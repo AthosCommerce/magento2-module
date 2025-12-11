@@ -53,9 +53,20 @@ class UpsertEntityHandler implements UpsertEntityHandlerInterface
      */
     public function process(array $payload): bool
     {
-        return $this->client->send(
-            $payload,
-            Constants::API_SCOPE_UPSERT
-        );
+        try {
+            return $this->client->send(
+                $payload,
+                Constants::API_SCOPE_UPSERT
+            );
+        } catch (\Throwable $e) {
+            $this->logger->error(
+                "[UpsertEntity] Failed",
+                [
+                    'error' => $e->getMessage(),
+                ]
+            );
+
+            return false;
+        }
     }
 }

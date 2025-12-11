@@ -13,8 +13,10 @@
             </configuration>
             <indexing>
                 <enable_live_indexing>0</enable_live_indexing>
-                <discovery_cron_expr>*/30 * * * *</discovery_cron_expr>
+                <!--<discovery_cron_expr>*/30 * * * *</discovery_cron_expr>-->
                 <entity_sync_cron_expr>*/2 * * * *</entity_sync_cron_expr>
+                <request_per_minute>480</request_per_minute>
+                <request_per_batch_size>100</request_per_batch_size>
                 <task_payload></task_payload>
             </indexing>
         </athoscommerce>

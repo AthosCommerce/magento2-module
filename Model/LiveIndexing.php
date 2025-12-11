@@ -24,6 +24,7 @@ use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use AthosCommerce\Feed\Model\LiveIndexing\Processor;
+use AthosCommerce\Feed\Model\Config as ConfigModel;
 use Psr\Log\LoggerInterface;
 
 class LiveIndexing implements LiveIndexingInterface
@@ -33,9 +34,9 @@ class LiveIndexing implements LiveIndexingInterface
      */
     private $storeManager;
     /**
-     * @var ScopeConfigInterface
+     * @var ConfigModel
      */
-    private $scopeConfig;
+    private $config;
     /**
      * @var Processor
      */
@@ -47,18 +48,18 @@ class LiveIndexing implements LiveIndexingInterface
 
     /**
      * @param StoreManagerInterface $storeManager
-     * @param ScopeConfigInterface $scopeConfig
+     * @param ConfigModel $config
      * @param Processor $processor
      * @param LoggerInterface $logger
      */
     public function __construct(
         StoreManagerInterface $storeManager,
-        ScopeConfigInterface $scopeConfig,
+        ConfigModel $config,
         Processor $processor,
         LoggerInterface $logger
     ) {
         $this->storeManager = $storeManager;
-        $this->scopeConfig = $scopeConfig;
+        $this->config = $config;
         $this->processor = $processor;
         $this->logger = $logger;
     }
@@ -90,48 +91,30 @@ class LiveIndexing implements LiveIndexingInterface
             if (!$store) {
                 continue;
             }
-            $storeId = $store->getId();
+            $storeId = (int)$store->getId();
             $storeCode = $store->getCode();
-            $isEnabled = (bool)$this->scopeConfig->getValue(
-                Constants::XML_PATH_LIVE_INDEXING_ENABLED,
-                ScopeInterface::SCOPE_STORES,
-                $storeId
-            );
+            $isEnabled = $this->config->isLiveIndexingEnabled($storeId);
             if (!$isEnabled) {
                 $this->logger->info(
                     "Found indexing disabled   for store: " . $storeCode
                 );
                 continue;
             }
-            $siteId = (string)$this->scopeConfig->getValue(
-                Constants::XML_PATH_CONFIG_SITE_ID,
-                ScopeInterface::SCOPE_STORES,
-                $storeId
-            );
+            $siteId = $this->config->getSiteIdByStoreId($storeId);
             if (!$siteId) {
                 $this->logger->info(
-                    "Found  site id not found for store: " . $storeCode
+                    "Found site id not found for store: " . $storeCode
                 );
                 continue;
             }
-
-            $endPoint = $this->scopeConfig->getValue(
-                Constants::XML_PATH_CONFIG_ENDPOINT,
-                ScopeInterface::SCOPE_STORES,
-                $storeId
-            );
-
+            $endPoint = $this->config->getEndpointByStoreId($storeId);
             if (!$endPoint) {
                 $this->logger->error(
                     "Missing API Endpoint config for store: " . $storeCode
                 );
                 continue;
             }
-            $shopDomain = $this->scopeConfig->getValue(
-                Constants::XML_PATH_CONFIG_SHOP_DOMAIN,
-                ScopeInterface::SCOPE_STORES,
-                $storeId
-            );
+            $shopDomain = $this->config->getShopDomainByStoreId($storeId);
             if (!$shopDomain) {
                 $this->logger->error(
                     "Missing Shop Domain config for store: " . $storeCode
@@ -139,11 +122,14 @@ class LiveIndexing implements LiveIndexingInterface
                 continue;
             }
             $this->logger->info(
-                "Processing start for store: " . $storeCode
+                "Processing start for store: " . $storeCode . " with Site ID: " . $siteId
             );
             $processCount[$storeCode] = $this->processor->execute(
                 $store,
                 $siteId
+            );
+            $this->logger->info(
+                "Processing completed for store: " . $storeCode . " with Site ID: " . $siteId
             );
         }
 

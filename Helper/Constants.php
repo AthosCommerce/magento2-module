@@ -38,4 +38,7 @@ class Constants
     const XML_PATH_LIVE_INDEXING_ENABLED = 'athoscommerce/indexing/enable_live_indexing';
     const XML_PATH_LIVE_INDEXING_TASK_PAYLOAD = 'athoscommerce/indexing/task_payload';
     const XML_PATH_LIVE_INDEXING_PER_MINUTE = 'athoscommerce/indexing/request_per_minute';
+    const XML_PATH_LIVE_INDEXING_REQUEST_BATCH_PER_SIZE = 'athoscommerce/indexing/request_per_batch_size';
+
+    const XML_PATH_LIVE_INDEXING_SYNC_CRON_EXPR = 'athoscommerce/indexing/entity_sync_cron_expr';
 }

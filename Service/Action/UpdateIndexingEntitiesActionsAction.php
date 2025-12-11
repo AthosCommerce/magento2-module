@@ -62,13 +62,18 @@ class UpdateIndexingEntitiesActionsAction implements UpdateIndexingEntitiesActio
     /**
      * @param array $entityIds
      * @param string $lastAction
+     * @param string $fieldIdentifier
      *
      * @return void
      */
-    public function execute(array $entityIds, string $lastAction): void
-    {
+    public function execute(
+        array $entityIds,
+        string $siteId,
+        string $lastAction,
+        string $fieldIdentifier = IndexingEntity::ENTITY_ID
+    ): void {
         $result = $this->indexingEntityRepository->getList(
-            $this->getSearchCriteria($entityIds, $lastAction),
+            $this->getSearchCriteria($entityIds, $siteId, $lastAction, $fieldIdentifier),
         );
         foreach ($result->getItems() as $indexingEntity) {
             $this->updateIndexingEntity($indexingEntity, $lastAction);
@@ -78,19 +83,27 @@ class UpdateIndexingEntitiesActionsAction implements UpdateIndexingEntitiesActio
     /**
      * @param array $entityIds
      * @param string $actionTaken
+     * @param string $fieldIdentifier
      *
      * @return SearchCriteria
      */
     private function getSearchCriteria(
         array $entityIds,
-        string $actionTaken
+        string $siteId,
+        string $actionTaken,
+        string $fieldIdentifier = IndexingEntity::ENTITY_ID
     ): SearchCriteria {
         /** @var SearchCriteriaBuilder $searchCriteriaBuilder */
         $searchCriteriaBuilder = $this->searchCriteriaBuilderFactory->create();
         $searchCriteriaBuilder->addFilter(
-            IndexingEntity::ENTITY_ID,
+            $fieldIdentifier,
             $entityIds,
             'in',
+        );
+        $searchCriteriaBuilder->addFilter(
+            IndexingEntity::SITE_ID,
+            $siteId,
+            'eq'
         );
         $searchCriteriaBuilder->addFilter(
             IndexingEntity::IS_INDEXABLE,

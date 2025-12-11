@@ -3,6 +3,7 @@
 namespace AthosCommerce\Feed\Model\Api;
 
 use AthosCommerce\Feed\Api\ConfigUpdateInterface;
+use AthosCommerce\Feed\Helper\Constants;
 use Magento\Framework\App\Config\Storage\WriterInterface;
 use Magento\Framework\Encryption\EncryptorInterface;
 use Magento\Framework\Exception\LocalizedException;
@@ -15,27 +16,24 @@ class ConfigUpdate implements ConfigUpdateInterface
 
     const ALLOWED_INDEXING_VALUES = ['0', '1'];
 
-    const  Allowed_PATHS = [
-        self::MODULE_PREFIX . 'indexing/enable_live_indexing',
-        self::MODULE_PREFIX . 'indexing/entity_cron_expr',
-        self::MODULE_PREFIX . 'indexing/secret_key'
-    ];
-
     /**
      * @var WriterInterface
      */
-    protected $configWriter;
+    private $configWriter;
 
     /**
      * @var EncryptorInterface
      */
-    private  $encryptor;
+    private $encryptor;
 
+    /**
+     * @param WriterInterface $configWriter
+     * @param EncryptorInterface $encryptor
+     */
     public function __construct(
-        WriterInterface   $configWriter,
+        WriterInterface $configWriter,
         EncryptorInterface $encryptor
-    )
-    {
+    ) {
         $this->configWriter = $configWriter;
         $this->encryptor = $encryptor;
     }
@@ -46,10 +44,16 @@ class ConfigUpdate implements ConfigUpdateInterface
      * @param string $value
      * @param string $scope
      * @param int $scopeId
+     *
      * @return array
      */
-    public function update(string $module, string $path, string $value, string $scope = "default", int $scopeId = 0): array
-    {
+    public function update(
+        string $module,
+        string $path,
+        string $value,
+        string $scope = "default",
+        int $scopeId = 0
+    ): array {
         try {
             if ($module !== self::MODULE_NAME) {
                 $message = sprintf(
@@ -60,34 +64,48 @@ class ConfigUpdate implements ConfigUpdateInterface
                 throw new LocalizedException(__($message));
             }
 
-            $isConfigPath = str_starts_with($path, self::MODULE_PREFIX . 'configuration/');
-
-            if (in_array($path, self::Allowed_PATHS, true)) {
-                if ($path === self::Allowed_PATHS[0]) {
+            switch ($path) {
+                case Constants::XML_PATH_LIVE_INDEXING_ENABLED:
                     if (!in_array($value, self::ALLOWED_INDEXING_VALUES, true)) {
                         throw new LocalizedException(
                             __("Invalid value '%1' for %2. Allowed: 0 or 1.", $value, $path)
                         );
                     }
-                } elseif ($path === self::Allowed_PATHS[1]) {
+                    break;
+
+                case Constants::XML_PATH_LIVE_INDEXING_SYNC_CRON_EXPR:
                     $this->validateCronExpression($value);
-                } elseif ($path === self::Allowed_PATHS[2]) {
-                    if (!$value) {
-                        throw new LocalizedException(__('No secret key set'));
-                    }
-                    // Encrypt
-                    $value =  $this->encryptor->encrypt($value);
-                }
-            } elseif ($isConfigPath) {
-                if (trim($value) === '') {
+                    break;
+
+                case Constants::XML_PATH_CONFIG_ENDPOINT:
+                    $this->validateEndpoint($value);
+                    break;
+
+                case Constants::XML_PATH_LIVE_INDEXING_PER_MINUTE:
+                case Constants::XML_PATH_LIVE_INDEXING_REQUEST_BATCH_PER_SIZE:
+                    $this->validateNumber($value);
+                    break;
+
+                case Constants::XML_PATH_CONFIG_SITE_ID:
+                case Constants::XML_PATH_CONFIG_SHOP_DOMAIN:
+                case Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD:
+                    $this->validateString($value);
+                    break;
+
+                case Constants::XML_PATH_CONFIG_SECRET_KEY:
+                    $this->validateSecretKey($value);
+                    $value = $this->encryptor->encrypt($value);
+                    break;
+
+                default:
+                    $this->validateAthosCommercePath($path, $value);
                     throw new LocalizedException(
-                        __("Value for '%1' cannot be empty.", $path)
+                        __(
+                            "Invalid path '%1' found. Only athos module configuration allowed.",
+                            $path
+                        )
                     );
-                }
-            } else {
-                throw new LocalizedException(
-                    __("Invalid config path '%1'. Allowed paths must start with '%2' and match module structure.", $path, json_encode(self::Allowed_PATHS))
-                );
+                    break;
             }
 
             // Save to core_config_data
@@ -105,15 +123,15 @@ class ConfigUpdate implements ConfigUpdateInterface
                     'value' => $value,
                     'scope' => $scope,
                     'scope_id' => $scopeId,
-                    'message' => 'Config saved successfully'
-                ]
+                    'message' => 'Config saved successfully',
+                ],
             ];
         } catch (LocalizedException $e) {
             // Only return the message
             return [
                 'data' => [
                     'success' => false,
-                    'message' => $e->getMessage()
+                    'message' => $e->getMessage(),
                 ],
             ];
         }
@@ -121,6 +139,7 @@ class ConfigUpdate implements ConfigUpdateInterface
 
     /**
      * @param string $cronExpression
+     *
      * @return void
      * @throws LocalizedException
      */
@@ -141,11 +160,16 @@ class ConfigUpdate implements ConfigUpdateInterface
 
         // Validation patterns for each field
         $patterns = [
-            '/^(\*|([0-5]?\d)(\/\d+)?|\*\/\d+|([0-5]?\d-[0-5]?\d)|(,?[0-5]?\d)+)$/',        // minute (0-59)
-            '/^(\*|([01]?\d|2[0-3])(\/\d+)?|\*\/\d+|([01]?\d|2[0-3]-([01]?\d|2[0-3]))(,(?:[01]?\d|2[0-3]))*)$/', // hour (0-23)
-            '/^(\*|([1-9]|[12]\d|3[01])(\/\d+)?|\*\/\d+|([1-9]|[12]\d|3[01]-([1-9]|[12]\d|3[01]))(,(?:[1-9]|[12]\d|3[01]))*)$/', // day of month (1-31)
-            '/^(\*|(0?[1-9]|1[0-2])(\/\d+)?|\*\/\d+|(0?[1-9]|1[0-2]-(0?[1-9]|1[0-2]))(,(?:0?[1-9]|1[0-2]))*)$/', // month (1-12)
-            '/^(\*|[0-6](\/\d+)?|\*\/\d+|([0-6]-[0-6])(,(?:[0-6]))*)$/',  // day of week (0–6)
+            '/^(\*|([0-5]?\d)(\/\d+)?|\*\/\d+|([0-5]?\d-[0-5]?\d)|(,?[0-5]?\d)+)$/',
+            // minute (0-59)
+            '/^(\*|([01]?\d|2[0-3])(\/\d+)?|\*\/\d+|([01]?\d|2[0-3]-([01]?\d|2[0-3]))(,(?:[01]?\d|2[0-3]))*)$/',
+            // hour (0-23)
+            '/^(\*|([1-9]|[12]\d|3[01])(\/\d+)?|\*\/\d+|([1-9]|[12]\d|3[01]-([1-9]|[12]\d|3[01]))(,(?:[1-9]|[12]\d|3[01]))*)$/',
+            // day of month (1-31)
+            '/^(\*|(0?[1-9]|1[0-2])(\/\d+)?|\*\/\d+|(0?[1-9]|1[0-2]-(0?[1-9]|1[0-2]))(,(?:0?[1-9]|1[0-2]))*)$/',
+            // month (1-12)
+            '/^(\*|[0-6](\/\d+)?|\*\/\d+|([0-6]-[0-6])(,(?:[0-6]))*)$/',
+            // day of week (0–6)
         ];
 
         // Message for each field when invalid
@@ -169,5 +193,157 @@ class ConfigUpdate implements ConfigUpdateInterface
                 throw new LocalizedException(__($message));
             }
         }
+    }
+
+    /**
+     * @param string|null $endpoint
+     *
+     * @return void
+     */
+    private function validateEndpoint(?string $endpoint): void
+    {
+        if (null === $endpoint) {
+            return;
+        }
+        $urlToValidate = 'https://' . $endpoint;
+        if (filter_var($urlToValidate, FILTER_VALIDATE_URL)) {
+            return;
+        }
+        throw new LocalizedException(
+            __(
+                'Supplied Endpoint URl is invalid. Received %1',
+                $endpoint,
+            ),
+        );
+    }
+
+    /**
+     * @param string|null $endpoint
+     *
+     * @return void
+     */
+    private function validateNumber(?string $value): void
+    {
+        if (null === $value) {
+            return;
+        }
+
+        if (filter_var($value, FILTER_VALIDATE_INT)) {
+            return;
+        }
+        throw new LocalizedException(
+            __(
+                'Supplied Value is invalid. Received %1',
+                $value,
+            ),
+        );
+    }
+
+    /**
+     * @param string|null $value
+     *
+     * @return void
+     * @throws LocalizedException
+     */
+    private function validateBool(?string $value): void
+    {
+        if (null === $value) {
+            return;
+        }
+
+        if (filter_var($value, FILTER_VALIDATE_BOOL)) {
+            return;
+        }
+        throw new LocalizedException(
+            __(
+                'Supplied value is invalid. Received %1',
+                $value,
+            ),
+        );
+    }
+
+    /**
+     * @param string|null $value
+     *
+     * @return void
+     * @throws LocalizedException
+     */
+    private function validateSecretKey(?string $value): void
+    {
+        if (null === $value || trim($value) === '') {
+            throw new LocalizedException(
+                __('Secret Key cannot be empty.')
+            );
+        }
+
+        //10 characters minimum, to avoid overly simple keys
+        if (strlen($value) < 10) {
+            throw new LocalizedException(
+                __('Secret Key must be at least 10 characters long.')
+            );
+        }
+    }
+
+    /**
+     * @param string|null $value
+     *
+     * @return void
+     * @throws LocalizedException
+     */
+    private function validateString(?string $value): void
+    {
+        if (null === $value) {
+            return;
+        }
+
+        if (is_string($value)) {
+            return;
+        }
+        throw new LocalizedException(
+            __(
+                'Supplied Value is invalid. Received %1',
+                $value,
+            ),
+        );
+    }
+
+    /**
+     * @param string $path
+     * @param string|null $value
+     *
+     * @return void
+     * @throws LocalizedException
+     */
+    private function validateAthosCommercePath(string $path, ?string $value): void
+    {
+        $isConfigPath = $this->validateStringPrefix(
+            $path,
+            static::MODULE_PREFIX . 'configuration/'
+        );
+        $isIndexingPath = $this->validateStringPrefix(
+            $path,
+            static::MODULE_PREFIX . 'indexing/'
+        );
+
+        if (!$isConfigPath && !$isIndexingPath) {
+            throw new LocalizedException(
+                __(
+                    "Invalid path '%1' found. Only '%s' module configuration allowed.",
+                    $path,
+                    static::MODULE_PREFIX
+                )
+            );
+        }
+    }
+
+    /**
+     * @param string $haystack
+     * @param string $needle
+     *
+     * @return bool
+     */
+    private function validateStringPrefix(string $haystack, string $needle): bool
+    {
+        return $needle !== '' && substr($haystack, 0, strlen($needle)) === $needle;
     }
 }

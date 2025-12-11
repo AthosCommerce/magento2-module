@@ -47,19 +47,27 @@ class DeleteEntityHandler implements DeleteEntityHandlerInterface
     }
 
     /**
-     * @param $row
+     * @param string $id
      *
      * @return bool
      */
-    public function process($id): bool
+    public function process(string $id): bool
     {
-        $payload = [
-            'entity_id' => $id,
-        ];
+        try {
+            return $this->client->send(
+                ['entity_id' => $id],
+                Constants::API_SCOPE_DELETE
+            );
+        } catch (\Throwable $e) {
+            $this->logger->error(
+                "[DeleteEntity] Failed",
+                [
+                    'entity_id' => $id,
+                    'error' => $e->getMessage(),
+                ]
+            );
 
-        return $this->client->send(
-            $payload,
-            Constants::API_SCOPE_DELETE
-        );
+            return false;
+        }
     }
 }

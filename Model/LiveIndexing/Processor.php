@@ -5,6 +5,7 @@ namespace AthosCommerce\Feed\Model\LiveIndexing;
 
 use AthosCommerce\Feed\Api\LiveIndexing\DeleteEntityHandlerInterface;
 use AthosCommerce\Feed\Model\Feed\ContextManagerInterface;
+use AthosCommerce\Feed\Model\IndexingEntity;
 use AthosCommerce\Feed\Service\Provider\IndexingEntityProvider as IndexingEntityProvider;
 use AthosCommerce\Feed\Api\LiveIndexing\UpsertEntityHandlerInterface;
 use AthosCommerce\Feed\Api\RetryManagerInterface;
@@ -123,12 +124,12 @@ class Processor
     }
 
     /**
-     * @param string|null $siteId
+     * @param $store
+     * @param string $siteId
      *
      * @return int
-     * @throws \Magento\Framework\Exception\NoSuchEntityException
      */
-    public function execute($store, ?string $siteId = null): int
+    public function execute($store, string $siteId): int
     {
         $storeId = (int)$store->getId();
         $storeCode = $store->getCode();
@@ -145,9 +146,9 @@ class Processor
 
         $this->logger->info(
             sprintf(
-                '[LiveIndexing] starting for store(%s), siteId(%s), perMinutes(%s)',
-                $siteId,
+                '[LiveIndexing] initiated for store "%s", siteId:%s, requests:%s',
                 $storeCode,
+                $siteId,
                 $perMinute
             ),
         );
@@ -172,13 +173,14 @@ class Processor
             ),
         );
 
-        $skipUpsert = $deleteCount >= $maxLimit;
-        $upsertProductIds = [];
+        $skipUpdate = $deleteCount >= $maxLimit;
+        $updateProductIds = [];
 
-        if ($skipUpsert) {
+        if ($skipUpdate) {
             $this->logger->info(
                 '[LiveIndexing] Skipping Update operation fully because deletes saturate window',
                 [
+                    'siteId' => $siteId,
                     'store' => $storeCode,
                     'deleteCount' => $deleteCount,
                     'maxLimit' => $maxLimit,
@@ -187,12 +189,13 @@ class Processor
         } else {
             $remainingRequests = (int)max(0, $maxLimit - $deleteCount);
             if ($remainingRequests > 0) {
-                $this->logger->info('[LiveIndexing] fetching update ids.', [
+                $this->logger->info('[LiveIndexing] Fetching indexable update ids.', [
+                    'siteId' => $siteId,
                     'store' => $storeCode,
                     'remainingRequests' => $remainingRequests,
                 ]);
 
-                $upsertProductIds = $this->indexingEntityProvider->get(
+                $updateProductIds = $this->indexingEntityProvider->get(
                     null,
                     [$siteId],
                     null,
@@ -203,9 +206,10 @@ class Processor
                 );
                 $this->logger->info(
                     sprintf(
-                        '[LiveIndexing] Total update records(%s) found for store(%s).',
-                        count($upsertProductIds),
-                        $storeCode
+                        '[LiveIndexing] Total update records(%s) found for store(%s) siteId(%s).',
+                        count($updateProductIds),
+                        $storeCode,
+                        $siteId
                     ),
                 );
             }
@@ -213,10 +217,8 @@ class Processor
 
         $deleteIds = [];
         foreach ($deleteRecords as $deleteRecord) {
-            if (method_exists($deleteRecord, 'getEntityId')) {
-                $deleteIds[] = (int)$deleteRecord->getEntityId();
-            } elseif (method_exists($deleteRecord, 'getId')) {
-                $deleteIds[] = (int)$deleteRecord->getId();
+            if (method_exists($deleteRecord, 'getTargetId')) {
+                $deleteIds[$deleteRecord->getId()] = (int)$deleteRecord->getTargetId();
             }
         }
 
@@ -224,35 +226,36 @@ class Processor
         $failedDeleteIds = [];
         if (!empty($deleteIds)) {
             $this->logger->info('[LiveIndexing] DELETE operation started',
-                ['store' => $storeCode, 'count' => count($deleteIds)]
+                [
+                    'siteId' => $siteId,
+                    'store' => $storeCode,
+                    'count' => count($deleteIds),
+                ]
             );
 
-            foreach ($deleteIds as $id) {
+            foreach ($deleteIds as $deleteId) {
                 try {
-                    $deleteStatus = $this->deleteHandler->process($id);
+                    $deleteStatus = $this->deleteHandler->process($deleteId);
                     if ($deleteStatus) {
-                        //$this->retryManager->resetRetry($id, Actions::DELETE);
-                        $successDeleteIds[] = $id;
+                        $successDeleteIds[] = $deleteId;
                     } else {
-                        $failedDeleteIds[] = $id;
-                        /*$this->retryManager->markForRetry(
-                            $id,
-                            Actions::DELETE,
-                            'handler.process returned false'
-                        );*/
+                        $failedDeleteIds[] = $deleteId;
                     }
                 } catch (\Throwable $e) {
-                    $failedDeleteIds[] = $id;
-                    //$this->retryManager->markForRetry($id, Actions::DELETE, $e->getMessage());
-
+                    $failedDeleteIds[] = $deleteId;
                     $this->logger->error(
-                        sprintf('Exception thrown while DELETION for ID(%s)', $id),
-                        ['store' => $storeCode, 'error' => $e->getMessage()]
+                        sprintf('Exception thrown while DELETION for ID(%s)', $deleteId),
+                        [
+                            'siteId' => $siteId,
+                            'store' => $storeCode,
+                            'error' => $e->getMessage(),
+                        ]
                     );
                 }
             }
             $this->logger->info('[LiveIndexing] DELETE operation completed',
                 [
+                    'siteId' => $siteId,
                     'store' => $storeCode,
                     'successIds' => $successDeleteIds,
                     'failedIds' => $failedDeleteIds,
@@ -260,9 +263,16 @@ class Processor
             );
         }
 
-        $upsertPayloads = [];
-        if (!empty($upsertProductIds)) {
-            $entityIds = array_map(fn($row) => (int)$row->getEntityId(), $upsertProductIds);
+        $updatePayloads = [];
+        $magentoEntityIds = [];
+        if (!empty($updateProductIds)) {
+            $updateIds = [];
+            foreach ($updateProductIds as $updateRecord) {
+                if (method_exists($updateRecord, 'getTargetId')) {
+                    $updateIds[$updateRecord->getId()] = (int)$updateRecord->getTargetId();
+                }
+            }
+            $magentoEntityIds = array_values($updateIds);
 
             $payloadConfig = $this->scopeConfig->getValue(
                 Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD,
@@ -288,14 +298,15 @@ class Processor
 
             $feedSpecification = $this->specificationBuilder->build($payloadConfig);
             $collection = $this->collectionProcessor->getCollection($feedSpecification);
-            $collection->addFieldToFilter('entity_id', ['in' => $entityIds]);
-            $collection->setPageSize(min(count($entityIds), self::MAX_DB_FETCH));
+            $collection->addFieldToFilter('entity_id', ['in' => $magentoEntityIds]);
+            $collection->setPageSize(min(count($magentoEntityIds), self::MAX_DB_FETCH));
             $collection->load();
 
             $this->collectionProcessor->processAfterLoad($collection, $feedSpecification);
             $this->logger->debug(
-                '[Live Indexing][Collection Query]',
+                '[Live Indexing][Update][Collection Query]',
                 [
+                    'siteId' => $siteId,
                     'store' => $storeCode,
                     'query' => $collection->getSelect()->__toString(),
                 ]
@@ -305,41 +316,47 @@ class Processor
             $this->itemsGenerator->resetDataProvidersAfterFetchItems($feedSpecification);
             $this->contextManager->setContextFromSpecification($feedSpecification);
             foreach ($items as $item) {
-                $upsertPayloads[] = $item;
+                $updatePayloads[] = $item;
             }
         }
 
         $successUpdateIds = [];
         $failedUpdateIds = [];
-        if (!empty($upsertPayloads)) {
+        if (!empty($updatePayloads)) {
             $this->logger->info('[LiveIndexing] UPDATE Operation started.',
-                ['store' => $storeCode, 'count' => count($upsertPayloads)]
+                [
+                    'siteId' => $siteId,
+                    'store' => $storeCode,
+                    'count' => count($updatePayloads),
+                ]
             );
 
-            foreach ($upsertPayloads as $updateProduct) {
+            foreach ($updatePayloads as $updateProduct) {
                 try {
                     $singleOk = $this->upsertHandler->process($updateProduct);
                     $id = $this->extractEntityId($updateProduct);
                     if ($singleOk) {
-                        //$this->retryManager->resetRetry($id, Actions::UPSERT);
                         $successUpdateIds[] = $id;
                     } else {
                         $failedUpdateIds[] = $id;
-                        //$this->retryManager->markForRetry($id, Actions::UPSERT, 'handler.process returned false');
                     }
                 } catch (\Throwable $e) {
                     $id = $this->extractEntityId($updateProduct);
                     $failedUpdateIds[] = $id;
-                    //$this->retryManager->markForRetry($id, Actions::UPSERT, $e->getMessage());
 
                     $this->logger->error(
                         sprintf('Exception thrown while UPDATE for ID(%s)', $id),
-                        ['store' => $storeCode, 'error' => $e->getMessage()]
+                        [
+                            'siteId' => $siteId,
+                            'store' => $storeCode,
+                            'error' => $e->getMessage(),
+                        ]
                     );
                 }
             }
             $this->logger->info('[LiveIndexing] UPDATE operation completed',
                 [
+                    'siteId' => $siteId,
                     'store' => $storeCode,
                     'successIds' => $successUpdateIds,
                     'failedIds' => $failedUpdateIds,
@@ -347,15 +364,19 @@ class Processor
             );
         }
 
-        $successDeleteIds = array_values(array_unique($successDeleteIds));
-        if (!empty($successDeleteIds)) {
+        $successDeleteMagentoEntityIds = array_values(array_unique($successDeleteIds));
+        if (!empty($successDeleteMagentoEntityIds)) {
             $this->updateIndexingEntitiesActionsAction->execute(
-                $successDeleteIds,
-                Actions::DELETE
+                $successDeleteMagentoEntityIds,
+                $siteId,
+                Actions::DELETE,
+                IndexingEntity::TARGET_ID
             );
         }
-        $this->logger->info('[LiveIndexing] DELETE next action completed',
+        $this->logger->info(
+            '[LiveIndexing] DELETE mark done completed',
             [
+                'siteId' => $siteId,
                 'store' => $storeCode,
                 'successIds' => $successDeleteIds,
             ]
@@ -365,11 +386,14 @@ class Processor
         if (!empty($successUpdateIds)) {
             $this->updateIndexingEntitiesActionsAction->execute(
                 $successUpdateIds,
-                Actions::UPSERT
+                $siteId,
+                Actions::UPSERT,
+                IndexingEntity::TARGET_ID
             );
         }
-        $this->logger->info('[LiveIndexing] UPDATE next action completed',
+        $this->logger->info('[LiveIndexing] UPDATE mark done completed',
             [
+                'siteId' => $siteId,
                 'store' => $storeCode,
                 'successUpdateIds' => $successUpdateIds,
             ]

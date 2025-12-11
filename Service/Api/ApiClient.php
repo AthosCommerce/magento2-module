@@ -18,8 +18,8 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Service\Api;
 
+use AthosCommerce\Feed\Model\Config as ConfigModel;
 use AthosCommerce\Feed\Model\Feed\Context\StoreContextManager;
-use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Serialize\SerializerInterface as JsonSerializer;
 use Magento\Framework\HTTP\ClientInterface;
 use Magento\Store\Model\ScopeInterface;
@@ -47,9 +47,9 @@ class ApiClient
      */
     private $storeContextManager;
     /**
-     * @var ScopeConfigInterface
+     * @var ConfigModel
      */
-    private $scopeConfig;
+    private $config;
     /**
      * @var JsonSerializer
      */
@@ -59,20 +59,20 @@ class ApiClient
      * @param ClientInterface $client
      * @param LoggerInterface $logger
      * @param StoreContextManager $storeContextManager
-     * @param ScopeConfigInterface $scopeConfig
+     * @param ConfigModel $config
      * @param JsonSerializer $jsonSerializer
      */
     public function __construct(
         ClientInterface $client,
         LoggerInterface $logger,
         StoreContextManager $storeContextManager,
-        ScopeConfigInterface $scopeConfig,
+        ConfigModel $config,
         JsonSerializer $jsonSerializer
     ) {
         $this->client = $client;
         $this->logger = $logger;
         $this->storeContextManager = $storeContextManager;
-        $this->scopeConfig = $scopeConfig;
+        $this->config = $config;
         $this->jsonSerializer = $jsonSerializer;
     }
 
@@ -87,22 +87,11 @@ class ApiClient
         string $topic
     ): bool {
         $store = $this->storeContextManager->getStoreFromContext();
-        $storeId = $store->getId();
-        $shopDomain = $this->scopeConfig->getValue(
-            Constants::XML_PATH_CONFIG_SHOP_DOMAIN,
-            ScopeInterface::SCOPE_STORES,
-            $storeId
-        );
-        $secretKey = $this->scopeConfig->getValue(
-            Constants::XML_PATH_CONFIG_SECRET_KEY,
-            ScopeInterface::SCOPE_STORES,
-            $storeId
-        );
-        $endpoint = $this->scopeConfig->getValue(
-            Constants::XML_PATH_CONFIG_ENDPOINT,
-            ScopeInterface::SCOPE_STORES,
-            $storeId
-        );
+        $storeId = (int)$store->getId();
+        $siteId = $this->config->getSiteIdByStoreId($storeId);
+        $shopDomain = $this->config->getShopDomainByStoreId($storeId);
+        $secretKey = $this->config->getSecretKeyByStoreId($storeId);
+        $endpoint = $this->config->getEndpointByStoreId($storeId);
         $jsonPayload = $this->jsonSerializer->serialize($payload);
 
         $hmac = base64_encode(
@@ -118,21 +107,16 @@ class ApiClient
         $options = [];
         $this->client->setHeaders($headers);
 
-        array_walk($headers, function (&$value, $key) {
-            $value = ($value !== null && $value !== false)
-                ? sprintf("%s: %s", $key, $value)
-                : null;
-            if (in_array($key, $this->maskFields)) {
-                $value = sprintf("%s: %s", $key, '***************');
-            }
-        });
-        $this->logger->info('Sending API Request', [
-            'headers' => $headers,
-            'endpoint' => $endpoint,
-            'payload' => $payload,
-            'topic' => $topic,
-        ]);
-        $this->client->setTimeout(20);
+        $this->logger->info(
+            sprintf("Sending (%s) API Request", $topic),
+            [
+                'endpoint' => $endpoint,
+                'siteId' => $siteId,
+                'headers' => $headers,
+                'payload' => $payload,
+
+            ]
+        );
         $this->client->setOptions($options);
 
         $this->client->post($endpoint, $jsonPayload);
@@ -141,23 +125,23 @@ class ApiClient
             $responseBody
         );*/
 
-        $code = $this->client->getStatus();
+        $httpStatusCode = $this->client->getStatus();
 
         $this->logger->info(
-            'API Response',
+            sprintf("Received response for topic(%s)", $topic),
             [
-                'code' => $code,
-                'responseBody' => $responseBody,
-                'topic' => $topic,
+                'httpStatusCode' => $httpStatusCode,
+                'endpoint' => $endpoint,
+                'siteId' => $siteId,
+                'responseBody' => $responseBody
             ]
         );
 
-
-        if ($code >= 200 && $code < 300) {
+        if ($httpStatusCode >= 200 && $httpStatusCode < 300) {
             return true;
         }
 
-        $this->logger->warning("HTTP $code | Response: $responseBody");
+        $this->logger->warning("HTTP $httpStatusCode | Response: $responseBody");
 
         return false;
     }
@@ -167,24 +151,16 @@ class ApiClient
      *
      * @return array
      */
-    private function applyMask(array $headers) {
+    private function applyMask(array $headers)
+    {
         try {
-            foreach ($headers as $header) {
-               $header =  strtolower($header);
-                switch ($header) {
-                    case 'X-Hmac-Sha256':
-                        $header = str_replace($header, '***********', $header);
-                        break;
-                    default:
-                        break;
-
-                }
-            }
-        }catch (\Exception $e) {
+            $headers = str_replace($this->maskFields, '***********', $header);
+        } catch (\Exception $e) {
             $this->logger->error(
                 sprintf("Exception while masking: %s", $e->getMessage())
             );
         }
+
         return $headers;
     }
 }
