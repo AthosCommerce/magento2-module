@@ -26,9 +26,9 @@ class Constants
     const API_SCOPE_UPSERT = 'products/update';
 
     /**
-     * Setted default limit to avoid rate limit for store.
+     * Setted default very minimum limit to avoid rate limit for store.
      */
-    const DEFAULT_MAX_BATCH_LIMIT = 480;
+    const DEFAULT_MAX_REQUEST_LIMIT = 480;
 
     const XML_PATH_CONFIG_SITE_ID = 'athoscommerce/configuration/siteid';
     const XML_PATH_CONFIG_ENDPOINT = 'athoscommerce/configuration/endpoint';
@@ -38,4 +38,8 @@ class Constants
     const XML_PATH_LIVE_INDEXING_ENABLED = 'athoscommerce/indexing/enable_live_indexing';
     const XML_PATH_LIVE_INDEXING_TASK_PAYLOAD = 'athoscommerce/indexing/task_payload';
     const XML_PATH_LIVE_INDEXING_PER_MINUTE = 'athoscommerce/indexing/request_per_minute';
+    const XML_PATH_LIVE_INDEXING_CHUNK_PER_SIZE = 'athoscommerce/indexing/chunk_per_size';
+
+    const XML_PATH_LIVE_INDEXING_SYNC_CRON_EXPR = 'athoscommerce/indexing/entity_sync_cron_expr';
+    const XML_PATH_LIVE_INDEXING_MILLISECONDS_DELAY = 'athoscommerce/indexing/milliseconds_delay';
 }

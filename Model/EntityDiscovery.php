@@ -183,6 +183,17 @@ class EntityDiscovery implements EntityDiscoveryInterface
                     if ($items) {
                         $this->convertCollectionItemsToAthosEntities($items, $siteId);
                     }
+                    $this->logger->info(
+                        sprintf(
+                            "Entity discovery processed page %d of %d for store: %s",
+                            $currentPageNumber,
+                            $pageCount,
+                            $store->getCode()
+                        ),
+                        [
+                            'query' => $collection->getSelect()->__toString(),
+                        ]
+                    );
                     $currentPageNumber++;
                 } catch (Exception $exception) {
                     if ($errorCount == 3) {
@@ -222,7 +233,8 @@ class EntityDiscovery implements EntityDiscoveryInterface
         foreach ($items as $item) {
             $magentoEntities[$item->getId()] = $this->magentoEntityInterfaceFactory->create([
                 'entityId' => $item->getId(),
-                'entityParentId' => $item->getEntityId(),
+                'targetEntitySubtype' => $item->getDataUsingMethod('type_id'),
+                'entityParentId' => 0,
                 'siteId' => $siteId,
                 'isIndexable' => false, //will set to indexable false, so let's the observer do the rest
             ]);

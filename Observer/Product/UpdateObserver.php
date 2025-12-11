@@ -68,7 +68,7 @@ class UpdateObserver implements ObserverInterface
         try {
             $event = $observer->getEvent();
             $product = $event->getProduct();
-            $storeIds = $product->getStoreIds();
+            $storeIds = method_exists($product, 'getStoreIds') ? $product->getStoreIds() : [];
 
             if (!$product || !$product->getId()) {
                 return;
@@ -93,16 +93,16 @@ class UpdateObserver implements ObserverInterface
                     $this->baseProductObserver->execute([$product->getId()], $nextAction);
 
                     $this->logger->debug(
-                        'UpdateObserver executed',
+                        '[UpdateObserver] executed',
                         [
-                            'ids' => $product->getId(),
+                            'id(s)' => $product->getId(),
                             'store_id' => $storeId,
-                            'action' => $nextAction,
+                            'nextAction' => $nextAction,
                         ]
                     );
                 } catch (\Throwable $storeEx) {
                     $this->logger->error(
-                        'UpdateObserver error for store',
+                        '[UpdateObserver] error for store',
                         [
                             'product_id' => $product->getId(),
                             'store_id' => $storeId,
@@ -114,7 +114,7 @@ class UpdateObserver implements ObserverInterface
             }
         } catch (\Throwable $e) {
             $this->logger->error(
-                'UpdateObserver error: ' . $e->getMessage(),
+                '[UpdateObserver] error: ' . $e->getMessage(),
                 [
                     'product_id' => $product->getId() ?? null,
                     'store_ids' => $storeIds ?? [],

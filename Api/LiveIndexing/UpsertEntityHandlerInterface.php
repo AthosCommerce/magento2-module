@@ -24,6 +24,7 @@ interface UpsertEntityHandlerInterface
      * Process array of upsert payload.
      *
      * @param array $payload
+     *
      * @return bool
      */
     public function process(array $payload): bool;

@@ -38,6 +38,11 @@ class BaseProductObserver
      */
     private $logger;
 
+    /**
+     * @param SetIndexingEntitiesToUpdateActionInterface $setIndexingEntitiesToUpdateAction
+     * @param SetIndexingEntitiesToDeleteActionInterface $setIndexingEntitiesToDeleteAction
+     * @param LoggerInterface $logger
+     */
     public function __construct(
         SetIndexingEntitiesToUpdateActionInterface $setIndexingEntitiesToUpdateAction,
         SetIndexingEntitiesToDeleteActionInterface $setIndexingEntitiesToDeleteAction,

@@ -4,19 +4,19 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Model\LiveIndexing;
 
 use AthosCommerce\Feed\Api\LiveIndexing\DeleteEntityHandlerInterface;
-use AthosCommerce\Feed\Model\Feed\ContextManagerInterface;
-use AthosCommerce\Feed\Service\Provider\IndexingEntityProvider as IndexingEntityProvider;
 use AthosCommerce\Feed\Api\LiveIndexing\UpsertEntityHandlerInterface;
 use AthosCommerce\Feed\Api\RetryManagerInterface;
 use AthosCommerce\Feed\Helper\Constants;
 use AthosCommerce\Feed\Model\CollectionProcessor;
+use AthosCommerce\Feed\Model\Config as ConfigModel;
+use AthosCommerce\Feed\Model\Feed\ContextManagerInterface;
 use AthosCommerce\Feed\Model\Feed\SpecificationBuilderInterface;
+use AthosCommerce\Feed\Model\IndexingEntity;
 use AthosCommerce\Feed\Model\ItemsGenerator;
 use AthosCommerce\Feed\Model\Source\Actions;
 use AthosCommerce\Feed\Service\Action\UpdateIndexingEntitiesActionsActionInterface as UpdateIndexingEntitiesActionsAction;
+use AthosCommerce\Feed\Service\Provider\IndexingEntityProvider as IndexingEntityProvider;
 use Magento\Framework\Serialize\SerializerInterface;
-use Magento\Framework\App\Config\ScopeConfigInterface;
-use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use Psr\Log\LoggerInterface;
 
@@ -37,9 +37,9 @@ class Processor
      */
     private $storeManager;
     /**
-     * @var ScopeConfigInterface
+     * @var ConfigModel
      */
-    private $scopeConfig;
+    private $config;
     /**
      * @var UpdateIndexingEntitiesActionsAction
      */
@@ -81,7 +81,7 @@ class Processor
      * @param IndexingEntityProvider $indexingEntityProvider
      * @param LoggerInterface $logger
      * @param StoreManagerInterface $storeManager
-     * @param ScopeConfigInterface $scopeConfig
+     * @param ConfigModel $config
      * @param UpdateIndexingEntitiesActionsAction $updateIndexingEntitiesActionsAction
      * @param DeleteEntityHandlerInterface $deleteHandler
      * @param UpsertEntityHandlerInterface $upsertHandler
@@ -96,7 +96,7 @@ class Processor
         IndexingEntityProvider $indexingEntityProvider,
         LoggerInterface $logger,
         StoreManagerInterface $storeManager,
-        ScopeConfigInterface $scopeConfig,
+        ConfigModel $config,
         UpdateIndexingEntitiesActionsAction $updateIndexingEntitiesActionsAction,
         DeleteEntityHandlerInterface $deleteHandler,
         UpsertEntityHandlerInterface $upsertHandler,
@@ -110,7 +110,7 @@ class Processor
         $this->indexingEntityProvider = $indexingEntityProvider;
         $this->logger = $logger;
         $this->storeManager = $storeManager;
-        $this->scopeConfig = $scopeConfig;
+        $this->config = $config;
         $this->updateIndexingEntitiesActionsAction = $updateIndexingEntitiesActionsAction;
         $this->deleteHandler = $deleteHandler;
         $this->upsertHandler = $upsertHandler;
@@ -123,31 +123,26 @@ class Processor
     }
 
     /**
-     * @param string|null $siteId
+     * @param $store
+     * @param string $siteId
      *
      * @return int
-     * @throws \Magento\Framework\Exception\NoSuchEntityException
      */
-    public function execute($store, ?string $siteId = null): int
+    public function execute($store, string $siteId): int
     {
         $storeId = (int)$store->getId();
         $storeCode = $store->getCode();
 
-        $perMinute = (int)$this->scopeConfig->getValue(
-            Constants::XML_PATH_LIVE_INDEXING_PER_MINUTE,
-            ScopeInterface::SCOPE_STORES,
-            $storeId
-        )
-            ?: Constants::DEFAULT_MAX_BATCH_LIMIT;
+        $perMinute = $this->config->getRequestPerMinuteByStoreId($storeId);
 
         //This is to avoid rate limit at receiving end
         $maxLimit = (int)$perMinute * 2;
 
         $this->logger->info(
             sprintf(
-                '[LiveIndexing] starting for store(%s), siteId(%s), perMinutes(%s)',
-                $siteId,
+                '[LiveIndexing] initiated for store "%s", siteId:%s, requests:%s',
                 $storeCode,
+                $siteId,
                 $perMinute
             ),
         );
@@ -172,13 +167,14 @@ class Processor
             ),
         );
 
-        $skipUpsert = $deleteCount >= $maxLimit;
-        $upsertProductIds = [];
+        $skipUpdate = $deleteCount >= $maxLimit;
+        $updateProductIds = [];
 
-        if ($skipUpsert) {
+        if ($skipUpdate) {
             $this->logger->info(
                 '[LiveIndexing] Skipping Update operation fully because deletes saturate window',
                 [
+                    'siteId' => $siteId,
                     'store' => $storeCode,
                     'deleteCount' => $deleteCount,
                     'maxLimit' => $maxLimit,
@@ -187,12 +183,13 @@ class Processor
         } else {
             $remainingRequests = (int)max(0, $maxLimit - $deleteCount);
             if ($remainingRequests > 0) {
-                $this->logger->info('[LiveIndexing] fetching update ids.', [
+                $this->logger->info('[LiveIndexing] Fetching indexable update ids.', [
+                    'siteId' => $siteId,
                     'store' => $storeCode,
                     'remainingRequests' => $remainingRequests,
                 ]);
 
-                $upsertProductIds = $this->indexingEntityProvider->get(
+                $updateProductIds = $this->indexingEntityProvider->get(
                     null,
                     [$siteId],
                     null,
@@ -203,9 +200,10 @@ class Processor
                 );
                 $this->logger->info(
                     sprintf(
-                        '[LiveIndexing] Total update records(%s) found for store(%s).',
-                        count($upsertProductIds),
-                        $storeCode
+                        '[LiveIndexing] Total update records(%s) found for store(%s) siteId(%s).',
+                        count($updateProductIds),
+                        $storeCode,
+                        $siteId
                     ),
                 );
             }
@@ -213,10 +211,8 @@ class Processor
 
         $deleteIds = [];
         foreach ($deleteRecords as $deleteRecord) {
-            if (method_exists($deleteRecord, 'getEntityId')) {
-                $deleteIds[] = (int)$deleteRecord->getEntityId();
-            } elseif (method_exists($deleteRecord, 'getId')) {
-                $deleteIds[] = (int)$deleteRecord->getId();
+            if (method_exists($deleteRecord, 'getTargetId')) {
+                $deleteIds[] = (int)$deleteRecord->getTargetId();
             }
         }
 
@@ -224,52 +220,73 @@ class Processor
         $failedDeleteIds = [];
         if (!empty($deleteIds)) {
             $this->logger->info('[LiveIndexing] DELETE operation started',
-                ['store' => $storeCode, 'count' => count($deleteIds)]
+                [
+                    'siteId' => $siteId,
+                    'store' => $storeCode,
+                    'count' => count($deleteIds),
+                ]
             );
 
-            foreach ($deleteIds as $id) {
+            foreach ($deleteIds as $deleteId) {
+                $deleteId = (int)$deleteId;
                 try {
-                    $deleteStatus = $this->deleteHandler->process($id);
+                    $deleteStatus = $this->deleteHandler->process($deleteId);
                     if ($deleteStatus) {
-                        //$this->retryManager->resetRetry($id, Actions::DELETE);
-                        $successDeleteIds[] = $id;
+                        $successDeleteIds[] = $deleteId;
                     } else {
-                        $failedDeleteIds[] = $id;
-                        /*$this->retryManager->markForRetry(
-                            $id,
-                            Actions::DELETE,
-                            'handler.process returned false'
-                        );*/
+                        $failedDeleteIds[] = $deleteId;
                     }
                 } catch (\Throwable $e) {
-                    $failedDeleteIds[] = $id;
-                    //$this->retryManager->markForRetry($id, Actions::DELETE, $e->getMessage());
-
+                    $failedDeleteIds[] = $deleteId;
                     $this->logger->error(
-                        sprintf('Exception thrown while DELETION for ID(%s)', $id),
-                        ['store' => $storeCode, 'error' => $e->getMessage()]
+                        sprintf('Exception thrown while DELETION for ID(%s)', $deleteId),
+                        [
+                            'siteId' => $siteId,
+                            'store' => $storeCode,
+                            'error' => $e->getMessage(),
+                        ]
                     );
                 }
             }
             $this->logger->info('[LiveIndexing] DELETE operation completed',
                 [
+                    'siteId' => $siteId,
                     'store' => $storeCode,
                     'successIds' => $successDeleteIds,
                     'failedIds' => $failedDeleteIds,
                 ]
             );
         }
-
-        $upsertPayloads = [];
-        if (!empty($upsertProductIds)) {
-            $entityIds = array_map(fn($row) => (int)$row->getEntityId(), $upsertProductIds);
-
-            $payloadConfig = $this->scopeConfig->getValue(
-                Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD,
-                ScopeInterface::SCOPE_STORES,
-                $storeId
+        $successDeleteMagentoEntityIds = array_values(array_unique($successDeleteIds));
+        if (!empty($successDeleteMagentoEntityIds)) {
+            $this->updateIndexingEntitiesActionsAction->execute(
+                $successDeleteMagentoEntityIds,
+                $siteId,
+                Actions::DELETE,
+                IndexingEntity::TARGET_ID
             );
+            $this->logger->info(
+                '[LiveIndexing] DELETE mark done completed',
+                [
+                    'siteId' => $siteId,
+                    'store' => $storeCode,
+                    'successIds' => $successDeleteMagentoEntityIds,
+                ]
+            );
+        }
 
+        $updatePayloads = [];
+        $magentoEntityIds = [];
+        if (!empty($updateProductIds)) {
+            $updateIds = [];
+            foreach ($updateProductIds as $updateRecord) {
+                if (method_exists($updateRecord, 'getTargetId')) {
+                    $updateIds[$updateRecord->getId()] = (int)$updateRecord->getTargetId();
+                }
+            }
+            $magentoEntityIds = array_values($updateIds);
+
+            $payloadConfig = $this->config->getPayloadByStoreId($storeId);
             if (!$payloadConfig) {
                 $this->logger->error('Missing payload config', ['store' => $storeCode]);
 
@@ -288,14 +305,15 @@ class Processor
 
             $feedSpecification = $this->specificationBuilder->build($payloadConfig);
             $collection = $this->collectionProcessor->getCollection($feedSpecification);
-            $collection->addFieldToFilter('entity_id', ['in' => $entityIds]);
-            $collection->setPageSize(min(count($entityIds), self::MAX_DB_FETCH));
+            $collection->addFieldToFilter('entity_id', ['in' => $magentoEntityIds]);
+            $collection->setPageSize(min(count($magentoEntityIds), self::MAX_DB_FETCH));
             $collection->load();
 
             $this->collectionProcessor->processAfterLoad($collection, $feedSpecification);
             $this->logger->debug(
-                '[Live Indexing][Collection Query]',
+                '[Live Indexing][Update][Collection Query]',
                 [
+                    'siteId' => $siteId,
                     'store' => $storeCode,
                     'query' => $collection->getSelect()->__toString(),
                 ]
@@ -305,75 +323,92 @@ class Processor
             $this->itemsGenerator->resetDataProvidersAfterFetchItems($feedSpecification);
             $this->contextManager->setContextFromSpecification($feedSpecification);
             foreach ($items as $item) {
-                $upsertPayloads[] = $item;
+                $updatePayloads[] = $item;
             }
         }
 
         $successUpdateIds = [];
         $failedUpdateIds = [];
-        if (!empty($upsertPayloads)) {
-            $this->logger->info('[LiveIndexing] UPDATE Operation started.',
-                ['store' => $storeCode, 'count' => count($upsertPayloads)]
-            );
-
-            foreach ($upsertPayloads as $updateProduct) {
-                try {
-                    $singleOk = $this->upsertHandler->process($updateProduct);
-                    $id = $this->extractEntityId($updateProduct);
-                    if ($singleOk) {
-                        //$this->retryManager->resetRetry($id, Actions::UPSERT);
-                        $successUpdateIds[] = $id;
-                    } else {
-                        $failedUpdateIds[] = $id;
-                        //$this->retryManager->markForRetry($id, Actions::UPSERT, 'handler.process returned false');
+        if (!empty($updatePayloads)) {
+            $chunkSize = $this->config->getChunkSizeByStoreId($storeId);
+            $delayMs = $this->config->getMillisecondsDelayByStoreId($storeId);
+            $batchChunks = array_chunk($updatePayloads, $chunkSize);
+            $totalChunks = count($batchChunks);
+            foreach ($batchChunks as $chunkIndex => $chunk) {
+                $this->logger->info(
+                    sprintf(
+                        '[LiveIndexing] UPDATE processing chunk %s of %s',
+                        $chunkIndex + 1,
+                        $totalChunks
+                    ),
+                    [
+                        'siteId' => $siteId,
+                        'store' => $storeCode,
+                        'chunkSize' => count($chunk),
+                    ]
+                );
+                foreach ($chunk as $updateProduct) {
+                    if (!$updateProduct) {
+                        continue;
                     }
-                } catch (\Throwable $e) {
-                    $id = $this->extractEntityId($updateProduct);
-                    $failedUpdateIds[] = $id;
-                    //$this->retryManager->markForRetry($id, Actions::UPSERT, $e->getMessage());
+                    try {
+                        $singleOk = $this->upsertHandler->process($updateProduct);
+                        $id = $this->extractEntityId($updateProduct);
+                        if ($singleOk) {
+                            $successUpdateIds[] = $id;
+                        } else {
+                            $failedUpdateIds[] = $id;
+                        }
+                    } catch (\Throwable $e) {
+                        $id = $this->extractEntityId($updateProduct);
+                        $failedUpdateIds[] = $id;
 
-                    $this->logger->error(
-                        sprintf('Exception thrown while UPDATE for ID(%s)', $id),
-                        ['store' => $storeCode, 'error' => $e->getMessage()]
-                    );
+                        $this->logger->error(
+                            sprintf('Exception thrown while UPDATE for ID(%s)', $id),
+                            [
+                                'siteId' => $siteId,
+                                'store' => $storeCode,
+                                'error' => $e->getMessage(),
+                            ]
+                        );
+                    }
+                }
+
+                if ($delayMs > 0 && (($chunkIndex + 1) < $totalChunks)) {
+                    // Introduce delay between each chunks to avoid rate limiting
+                    // minimize delay to 1 second (1000 ms) max to avoid long sleeps
+                    usleep(min($delayMs, 1000));
                 }
             }
+
             $this->logger->info('[LiveIndexing] UPDATE operation completed',
                 [
+                    'siteId' => $siteId,
                     'store' => $storeCode,
+                    'chunkIndex' => $chunkIndex + 1,
                     'successIds' => $successUpdateIds,
                     'failedIds' => $failedUpdateIds,
                 ]
             );
         }
 
-        $successDeleteIds = array_values(array_unique($successDeleteIds));
-        if (!empty($successDeleteIds)) {
-            $this->updateIndexingEntitiesActionsAction->execute(
-                $successDeleteIds,
-                Actions::DELETE
-            );
-        }
-        $this->logger->info('[LiveIndexing] DELETE next action completed',
-            [
-                'store' => $storeCode,
-                'successIds' => $successDeleteIds,
-            ]
-        );
-
         $successUpdateIds = array_values(array_unique($successUpdateIds));
         if (!empty($successUpdateIds)) {
             $this->updateIndexingEntitiesActionsAction->execute(
                 $successUpdateIds,
-                Actions::UPSERT
+                $siteId,
+                Actions::UPSERT,
+                IndexingEntity::TARGET_ID
+            );
+            $this->logger->info('[LiveIndexing] UPDATE mark done completed',
+                [
+                    'siteId' => $siteId,
+                    'store' => $storeCode,
+                    'successUpdateIds' => $successUpdateIds,
+                ]
             );
         }
-        $this->logger->info('[LiveIndexing] UPDATE next action completed',
-            [
-                'store' => $storeCode,
-                'successUpdateIds' => $successUpdateIds,
-            ]
-        );
+
         $totalSuccessCount = count($successDeleteIds + $successUpdateIds);
         $this->logger->info('[LiveIndexing] completed.',
             [

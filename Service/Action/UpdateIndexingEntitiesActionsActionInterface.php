@@ -18,13 +18,22 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Service\Action;
 
+use AthosCommerce\Feed\Model\IndexingEntity;
+
 interface UpdateIndexingEntitiesActionsActionInterface
 {
     /**
      * @param array $entityIds
      * @param string $lastAction
+     * @param string $siteId
+     * @param string $fieldIdentifier
      *
      * @return void
      */
-    public function execute(array $entityIds, string $lastAction): void;
+    public function execute(
+        array $entityIds,
+        string $siteId,
+        string $lastAction,
+        string $fieldIdentifier = IndexingEntity::ENTITY_ID
+    ): void;
 }
