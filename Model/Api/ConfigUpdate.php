@@ -82,7 +82,7 @@ class ConfigUpdate implements ConfigUpdateInterface
                     break;
 
                 case Constants::XML_PATH_LIVE_INDEXING_PER_MINUTE:
-                case Constants::XML_PATH_LIVE_INDEXING_REQUEST_BATCH_PER_SIZE:
+                case Constants::XML_PATH_LIVE_INDEXING_CHUNK_PER_SIZE:
                     $this->validateNumber($value);
                     break;
 
