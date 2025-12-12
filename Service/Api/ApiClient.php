@@ -91,9 +91,11 @@ class ApiClient
         $siteId = $this->config->getSiteIdByStoreId($storeId);
         $shopDomain = $this->config->getShopDomainByStoreId($storeId);
         $secretKey = $this->config->getSecretKeyByStoreId($storeId);
-        $endpoint = $this->config->getEndpointByStoreId($storeId);
-        $jsonPayload = $this->jsonSerializer->serialize($payload);
+        $endpoint = rtrim($this->config->getEndpointByStoreId($storeId), '/');
+        $feedId = ltrim($this->config->getFeedIdByStoreId($storeId), '/');
 
+        $endpointUrl = $endpoint . '/' . $feedId;
+        $jsonPayload = $this->jsonSerializer->serialize($payload);
         $hmac = base64_encode(
             hash_hmac('sha256', $jsonPayload, $secretKey, true)
         );
@@ -110,16 +112,15 @@ class ApiClient
         $this->logger->info(
             sprintf("Sending (%s) API Request", $topic),
             [
-                'endpoint' => $endpoint,
+                'endpointUrl' => $endpointUrl,
                 'siteId' => $siteId,
                 'headers' => $headers,
                 'payload' => $payload,
-
             ]
         );
         $this->client->setOptions($options);
 
-        $this->client->post($endpoint, $jsonPayload);
+        $this->client->post($endpointUrl, $jsonPayload);
         $responseBody = $this->client->getBody();
         /*$result = $this->jsonSerializer->unserialize(
             $responseBody
@@ -131,9 +132,9 @@ class ApiClient
             sprintf("Received response for topic(%s)", $topic),
             [
                 'httpStatusCode' => $httpStatusCode,
-                'endpoint' => $endpoint,
                 'siteId' => $siteId,
-                'responseBody' => $responseBody
+                'endpointUrl' => $endpointUrl,
+                'responseBody' => $responseBody,
             ]
         );
 

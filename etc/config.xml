@@ -10,6 +10,7 @@
                 <endpoint/>
                 <secretkey/>
                 <shopdomain/>
+                <feedid/>
             </configuration>
             <indexing>
                 <enable_live_indexing>0</enable_live_indexing>

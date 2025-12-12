@@ -7,7 +7,7 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
@@ -34,6 +34,7 @@ class Constants
     const XML_PATH_CONFIG_ENDPOINT = 'athoscommerce/configuration/endpoint';
     const XML_PATH_CONFIG_SECRET_KEY = 'athoscommerce/configuration/secretkey';
     const XML_PATH_CONFIG_SHOP_DOMAIN = 'athoscommerce/configuration/shopdomain';
+    const XML_PATH_CONFIG_FEED_ID = 'athoscommerce/configuration/feedid';
 
     const XML_PATH_LIVE_INDEXING_ENABLED = 'athoscommerce/indexing/enable_live_indexing';
     const XML_PATH_LIVE_INDEXING_TASK_PAYLOAD = 'athoscommerce/indexing/task_payload';
