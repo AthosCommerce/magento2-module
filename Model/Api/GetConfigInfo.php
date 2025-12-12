@@ -51,7 +51,7 @@ class GetConfigInfo implements GetConfigInfoInterface
                 return [
                     'data' => [
                         'success' => true,
-                        'message' => "No config values found for path '{$path}'",
+                        'message' => "No config values found for path " . self::MODULE_PREFIX,
                         'results' => [],
                     ],
                 ];
