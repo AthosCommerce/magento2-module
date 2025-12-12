@@ -80,11 +80,16 @@ class Config
      */
     public function getEndpointByStoreId(?int $storeId = null): string
     {
-        return (string)$this->scopeConfig->getValue(
+        $value = (string)$this->scopeConfig->getValue(
             Constants::XML_PATH_CONFIG_ENDPOINT,
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
             $storeId
         );
+        if (strpos($value, 'https://') === false) {
+            $value = 'https://' . $value;
+        }
+
+        return $value;
     }
 
     /**
@@ -117,6 +122,11 @@ class Config
         );
     }
 
+    /**
+     * @param int|null $storeId
+     *
+     * @return int
+     */
     public function getRequestPerMinuteByStoreId(?int $storeId = null): int
     {
         return (int)$this->scopeConfig->getValue(
@@ -166,5 +176,19 @@ class Config
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
             $storeId
         ) ?? 50;
+    }
+
+    /**
+     * @param int|null $storeId
+     *
+     * @return string
+     */
+    public function getFeedIdByStoreId(?int $storeId = null): string
+    {
+        return (string)$this->scopeConfig->getValue(
+            Constants::XML_PATH_CONFIG_FEED_ID,
+            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
     }
 }

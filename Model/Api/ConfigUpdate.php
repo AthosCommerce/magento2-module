@@ -89,6 +89,7 @@ class ConfigUpdate implements ConfigUpdateInterface
                 case Constants::XML_PATH_CONFIG_SITE_ID:
                 case Constants::XML_PATH_CONFIG_SHOP_DOMAIN:
                 case Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD:
+                case Constants::XML_PATH_CONFIG_FEED_ID:
                     $this->validateString($value);
                     break;
 
@@ -211,7 +212,7 @@ class ConfigUpdate implements ConfigUpdateInterface
         }
         throw new LocalizedException(
             __(
-                'Supplied Endpoint URl is invalid. Received %1',
+                'Supplied Endpoint URl is invalid. Received %1, Valid format: live-indexing.com/api/custom/webhook/  : `https://` and `feedId` should not be included.',
                 $endpoint,
             ),
         );
