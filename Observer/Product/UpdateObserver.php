@@ -63,7 +63,7 @@ class UpdateObserver implements ObserverInterface
      *
      * @return void
      */
-    public function execute(Observer $observer)
+    public function execute(Observer $observer): void
     {
         try {
             $event = $observer->getEvent();
@@ -90,7 +90,11 @@ class UpdateObserver implements ObserverInterface
                         ? Actions::DELETE
                         : Actions::UPSERT;
 
-                    $this->baseProductObserver->execute([$product->getId()], $nextAction);
+                    $this->baseProductObserver->execute(
+                        [$product->getId()],
+                        $nextAction,
+                        true
+                    );
 
                     $this->logger->debug(
                         '[UpdateObserver] executed',

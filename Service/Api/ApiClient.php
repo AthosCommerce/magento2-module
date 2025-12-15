@@ -63,12 +63,13 @@ class ApiClient
      * @param JsonSerializer $jsonSerializer
      */
     public function __construct(
-        ClientInterface $client,
-        LoggerInterface $logger,
+        ClientInterface     $client,
+        LoggerInterface     $logger,
         StoreContextManager $storeContextManager,
-        ConfigModel $config,
-        JsonSerializer $jsonSerializer
-    ) {
+        ConfigModel         $config,
+        JsonSerializer      $jsonSerializer
+    )
+    {
         $this->client = $client;
         $this->logger = $logger;
         $this->storeContextManager = $storeContextManager;
@@ -83,11 +84,13 @@ class ApiClient
      * @return bool
      */
     public function send(
-        array $payload,
+        array  $payload,
         string $topic
-    ): bool {
+    ): bool
+    {
         $store = $this->storeContextManager->getStoreFromContext();
         $storeId = (int)$store->getId();
+        $storeCode = $store->getCode();
         $siteId = $this->config->getSiteIdByStoreId($storeId);
         $shopDomain = $this->config->getShopDomainByStoreId($storeId);
         $secretKey = $this->config->getSecretKeyByStoreId($storeId);
@@ -96,6 +99,22 @@ class ApiClient
 
         $endpointUrl = $endpoint . '/' . $feedId;
         $jsonPayload = $this->jsonSerializer->serialize($payload);
+        $sizeInBytes = strlen($jsonPayload);
+
+        if ($sizeInBytes > (1024 * 1024)) {
+            $this->logger->error(
+                "Payload exceeds limit",
+                [
+                    'endpointUrl' => $endpointUrl,
+                    'storeCode' => $storeCode,
+                    'siteId' => $siteId,
+                    'headers' => $headers,
+                    'payload' => $payload,
+                    'length' => $sizeInBytes . ' bytes'
+                ]
+            );
+            return false;
+        }
         $hmac = base64_encode(
             hash_hmac('sha256', $jsonPayload, $secretKey, true)
         );
@@ -114,8 +133,10 @@ class ApiClient
             [
                 'endpointUrl' => $endpointUrl,
                 'siteId' => $siteId,
+                'storeCode' => $storeCode,
                 'headers' => $headers,
                 'payload' => $payload,
+                'length' => $sizeInBytes . ' bytes'
             ]
         );
         $this->client->setOptions($options);
@@ -133,6 +154,7 @@ class ApiClient
             [
                 'httpStatusCode' => $httpStatusCode,
                 'siteId' => $siteId,
+                'storeCode' => $storeCode,
                 'endpointUrl' => $endpointUrl,
                 'responseBody' => $responseBody,
             ]

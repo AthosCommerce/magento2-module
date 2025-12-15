@@ -18,12 +18,12 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Service\Action;
 
-interface SetIndexingEntitiesToUpdateActionInterface
+interface SetIndexingEntitiesToBeIndexableActionInterface
 {
     /**
      * @param array $entityIds
-     * @param bool $forceIndexable
+     *
      * @return void
      */
-    public function execute(array $entityIds, bool $forceIndexable = false): void;
+    public function execute(array $entityIds): void;
 }

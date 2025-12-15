@@ -103,6 +103,10 @@ class BunchSaveObserver implements ObserverInterface
             }
 
             $skus = array_column($bunch, 'sku');
+            if(empty($skus)) {
+                $this->logger->debug('[BunchSaveObserver] No SKUs found in bunch.');
+                return;
+            }
 
             // Fetch entity_ids for the SKUs in one query
             $connection = $this->resource->getConnection();
@@ -141,14 +145,7 @@ class BunchSaveObserver implements ObserverInterface
                                 if (!$liveIndexing) {
                                     continue;
                                 }
-
                                 $shouldProcess = true;
-
-                                $this->logger->debug(
-                                    '[BunchSaveObserver] Store check passed',
-                                    ['productId' => $productId, 'storeId' => $storeId]
-                                );
-
                             } catch (\Throwable $storeEx) {
                                 $this->logger->error(
                                     "[BunchSaveObserver] Error for product {$productId}, store {$storeId}: " . $storeEx->getMessage(),
@@ -176,10 +173,7 @@ class BunchSaveObserver implements ObserverInterface
                     '[BunchSaveObserver] executed for products',
                     ['productIds' => $productIdsToProcess]
                 );
-            } else {
-                $this->logger->info('[BunchSaveObserver] No products to process.');
             }
-
         } catch (\Throwable $e) {
             $this->logger->critical(
                 '[BunchSaveObserver] General error: ' . $e->getMessage(),

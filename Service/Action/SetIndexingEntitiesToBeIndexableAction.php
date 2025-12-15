@@ -1,27 +1,11 @@
 <?php
-/**
- * Copyright (C) 2025 AthosCommerce <https://athoscommerce.com>
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, version 3 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-
-declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Service\Action;
 
-use AthosCommerce\Feed\Model\IndexingEntity;
 use AthosCommerce\Feed\Api\IndexingEntityRepositoryInterface;
+use AthosCommerce\Feed\Model\IndexingEntity;
 use AthosCommerce\Feed\Model\Source\Actions;
-use Magento\Framework\Api\Filter;
+use AthosCommerce\Feed\Service\Action\SetIndexingEntitiesToBeIndexableActionInterface;
 use Magento\Framework\Api\FilterBuilder;
 use Magento\Framework\Api\FilterBuilderFactory;
 use Magento\Framework\Api\Search\FilterGroup;
@@ -29,10 +13,9 @@ use Magento\Framework\Api\Search\FilterGroupBuilder;
 use Magento\Framework\Api\Search\FilterGroupBuilderFactory;
 use Magento\Framework\Api\SearchCriteriaBuilder;
 use Magento\Framework\Api\SearchCriteriaBuilderFactory;
-use AthosCommerce\Feed\Service\Action\SetIndexingEntitiesToDeleteActionInterface;
 use Psr\Log\LoggerInterface;
 
-class SetIndexingEntitiesToDeleteAction implements SetIndexingEntitiesToDeleteActionInterface
+class SetIndexingEntitiesToBeIndexableAction implements SetIndexingEntitiesToBeIndexableActionInterface
 {
     /**
      * @var IndexingEntityRepositoryInterface
@@ -64,11 +47,12 @@ class SetIndexingEntitiesToDeleteAction implements SetIndexingEntitiesToDeleteAc
      */
     public function __construct(
         IndexingEntityRepositoryInterface $indexingEntityRepository,
-        SearchCriteriaBuilderFactory $searchCriteriaBuilderFactory,
+        SearchCriteriaBuilderFactory      $searchCriteriaBuilderFactory,
         FilterBuilderFactory              $filterBuilderFactory,
         FilterGroupBuilderFactory         $filterGroupBuilderFactory,
-        LoggerInterface $logger
-    ) {
+        LoggerInterface                   $logger
+    )
+    {
         $this->searchCriteriaBuilderFactory = $searchCriteriaBuilderFactory;
         $this->indexingEntityRepository = $indexingEntityRepository;
         $this->filterBuilderFactory = $filterBuilderFactory;
@@ -87,13 +71,25 @@ class SetIndexingEntitiesToDeleteAction implements SetIndexingEntitiesToDeleteAc
         try {
             $indexingEntityIds = [];
             foreach ($indexingEntities as $indexingEntity) {
-                $indexingEntityIds[] = $indexingEntity->getId();
-                if ($indexingEntity->getLastAction() === ACTIONS::NO_ACTION) {
-                    $indexingEntity->setNextAction(Actions::NO_ACTION);
-                    $indexingEntity->setIsIndexable(false);
-                } else {
-                    $indexingEntity->setNextAction(Actions::DELETE);
+                if (
+                    $indexingEntity->getIsIndexable()
+                    && $indexingEntity->getNextAction() !== Actions::DELETE
+                ) {
+                    continue;
                 }
+                $indexingEntityIds[] = $indexingEntity->getId();
+
+                $isNextActionUpdateRequired = in_array(
+                    $indexingEntity->getLastAction(),
+                    [Actions::NO_ACTION, Actions::DELETE],
+                    true,
+                );
+                $indexingEntity->setNextAction(
+                    $isNextActionUpdateRequired
+                        ? Actions::UPSERT
+                        : Actions::NO_ACTION,
+                );
+                $indexingEntity->setIsIndexable(true);
                 $this->indexingEntityRepository->save($indexingEntity);
             }
         } catch (\Exception $exception) {
@@ -156,6 +152,7 @@ class SetIndexingEntitiesToDeleteAction implements SetIndexingEntitiesToDeleteAc
 
             $searchResult = $this->indexingEntityRepository->getList($searchCriteria);
             $indexingEntities = $searchResult->getItems();
+            unset($searchResult);
         }
 
         return $indexingEntities;

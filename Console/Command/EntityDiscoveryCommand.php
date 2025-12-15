@@ -149,7 +149,12 @@ HELP
             $dateTime = $this->dateTimeFactory->create();
             $output->writeln('<info>Execution started: ' . $dateTime->gmtDate() . '</info>');
             $this->cliOutput->setOutput($output);
-            $this->entityDiscovery->execute($storeCodes);
+            $response = $this->entityDiscovery->execute($storeCodes);
+            foreach ($response as  $storeId =>  $storeCode) {
+                $output->writeln(
+                    '<info>Discovery completed for store code: ' . $storeCode . '</info>'
+                );
+            }
 
             $this->metricCollector->setOutput($this->cliOutput);
             $output->writeln('<info>Execution ended: ' . $dateTime->gmtDate() . '</info>');
