@@ -82,11 +82,18 @@ class InventoryUpdateObserver implements ObserverInterface
                 return;
             }
 
-            $product = $this->productRepository->getById($productId, false, null, true);
-            $storeIds = $product->getStoreIds();
+            $product = $this->productRepository->getById(
+                $productId,
+                false,
+                null,
+                true
+            );
+            if(!$product || !$product->getId()) {
+                return;
+            }
+            $storeIds = method_exists($product, 'getStoreIds') ? $product->getStoreIds() : [];
 
             foreach ($storeIds as $storeId) {
-
                 try {
                     $liveIndexing = (bool)$this->scopeConfig->getValue(
                         Constants::XML_PATH_LIVE_INDEXING_ENABLED,
@@ -104,7 +111,7 @@ class InventoryUpdateObserver implements ObserverInterface
 
                     $this->baseProductObserver->execute([$productId], $nextAction);
 
-                    $this->logger->debug('Stock Update Store Check', [
+                    $this->logger->debug('[InventoryUpdateObserver] Stock Update Store Check', [
                         'product_id'    => $productId,
                         'store_id'      => $storeId,
                         'live_indexing' => $liveIndexing,
@@ -112,7 +119,7 @@ class InventoryUpdateObserver implements ObserverInterface
                     ]);
 
                 } catch (\Throwable $e) {
-                    $this->logger->error('Error processing stock for store ' . $storeId, [
+                    $this->logger->error('[InventoryUpdateObserver] Error processing stock for store ' . $storeId, [
                         'product_id' => $productId,
                         'message' => $e->getMessage(),
                     ]);
@@ -121,7 +128,7 @@ class InventoryUpdateObserver implements ObserverInterface
             }
 
         } catch (\Throwable $e) {
-            $this->logger->error('Stock observer failed', [
+            $this->logger->error('[InventoryUpdateObserver] Exception thrown', [
                 'product_id' => $productId,
                 'message' => $e->getMessage(),
             ]);

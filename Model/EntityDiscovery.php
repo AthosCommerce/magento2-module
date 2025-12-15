@@ -19,28 +19,31 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Model;
 
 use AthosCommerce\Feed\Api\EntityDiscoveryInterface;
-use AthosCommerce\Feed\Model\Feed\SpecificationBuilderInterface;
-use AthosCommerce\Feed\Service\Action\AddIndexingEntitiesActionInterface;
+use AthosCommerce\Feed\Helper\Constants;
 use AthosCommerce\Feed\Model\Api\MagentoEntityInterface;
 use AthosCommerce\Feed\Model\Api\MagentoEntityInterfaceFactory;
+use AthosCommerce\Feed\Model\Config as ConfigModel;
 use AthosCommerce\Feed\Model\CollectionProcessor;
-use AthosCommerce\Feed\Helper\Constants;
+use AthosCommerce\Feed\Model\Feed\SpecificationBuilderInterface;
+use AthosCommerce\Feed\Service\Action\AddIndexingEntitiesActionInterface;
 use Magento\Framework\Serialize\SerializerInterface;
 use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\StoreManagerInterface;
-use Magento\Framework\App\Config\ScopeConfigInterface;
 use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\RelationsProvider as ProductRelationsProvider;
 
 class EntityDiscovery implements EntityDiscoveryInterface
 {
+    private array $childParentCache = [];
+
     /**
      * @var StoreManagerInterface
      */
     private $storeManager;
     /**
-     * @var ScopeConfigInterface
+     * @var ConfigModel
      */
-    private $scopeConfig;
+    private $configModel;
     /**
      * @var LoggerInterface
      */
@@ -65,35 +68,42 @@ class EntityDiscovery implements EntityDiscoveryInterface
      * @var SerializerInterface
      */
     private $serializer;
+    /**
+     * @var ProductRelationsProvider
+     */
+    private $productRelationProvider;
 
     /**
      * @param StoreManagerInterface $storeManager
-     * @param ScopeConfigInterface $scopeConfig
+     * @param Config $configModel
      * @param LoggerInterface $logger
      * @param AddIndexingEntitiesActionInterface $addIndexingEntitiesAction
      * @param MagentoEntityInterfaceFactory $magentoEntityInterfaceFactory
      * @param \AthosCommerce\Feed\Model\CollectionProcessor $collectionProcessor
      * @param SpecificationBuilderInterface $specificationBuilder
      * @param SerializerInterface $serializer
+     * @param ProductRelationsProvider $productRelationProvider
      */
     public function __construct(
         StoreManagerInterface $storeManager,
-        ScopeConfigInterface $scopeConfig,
+        ConfigModel $configModel,
         LoggerInterface $logger,
         AddIndexingEntitiesActionInterface $addIndexingEntitiesAction,
         MagentoEntityInterfaceFactory $magentoEntityInterfaceFactory,
         CollectionProcessor $collectionProcessor,
         SpecificationBuilderInterface $specificationBuilder,
-        SerializerInterface $serializer
+        SerializerInterface $serializer,
+        ProductRelationsProvider $productRelationProvider,
     ) {
         $this->storeManager = $storeManager;
-        $this->scopeConfig = $scopeConfig;
+        $this->configModel = $configModel;
         $this->logger = $logger;
         $this->addIndexingEntitiesAction = $addIndexingEntitiesAction;
         $this->magentoEntityInterfaceFactory = $magentoEntityInterfaceFactory;
         $this->collectionProcessor = $collectionProcessor;
         $this->specificationBuilder = $specificationBuilder;
         $this->serializer = $serializer;
+        $this->productRelationProvider = $productRelationProvider;
     }
 
     /**
@@ -123,38 +133,15 @@ class EntityDiscovery implements EntityDiscoveryInterface
             if (!$store) {
                 continue;
             }
-            $storeId = $store->getId();
+            $storeId = (int)$store->getId();
 
-            $isEnabled = (bool)$this->scopeConfig->getValue(
-                Constants::XML_PATH_LIVE_INDEXING_ENABLED,
-                ScopeInterface::SCOPE_STORES,
-                $storeId
-            );
-            if (!$isEnabled) {
+            $isEnabled = $this->configModel->isLiveIndexingEnabled($storeId);
+            $siteId = $this->configModel->getSiteIdByStoreId($storeId);
+            $payload = $this->configModel->getPayloadByStoreId($storeId);
+
+            if (!$isEnabled || !$siteId || !$payload) {
                 $this->logger->info(
-                    "Found indexing disabled   for store: " . $store->getCode()
-                );
-                continue;
-            }
-            $siteId = (string)$this->scopeConfig->getValue(
-                Constants::XML_PATH_CONFIG_SITE_ID,
-                ScopeInterface::SCOPE_STORES,
-                $storeId
-            );
-            if (!$siteId) {
-                $this->logger->info(
-                    "Found  site id not found for store: " . $store->getCode()
-                );
-                continue;
-            }
-            $payload = $this->scopeConfig->getValue(
-                Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD,
-                ScopeInterface::SCOPE_STORES,
-                $storeId
-            );
-            if (!$payload) {
-                $this->logger->info(
-                    "Payload not found for store: " . $store->getCode()
+                    "Live indexing is disabled or Site Id or taskPayload not found for store: " . $store->getCode()
                 );
                 continue;
             }
@@ -169,7 +156,8 @@ class EntityDiscovery implements EntityDiscoveryInterface
             }
 
             $feedSpecification = $this->specificationBuilder->build($payload);
-            $pageSize = 1000;
+            // Set page size for processing
+            $pageSize = 10000;
             $collection = $this->collectionProcessor->getCollection($feedSpecification);
             $collection->setPageSize($pageSize);
             $pageCount = $collection->getLastPageNumber();
@@ -185,7 +173,7 @@ class EntityDiscovery implements EntityDiscoveryInterface
                     }
                     $this->logger->info(
                         sprintf(
-                            "Entity discovery processed page %d of %d for store: %s",
+                            "Entity discovery processed page (%d) of (%d) for store: %s",
                             $currentPageNumber,
                             $pageCount,
                             $store->getCode()
@@ -210,10 +198,7 @@ class EntityDiscovery implements EntityDiscoveryInterface
                     continue;
                 }
             }
-            $response[$storeId] = sprintf(
-                "Entity discovery ran successfully for store: (%s)",
-                $store->getCode()
-            );
+            $response[$storeId] = $store->getCode();
         }
 
         return $response;
@@ -230,16 +215,41 @@ class EntityDiscovery implements EntityDiscoveryInterface
         string $siteId
     ) {
         $magentoEntities = [];
+        $childIds = array_map(fn($item) => $item->getId(), $items);
+
+        $childToParentMap = [];
+        foreach ($childIds as $childId) {
+            if (isset($this->childParentCache[$childId])) {
+                $childToParentMap[$childId] = $this->childParentCache[$childId];
+            }
+        }
+
+
+        $missingChildIds = array_diff($childIds, array_keys($childToParentMap));
+        if (!empty($missingChildIds)) {
+            $configRelations = $this->productRelationProvider->getConfigurableRelationIds($missingChildIds);
+            $groupedRelations = $this->productRelationProvider->getGroupRelationIds($missingChildIds);
+
+            $relations = array_merge($configRelations, $groupedRelations);
+
+            foreach ($relations as $relation) {
+                $parentId = (int)$relation['parent_id'];
+                $childId = $relation['product_id'];
+                $childToParentMap[$childId] = $parentId;
+                $this->childParentCache[$childId] = $parentId;
+            }
+        }
+
         foreach ($items as $item) {
+            $parentId = $childToParentMap[$item->getId()] ?? 0;
             $magentoEntities[$item->getId()] = $this->magentoEntityInterfaceFactory->create([
                 'entityId' => $item->getId(),
-                'targetEntitySubtype' => $item->getDataUsingMethod('type_id'),
-                'entityParentId' => 0,
+                'entitySubtype' => $item->getTypeId() ?? 'simple',
+                'entityParentId' => $parentId,
                 'siteId' => $siteId,
                 'isIndexable' => false, //will set to indexable false, so let's the observer do the rest
             ]);
         }
-        //TODO::
         $this->addIndexingEntitiesAction->execute(
             Constants::PRODUCT_KEY,
             $magentoEntities

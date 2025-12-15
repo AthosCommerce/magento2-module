@@ -68,13 +68,13 @@ class DeleteObserver implements ObserverInterface
         try {
             $event = $observer->getEvent();
             $product = $event->getProduct();
-
-            $storeIds = $product->getStoreIds();
-
             if (!$product || !$product->getId()) {
                 return;
             }
 
+            $storeIds = method_exists($product, 'getStoreIds')
+                ? $product->getStoreIds()
+                : [];
             foreach ($storeIds as $storeId) {
                 try {
                     $liveIndexing = (bool)$this->scopeConfig->getValue(
@@ -94,22 +94,22 @@ class DeleteObserver implements ObserverInterface
                     $this->baseProductObserver->execute([$product->getId()], $nextAction);
 
                     $this->logger->debug(
-                        'DeleteObserver executed',
+                        '[DeleteObserver] Product marked for deletion: ',
                         [
                             'ids' => $product->getId(),
                             'store_id' => $storeId,
-                            'action' => $nextAction
+                            'action' => $nextAction,
                         ]
                     );
                 } catch (\Throwable $storeEx) {
                     // Handle exceptions per store so the loop continues
                     $this->logger->error(
-                        'DeleteObserver error for store',
+                        '[DeleteObserver] Exception thrown for store',
                         [
                             'product_id' => $product->getId(),
                             'store_id' => $storeId,
                             'message' => $storeEx->getMessage(),
-                            'trace' => $storeEx->getTraceAsString()
+                            'trace' => $storeEx->getTraceAsString(),
                         ]
                     );
                 }
@@ -117,10 +117,10 @@ class DeleteObserver implements ObserverInterface
         } catch (\Throwable $e) {
             // Handle general observer exceptions
             $this->logger->error(
-                'DeleteObserver general error',
+                '[DeleteObserver] Exception thrown: ',
                 [
                     'message' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString()
+                    'trace' => $e->getTraceAsString(),
                 ]
             );
         }

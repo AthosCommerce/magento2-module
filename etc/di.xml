@@ -118,6 +118,10 @@
                 type="AthosCommerce\Feed\Service\Action\SetIndexingEntitiesToUpdateAction"/>
     <preference for="AthosCommerce\Feed\Service\Action\UpdateIndexingEntitiesActionsActionInterface"
                 type="AthosCommerce\Feed\Service\Action\UpdateIndexingEntitiesActionsAction"/>
+    <preference for="AthosCommerce\Feed\Service\Action\SetIndexingEntitiesToNotBeIndexableActionInterface"
+                type="AthosCommerce\Feed\Service\Action\SetIndexingEntitiesToNotBeIndexableAction"/>
+    <preference for="AthosCommerce\Feed\Service\Action\SetIndexingEntitiesToBeIndexableActionInterface"
+                type="AthosCommerce\Feed\Service\Action\SetIndexingEntitiesToBeIndexableAction"/>
 
     <preference for="AthosCommerce\Feed\Api\ConfigUpdateInterface"
                 type="AthosCommerce\Feed\Model\Api\ConfigUpdate"/>

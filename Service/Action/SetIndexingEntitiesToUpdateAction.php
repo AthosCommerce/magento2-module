@@ -21,6 +21,13 @@ namespace AthosCommerce\Feed\Service\Action;
 use AthosCommerce\Feed\Api\IndexingEntityRepositoryInterface;
 use AthosCommerce\Feed\Model\IndexingEntity;
 use AthosCommerce\Feed\Model\Source\Actions;
+use Magento\Framework\Api\Filter;
+use Magento\Framework\Api\FilterBuilder;
+use Magento\Framework\Api\FilterBuilderFactory;
+use Magento\Framework\Api\Search\FilterGroup;
+use Magento\Framework\Api\Search\FilterGroupBuilder;
+use Magento\Framework\Api\Search\FilterGroupBuilderFactory;
+use Magento\Framework\Api\SearchCriteriaBuilder;
 use Magento\Framework\Api\SearchCriteriaBuilderFactory;
 use Psr\Log\LoggerInterface;
 
@@ -35,6 +42,14 @@ class SetIndexingEntitiesToUpdateAction implements SetIndexingEntitiesToUpdateAc
      */
     private $searchCriteriaBuilderFactory;
     /**
+     * @var FilterBuilderFactory
+     */
+    private $filterBuilderFactory;
+    /**
+     * @var FilterGroupBuilderFactory
+     */
+    private $filterGroupBuilderFactory;
+    /**
      * @var LoggerInterface
      */
     private $logger;
@@ -42,34 +57,44 @@ class SetIndexingEntitiesToUpdateAction implements SetIndexingEntitiesToUpdateAc
     /**
      * @param IndexingEntityRepositoryInterface $indexingEntityRepository
      * @param SearchCriteriaBuilderFactory $searchCriteriaBuilderFactory
+     * @param FilterBuilderFactory $filterBuilderFactory
+     * @param FilterGroupBuilderFactory $filterGroupBuilderFactory
      * @param LoggerInterface $logger
      */
     public function __construct(
         IndexingEntityRepositoryInterface $indexingEntityRepository,
-        SearchCriteriaBuilderFactory $searchCriteriaBuilderFactory,
-        LoggerInterface $logger
-    ) {
+        SearchCriteriaBuilderFactory      $searchCriteriaBuilderFactory,
+        FilterBuilderFactory              $filterBuilderFactory,
+        FilterGroupBuilderFactory         $filterGroupBuilderFactory,
+        LoggerInterface                   $logger
+    )
+    {
         $this->searchCriteriaBuilderFactory = $searchCriteriaBuilderFactory;
         $this->indexingEntityRepository = $indexingEntityRepository;
+        $this->filterBuilderFactory = $filterBuilderFactory;
+        $this->filterGroupBuilderFactory = $filterGroupBuilderFactory;
         $this->logger = $logger;
     }
 
     /**
      * @param array $entityIds
-     *
+     * @param bool $forceIndexable
      * @return void
      */
-    public function execute(array $entityIds): void
+    public function execute(array $entityIds, bool $forceIndexable = false): void
     {
         $indexingEntities = $this->getIndexingEntities(iterator_to_array($entityIds));
         try {
             $indexingEntityIds = [];
             foreach ($indexingEntities as $indexingEntity) {
-                if (!$indexingEntity->getIsIndexable()) {
+                if (!$indexingEntity->getIsIndexable() && !$forceIndexable) {
                     continue;
                 }
                 $indexingEntityIds[] = $indexingEntity->getId();
                 $indexingEntity->setNextAction(Actions::UPSERT);
+                if ($forceIndexable) {
+                    $indexingEntity->setIsIndexable(true);
+                }
                 $this->indexingEntityRepository->save($indexingEntity);
             }
         } catch (\Exception $exception) {
@@ -100,13 +125,36 @@ class SetIndexingEntitiesToUpdateAction implements SetIndexingEntitiesToUpdateAc
         $indexingEntities = [];
         $entityIds = array_filter($entityIds);
         if (!empty($entityIds)) {
+            /** @var SearchCriteriaBuilder $searchCriteriaBuilder */
             $searchCriteriaBuilder = $this->searchCriteriaBuilderFactory->create();
-            $searchCriteriaBuilder->addFilter(
-                IndexingEntity::ENTITY_ID,
-                $entityIds,
-                'in',
-            );
-            $searchCriteria = $searchCriteriaBuilder->create();
+            /** @var FilterBuilder $filterBuilder */
+            $filterBuilder = $this->filterBuilderFactory->create();
+            /** @var FilterGroupBuilder $filterGroupBuilder */
+            $filterGroupBuilder = $this->filterGroupBuilderFactory->create();
+
+            $targetIdFilter = $filterBuilder
+                ->setField(IndexingEntity::TARGET_ID)
+                ->setConditionType('in')
+                ->setValue($entityIds)
+                ->create();
+
+            $targetParentIdFilter = $filterBuilder
+                ->setField(IndexingEntity::TARGET_PARENT_ID)
+                ->setConditionType('in')
+                ->setValue($entityIds)
+                ->create();
+
+            /**
+             * @var FilterGroup $filterGroup
+             */
+            $filterGroup = $filterGroupBuilder->addFilter($targetIdFilter)
+                ->addFilter($targetParentIdFilter)
+                ->create();
+
+            $searchCriteria = $searchCriteriaBuilder
+                ->setFilterGroups([$filterGroup])
+                ->create();
+
             $searchResult = $this->indexingEntityRepository->getList($searchCriteria);
             $indexingEntities = $searchResult->getItems();
         }

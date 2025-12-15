@@ -46,8 +46,9 @@ class BaseProductObserver
     public function __construct(
         SetIndexingEntitiesToUpdateActionInterface $setIndexingEntitiesToUpdateAction,
         SetIndexingEntitiesToDeleteActionInterface $setIndexingEntitiesToDeleteAction,
-        LoggerInterface $logger
-    ) {
+        LoggerInterface                            $logger
+    )
+    {
         $this->setIndexingEntitiesToUpdateAction = $setIndexingEntitiesToUpdateAction;
         $this->setIndexingEntitiesToDeleteAction = $setIndexingEntitiesToDeleteAction;
         $this->logger = $logger;
@@ -56,17 +57,21 @@ class BaseProductObserver
     /**
      * @param array $entityIds
      * @param string $action
-     *
+     * @param bool $forceIndexable
      * @return void
      */
-    public function execute(array $entityIds, string $action)
+    public function execute(
+        array  $entityIds,
+        string $action,
+        bool   $forceIndexable = false
+    ): void
     {
         if (!$entityIds) {
             return;
         }
         switch ($action) {
             case Actions::UPSERT:
-                $this->setIndexingEntitiesToUpdateAction->execute($entityIds);
+                $this->setIndexingEntitiesToUpdateAction->execute($entityIds, $forceIndexable);
                 break;
             case Actions::DELETE:
                 $this->setIndexingEntitiesToDeleteAction->execute($entityIds);
@@ -77,5 +82,6 @@ class BaseProductObserver
                 );
                 break;
         }
+        return;
     }
 }
