@@ -81,7 +81,7 @@ class ParentInfoProvider implements DataProviderInterface
             return $products;
         }
 
-        $this->logger->info('Generating ParentImageProvider JSON for configurable products', [
+        $this->logger->info('Generating ParentInfoProvider JSON for configurable products', [
             'method' => __METHOD__,
             'format' => $feedSpecification->getFormat(),
         ]);

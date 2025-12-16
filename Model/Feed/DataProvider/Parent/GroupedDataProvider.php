@@ -150,8 +150,8 @@ class GroupedDataProvider implements DataProviderInterface
                         && method_exists($parent, 'getStatus')
                     ) {
                         $childClone['parent_status'] = $parent->getStatus()
-                            ? __('Enabled')
-                            : __('Disabled');
+                            ? __('Enabled')->getText()
+                            : __('Disabled')->getText();
                     }
 
                     if (!in_array('parent_type_id', $ignoredFields, true)

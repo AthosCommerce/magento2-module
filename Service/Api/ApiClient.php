@@ -103,7 +103,7 @@ class ApiClient
 
         if ($sizeInBytes > (1024 * 1024)) {
             $this->logger->error(
-                "Payload exceeds limit",
+                sprintf("[LiveIndexing] Payload exceeds limit for (%s)", $topic),
                 [
                     'endpointUrl' => $endpointUrl,
                     'storeCode' => $storeCode,
@@ -129,14 +129,14 @@ class ApiClient
         $this->client->setHeaders($headers);
 
         $this->logger->info(
-            sprintf("Sending (%s) API Request", $topic),
+            sprintf("Initiating API request for %s", $topic),
             [
                 'endpointUrl' => $endpointUrl,
                 'siteId' => $siteId,
                 'storeCode' => $storeCode,
                 'headers' => $headers,
-                'payload' => $payload,
-                'length' => $sizeInBytes . ' bytes'
+                'length' => $sizeInBytes . ' bytes',
+                'payload' => $payload
             ]
         );
         $this->client->setOptions($options);
@@ -148,14 +148,12 @@ class ApiClient
         );*/
 
         $httpStatusCode = $this->client->getStatus();
-
         $this->logger->info(
-            sprintf("Received response for topic(%s)", $topic),
+            sprintf("API Response status:%s | topic: %s", $httpStatusCode, $topic),
             [
-                'httpStatusCode' => $httpStatusCode,
+                'endpointUrl' => $endpointUrl,
                 'siteId' => $siteId,
                 'storeCode' => $storeCode,
-                'endpointUrl' => $endpointUrl,
                 'responseBody' => $responseBody,
             ]
         );
@@ -164,7 +162,7 @@ class ApiClient
             return true;
         }
 
-        $this->logger->warning("HTTP $httpStatusCode | Response: $responseBody");
+        $this->logger->error("HTTP $httpStatusCode | Response: $responseBody");
 
         return false;
     }

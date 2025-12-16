@@ -39,9 +39,10 @@ class UpsertEntityHandler implements UpsertEntityHandlerInterface
      * @param LoggerInterface $logger
      */
     public function __construct(
-        ApiClient $client,
+        ApiClient       $client,
         LoggerInterface $logger
-    ) {
+    )
+    {
         $this->client = $client;
         $this->logger = $logger;
     }
@@ -53,6 +54,10 @@ class UpsertEntityHandler implements UpsertEntityHandlerInterface
      */
     public function process(array $payload): bool
     {
+        $entityId = 0;
+        if (!empty($payload['entity_id'])) {
+            $entityId = (int)$payload['entity_id'];
+        }
         try {
             return $this->client->send(
                 $payload,
@@ -60,8 +65,10 @@ class UpsertEntityHandler implements UpsertEntityHandlerInterface
             );
         } catch (\Throwable $e) {
             $this->logger->error(
-                "[UpsertEntity] Failed",
+                sprintf(
+                    "[UpsertEntity] Failed for entityId: (%s)", $entityId),
                 [
+                    'payload' => $payload,
                     'error' => $e->getMessage(),
                 ]
             );

@@ -151,7 +151,7 @@ class IndexingEntityRepository implements IndexingEntityRepositoryInterface
             $collection,
         );
         $this->logger->debug(
-            'Method: {method}, Indexing Entity getList Query: {query}',
+            'Indexing Entity getList Query: {query}',
             [
                 'method' => __METHOD__,
                 'line' => __LINE__,
@@ -270,7 +270,7 @@ class IndexingEntityRepository implements IndexingEntityRepositoryInterface
     /**
      * @param string|null $entityType
      * @param string|null $siteId
-     * @param Actions|null $nextAction
+     * @param string|null $nextAction
      * @param bool|null $isIndexable
      *
      * @return int
@@ -278,7 +278,7 @@ class IndexingEntityRepository implements IndexingEntityRepositoryInterface
     public function count(
         ?string $entityType = null,
         ?string $siteId = null,
-        ?Actions $nextAction = null,
+        ?string $nextAction = null,
         ?bool $isIndexable = null,
     ): int {
         $connection = $this->indexingEntityResourceModel->getConnection();
@@ -296,7 +296,7 @@ class IndexingEntityRepository implements IndexingEntityRepositoryInterface
             $select->where(IndexingEntity::TARGET_ENTITY_TYPE . ' = ?', $entityType);
         }
         if ($nextAction) {
-            $select->where(IndexingEntity::NEXT_ACTION . ' = ?', $nextAction->value);
+            $select->where(IndexingEntity::NEXT_ACTION . ' = ?', $nextAction);
         }
         if (null !== $isIndexable) {
             $select->where(IndexingEntity::IS_INDEXABLE . ' = ?',

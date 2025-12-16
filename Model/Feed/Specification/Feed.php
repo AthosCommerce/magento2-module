@@ -381,4 +381,32 @@ class Feed extends AbstractExtensibleObject implements FeedSpecificationInterfac
     {
         return $this->setData(self::SETTING_NAME_VARIANT_ADDITIONAL_FIELDS, $fields);
     }
+
+    /**
+     * @return string
+     */
+    public function getIndexingMode(): string
+    {
+        return $this->_get(self::INDEXING_MODE_KEY) ?? self::MODE_BULK;
+    }
+
+    /**
+     * @param string $value
+     * @return FeedSpecificationInterface
+     */
+    public function setIndexingMode(string $value): FeedSpecificationInterface
+    {
+        return $this->setData(self::INDEXING_MODE_KEY, $value);
+    }
+
+    /**
+     * @return array
+     */
+    public function getAdditionalIgnoreFieldsByMode(): array
+    {
+        if ($this->getIndexingMode() === self::LIVE_MODE) {
+            return self::LIVE_INDEXING_IGNORE_DATA_PROVIDERS;
+        }
+        return self::BULK_INDEXING_IGNORE_DATA_PROVIDERS;
+    }
 }

@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Model\LiveIndexing;
 
+use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Api\LiveIndexing\DeleteEntityHandlerInterface;
 use AthosCommerce\Feed\Api\LiveIndexing\UpsertEntityHandlerInterface;
 use AthosCommerce\Feed\Api\RetryManagerInterface;
@@ -93,20 +94,21 @@ class Processor
      * @param ContextManagerInterface $contextManager
      */
     public function __construct(
-        IndexingEntityProvider $indexingEntityProvider,
-        LoggerInterface $logger,
-        StoreManagerInterface $storeManager,
-        ConfigModel $config,
+        IndexingEntityProvider              $indexingEntityProvider,
+        LoggerInterface                     $logger,
+        StoreManagerInterface               $storeManager,
+        ConfigModel                         $config,
         UpdateIndexingEntitiesActionsAction $updateIndexingEntitiesActionsAction,
-        DeleteEntityHandlerInterface $deleteHandler,
-        UpsertEntityHandlerInterface $upsertHandler,
-        CollectionProcessor $collectionProcessor,
-        ItemsGenerator $itemsGenerator,
-        SpecificationBuilderInterface $specificationBuilder,
-        SerializerInterface $serializer,
-        RetryManagerInterface $retryManager,
-        ContextManagerInterface $contextManager
-    ) {
+        DeleteEntityHandlerInterface        $deleteHandler,
+        UpsertEntityHandlerInterface        $upsertHandler,
+        CollectionProcessor                 $collectionProcessor,
+        ItemsGenerator                      $itemsGenerator,
+        SpecificationBuilderInterface       $specificationBuilder,
+        SerializerInterface                 $serializer,
+        RetryManagerInterface               $retryManager,
+        ContextManagerInterface             $contextManager
+    )
+    {
         $this->indexingEntityProvider = $indexingEntityProvider;
         $this->logger = $logger;
         $this->storeManager = $storeManager;
@@ -140,10 +142,11 @@ class Processor
 
         $this->logger->info(
             sprintf(
-                '[LiveIndexing] initiated for store "%s", siteId:%s, requests:%s',
+                '[LiveIndexing] Initiated for store:%s | siteId:%s | requests:%s | maxLimit:%s',
                 $storeCode,
                 $siteId,
-                $perMinute
+                $perMinute,
+                $maxLimit
             ),
         );
 
@@ -161,9 +164,9 @@ class Processor
 
         $this->logger->info(
             sprintf(
-                '[LiveIndexing] Total delete records(%s) found for store(%s).',
-                $deleteCount,
-                $storeCode
+                '[LiveIndexing] Delete IDs summary | Store: %s | Count: %s',
+                $storeCode,
+                $deleteCount
             ),
         );
 
@@ -183,11 +186,14 @@ class Processor
         } else {
             $remainingRequests = (int)max(0, $maxLimit - $deleteCount);
             if ($remainingRequests > 0) {
-                $this->logger->info('[LiveIndexing] Fetching indexable update ids.', [
-                    'siteId' => $siteId,
-                    'store' => $storeCode,
-                    'remainingRequests' => $remainingRequests,
-                ]);
+                $this->logger->info(
+                    '[LiveIndexing] Fetching indexable Update IDs',
+                    [
+                        'siteId' => $siteId,
+                        'store' => $storeCode,
+                        'remainingRequests' => $remainingRequests,
+                    ]
+                );
 
                 $updateProductIds = $this->indexingEntityProvider->get(
                     null,
@@ -200,10 +206,10 @@ class Processor
                 );
                 $this->logger->info(
                     sprintf(
-                        '[LiveIndexing] Total update records(%s) found for store(%s) siteId(%s).',
-                        count($updateProductIds),
+                        '[LiveIndexing] Update IDs summary | Store: %s | SiteId: %s | Count: %s',
                         $storeCode,
-                        $siteId
+                        $siteId,
+                        count($updateProductIds)
                     ),
                 );
             }
@@ -266,7 +272,7 @@ class Processor
                 IndexingEntity::TARGET_ID
             );
             $this->logger->info(
-                '[LiveIndexing] DELETE mark done completed',
+                '[LiveIndexing][DELETE] Action updates completed successfully',
                 [
                     'siteId' => $siteId,
                     'store' => $storeCode,
@@ -298,12 +304,20 @@ class Processor
             }
 
             if (!is_array($payloadConfig)) {
-                $this->logger->error('Invalid payload config type', ['store' => $storeCode]);
+                $this->logger->error(
+                    'Invalid payload config type',
+                    [
+                        'store' => $storeCode,
+                        'payloadConfig' => $payloadConfig,
+                        'getType' => gettype($payloadConfig),
+                    ]
+                );
 
                 return 0;
             }
 
             $feedSpecification = $this->specificationBuilder->build($payloadConfig);
+            $feedSpecification->setIndexingMode(FeedSpecificationInterface::LIVE_MODE);
             $collection = $this->collectionProcessor->getCollection($feedSpecification);
             $collection->addFieldToFilter('entity_id', ['in' => $magentoEntityIds]);
             $collection->setPageSize(min(count($magentoEntityIds), self::MAX_DB_FETCH));
@@ -352,8 +366,8 @@ class Processor
                         continue;
                     }
                     try {
-                        $singleOk = $this->upsertHandler->process($updateProduct);
                         $id = $this->extractEntityId($updateProduct);
+                        $singleOk = $this->upsertHandler->process($updateProduct);
                         if ($singleOk) {
                             $successUpdateIds[] = $id;
                         } else {
@@ -400,7 +414,7 @@ class Processor
                 Actions::UPSERT,
                 IndexingEntity::TARGET_ID
             );
-            $this->logger->info('[LiveIndexing] UPDATE mark done completed',
+            $this->logger->info('[LiveIndexing][UPDATE] Action updates completed successfully',
                 [
                     'siteId' => $siteId,
                     'store' => $storeCode,
@@ -410,7 +424,7 @@ class Processor
         }
 
         $totalSuccessCount = count($successDeleteIds + $successUpdateIds);
-        $this->logger->info('[LiveIndexing] completed.',
+        $this->logger->info('[LiveIndexing] Summary',
             [
                 'siteId' => $siteId,
                 'store' => $storeCode,
