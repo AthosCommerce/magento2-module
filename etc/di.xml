@@ -136,6 +136,9 @@
     <preference for="AthosCommerce\Feed\Api\RetryManagerInterface"
                 type="AthosCommerce\Feed\Model\LiveIndexing\RetryManager" />
 
+    <preference for="AthosCommerce\Feed\Api\Data\ConfigItemInterface"
+                type="AthosCommerce\Feed\Model\Data\ConfigItem" />
+
     <type name="AthosCommerce\Feed\Model\Task\TypeList">
         <arguments>
             <argument name="types" xsi:type="array">

@@ -2,12 +2,13 @@
 
 namespace AthosCommerce\Feed\Api;
 
+use AthosCommerce\Feed\Api\Data\ConfigItemInterface;
+
 interface ConfigUpdateInterface
 {
     /**
      * @param string $module
-     * @param string $path
-     * @param string $value
+     * @param \AthosCommerce\Feed\Api\Data\ConfigItemInterface[] $configs
      * @param string $scope
      * @param int $scopeId
      *
@@ -15,10 +16,9 @@ interface ConfigUpdateInterface
      */
     public function update(
         string $module,
-        string $path,
-        string $value,
-        string $scope = "default",
-        int $scopeId = 0
+        array  $configs,
+        string $scope,
+        int    $scopeId
     ): array;
 
 }

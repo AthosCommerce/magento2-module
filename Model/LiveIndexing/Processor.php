@@ -284,6 +284,7 @@ class Processor
         $updatePayloads = [];
         $magentoEntityIds = [];
         if (!empty($updateProductIds)) {
+            $startTimestamp = microtime(true);
             $updateIds = [];
             foreach ($updateProductIds as $updateRecord) {
                 if (method_exists($updateRecord, 'getTargetId')) {
@@ -325,20 +326,30 @@ class Processor
 
             $this->collectionProcessor->processAfterLoad($collection, $feedSpecification);
             $this->logger->debug(
-                '[Live Indexing][Update][Collection Query]',
+                '[LiveIndexing][Update][Collection Query]',
                 [
                     'siteId' => $siteId,
                     'store' => $storeCode,
                     'query' => $collection->getSelect()->__toString(),
+                    'timeTakenForCollection' => microtime(true) - $startTimestamp,
                 ]
             );
             $this->itemsGenerator->resetDataProviders($feedSpecification);
+            $startTimestamp = microtime(true);
             $items = $this->itemsGenerator->generate($collection->getItems(), $feedSpecification);
             $this->itemsGenerator->resetDataProvidersAfterFetchItems($feedSpecification);
             $this->contextManager->setContextFromSpecification($feedSpecification);
             foreach ($items as $item) {
                 $updatePayloads[] = $item;
             }
+            $this->logger->debug(
+                '[LiveIndexing][Update][ItemGeneration]',
+                [
+                    'siteId' => $siteId,
+                    'store' => $storeCode,
+                    'timeTakenForItemGeneration' => microtime(true) - $startTimestamp,
+                ]
+            );
         }
 
         $successUpdateIds = [];
