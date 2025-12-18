@@ -39,9 +39,10 @@ class DeleteEntityHandler implements DeleteEntityHandlerInterface
      * @param LoggerInterface $logger
      */
     public function __construct(
-        ApiClient $client,
+        ApiClient       $client,
         LoggerInterface $logger
-    ) {
+    )
+    {
         $this->client = $client;
         $this->logger = $logger;
     }
@@ -60,9 +61,8 @@ class DeleteEntityHandler implements DeleteEntityHandlerInterface
             );
         } catch (\Throwable $e) {
             $this->logger->error(
-                "[DeleteEntity] Failed",
+                sprintf("[DeleteEntity] Failed for entityId: (%s)", $id),
                 [
-                    'entity_id' => $id,
                     'error' => $e->getMessage(),
                 ]
             );

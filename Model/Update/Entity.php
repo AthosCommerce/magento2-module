@@ -126,12 +126,15 @@ class Entity implements EntityInterface
         if (is_int($value)) {
             return;
         }
+        $debugType = function_exists('get_debug_type')
+            ? get_debug_type($value)
+            : gettype($value);
         throw new \InvalidArgumentException(
             sprintf(
                 'Invalid value supplied for %s at position %s. Expects int, received %s',
                 $attribute,
                 $key,
-                get_debug_type($value),
+                $debugType,
             ),
         );
     }

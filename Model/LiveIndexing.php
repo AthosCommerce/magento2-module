@@ -54,10 +54,11 @@ class LiveIndexing implements LiveIndexingInterface
      */
     public function __construct(
         StoreManagerInterface $storeManager,
-        ConfigModel $config,
-        Processor $processor,
-        LoggerInterface $logger
-    ) {
+        ConfigModel           $config,
+        Processor             $processor,
+        LoggerInterface       $logger
+    )
+    {
         $this->storeManager = $storeManager;
         $this->config = $config;
         $this->processor = $processor;
@@ -93,46 +94,53 @@ class LiveIndexing implements LiveIndexingInterface
             }
             $storeId = (int)$store->getId();
             $storeCode = $store->getCode();
-            $isEnabled = $this->config->isLiveIndexingEnabled($storeId);
-            if (!$isEnabled) {
-                $this->logger->info(
-                    "Found indexing disabled   for store: " . $storeCode
-                );
-                continue;
-            }
+            $isValid = $this->shouldLiveIndexingProcess($storeId);
             $siteId = $this->config->getSiteIdByStoreId($storeId);
-            if (!$siteId) {
+            if ($isValid === false) {
                 $this->logger->info(
-                    "Found site id not found for store: " . $storeCode
-                );
-                continue;
-            }
-            $endPoint = $this->config->getEndpointByStoreId($storeId);
-            if (!$endPoint) {
-                $this->logger->error(
-                    "Missing API Endpoint config for store: " . $storeCode
-                );
-                continue;
-            }
-            $shopDomain = $this->config->getShopDomainByStoreId($storeId);
-            if (!$shopDomain) {
-                $this->logger->error(
-                    "Missing Shop Domain config for store: " . $storeCode
+                    "[LiveIndexing] Configuration incomplete for store: " . $storeCode,
+                    [
+                        'endpoint' => $this->config->getEndpointByStoreId($storeId),
+                        'shopomain' => $this->config->getShopDomainByStoreId($storeId),
+                        'status' => $this->config->isLiveIndexingEnabled($storeId),
+                        'siteId' => $siteId,
+                    ]
                 );
                 continue;
             }
             $this->logger->info(
-                "Processing start for store: " . $storeCode . " with Site ID: " . $siteId
+                sprintf(
+                    "[LiveIndexing] Processing start for store:%s | SiteID:%s",
+                    $storeCode,
+                    $siteId
+                )
             );
             $processCount[$storeCode] = $this->processor->execute(
                 $store,
                 $siteId
             );
             $this->logger->info(
-                "Processing completed for store: " . $storeCode . " with Site ID: " . $siteId
+                sprintf(
+                    "[LiveIndexing] Processing completed for store:%s | SiteID:%s",
+                    $storeCode,
+                    $siteId
+                )
             );
         }
 
         return $processCount;
+    }
+
+    /**
+     * @param int $storeId
+     *
+     * @return bool
+     */
+    private function shouldLiveIndexingProcess(int $storeId): bool
+    {
+        return $this->config->getEndpointByStoreId($storeId)
+            && $this->config->getShopDomainByStoreId($storeId)
+            && $this->config->isLiveIndexingEnabled($storeId)
+            && $this->config->getSiteIdByStoreId($storeId);
     }
 }

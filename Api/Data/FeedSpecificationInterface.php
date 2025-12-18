@@ -99,6 +99,14 @@ interface FeedSpecificationInterface extends ExtensibleDataInterface
      *
      */
     const SETTING_NAME_VARIANT_ADDITIONAL_FIELDS = 'variant_additional_fields';
+
+    const INDEXING_MODE_KEY = 'indexing_mode';
+    const BULK_MODE = 'bulk';
+    const LIVE_MODE = 'live';
+
+    //Define data providers to ignore for each indexing mode
+    const BULK_INDEXING_IGNORE_DATA_PROVIDERS = ['__group_by_swatch'];
+    const LIVE_INDEXING_IGNORE_DATA_PROVIDERS = ['__origin_timestamp'];
     /**
      * @return string|null
      */
@@ -318,5 +326,19 @@ interface FeedSpecificationInterface extends ExtensibleDataInterface
      * @return FeedSpecificationInterface
      */
     public function setVariantAdditionalFields(array $fields) : self;
+    /**
+     * @return string|null
+     */
+    public function getIndexingMode() : ?string;
 
+    /**
+     * @param string $url
+     * @return FeedSpecificationInterface
+     */
+    public function setIndexingMode(string $url) : self;
+
+    /**
+     * @return array
+     */
+    public function getAdditionalIgnoreFieldsByMode(): array;
 }

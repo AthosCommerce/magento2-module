@@ -88,6 +88,7 @@ class ApiClient
         string $topic
     ): bool
     {
+        $startTime = microtime(true);
         $store = $this->storeContextManager->getStoreFromContext();
         $storeId = (int)$store->getId();
         $storeCode = $store->getCode();
@@ -101,14 +102,22 @@ class ApiClient
         $jsonPayload = $this->jsonSerializer->serialize($payload);
         $sizeInBytes = strlen($jsonPayload);
 
+        $headers = [
+            'Content-Type' => 'application/json',
+            'X-Topic' => $topic,
+            'X-Shop-Domain' => $shopDomain,
+            'X-Hmac-Sha256' => $hmac,
+        ];
+        $maskedHeaders = $this->applyMask($headers);
+
         if ($sizeInBytes > (1024 * 1024)) {
             $this->logger->error(
-                "Payload exceeds limit",
+                sprintf("[LiveIndexing] Payload exceeds limit for (%s)", $topic),
                 [
                     'endpointUrl' => $endpointUrl,
                     'storeCode' => $storeCode,
                     'siteId' => $siteId,
-                    'headers' => $headers,
+                    'headers' => $maskedHeaders,
                     'payload' => $payload,
                     'length' => $sizeInBytes . ' bytes'
                 ]
@@ -119,43 +128,35 @@ class ApiClient
             hash_hmac('sha256', $jsonPayload, $secretKey, true)
         );
 
-        $headers = [
-            'Content-Type' => 'application/json',
-            'X-Topic' => $topic,
-            'X-Shop-Domain' => $shopDomain,
-            'X-Hmac-Sha256' => $hmac,
-        ];
+
         $options = [];
         $this->client->setHeaders($headers);
 
         $this->logger->info(
-            sprintf("Sending (%s) API Request", $topic),
+            sprintf("Initiating API request for %s", $topic),
             [
                 'endpointUrl' => $endpointUrl,
                 'siteId' => $siteId,
                 'storeCode' => $storeCode,
-                'headers' => $headers,
-                'payload' => $payload,
-                'length' => $sizeInBytes . ' bytes'
+                'headers' => $maskedHeaders,
+                'length' => $sizeInBytes . ' bytes',
+                'payload' => $payload
             ]
         );
         $this->client->setOptions($options);
 
         $this->client->post($endpointUrl, $jsonPayload);
         $responseBody = $this->client->getBody();
-        /*$result = $this->jsonSerializer->unserialize(
-            $responseBody
-        );*/
-
+        $endTime = microtime(true);
+        $durationInSeconds = $endTime - $startTime;
         $httpStatusCode = $this->client->getStatus();
-
         $this->logger->info(
-            sprintf("Received response for topic(%s)", $topic),
+            sprintf("API Response status:%s | topic: %s", $httpStatusCode, $topic),
             [
-                'httpStatusCode' => $httpStatusCode,
+                'endpointUrl' => $endpointUrl,
+                'durationInSeconds' => $durationInSeconds,
                 'siteId' => $siteId,
                 'storeCode' => $storeCode,
-                'endpointUrl' => $endpointUrl,
                 'responseBody' => $responseBody,
             ]
         );
@@ -164,26 +165,23 @@ class ApiClient
             return true;
         }
 
-        $this->logger->warning("HTTP $httpStatusCode | Response: $responseBody");
+        $this->logger->error("HTTP $httpStatusCode | Response: $responseBody");
 
         return false;
     }
 
     /**
-     * @param array $headers
+     * @param array $values
      *
      * @return array
      */
-    private function applyMask(array $headers)
+    private function applyMask(array $values)
     {
-        try {
-            $headers = str_replace($this->maskFields, '***********', $header);
-        } catch (\Exception $e) {
-            $this->logger->error(
-                sprintf("Exception while masking: %s", $e->getMessage())
-            );
+        foreach ($this->maskFields as $field) {
+            if (isset($values[$field])) {
+                $values[$field] = substr($values[$field], 0, 6) . '******';
+            }
         }
-
-        return $headers;
+        return $values;
     }
 }

@@ -136,6 +136,9 @@
     <preference for="AthosCommerce\Feed\Api\RetryManagerInterface"
                 type="AthosCommerce\Feed\Model\LiveIndexing\RetryManager" />
 
+    <preference for="AthosCommerce\Feed\Api\Data\ConfigItemInterface"
+                type="AthosCommerce\Feed\Model\Data\ConfigItem" />
+
     <type name="AthosCommerce\Feed\Model\Task\TypeList">
         <arguments>
             <argument name="types" xsi:type="array">
@@ -505,7 +508,16 @@
             <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
         </arguments>
     </type>
-
+    <type name="AthosCommerce\Feed\Api\LiveIndexing\UpsertEntityHandlerInterface">
+        <arguments>
+            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
+        </arguments>
+    </type>
+    <type name="AthosCommerce\Feed\Api\LiveIndexing\DeleteEntityHandlerInterface">
+        <arguments>
+            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
+        </arguments>
+    </type>
 
     <virtualType name="AthosCommerceFeedGenerateFeedConfigurableChildStorage" type="AthosCommerce\Feed\Model\Feed\DataProvider\Product\ChildStorage"/>
 

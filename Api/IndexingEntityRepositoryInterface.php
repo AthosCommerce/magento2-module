@@ -81,7 +81,7 @@ interface IndexingEntityRepositoryInterface
     /**
      * @param string|null $entityType
      * @param string|null $siteId
-     * @param Actions|null $nextAction
+     * @param string|null $nextAction
      * @param bool|null $isIndexable
      *
      * @return int
@@ -89,7 +89,7 @@ interface IndexingEntityRepositoryInterface
     public function count(
         ?string $entityType = null,
         ?string $siteId = null,
-        ?Actions $nextAction = null,
+        ?string $nextAction = null,
         ?bool $isIndexable = null,
     ): int;
 

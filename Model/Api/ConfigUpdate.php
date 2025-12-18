@@ -31,17 +31,17 @@ class ConfigUpdate implements ConfigUpdateInterface
      * @param EncryptorInterface $encryptor
      */
     public function __construct(
-        WriterInterface $configWriter,
+        WriterInterface    $configWriter,
         EncryptorInterface $encryptor
-    ) {
+    )
+    {
         $this->configWriter = $configWriter;
         $this->encryptor = $encryptor;
     }
 
     /**
      * @param string $module
-     * @param string $path
-     * @param string $value
+     * @param \AthosCommerce\Feed\Api\Data\ConfigItemInterface[] $configs
      * @param string $scope
      * @param int $scopeId
      *
@@ -49,93 +49,121 @@ class ConfigUpdate implements ConfigUpdateInterface
      */
     public function update(
         string $module,
-        string $path,
-        string $value,
-        string $scope = "default",
-        int $scopeId = 0
-    ): array {
-        try {
-            if ($module !== self::MODULE_NAME) {
-                $message = sprintf(
-                    "Saving config is only allowed for module %s. Provided: %s",
-                    self::MODULE_NAME,
-                    $module
-                );
-                throw new LocalizedException(__($message));
-            }
+        array  $configs,
+        string $scope,
+        int    $scopeId,
+    ): array
+    {
 
-            switch ($path) {
-                case Constants::XML_PATH_LIVE_INDEXING_ENABLED:
-                    if (!in_array($value, self::ALLOWED_INDEXING_VALUES, true)) {
-                        throw new LocalizedException(
-                            __("Invalid value '%1' for %2. Allowed: 0 or 1.", $value, $path)
-                        );
-                    }
-                    break;
-
-                case Constants::XML_PATH_LIVE_INDEXING_SYNC_CRON_EXPR:
-                    $this->validateCronExpression($value);
-                    break;
-
-                case Constants::XML_PATH_CONFIG_ENDPOINT:
-                    $this->validateEndpoint($value);
-                    break;
-
-                case Constants::XML_PATH_LIVE_INDEXING_PER_MINUTE:
-                case Constants::XML_PATH_LIVE_INDEXING_CHUNK_PER_SIZE:
-                    $this->validateNumber($value);
-                    break;
-
-                case Constants::XML_PATH_CONFIG_SITE_ID:
-                case Constants::XML_PATH_CONFIG_SHOP_DOMAIN:
-                case Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD:
-                case Constants::XML_PATH_CONFIG_FEED_ID:
-                    $this->validateString($value);
-                    break;
-
-                case Constants::XML_PATH_CONFIG_SECRET_KEY:
-                    $this->validateSecretKey($value);
-                    $value = $this->encryptor->encrypt($value);
-                    break;
-
-                default:
-                    $this->validateAthosCommercePath($path, $value);
-                    throw new LocalizedException(
-                        __(
-                            "Invalid path '%1' found. Only athos module configuration allowed.",
-                            $path
-                        )
-                    );
-                    break;
-            }
-
-            // Save to core_config_data
-            $this->configWriter->save(
-                $path,
-                $value,
-                $scope,
-                $scopeId
+        if ($module !== self::MODULE_NAME) {
+            $message = sprintf(
+                "Saving config is only allowed for module %s. Provided: %s",
+                self::MODULE_NAME,
+                $module
             );
+            throw new LocalizedException(__($message));
+        }
 
-            return [
-                'data' => [
-                    'success' => true,
+        if ($scope !== 'default' && $scopeId === 0) {
+            $message = sprintf(
+                "Saving config for scopeId=0 only allowed for default scope. Provided: %s",
+                $scope
+            );
+            throw new LocalizedException(__($message));
+        }
+
+        $results = [];
+
+        foreach ($configs as $config) {
+            if (!$config->getPath() || !$config->getValue()) {
+                $results[] = [
+                    'success' => false,
+                    'message' => 'Missing path or value'
+                ];
+                continue;
+            }
+
+            try {
+                $path = $config->getPath();
+                $value = $config->getValue();
+
+                $this->validateAthosCommercePath($path, $value);
+
+                switch ($path) {
+                    case Constants::XML_PATH_LIVE_INDEXING_ENABLED:
+                        if (!in_array($value, self::ALLOWED_INDEXING_VALUES, true)) {
+                            throw new LocalizedException(
+                                __("Invalid value '%1' for %2. Allowed: 0 or 1.", $value, $path)
+                            );
+                        }
+                        break;
+
+                    case Constants::XML_PATH_LIVE_INDEXING_SYNC_CRON_EXPR:
+                        $this->validateCronExpression($value);
+                        break;
+
+                    case Constants::XML_PATH_CONFIG_ENDPOINT:
+                        $this->validateEndpoint($value);
+                        break;
+
+                    case Constants::XML_PATH_LIVE_INDEXING_PER_MINUTE:
+                    case Constants::XML_PATH_LIVE_INDEXING_CHUNK_PER_SIZE:
+                        $this->validateNumber($value);
+                        break;
+
+                    case Constants::XML_PATH_CONFIG_SITE_ID:
+                    case Constants::XML_PATH_CONFIG_SHOP_DOMAIN:
+                    case Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD:
+                    case Constants::XML_PATH_CONFIG_FEED_ID:
+                        $this->validateString($value);
+                        break;
+
+                    case Constants::XML_PATH_CONFIG_SECRET_KEY:
+                        $this->validateSecretKey($value);
+                        $value = $this->encryptor->encrypt($value);
+                        break;
+                    default:
+                        throw new LocalizedException(
+                            __(
+                                "Invalid path '%1' found. Only athos module configuration allowed.",
+                                $path
+                            )
+                        );
+                        break;
+                }
+
+                $this->configWriter->save(
+                    $path,
+                    $value,
+                    $scope,
+                    $scopeId
+                );
+                $results[] = [
                     'path' => $path,
                     'value' => $value,
-                    'scope' => $scope,
-                    'scope_id' => $scopeId,
-                    'message' => 'Config saved successfully',
-                ],
-            ];
-        } catch (LocalizedException $e) {
-            // Only return the message
-            return [
-                'data' => [
+                    'success' => true
+                ];
+            } catch (LocalizedException $e) {
+                $results[] = [
+                    'path' => $path,
+                    'value' => $value,
                     'success' => false,
-                    'message' => $e->getMessage(),
-                ],
-            ];
+                    'message' => $e->getMessage()
+                ];
+                continue;
+            }
         }
+
+        return [
+            'data' => [
+                'success' => true,
+                'count' => count($results),
+                'message' => "Config updated successfully. Flush the Magento cache if required.",
+                'results' => $results,
+                'scope' => $scope,
+                'scopeId' => $scopeId
+            ]
+        ];
     }
 
     /**

@@ -97,13 +97,16 @@ class ValueProcessor implements ValueProcessorInterface
                 return $this->json->serialize($value);
             }
 
+            $debugType = function_exists('get_debug_type')
+                ? get_debug_type($result)
+                : gettype($result);
             $this->logger->error(
                 'Unexpected non-scalar value: ',
                 [
                     'method' => __METHOD__,
                     'entityId' => $product->getEntityId(),
                     'code' => $attributeCode,
-                    'type' => get_debug_type($value),
+                    'type' => $debugType,
                     'value' => $value,
                 ],
             );

@@ -16,14 +16,14 @@ class IndexingEntityValidator extends AbstractValidator implements ValidatorInte
      */
     private array $fieldTypes = [
         IndexingEntity::TARGET_ENTITY_TYPE => 'string',
-        IndexingEntity::TARGET_ID => 'int',
-        IndexingEntity::TARGET_PARENT_ID => 'int|null',
+        IndexingEntity::TARGET_ID => 'int|integer',
+        IndexingEntity::TARGET_PARENT_ID => 'int|integer|null|NULL',
         IndexingEntity::SITE_ID => 'string',
-        IndexingEntity::LOCK_TIMESTAMP => 'int|string|null',
+        IndexingEntity::LOCK_TIMESTAMP => 'int|integer|string|null|NULL',
         IndexingEntity::LAST_ACTION => 'string',
-        IndexingEntity::LAST_ACTION_TIMESTAMP => 'int|string|null',
+        IndexingEntity::LAST_ACTION_TIMESTAMP => 'int|string|null|NULL',
         IndexingEntity::NEXT_ACTION => 'string',
-        IndexingEntity::IS_INDEXABLE => 'bool',
+        IndexingEntity::IS_INDEXABLE => 'bool|boolean',
     ];
     /**
      * @var int[]
@@ -61,7 +61,7 @@ class IndexingEntityValidator extends AbstractValidator implements ValidatorInte
             __(
                 'Invalid type provided. Expected %1, received %2.',
                 IndexingEntityInterface::class,
-                get_debug_type($value),
+                gettype($value),
             )->render(),
         ]);
 
@@ -78,9 +78,11 @@ class IndexingEntityValidator extends AbstractValidator implements ValidatorInte
         $return = true;
         foreach ($this->fieldTypes as $field => $allowedTypes) {
             $allowedTypesArray = explode('|', $allowedTypes);
-            $dataType = get_debug_type(
-                $indexingEntity->getData($field), //@phpstan-ignore-line
-            );
+
+            $dataType = function_exists('get_debug_type') //@phpstan-ignore-line
+                ? get_debug_type($indexingEntity->getData($field)) //@phpstan-ignore-line
+                : gettype($indexingEntity->getData($field)); //@phpstan-ignore-line
+
             if (!in_array($dataType, $allowedTypesArray, true)) {
                 $return = false;
                 $this->_addMessages([

@@ -106,7 +106,11 @@ class ItemsGenerator
         }
 
         $this->systemFieldsList->add('product_model');
-        $dataProviders = $this->dataProviderPool->get($feedSpecification->getIgnoreFields());
+        $ignoreFields = array_merge(
+            $feedSpecification->getIgnoreFields(),
+            $feedSpecification->getAdditionalIgnoreFieldsByMode()
+        );
+        $dataProviders = $this->dataProviderPool->get($ignoreFields);
         foreach ($dataProviders as $dataProvider) {
             $data = $dataProvider->getData($data, $feedSpecification);
         }
