@@ -3,6 +3,7 @@
 namespace AthosCommerce\Feed\Model\Api;
 
 use AthosCommerce\Feed\Api\ConfigUpdateInterface;
+use AthosCommerce\Feed\Api\Data\ConfigItemInterface;
 use AthosCommerce\Feed\Helper\Constants;
 use Magento\Framework\App\Config\Storage\WriterInterface;
 use Magento\Framework\Encryption\EncryptorInterface;
@@ -41,11 +42,11 @@ class ConfigUpdate implements ConfigUpdateInterface
 
     /**
      * @param string $module
-     * @param \AthosCommerce\Feed\Api\Data\ConfigItemInterface[] $configs
+     * @param ConfigItemInterface[] $configs
      * @param string $scope
      * @param int $scopeId
-     *
      * @return array
+     * @throws LocalizedException
      */
     public function update(
         string $module,
@@ -228,6 +229,7 @@ class ConfigUpdate implements ConfigUpdateInterface
      * @param string|null $endpoint
      *
      * @return void
+     * @throws LocalizedException
      */
     private function validateEndpoint(?string $endpoint): void
     {
@@ -247,9 +249,9 @@ class ConfigUpdate implements ConfigUpdateInterface
     }
 
     /**
-     * @param string|null $endpoint
-     *
+     * @param string|null $value
      * @return void
+     * @throws LocalizedException
      */
     private function validateNumber(?string $value): void
     {
