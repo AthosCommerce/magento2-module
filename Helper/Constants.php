@@ -22,8 +22,8 @@ class Constants
 {
     const PRODUCT_KEY = '__PRODUCT';
 
-    const API_SCOPE_DELETE = 'products/delete';
-    const API_SCOPE_UPSERT = 'products/update';
+    const API_SCOPE_DELETE = 'product/delete';
+    const API_SCOPE_UPSERT = 'product/update';
 
     /**
      * Setted default very minimum limit to avoid rate limit for store.
