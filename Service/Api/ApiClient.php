@@ -102,6 +102,10 @@ class ApiClient
         $jsonPayload = $this->jsonSerializer->serialize($payload);
         $sizeInBytes = strlen($jsonPayload);
 
+        $hmac = base64_encode(
+            hash_hmac('sha256', $jsonPayload, $secretKey, true)
+        );
+
         $headers = [
             'Content-Type' => 'application/json',
             'X-Topic' => $topic,
@@ -124,11 +128,6 @@ class ApiClient
             );
             return false;
         }
-        $hmac = base64_encode(
-            hash_hmac('sha256', $jsonPayload, $secretKey, true)
-        );
-
-
         $options = [];
         $this->client->setHeaders($headers);
 
