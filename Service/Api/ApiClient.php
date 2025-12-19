@@ -102,6 +102,10 @@ class ApiClient
         $jsonPayload = $this->jsonSerializer->serialize($payload);
         $sizeInBytes = strlen($jsonPayload);
 
+        $hmac = base64_encode(
+            hash_hmac('sha256', $jsonPayload, $secretKey, true)
+        );
+
         $headers = [
             'Content-Type' => 'application/json',
             'X-Topic' => $topic,
@@ -124,11 +128,6 @@ class ApiClient
             );
             return false;
         }
-        $hmac = base64_encode(
-            hash_hmac('sha256', $jsonPayload, $secretKey, true)
-        );
-
-
         $options = [];
         $this->client->setHeaders($headers);
 
@@ -138,6 +137,9 @@ class ApiClient
                 'endpointUrl' => $endpointUrl,
                 'siteId' => $siteId,
                 'storeCode' => $storeCode,
+                'endpoint' => $endpoint,
+                'feedId' => $feedId,
+                'shopDomain' => $shopDomain,
                 'headers' => $maskedHeaders,
                 'length' => $sizeInBytes . ' bytes',
                 'payload' => $payload
@@ -157,6 +159,9 @@ class ApiClient
                 'durationInSeconds' => $durationInSeconds,
                 'siteId' => $siteId,
                 'storeCode' => $storeCode,
+                'storeCode' => $storeCode,
+                'feedId' => $feedId,
+                'shopDomain' => $shopDomain,
                 'responseBody' => $responseBody,
             ]
         );

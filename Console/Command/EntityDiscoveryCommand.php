@@ -134,10 +134,10 @@ HELP
             $output->writeln(
                 sprintf(
                     '<comment>%s</comment>',
-                    __('Begin Sync with filters: %1.', implode(', ', $filters))
+                    __('Begin Discovery with filters: %1.', implode(', ', $filters))
                 ),
             );
-            $output->writeln('--------');
+            $output->writeln('----------------');
 
             try {
                 $this->state->setAreaCode(Area::AREA_FRONTEND);

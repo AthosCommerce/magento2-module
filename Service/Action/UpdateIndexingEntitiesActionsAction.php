@@ -115,11 +115,11 @@ class UpdateIndexingEntitiesActionsAction implements UpdateIndexingEntitiesActio
             // one to be added (configurable) and one to be deleted (simple)
             // if the action taken was Delete then we exclude products that have never been indexed
             // i.e. are waiting to be added
-            $searchCriteriaBuilder->addFilter(
+            /*$searchCriteriaBuilder->addFilter(
                 IndexingEntity::LAST_ACTION,
                 Actions::NO_ACTION,
                 'neq',
-            );
+            );*/
         }
 
         return $searchCriteriaBuilder->create();

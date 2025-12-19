@@ -136,7 +136,33 @@ class Processor
         $storeCode = $store->getCode();
 
         $perMinute = $this->config->getRequestPerMinuteByStoreId($storeId);
+        $payloadConfig = $this->config->getPayloadByStoreId($storeId);
+        if (!$payloadConfig) {
+            $this->logger->error('Missing payload config', ['store' => $storeCode]);
 
+            return 0;
+        }
+
+        if (is_string($payloadConfig)) {
+            $payloadConfig = $this->serializer->unserialize($payloadConfig);
+        }
+
+        if (!is_array($payloadConfig)) {
+            $this->logger->error(
+                'Invalid payload config type',
+                [
+                    'store' => $storeCode,
+                    'payloadConfig' => $payloadConfig,
+                    'getType' => gettype($payloadConfig),
+                ]
+            );
+
+            return 0;
+        }
+
+        $feedSpecification = $this->specificationBuilder->build($payloadConfig);
+        $feedSpecification->setIndexingMode(FeedSpecificationInterface::LIVE_MODE);
+        $this->contextManager->setContextFromSpecification($feedSpecification);
         //This is to avoid rate limit at receiving end
         $maxLimit = (int)$perMinute * 2;
 
@@ -293,32 +319,7 @@ class Processor
             }
             $magentoEntityIds = array_values($updateIds);
 
-            $payloadConfig = $this->config->getPayloadByStoreId($storeId);
-            if (!$payloadConfig) {
-                $this->logger->error('Missing payload config', ['store' => $storeCode]);
 
-                return 0;
-            }
-
-            if (is_string($payloadConfig)) {
-                $payloadConfig = $this->serializer->unserialize($payloadConfig);
-            }
-
-            if (!is_array($payloadConfig)) {
-                $this->logger->error(
-                    'Invalid payload config type',
-                    [
-                        'store' => $storeCode,
-                        'payloadConfig' => $payloadConfig,
-                        'getType' => gettype($payloadConfig),
-                    ]
-                );
-
-                return 0;
-            }
-
-            $feedSpecification = $this->specificationBuilder->build($payloadConfig);
-            $feedSpecification->setIndexingMode(FeedSpecificationInterface::LIVE_MODE);
             $collection = $this->collectionProcessor->getCollection($feedSpecification);
             $collection->addFieldToFilter('entity_id', ['in' => $magentoEntityIds]);
             $collection->setPageSize(min(count($magentoEntityIds), self::MAX_DB_FETCH));
@@ -338,7 +339,7 @@ class Processor
             $startTimestamp = microtime(true);
             $items = $this->itemsGenerator->generate($collection->getItems(), $feedSpecification);
             $this->itemsGenerator->resetDataProvidersAfterFetchItems($feedSpecification);
-            $this->contextManager->setContextFromSpecification($feedSpecification);
+
             foreach ($items as $item) {
                 $updatePayloads[] = $item;
             }
@@ -443,6 +444,7 @@ class Processor
                 'totalFailedCount' => count($failedDeleteIds + $failedUpdateIds),
             ]
         );
+        $this->contextManager->resetContext();
 
         return $totalSuccessCount;
     }
