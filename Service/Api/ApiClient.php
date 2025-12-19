@@ -137,6 +137,9 @@ class ApiClient
                 'endpointUrl' => $endpointUrl,
                 'siteId' => $siteId,
                 'storeCode' => $storeCode,
+                'endpoint' => $endpoint,
+                'feedId' => $feedId,
+                'shopDomain' => $shopDomain,
                 'headers' => $maskedHeaders,
                 'length' => $sizeInBytes . ' bytes',
                 'payload' => $payload
@@ -156,6 +159,9 @@ class ApiClient
                 'durationInSeconds' => $durationInSeconds,
                 'siteId' => $siteId,
                 'storeCode' => $storeCode,
+                'storeCode' => $storeCode,
+                'feedId' => $feedId,
+                'shopDomain' => $shopDomain,
                 'responseBody' => $responseBody,
             ]
         );
