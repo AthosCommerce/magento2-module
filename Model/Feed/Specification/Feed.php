@@ -387,7 +387,7 @@ class Feed extends AbstractExtensibleObject implements FeedSpecificationInterfac
      */
     public function getIndexingMode(): string
     {
-        return $this->_get(self::INDEXING_MODE_KEY) ?? self::MODE_BULK;
+        return $this->_get(self::INDEXING_MODE_KEY) ?? self::BULK_MODE;
     }
 
     /**

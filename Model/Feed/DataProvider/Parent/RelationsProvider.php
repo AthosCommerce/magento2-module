@@ -12,7 +12,7 @@ use Magento\Eav\Model\Entity;
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\EntityManager\MetadataPool;
 use Magento\GroupedProduct\Model\ResourceModel\Product\Link as MagentoGroupedProductLink;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 
 class RelationsProvider
 {
@@ -37,7 +37,7 @@ class RelationsProvider
      */
     private $metadataPool;
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     private $logger;
 
@@ -46,7 +46,7 @@ class RelationsProvider
      * @param OptionProvider $optionProvider
      * @param ResourceConnection $resourceConnection
      * @param ProductCollectionFactory $productCollectionFactory
-     * @param LoggerInterface $logger
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
         ProductResourceModel $productResourceModel,
@@ -54,7 +54,7 @@ class RelationsProvider
         ResourceConnection $resourceConnection,
         ProductCollectionFactory $productCollectionFactory,
         MetadataPool $metadataPool,
-        LoggerInterface $logger,
+        AthosCommerceLogger $logger,
     ) {
         $this->productResourceModel = $productResourceModel;
         $this->optionProvider = $optionProvider;

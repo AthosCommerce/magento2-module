@@ -22,7 +22,7 @@ use AthosCommerce\Feed\Service\EntityUpdateResponderServiceInterface;
 use AthosCommerce\Feed\Model\Update\Entity;
 use AthosCommerce\Feed\Model\Update\EntityInterface;
 use AthosCommerce\Feed\Model\Update\EntityInterfaceFactory as EntityUpdateInterfaceFactory;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 
 class EntityUpdateResponderService implements EntityUpdateResponderServiceInterface
 {
@@ -31,17 +31,17 @@ class EntityUpdateResponderService implements EntityUpdateResponderServiceInterf
      */
     private $entityUpdateFactory;
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     private $logger;
 
     /**
      * @param EntityUpdateInterfaceFactory $entityUpdateFactory
-     * @param LoggerInterface $logger
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
         EntityUpdateInterfaceFactory $entityUpdateFactory,
-        LoggerInterface $logger,
+        AthosCommerceLogger $logger,
     ) {
         $this->entityUpdateFactory = $entityUpdateFactory;
         $this->logger = $logger;

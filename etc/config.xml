@@ -20,6 +20,9 @@
                 <chunk_per_size>100</chunk_per_size>
                 <task_payload></task_payload>
             </indexing>
+            <developer>
+                <enable_debug_log>0</enable_debug_log>
+            </developer>
         </athoscommerce>
     </default>
 </config>

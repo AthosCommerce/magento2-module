@@ -8,7 +8,7 @@ use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentDataContextManager;
 use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
 use Magento\Catalog\Model\Product;
 use Magento\Framework\Exception\LocalizedException;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable;
 use Magento\CatalogInventory\Api\StockRegistryInterface;
 
@@ -25,7 +25,7 @@ class AllVariantsProvider implements DataProviderInterface
     private  $configurableType;
 
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     private $logger;
     /**
@@ -40,14 +40,14 @@ class AllVariantsProvider implements DataProviderInterface
 
     /**
      * @param DataProvider $provider
-     * @param LoggerInterface $logger
+     * @param AthosCommerceLogger $logger
      * @param ParentDataContextManager $parentProductContextManager
      * @param Configurable $configurableType
      * @param StockRegistryInterface $stockRegistry
      */
     public function __construct(
         DataProvider             $provider,
-        LoggerInterface          $logger,
+        AthosCommerceLogger          $logger,
         ParentDataContextManager $parentProductContextManager,
         Configurable             $configurableType,
         StockRegistryInterface $stockRegistry

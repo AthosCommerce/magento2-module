@@ -19,7 +19,7 @@ use AthosCommerce\Feed\Service\Action\UpdateIndexingEntitiesActionsActionInterfa
 use AthosCommerce\Feed\Service\Provider\IndexingEntityProvider as IndexingEntityProvider;
 use Magento\Framework\Serialize\SerializerInterface;
 use Magento\Store\Model\StoreManagerInterface;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 
 class Processor
 {
@@ -30,7 +30,7 @@ class Processor
      */
     private $indexingEntityProvider;
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     private $logger;
     /**
@@ -80,7 +80,7 @@ class Processor
 
     /**
      * @param IndexingEntityProvider $indexingEntityProvider
-     * @param LoggerInterface $logger
+     * @param AthosCommerceLogger $logger
      * @param StoreManagerInterface $storeManager
      * @param ConfigModel $config
      * @param UpdateIndexingEntitiesActionsAction $updateIndexingEntitiesActionsAction
@@ -95,7 +95,7 @@ class Processor
      */
     public function __construct(
         IndexingEntityProvider              $indexingEntityProvider,
-        LoggerInterface                     $logger,
+        AthosCommerceLogger                     $logger,
         StoreManagerInterface               $storeManager,
         ConfigModel                         $config,
         UpdateIndexingEntitiesActionsAction $updateIndexingEntitiesActionsAction,

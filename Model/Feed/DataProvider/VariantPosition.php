@@ -25,7 +25,7 @@ use Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable as
 use Magento\ConfigurableProduct\Helper\Data as ConfigurableHelper;
 use Magento\ConfigurableProduct\Model\Product\Type\Configurable as ConfigurableType;
 use Magento\Framework\Exception\LocalizedException;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
 
 class VariantPosition implements DataProviderInterface
@@ -51,7 +51,7 @@ class VariantPosition implements DataProviderInterface
     protected $configurableType;
 
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     protected $logger;
 
@@ -60,7 +60,7 @@ class VariantPosition implements DataProviderInterface
         ConfigurableResource       $configurableResource,
         ConfigurableHelper         $configurableHelper,
         ConfigurableType           $configurableType,
-        LoggerInterface            $logger,
+        AthosCommerceLogger            $logger,
     )
     {
         $this->productRepository = $productRepository;

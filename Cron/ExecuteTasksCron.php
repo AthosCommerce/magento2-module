@@ -19,7 +19,7 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Cron;
 
 use AthosCommerce\Feed\Api\ExecutePendingTasksInterface;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 
 class ExecuteTasksCron
 {
@@ -28,17 +28,17 @@ class ExecuteTasksCron
      */
     private $executePendingTasks;
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     private $logger;
 
     /**
      * @param ExecutePendingTasksInterface $executePendingTasks
-     * @param LoggerInterface $logger
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
         ExecutePendingTasksInterface $executePendingTasks,
-        LoggerInterface $logger
+        AthosCommerceLogger $logger
     ) {
         $this->executePendingTasks = $executePendingTasks;
         $this->logger = $logger;

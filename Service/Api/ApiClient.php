@@ -24,7 +24,7 @@ use Magento\Framework\Serialize\SerializerInterface as JsonSerializer;
 use Magento\Framework\HTTP\ClientInterface;
 use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\StoreManagerInterface;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Helper\Constants;
 
 class ApiClient
@@ -39,7 +39,7 @@ class ApiClient
      */
     private $client;
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     private $logger;
     /**
@@ -57,14 +57,14 @@ class ApiClient
 
     /**
      * @param ClientInterface $client
-     * @param LoggerInterface $logger
+     * @param AthosCommerceLogger $logger
      * @param StoreContextManager $storeContextManager
      * @param ConfigModel $config
      * @param JsonSerializer $jsonSerializer
      */
     public function __construct(
         ClientInterface     $client,
-        LoggerInterface     $logger,
+        AthosCommerceLogger     $logger,
         StoreContextManager $storeContextManager,
         ConfigModel         $config,
         JsonSerializer      $jsonSerializer

@@ -23,7 +23,7 @@ use Magento\CatalogInventory\Api\StockConfigurationInterface;
 use Magento\CatalogInventory\Api\StockItemCriteriaInterfaceFactory;
 use Magento\CatalogInventory\Api\StockItemRepositoryInterface;
 use Magento\CatalogInventory\Model\Stock\Item;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 
 class LegacyStockProvider implements StockProviderInterface
 {
@@ -44,7 +44,7 @@ class LegacyStockProvider implements StockProviderInterface
      */
     private $storeContextManager;
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     private $logger;
 
@@ -53,14 +53,14 @@ class LegacyStockProvider implements StockProviderInterface
      * @param StockItemRepositoryInterface $legacyStockItemRepository
      * @param StockConfigurationInterface $stockConfiguration
      * @param StoreContextManager $storeContextManager
-     * @param LoggerInterface $logger
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
         StockItemCriteriaInterfaceFactory $legacyStockItemCriteriaFactory,
         StockItemRepositoryInterface $legacyStockItemRepository,
         StockConfigurationInterface $stockConfiguration,
         StoreContextManager $storeContextManager,
-        LoggerInterface $logger,
+        AthosCommerceLogger $logger,
     ) {
         $this->legacyStockItemCriteriaFactory = $legacyStockItemCriteriaFactory;
         $this->legacyStockItemRepository = $legacyStockItemRepository;

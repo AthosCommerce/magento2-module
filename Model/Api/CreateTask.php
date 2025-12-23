@@ -33,7 +33,7 @@ use AthosCommerce\Feed\Exception\ValidationException;
 use AthosCommerce\Feed\Model\Task\TypeList;
 use AthosCommerce\Feed\Model\Task\UniqueCheckerPool;
 use AthosCommerce\Feed\Model\Task\ValidatorPool;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 
 class CreateTask implements CreateTaskInterface
 {
@@ -62,7 +62,7 @@ class CreateTask implements CreateTaskInterface
      */
     private $moduleManager;
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     private $logger;
     /**
@@ -84,7 +84,7 @@ class CreateTask implements CreateTaskInterface
      * @param TypeList $typeList
      * @param UniqueCheckerPool $uniqueCheckerPool
      * @param Manager $moduleManager
-     * @param LoggerInterface $logger
+     * @param AthosCommerceLogger $logger
      * @param EventManagerInterface $eventManager
      * @param array $moduleList
      */
@@ -95,7 +95,7 @@ class CreateTask implements CreateTaskInterface
         TypeList $typeList,
         UniqueCheckerPool $uniqueCheckerPool,
         Manager $moduleManager,
-        LoggerInterface $logger,
+        AthosCommerceLogger $logger,
         EventManagerInterface $eventManager,
         array $moduleList = []
     ) {

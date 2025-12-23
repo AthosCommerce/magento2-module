@@ -25,7 +25,7 @@ use Magento\Store\Model\StoreManagerInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use AthosCommerce\Feed\Model\LiveIndexing\Processor;
 use AthosCommerce\Feed\Model\Config as ConfigModel;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 
 class LiveIndexing implements LiveIndexingInterface
 {
@@ -42,7 +42,7 @@ class LiveIndexing implements LiveIndexingInterface
      */
     private $processor;
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     private $logger;
 
@@ -50,13 +50,13 @@ class LiveIndexing implements LiveIndexingInterface
      * @param StoreManagerInterface $storeManager
      * @param ConfigModel $config
      * @param Processor $processor
-     * @param LoggerInterface $logger
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
         StoreManagerInterface $storeManager,
         ConfigModel           $config,
         Processor             $processor,
-        LoggerInterface       $logger
+        AthosCommerceLogger       $logger
     )
     {
         $this->storeManager = $storeManager;

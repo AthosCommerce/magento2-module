@@ -27,7 +27,7 @@ use AthosCommerce\Feed\Model\Feed\DataProvider\Category\CollectionBuilder;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Category\GetCategoriesByProductIds;
 use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
 use Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable as ConfigurableType;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 
 class CategoriesProvider implements DataProviderInterface
 {
@@ -49,7 +49,7 @@ class CategoriesProvider implements DataProviderInterface
     private $getCategoriesByProductIds;
     /** @var ConfigurableType */
     private $configurableType;
-    /** @var LoggerInterface */
+    /** @var AthosCommerceLogger */
     private $logger;
 
     /**
@@ -58,13 +58,13 @@ class CategoriesProvider implements DataProviderInterface
      * @param CollectionBuilder $collectionBuilder
      * @param GetCategoriesByProductIds $getCategoriesByProductIds
      * @param ConfigurableType $configurableType
-     * @param LoggerInterface $logger
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
         CollectionBuilder $collectionBuilder,
         GetCategoriesByProductIds $getCategoriesByProductIds,
         ConfigurableType $configurableType,
-        LoggerInterface $logger
+        AthosCommerceLogger $logger
     ) {
         $this->collectionBuilder = $collectionBuilder;
         $this->getCategoriesByProductIds = $getCategoriesByProductIds;

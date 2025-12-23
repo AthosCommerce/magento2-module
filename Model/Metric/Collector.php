@@ -22,7 +22,7 @@ use Magento\Framework\DataObjectFactory;
 use Magento\Framework\Event\ManagerInterface;
 use Magento\Framework\Exception\FileSystemException;
 use Magento\Framework\Exception\RuntimeException;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Api\AppConfigInterface;
 use AthosCommerce\Feed\Model\Metric\View\FormatterInterface;
 use Throwable;
@@ -58,7 +58,7 @@ class Collector implements CollectorInterface
      */
     private $forceAllowed;
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     private $logger;
     /**
@@ -77,7 +77,7 @@ class Collector implements CollectorInterface
      * @param AppConfigInterface $appConfig
      * @param ManagerInterface $eventManager
      * @param DataObjectFactory $dataObjectFactory
-     * @param LoggerInterface $logger
+     * @param AthosCommerceLogger $logger
      * @param bool $forceAllowed
      * @param array $metricProviders
      */
@@ -87,7 +87,7 @@ class Collector implements CollectorInterface
         AppConfigInterface $appConfig,
         ManagerInterface $eventManager,
         DataObjectFactory $dataObjectFactory,
-        LoggerInterface $logger,
+        AthosCommerceLogger $logger,
         bool $forceAllowed = false,
         array $metricProviders = []
     ) {

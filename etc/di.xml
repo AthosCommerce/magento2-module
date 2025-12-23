@@ -291,26 +291,21 @@
         </arguments>
     </type>
 
-    <virtualType name="AthosCommerceFeedBaseLogHandler" type="Magento\Framework\Logger\Handler\Base">
+    <type name="AthosCommerce\Feed\Logger\Handler">
         <arguments>
-            <argument name="fileName" xsi:type="string">/var/log/athoscommerce_feed.log</argument>
+            <argument name="filesystem" xsi:type="object">Magento\Framework\Filesystem\Driver\File</argument>
         </arguments>
-    </virtualType>
-
-    <virtualType name="AthosCommerceFeedSystemLogHandler" type="Magento\Framework\Logger\Handler\System">
+    </type>
+    <type name="AthosCommerce\Feed\Logger\AthosCommerceLogger">
         <arguments>
-            <argument name="fileName" xsi:type="string">/var/log/athoscommerce_feed.log</argument>
-        </arguments>
-    </virtualType>
-
-    <virtualType name="AthosCommerceLogger" type="Magento\Framework\Logger\Monolog">
-        <arguments>
+            <argument name="name" xsi:type="string">athos</argument>
             <argument name="handlers" xsi:type="array">
-                <item name="debug" xsi:type="object">AthosCommerceFeedBaseLogHandler</item>
-                <item name="system" xsi:type="object">AthosCommerceFeedSystemLogHandler</item>
+                <item name="system" xsi:type="object">AthosCommerce\Feed\Logger\Handler</item>
             </argument>
         </arguments>
-    </virtualType>
+    </type>
+    <preference for="AthosCommerce\Feed\Api\LoggerInterface"
+                type="AthosCommerce\Feed\Logger\AthosCommerceLogger"/>
 
     <type name="AthosCommerce\Feed\Model\Feed\DataProviderPool">
         <arguments>
@@ -341,7 +336,7 @@
 
     <type name="AthosCommerce\Feed\Model\Feed\DataProvider\Stock\CompositeStockResolver">
         <arguments>
-            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
+            <argument name="logger" xsi:type="object">AthosCommerce\Feed\Logger\AthosCommerceLogger</argument>
             <argument name="resolvers" xsi:type="array">
                 <item name="msi" xsi:type="array">
                     <item name="sortOrder" xsi:type="number">100</item>
@@ -390,132 +385,9 @@
         </arguments>
     </virtualType>
 
-    <type name="AthosCommerce\Feed\Model\ExecutePendingTasks">
-        <arguments>
-            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
-        </arguments>
-    </type>
-    <type name="AthosCommerce\Feed\Cron\ExecuteTasksCron">
-        <arguments>
-            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
-        </arguments>
-    </type>
-    <type name="AthosCommerce\Feed\Model\Feed\DataProvider\Attribute\ValueProcessor">
-        <arguments>
-            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
-        </arguments>
-    </type>
-    <type name="AthosCommerce\Feed\Model\ExecuteTask">
-        <arguments>
-            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
-        </arguments>
-    </type>
-    <type name="AthosCommerce\Feed\Model\CreateTask">
-        <arguments>
-            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
-        </arguments>
-    </type>
-    <type name="AthosCommerce\Feed\Model\GenerateFeed">
-        <arguments>
-            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
-        </arguments>
-    </type>
-    <type name="AthosCommerce\Feed\Model\Feed\DataProvider\Stock\MsiStockResolver">
-        <arguments>
-            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
-        </arguments>
-    </type>
-    <type name="AthosCommerce\Feed\Model\Feed\DataProvider\Stock\LegacyStockProvider">
-        <arguments>
-            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
-        </arguments>
-    </type>
-    <type name="AthosCommerce\Feed\Model\Feed\DataProvider\StandardOptionsProvider">
-        <arguments>
-            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
-        </arguments>
-    </type>
-    <type name="AthosCommerce\Feed\Model\Feed\DataProvider\Stock\MsiStockProvider">
-        <arguments>
-            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
-        </arguments>
-    </type>
-    <type name="AthosCommerce\Feed\Model\Feed\DataProvider\SwatchOptionsProvider">
-        <arguments>
-            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
-        </arguments>
-    </type>
-    <type name="AthosCommerce\Feed\Model\Feed\DataProvider\AllVariantsProvider">
-        <arguments>
-            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
-        </arguments>
-    </type>
-    <type name="AthosCommerce\Feed\Model\Feed\DataProvider\ParentInfoProvider">
-        <arguments>
-            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
-        </arguments>
-    </type>
-    <type name="AthosCommerce\Feed\Model\Feed\DataProvider\JsonConfigProvider">
-        <arguments>
-            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
-        </arguments>
-    </type>
-    <type name="AthosCommerce\Feed\Api\TaskRepositoryInterface">
-        <arguments>
-            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
-        </arguments>
-    </type>
-    <type name="AthosCommerce\Feed\Model\LiveIndexing\Processor">
-        <arguments>
-            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
-        </arguments>
-    </type>
-    <type name="AthosCommerce\Feed\Api\EntityDiscoveryInterface">
-        <arguments>
-            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
-        </arguments>
-    </type>
-
     <type name="AthosCommerce\Feed\Model\IndexingEntityRepository">
         <arguments>
-            <argument name="indexingEntityValidator"
-                      xsi:type="object">AthosCommerce\Feed\Validator\IndexingEntityValidator</argument>
-            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
-        </arguments>
-    </type>
-    <type name="AthosCommerce\Feed\Model\Feed\DataProvider\SelectedOptionsProvider">
-        <arguments>
-            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
-        </arguments>
-    </type>
-    <type name="AthosCommerce\Feed\Model\Feed\DataProvider\VariantPosition">
-        <arguments>
-            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
-        </arguments>
-    </type>
-    <type name="AthosCommerce\Feed\Api\RetryManagerInterface">
-        <arguments>
-            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
-        </arguments>
-    </type>
-    <type name="AthosCommerce\Feed\Service\Api\ApiClient">
-        <arguments>
-            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
-        </arguments>
-    </type>
-    <type name="AthosCommerce\Feed\Api\LiveIndexingInterface">
-        <arguments>
-            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
-        </arguments>
-    </type>
-    <type name="AthosCommerce\Feed\Api\LiveIndexing\UpsertEntityHandlerInterface">
-        <arguments>
-            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
-        </arguments>
-    </type>
-    <type name="AthosCommerce\Feed\Api\LiveIndexing\DeleteEntityHandlerInterface">
-        <arguments>
-            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
+            <argument name="indexingEntityValidator" xsi:type="object">AthosCommerce\Feed\Validator\IndexingEntityValidator</argument>
         </arguments>
     </type>
 
@@ -563,51 +435,10 @@
                     <item name="file_size" xsi:type="object">AthosCommerce\Feed\Model\Metric\MetricProvider\FileSizeProvider</item>
                 </item>
             </argument>
-            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
+            <argument name="logger" xsi:type="object">AthosCommerce\Feed\Logger\AthosCommerceLogger</argument>
         </arguments>
     </type>
 
-    <type name="AthosCommerce\Feed\Observer\Product\UpdateObserver">
-        <arguments>
-            <argument name="logger"
-                      xsi:type="object">AthosCommerceLogger</argument>
-        </arguments>
-    </type>
-
-    <type name="AthosCommerce\Feed\Observer\Product\DeleteObserver">
-        <arguments>
-            <argument name="logger"
-                      xsi:type="object">AthosCommerceLogger</argument>
-        </arguments>
-    </type>
-
-    <type name="AthosCommerce\Feed\Observer\Product\BunchSaveObserver">
-        <arguments>
-            <argument name="logger"
-                      xsi:type="object">AthosCommerceLogger</argument>
-        </arguments>
-    </type>
-
-    <type name="AthosCommerce\Feed\Observer\Product\BunchDeleteObserver">
-        <arguments>
-            <argument name="logger"
-                      xsi:type="object">AthosCommerceLogger</argument>
-        </arguments>
-    </type>
-
-    <type name="AthosCommerce\Feed\Model\Api\GetConfigInfo">
-        <arguments>
-            <argument name="logger"
-                      xsi:type="object">AthosCommerceLogger</argument>
-        </arguments>
-    </type>
-
-    <type name="AthosCommerce\Feed\Observer\Product\InventoryUpdateObserver">
-        <arguments>
-            <argument name="logger"
-                      xsi:type="object">AthosCommerceLogger</argument>
-        </arguments>
-    </type>
 
     <type name="AthosCommerce\Feed\Model\Metric\MetricProvider\TimerProvider" shared="false"/>
     <type name="AthosCommerce\Feed\Model\Metric\MetricProvider\FileSizeProvider" shared="false"/>

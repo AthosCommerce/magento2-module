@@ -23,7 +23,7 @@ use AthosCommerce\Feed\Model\Feed\CollectionProviderInterface;
 use AthosCommerce\Feed\Model\Feed\CollectionConfigInterface;
 use AthosCommerce\Feed\Model\Feed\Collection\ProcessorPool;
 use Magento\Catalog\Model\ResourceModel\Product\Collection;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 
 class CollectionProcessor
 {
@@ -40,7 +40,7 @@ class CollectionProcessor
      */
     private $collectionConfig;
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     private $logger;
 
@@ -48,13 +48,13 @@ class CollectionProcessor
      * @param CollectionProviderInterface $collectionProvider
      * @param ProcessorPool $afterLoadProcessorPool
      * @param CollectionConfigInterface $collectionConfig
-     * @param LoggerInterface $logger
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
         CollectionProviderInterface $collectionProvider,
         ProcessorPool $afterLoadProcessorPool,
         CollectionConfigInterface $collectionConfig,
-        LoggerInterface $logger
+        AthosCommerceLogger $logger
     ) {
         $this->collectionProvider = $collectionProvider;
         $this->afterLoadProcessorPool = $afterLoadProcessorPool;

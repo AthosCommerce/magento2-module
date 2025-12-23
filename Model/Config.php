@@ -191,4 +191,17 @@ class Config
             $storeId
         );
     }
+
+    /**
+     * @param int|null $storeId
+     * @return bool
+     */
+    public function isDebugLogEnabled(?int $storeId = null): bool
+    {
+        return (bool)$this->scopeConfig->getValue(
+            Constants::XML_PATH_DEBUG_LOG_ENABLED,
+            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
 }

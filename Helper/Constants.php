@@ -43,4 +43,9 @@ class Constants
 
     const XML_PATH_LIVE_INDEXING_SYNC_CRON_EXPR = 'athoscommerce/indexing/entity_sync_cron_expr';
     const XML_PATH_LIVE_INDEXING_MILLISECONDS_DELAY = 'athoscommerce/indexing/milliseconds_delay';
+
+    /**
+     * Path to debug log enabled configuration
+     */
+    const XML_PATH_DEBUG_LOG_ENABLED = 'athoscommerce/developer/enable_debug_log';
 }

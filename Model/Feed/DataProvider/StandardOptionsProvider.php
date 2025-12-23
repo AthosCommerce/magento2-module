@@ -7,7 +7,7 @@ use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentDataContextManager;
 use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
 use Magento\Catalog\Model\Product;
 use Magento\Framework\Exception\LocalizedException;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use Throwable;
 use Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable;
 
@@ -20,7 +20,7 @@ class StandardOptionsProvider implements DataProviderInterface
     private $configurableType;
 
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     private $logger;
     /**
@@ -35,13 +35,13 @@ class StandardOptionsProvider implements DataProviderInterface
 
     /**
      * @param DataProvider $provider
-     * @param LoggerInterface $logger
+     * @param AthosCommerceLogger $logger
      * @param ParentDataContextManager $parentProductContextManager
      * @param Configurable $configurableType
      */
     public function __construct(
         DataProvider $provider,
-        LoggerInterface $logger,
+        AthosCommerceLogger $logger,
         ParentDataContextManager $parentProductContextManager,
         Configurable $configurableType
     ) {

@@ -8,7 +8,7 @@ use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentDataContextManager;
 use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
 use Magento\Catalog\Model\Product;
 use Magento\Framework\Exception\LocalizedException;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable;
 use Magento\Swatches\Helper\Data as SwatchHelper;
 use Magento\Store\Model\StoreManagerInterface;
@@ -31,7 +31,7 @@ class SwatchOptionsProvider implements DataProviderInterface
     private $configurableType;
 
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     private $logger;
     /**
@@ -46,7 +46,7 @@ class SwatchOptionsProvider implements DataProviderInterface
 
     /**
      * @param DataProvider $provider
-     * @param LoggerInterface $logger
+     * @param AthosCommerceLogger $logger
      * @param ParentDataContextManager $parentProductContextManager
      * @param Configurable $configurableType
      * @param StockRegistryInterface $stockRegistry
@@ -55,11 +55,11 @@ class SwatchOptionsProvider implements DataProviderInterface
      */
     public function __construct(
         DataProvider             $provider,
-        LoggerInterface          $logger,
+        AthosCommerceLogger      $logger,
         ParentDataContextManager $parentProductContextManager,
         Configurable             $configurableType,
-        SwatchHelper $swatchHelper,
-        StoreManagerInterface $storeManager
+        SwatchHelper             $swatchHelper,
+        StoreManagerInterface    $storeManager
     )
     {
         $this->provider = $provider;
@@ -118,7 +118,7 @@ class SwatchOptionsProvider implements DataProviderInterface
             $parentId = (int)$parentIds[0];
             $parentProduct = $this->parentProductContextManager->getParentsDataByProductId($parentId);
 
-            if(!$parentProduct) {
+            if (!$parentProduct) {
                 continue;
             }
             // todo  performance check pending

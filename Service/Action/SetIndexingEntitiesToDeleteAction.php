@@ -30,7 +30,7 @@ use Magento\Framework\Api\Search\FilterGroupBuilderFactory;
 use Magento\Framework\Api\SearchCriteriaBuilder;
 use Magento\Framework\Api\SearchCriteriaBuilderFactory;
 use AthosCommerce\Feed\Service\Action\SetIndexingEntitiesToDeleteActionInterface;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 
 class SetIndexingEntitiesToDeleteAction implements SetIndexingEntitiesToDeleteActionInterface
 {
@@ -51,7 +51,7 @@ class SetIndexingEntitiesToDeleteAction implements SetIndexingEntitiesToDeleteAc
      */
     private $filterGroupBuilderFactory;
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     private $logger;
 
@@ -60,14 +60,14 @@ class SetIndexingEntitiesToDeleteAction implements SetIndexingEntitiesToDeleteAc
      * @param SearchCriteriaBuilderFactory $searchCriteriaBuilderFactory
      * @param FilterBuilderFactory $filterBuilderFactory
      * @param FilterGroupBuilderFactory $filterGroupBuilderFactory
-     * @param LoggerInterface $logger
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
         IndexingEntityRepositoryInterface $indexingEntityRepository,
         SearchCriteriaBuilderFactory $searchCriteriaBuilderFactory,
         FilterBuilderFactory              $filterBuilderFactory,
         FilterGroupBuilderFactory         $filterGroupBuilderFactory,
-        LoggerInterface $logger
+        AthosCommerceLogger $logger
     ) {
         $this->searchCriteriaBuilderFactory = $searchCriteriaBuilderFactory;
         $this->indexingEntityRepository = $indexingEntityRepository;

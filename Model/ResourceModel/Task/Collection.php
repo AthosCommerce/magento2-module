@@ -26,7 +26,7 @@ use Magento\Framework\Event\ManagerInterface;
 use Magento\Framework\Model\ResourceModel\Db\AbstractDb;
 use Magento\Framework\Model\ResourceModel\Db\VersionControl\Collection as AbstractCollection;
 use Magento\Framework\Model\ResourceModel\Db\VersionControl\Snapshot;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\ResourceModel\Task as TaskResource;
 use AthosCommerce\Feed\Model\ResourceModel\Task\Error\LoadErrors;
 use AthosCommerce\Feed\Model\Task;
@@ -42,7 +42,7 @@ class Collection extends AbstractCollection
      * Collection constructor.
      *
      * @param EntityFactoryInterface $entityFactory
-     * @param LoggerInterface $logger
+     * @param AthosCommerceLogger $logger
      * @param FetchStrategyInterface $fetchStrategy
      * @param ManagerInterface $eventManager
      * @param Snapshot $entitySnapshot
@@ -52,7 +52,7 @@ class Collection extends AbstractCollection
      */
     public function __construct(
         EntityFactoryInterface $entityFactory,
-        LoggerInterface $logger,
+        AthosCommerceLogger $logger,
         FetchStrategyInterface $fetchStrategy,
         ManagerInterface $eventManager,
         Snapshot $entitySnapshot,

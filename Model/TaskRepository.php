@@ -33,7 +33,7 @@ use AthosCommerce\Feed\Api\TaskRepositoryInterface;
 use AthosCommerce\Feed\Model\ResourceModel\Task as TaskResource;
 use AthosCommerce\Feed\Model\ResourceModel\Task\Collection;
 use AthosCommerce\Feed\Model\ResourceModel\Task\CollectionFactory;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 
 class TaskRepository implements TaskRepositoryInterface
 {
@@ -66,7 +66,7 @@ class TaskRepository implements TaskRepositoryInterface
      */
     private $joinProcessor;
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     private $logger;
 
@@ -78,7 +78,7 @@ class TaskRepository implements TaskRepositoryInterface
      * @param TaskSearchResultsInterfaceFactory $searchResultsFactory
      * @param CollectionProcessorInterface $collectionProcessor
      * @param JoinProcessorInterface $joinProcessor
-     * @param LoggerInterface $logger
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
         TaskFactory $taskFactory,
@@ -88,7 +88,7 @@ class TaskRepository implements TaskRepositoryInterface
         TaskSearchResultsInterfaceFactory $searchResultsFactory,
         CollectionProcessorInterface $collectionProcessor,
         JoinProcessorInterface $joinProcessor,
-        LoggerInterface $logger
+        AthosCommerceLogger $logger
     ) {
         $this->taskFactory = $taskFactory;
         $this->taskResource = $taskResource;

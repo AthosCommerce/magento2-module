@@ -33,7 +33,7 @@ use Magento\InventorySalesApi\Api\StockResolverInterface as MsiStockResolverInte
 use Magento\InventorySalesApi\Model\GetStockItemDataInterface;
 use Magento\Store\Api\WebsiteRepositoryInterface;
 use Magento\Framework\Filesystem\DirectoryList;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 
 class MsiStockProvider implements StockProviderInterface
 {
@@ -78,7 +78,7 @@ class MsiStockProvider implements StockProviderInterface
      */
     private $typeManager;
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     private $logger;
 
@@ -95,7 +95,7 @@ class MsiStockProvider implements StockProviderInterface
      * @param GetReservationsQuantityInterface $getReservationsQuantity
      * @param MsiStockResolverInterface $stockResolver
      * @param GetStockItemDataInterface $getStockItemData
-     * @param LoggerInterface $logger
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
         StoreContextManager $storeContextManager,
@@ -108,7 +108,7 @@ class MsiStockProvider implements StockProviderInterface
         GetReservationsQuantityInterface $getReservationsQuantity,
         MsiStockResolverInterface $stockResolver,
         GetStockItemDataInterface $getStockItemData,
-        LoggerInterface $logger,
+        AthosCommerceLogger $logger,
     ) {
         $this->storeContextManager = $storeContextManager;
         $this->websiteRepository = $websiteRepository;

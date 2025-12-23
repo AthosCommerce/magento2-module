@@ -27,7 +27,7 @@ use Magento\ConfigurableProduct\Model\ConfigurableAttributeData;
 use Magento\ConfigurableProduct\Model\Product\Type\Configurable as ConfigurableType;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Swatches\Helper\Data as SwatchHelper;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
 use Magento\Swatches\Model\SwatchAttributesProvider;
 use Magento\Swatches\Block\Product\Renderer\Configurable as SwatchRenderer;
@@ -70,7 +70,7 @@ class JsonConfigProvider implements DataProviderInterface
     protected $swatchHelper;
 
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     protected $logger;
 
@@ -86,7 +86,7 @@ class JsonConfigProvider implements DataProviderInterface
         ConfigurableAttributeData  $configurableAttributeData,
         ConfigurableType           $configurableType,
         SwatchHelper               $swatchHelper,
-        LoggerInterface            $logger,
+        AthosCommerceLogger            $logger,
         SwatchAttributesProvider   $swatchAttributesProvider,
         SwatchRenderer             $swatchRenderer,
     )

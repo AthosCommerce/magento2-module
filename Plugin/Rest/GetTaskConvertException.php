@@ -20,7 +20,7 @@ namespace AthosCommerce\Feed\Plugin\Rest;
 
 use Magento\Framework\Exception\NoSuchEntityException as OriginalNoSuchEntityException;
 use Magento\Framework\Webapi\Exception;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Api\Data\TaskInterface;
 use AthosCommerce\Feed\Api\TaskRepositoryInterface;
 use AthosCommerce\Feed\Exception\NoSuchEntityException;
@@ -34,18 +34,18 @@ class GetTaskConvertException
      */
     private $exceptionConverter;
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     private $logger;
 
     /**
      * CreateTaskConvertException constructor.
      * @param ExceptionConverterInterface $exceptionConverter
-     * @param LoggerInterface $logger
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
         ExceptionConverterInterface $exceptionConverter,
-        LoggerInterface $logger
+        AthosCommerceLogger $logger
     ) {
         $this->exceptionConverter = $exceptionConverter;
         $this->logger = $logger;

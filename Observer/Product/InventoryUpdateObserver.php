@@ -26,7 +26,7 @@ use Magento\CatalogInventory\Model\Stock\Item;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 
 class InventoryUpdateObserver implements ObserverInterface
 {
@@ -36,7 +36,7 @@ class InventoryUpdateObserver implements ObserverInterface
      */
     private $baseProductObserver;
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     private $logger;
 
@@ -51,7 +51,7 @@ class InventoryUpdateObserver implements ObserverInterface
     private $scopeConfig;
 
     public function __construct(
-        LoggerInterface      $logger,
+        AthosCommerceLogger      $logger,
         ProductRepository    $productRepository,
         ScopeConfigInterface $scopeConfig,
         BaseProductObserver  $baseProductObserver

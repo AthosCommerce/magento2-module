@@ -25,7 +25,7 @@ use AthosCommerce\Feed\Service\Action\AddIndexingEntitiesActionInterface;
 use AthosCommerce\Feed\Api\Data\IndexingEntityInterface;
 use AthosCommerce\Feed\Model\Api\MagentoEntityInterface;
 use Magento\Framework\Api\SearchCriteriaBuilderFactory;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 
 class AddIndexingEntitiesAction implements AddIndexingEntitiesActionInterface
 {
@@ -38,19 +38,19 @@ class AddIndexingEntitiesAction implements AddIndexingEntitiesActionInterface
      */
     private $searchCriteriaBuilderFactory;
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     private $logger;
 
     /**
      * @param IndexingEntityRepositoryInterface $indexingEntityRepository
      * @param SearchCriteriaBuilderFactory $searchCriteriaBuilderFactory
-     * @param LoggerInterface $logger
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
         IndexingEntityRepositoryInterface $indexingEntityRepository,
         SearchCriteriaBuilderFactory $searchCriteriaBuilderFactory,
-        LoggerInterface $logger
+        AthosCommerceLogger $logger
     ) {
         $this->searchCriteriaBuilderFactory = $searchCriteriaBuilderFactory;
         $this->indexingEntityRepository = $indexingEntityRepository;
