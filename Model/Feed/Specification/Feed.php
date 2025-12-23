@@ -409,4 +409,21 @@ class Feed extends AbstractExtensibleObject implements FeedSpecificationInterfac
         }
         return self::BULK_INDEXING_IGNORE_DATA_PROVIDERS;
     }
+
+    /**
+     * @return array
+     */
+    public function getExcludedProductIds(): array
+    {
+        return $this->_get(self::EXCLUDE_PRODUCT_IDS) ?? [];
+    }
+
+    /**
+     * @param array $productIds
+     * @return FeedSpecificationInterface
+     */
+    public function setExcludedProductIds(array $productIds): FeedSpecificationInterface
+    {
+        return $this->setData(self::EXCLUDE_PRODUCT_IDS, $productIds);
+    }
 }
