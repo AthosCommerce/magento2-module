@@ -26,7 +26,7 @@ use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Store\Model\ScopeInterface;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 
 class BunchDeleteObserver implements ObserverInterface
 {
@@ -35,17 +35,17 @@ class BunchDeleteObserver implements ObserverInterface
      */
     private $baseProductObserver;
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     private $logger;
 
     /**
      * @param BaseProductObserver $baseProductObserver
-     * @param LoggerInterface $logger
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
         BaseProductObserver $baseProductObserver,
-        LoggerInterface $logger
+        AthosCommerceLogger $logger
     ) {
         $this->baseProductObserver = $baseProductObserver;
         $this->logger = $logger;

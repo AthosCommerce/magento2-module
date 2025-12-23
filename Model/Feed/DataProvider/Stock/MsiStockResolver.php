@@ -21,7 +21,7 @@ namespace AthosCommerce\Feed\Model\Feed\DataProvider\Stock;
 use Magento\Framework\App\ObjectManager;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Module\Manager;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 
 class MsiStockResolver implements StockResolverInterface
 {
@@ -30,7 +30,7 @@ class MsiStockResolver implements StockResolverInterface
      */
     private $moduleManager;
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     protected $logger;
     /**
@@ -47,11 +47,11 @@ class MsiStockResolver implements StockResolverInterface
      *
      * @param Manager $moduleManager
      * @param array $moduleList
-     * @param LoggerInterface $logger
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
         Manager $moduleManager,
-        LoggerInterface $logger,
+        AthosCommerceLogger $logger,
         array $moduleList = [],
 
     ) {

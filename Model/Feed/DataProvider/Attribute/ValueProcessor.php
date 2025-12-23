@@ -25,7 +25,7 @@ use Magento\Eav\Model\Entity\Attribute\Source\SpecificSourceInterface;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Phrase;
 use Magento\Framework\Serialize\Serializer\Json;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Attribute\ValueProcessorInterface;
 
 class ValueProcessor implements ValueProcessorInterface
@@ -35,17 +35,17 @@ class ValueProcessor implements ValueProcessorInterface
      */
     private $json;
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     private $logger;
 
     /**
      * @param Json $json
-     * @param LoggerInterface $logger
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
         Json $json,
-        LoggerInterface $logger,
+        AthosCommerceLogger $logger,
     ) {
         $this->json = $json;
         $this->logger = $logger;

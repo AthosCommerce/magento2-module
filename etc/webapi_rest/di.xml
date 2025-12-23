@@ -23,19 +23,19 @@
 
     <type name="AthosCommerce\Feed\Plugin\Rest\CreateTaskConvertException">
         <arguments>
-            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
+            <argument name="logger" xsi:type="object">AthosCommerce\Feed\Logger\AthosCommerceLogger</argument>
         </arguments>
     </type>
 
     <type name="AthosCommerce\Feed\Plugin\Rest\GetTaskConvertException">
         <arguments>
-            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
+            <argument name="logger" xsi:type="object">AthosCommerce\Feed\Logger\AthosCommerceLogger</argument>
         </arguments>
     </type>
 
     <type name="AthosCommerce\Feed\Plugin\Rest\GetStoreInfoConvertException">
         <arguments>
-            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
+            <argument name="logger" xsi:type="object">AthosCommerce\Feed\Logger\AthosCommerceLogger</argument>
         </arguments>
     </type>
 </config>

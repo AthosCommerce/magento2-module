@@ -18,22 +18,22 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Model\Metric\Output;
 
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Metric\OutputInterface;
 
 class LogOutput implements OutputInterface
 {
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     private $logger;
 
     /**
      * LogOutput constructor.
-     * @param LoggerInterface $logger
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
-        LoggerInterface $logger
+        AthosCommerceLogger $logger
     ) {
         $this->logger = $logger;
     }

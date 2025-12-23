@@ -22,7 +22,7 @@ use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Catalog\Model\Product;
 use Magento\ConfigurableProduct\Model\Product\Type\Configurable as ConfigurableType;
 use Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable as ConfigurableResource;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 
 class GroupBySwatch implements DataProviderInterface
 {
@@ -41,19 +41,19 @@ class GroupBySwatch implements DataProviderInterface
      */
     protected $configurableResource;
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     protected $logger;
 
     /**
      * @param ProductRepositoryInterface $productRepository
      * @param ConfigurableResource $configurableResource
-     * @param LoggerInterface $logger
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
         ProductRepositoryInterface $productRepository,
         ConfigurableResource $configurableResource,
-        LoggerInterface $logger
+        AthosCommerceLogger $logger
     ) {
         $this->productRepository = $productRepository;
         $this->configurableResource = $configurableResource;

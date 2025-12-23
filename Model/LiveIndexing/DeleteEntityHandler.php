@@ -21,7 +21,7 @@ namespace AthosCommerce\Feed\Model\LiveIndexing;
 use AthosCommerce\Feed\Api\LiveIndexing\DeleteEntityHandlerInterface;
 use AthosCommerce\Feed\Helper\Constants;
 use AthosCommerce\Feed\Service\Api\ApiClient;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 
 class DeleteEntityHandler implements DeleteEntityHandlerInterface
 {
@@ -30,17 +30,17 @@ class DeleteEntityHandler implements DeleteEntityHandlerInterface
      */
     private $client;
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     private $logger;
 
     /**
      * @param ApiClient $client
-     * @param LoggerInterface $logger
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
         ApiClient       $client,
-        LoggerInterface $logger
+        AthosCommerceLogger $logger
     )
     {
         $this->client = $client;

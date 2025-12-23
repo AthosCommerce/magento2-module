@@ -35,7 +35,7 @@ use AthosCommerce\Feed\Model\Feed\StorageInterface;
 use AthosCommerce\Feed\Model\Feed\SystemFieldsList;
 use AthosCommerce\Feed\Model\Metric\CollectorInterface;
 use AthosCommerce\Feed\Api\TaskRepositoryInterface;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 
 class GenerateFeed implements GenerateFeedInterface
 {
@@ -71,7 +71,7 @@ class GenerateFeed implements GenerateFeedInterface
      */
     private $productCount = '';
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     private $logger;
     /**
@@ -92,7 +92,7 @@ class GenerateFeed implements GenerateFeedInterface
      * @param CollectorInterface $metricCollector
      * @param AppConfigInterface $appConfig
      * @param TaskRepositoryInterface $taskRepository
-     * @param LoggerInterface $logger
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
         CollectionProcessor $collectionProcessor,
@@ -103,7 +103,7 @@ class GenerateFeed implements GenerateFeedInterface
         CollectorInterface $metricCollector,
         AppConfigInterface $appConfig,
         TaskRepositoryInterface $taskRepository,
-        LoggerInterface $logger
+        AthosCommerceLogger $logger
     ) {
         $this->collectionProcessor = $collectionProcessor;
         $this->itemsGenerator = $itemsGenerator;

@@ -29,7 +29,7 @@ use AthosCommerce\Feed\Service\Action\AddIndexingEntitiesActionInterface;
 use Magento\Framework\Serialize\SerializerInterface;
 use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\StoreManagerInterface;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\RelationsProvider as ProductRelationsProvider;
 
 class EntityDiscovery implements EntityDiscoveryInterface
@@ -45,7 +45,7 @@ class EntityDiscovery implements EntityDiscoveryInterface
      */
     private $configModel;
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     private $logger;
     /**
@@ -76,7 +76,7 @@ class EntityDiscovery implements EntityDiscoveryInterface
     /**
      * @param StoreManagerInterface $storeManager
      * @param Config $configModel
-     * @param LoggerInterface $logger
+     * @param AthosCommerceLogger $logger
      * @param AddIndexingEntitiesActionInterface $addIndexingEntitiesAction
      * @param MagentoEntityInterfaceFactory $magentoEntityInterfaceFactory
      * @param \AthosCommerce\Feed\Model\CollectionProcessor $collectionProcessor
@@ -87,7 +87,7 @@ class EntityDiscovery implements EntityDiscoveryInterface
     public function __construct(
         StoreManagerInterface $storeManager,
         ConfigModel $configModel,
-        LoggerInterface $logger,
+        AthosCommerceLogger $logger,
         AddIndexingEntitiesActionInterface $addIndexingEntitiesAction,
         MagentoEntityInterfaceFactory $magentoEntityInterfaceFactory,
         CollectionProcessor $collectionProcessor,

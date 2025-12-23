@@ -20,7 +20,7 @@ use Magento\Catalog\Model\Product\Attribute\Source\Status;
 use Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable\Product\Collection;
 use Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable\Product\CollectionFactory
     as ProductCollectionFactory;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Configurable\GetChildCollection;
 
 class GetChildCollectionTest extends \PHPUnit\Framework\TestCase
@@ -31,7 +31,7 @@ class GetChildCollectionTest extends \PHPUnit\Framework\TestCase
 
     private $getChildCollection;
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     private $loggerMock;
 
@@ -39,7 +39,7 @@ class GetChildCollectionTest extends \PHPUnit\Framework\TestCase
     {
         $this->statusMock = $this->createMock(Status::class);
         $this->productCollectionFactoryMock = $this->createMock(ProductCollectionFactory::class);
-        $this->loggerMock = $this->createMock(LoggerInterface::class);
+        $this->loggerMock = $this->createMock(AthosCommerceLogger::class);
         $this->getChildCollection = new GetChildCollection(
             $this->productCollectionFactoryMock,
             $this->statusMock,

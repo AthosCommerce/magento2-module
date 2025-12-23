@@ -21,7 +21,7 @@ namespace AthosCommerce\Feed\Observer;
 use AthosCommerce\Feed\Model\Source\Actions;
 use AthosCommerce\Feed\Service\Action\SetIndexingEntitiesToDeleteActionInterface;
 use AthosCommerce\Feed\Service\Action\SetIndexingEntitiesToUpdateActionInterface;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 
 class BaseProductObserver
 {
@@ -34,19 +34,19 @@ class BaseProductObserver
      */
     private $setIndexingEntitiesToDeleteAction;
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     private $logger;
 
     /**
      * @param SetIndexingEntitiesToUpdateActionInterface $setIndexingEntitiesToUpdateAction
      * @param SetIndexingEntitiesToDeleteActionInterface $setIndexingEntitiesToDeleteAction
-     * @param LoggerInterface $logger
+     * @param \Magento\Framework\Logger\Monolog $logger
      */
     public function __construct(
         SetIndexingEntitiesToUpdateActionInterface $setIndexingEntitiesToUpdateAction,
         SetIndexingEntitiesToDeleteActionInterface $setIndexingEntitiesToDeleteAction,
-        LoggerInterface                            $logger
+        \Magento\Framework\Logger\Monolog                            $logger
     )
     {
         $this->setIndexingEntitiesToUpdateAction = $setIndexingEntitiesToUpdateAction;

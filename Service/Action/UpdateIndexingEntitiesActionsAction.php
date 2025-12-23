@@ -27,7 +27,7 @@ use Magento\Framework\Api\SearchCriteria;
 use Magento\Framework\Api\SearchCriteriaBuilder;
 use Magento\Framework\Api\SearchCriteriaBuilderFactory;
 use Magento\Framework\Exception\LocalizedException;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 
 class UpdateIndexingEntitiesActionsAction implements UpdateIndexingEntitiesActionsActionInterface
 {
@@ -40,19 +40,19 @@ class UpdateIndexingEntitiesActionsAction implements UpdateIndexingEntitiesActio
      */
     private $indexingEntityRepository;
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     private $logger;
 
     /**
      * @param SearchCriteriaBuilderFactory $searchCriteriaBuilderFactory
      * @param IndexingEntityRepositoryInterface $indexingEntityRepository
-     * @param LoggerInterface $logger
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
         SearchCriteriaBuilderFactory $searchCriteriaBuilderFactory,
         IndexingEntityRepositoryInterface $indexingEntityRepository,
-        LoggerInterface $logger
+        AthosCommerceLogger $logger
     ) {
         $this->searchCriteriaBuilderFactory = $searchCriteriaBuilderFactory;
         $this->indexingEntityRepository = $indexingEntityRepository;

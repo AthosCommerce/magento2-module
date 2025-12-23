@@ -10,7 +10,7 @@ use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Catalog\Model\Product;
 use Magento\Framework\EntityManager\MetadataPool;
 use Magento\Framework\Exception\LocalizedException;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable;
 
 class ParentInfoProvider implements DataProviderInterface
@@ -26,7 +26,7 @@ class ParentInfoProvider implements DataProviderInterface
     private $configurableType;
 
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     private $logger;
     /**
@@ -41,14 +41,14 @@ class ParentInfoProvider implements DataProviderInterface
 
     /**
      * @param DataProvider $provider
-     * @param LoggerInterface $logger
+     * @param AthosCommerceLogger $logger
      * @param ParentDataContextManager $parentProductContextManager
      * @param Configurable $configurableType
      * @param MetadataPool $metadataPool
      */
     public function __construct(
         DataProvider $provider,
-        LoggerInterface $logger,
+        AthosCommerceLogger $logger,
         ParentDataContextManager $parentProductContextManager,
         Configurable $configurableType,
         MetadataPool $metadataPool

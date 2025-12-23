@@ -40,7 +40,7 @@ use Magento\Framework\ObjectManagerInterface;
 use Magento\TestFramework\Helper\Bootstrap;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 
 /**
  * @magentoDbIsolation enabled
@@ -406,7 +406,7 @@ class IndexingEntityRepositoryTest extends TestCase
             ->method('delete')
             ->willThrowException($exception);
 
-        $mockLogger = $this->getMockBuilder(LoggerInterface::class)
+        $mockLogger = $this->getMockBuilder(AthosCommerceLogger::class)
             ->getMock();
         $mockLogger->expects($this->once())
             ->method('error')

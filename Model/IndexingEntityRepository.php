@@ -37,7 +37,7 @@ use Magento\Framework\Exception\CouldNotSaveException;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Model\AbstractModel;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 
 class IndexingEntityRepository implements IndexingEntityRepositoryInterface
 {
@@ -66,7 +66,7 @@ class IndexingEntityRepository implements IndexingEntityRepositoryInterface
      */
     private $indexingEntityValidator;
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     private $logger;
 
@@ -77,7 +77,7 @@ class IndexingEntityRepository implements IndexingEntityRepositoryInterface
      * @param CollectionProcessorInterface $collectionProcessor
      * @param CollectionFactory $indexingEntityCollectionFactory
      * @param ValidatorInterface $indexingEntityValidator
-     * @param LoggerInterface $logger
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
         IndexingEntityInterfaceFactory $indexingEntityFactory,
@@ -86,7 +86,7 @@ class IndexingEntityRepository implements IndexingEntityRepositoryInterface
         CollectionProcessorInterface $collectionProcessor,
         CollectionFactory $indexingEntityCollectionFactory,
         ValidatorInterface $indexingEntityValidator,
-        LoggerInterface $logger,
+        AthosCommerceLogger $logger,
     ) {
         $this->indexingEntityFactory = $indexingEntityFactory;
         $this->indexingEntityResourceModel = $indexingEntityResourceModel;

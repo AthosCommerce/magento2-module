@@ -20,7 +20,7 @@ namespace AthosCommerce\Feed\Model;
 
 use Magento\Framework\Api\SearchCriteriaBuilder;
 use Magento\Framework\Exception\LocalizedException;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Api\Data\TaskInterface;
 use AthosCommerce\Feed\Api\ExecutePendingTasksInterface;
 use AthosCommerce\Feed\Api\ExecuteTaskInterface;
@@ -42,7 +42,7 @@ class ExecutePendingTasks implements ExecutePendingTasksInterface
      */
     private $executeTask;
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     private $logger;
 
@@ -52,13 +52,13 @@ class ExecutePendingTasks implements ExecutePendingTasksInterface
      * @param TaskRepositoryInterface $taskRepository
      * @param SearchCriteriaBuilder $searchCriteriaBuilder
      * @param ExecuteTaskInterface $executeTask
-     * @param LoggerInterface $logger
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
         TaskRepositoryInterface $taskRepository,
         SearchCriteriaBuilder $searchCriteriaBuilder,
         ExecuteTaskInterface $executeTask,
-        LoggerInterface $logger
+        AthosCommerceLogger $logger
     ) {
         $this->taskRepository = $taskRepository;
         $this->searchCriteriaBuilder = $searchCriteriaBuilder;

@@ -19,20 +19,20 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Model\LiveIndexing;
 
 use AthosCommerce\Feed\Api\RetryManagerInterface;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 
 class RetryManager implements RetryManagerInterface
 {
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     private $logger;
 
     /**
-     * @param LoggerInterface $logger
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
-        LoggerInterface $logger
+        AthosCommerceLogger $logger
     ) {
         $this->logger = $logger;
     }

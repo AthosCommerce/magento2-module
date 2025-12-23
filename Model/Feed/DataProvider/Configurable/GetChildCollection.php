@@ -23,7 +23,7 @@ use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\Product\Attribute\Source\Status;
 use Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable\Product\Collection;
 use Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable\Product\CollectionFactory;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 class GetChildCollection
 {
     /**
@@ -36,7 +36,7 @@ class GetChildCollection
     private $status;
 
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     private $logger;
 
@@ -44,12 +44,12 @@ class GetChildCollection
      * GetChildCollection constructor.
      * @param CollectionFactory $collectionFactory
      * @param Status $status
-     * @param LoggerInterface $logger
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
         CollectionFactory $collectionFactory,
         Status $status,
-        LoggerInterface $logger
+        AthosCommerceLogger $logger
     ) {
         $this->collectionFactory = $collectionFactory;
         $this->status = $status;

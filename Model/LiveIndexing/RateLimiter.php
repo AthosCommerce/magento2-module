@@ -19,7 +19,7 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Model\LiveIndexing;
 
 use AthosCommerce\Feed\Api\RateLimiterInterface;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 
 class RateLimiter implements RateLimiterInterface
 {

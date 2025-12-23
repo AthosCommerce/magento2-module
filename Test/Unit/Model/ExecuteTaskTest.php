@@ -17,7 +17,7 @@
 namespace AthosCommerce\Feed\Test\Unit\Model;
 
 use Magento\Framework\Stdlib\DateTime\DateTime;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Api\Data\TaskErrorInterface;
 use AthosCommerce\Feed\Api\Data\TaskErrorInterfaceFactory;
 use AthosCommerce\Feed\Api\Data\TaskInterface;
@@ -51,7 +51,7 @@ class ExecuteTaskTest extends \PHPUnit\Framework\TestCase
     private $taskErrorFactoryMock;
 
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     private $loggerMock;
 
@@ -63,7 +63,7 @@ class ExecuteTaskTest extends \PHPUnit\Framework\TestCase
         $this->taskRepositoryMock = $this->createMock(TaskRepositoryInterface::class);
         $this->dateTimeMock = $this->createMock(DateTime::class);
         $this->taskErrorFactoryMock = $this->createMock(TaskErrorInterfaceFactory::class);
-        $this->loggerMock = $this->createMock(LoggerInterface::class);
+        $this->loggerMock = $this->createMock(AthosCommerceLogger::class);
         $this->executeTask = new ExecuteTask(
             $this->executorPoolMock,
             $this->taskRepositoryMock,

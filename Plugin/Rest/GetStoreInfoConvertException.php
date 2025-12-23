@@ -19,7 +19,7 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Plugin\Rest;
 
 use Magento\Framework\Webapi\Exception;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Api\GetStoresInfoInterface;
 use AthosCommerce\Feed\Model\Webapi\ExceptionConverterInterface;
 use Throwable;
@@ -31,18 +31,18 @@ class GetStoreInfoConvertException
      */
     private $exceptionConverter;
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     private $logger;
 
     /**
      * CreateTaskConvertException constructor.
      * @param ExceptionConverterInterface $exceptionConverter
-     * @param LoggerInterface $logger
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
         ExceptionConverterInterface $exceptionConverter,
-        LoggerInterface $logger
+        AthosCommerceLogger $logger
     ) {
         $this->exceptionConverter = $exceptionConverter;
         $this->logger = $logger;

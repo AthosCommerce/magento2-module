@@ -12,7 +12,7 @@ use Magento\Framework\Api\Search\FilterGroupBuilder;
 use Magento\Framework\Api\Search\FilterGroupBuilderFactory;
 use Magento\Framework\Api\SearchCriteriaBuilder;
 use Magento\Framework\Api\SearchCriteriaBuilderFactory;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 
 class SetIndexingEntitiesToNotBeIndexableAction implements SetIndexingEntitiesToNotBeIndexableActionInterface
 {
@@ -33,7 +33,7 @@ class SetIndexingEntitiesToNotBeIndexableAction implements SetIndexingEntitiesTo
      */
     private $filterGroupBuilderFactory;
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     private $logger;
 
@@ -42,14 +42,14 @@ class SetIndexingEntitiesToNotBeIndexableAction implements SetIndexingEntitiesTo
      * @param SearchCriteriaBuilderFactory $searchCriteriaBuilderFactory
      * @param FilterBuilderFactory $filterBuilderFactory
      * @param FilterGroupBuilderFactory $filterGroupBuilderFactory
-     * @param LoggerInterface $logger
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
         IndexingEntityRepositoryInterface $indexingEntityRepository,
         SearchCriteriaBuilderFactory      $searchCriteriaBuilderFactory,
         FilterBuilderFactory              $filterBuilderFactory,
         FilterGroupBuilderFactory         $filterGroupBuilderFactory,
-        LoggerInterface                   $logger
+        AthosCommerceLogger                   $logger
     )
     {
         $this->searchCriteriaBuilderFactory = $searchCriteriaBuilderFactory;
