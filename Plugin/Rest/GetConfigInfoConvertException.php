@@ -18,13 +18,14 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Plugin\Rest;
 
+use AthosCommerce\Feed\Api\Data\ConfigItemInterface;
+use AthosCommerce\Feed\Api\GetConfigInfoInterface;
 use Magento\Framework\Webapi\Exception;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
-use AthosCommerce\Feed\Api\GetStoresInfoInterface;
 use AthosCommerce\Feed\Model\Webapi\ExceptionConverterInterface;
 use Throwable;
 
-class GetStoreInfoConvertException
+class GetConfigInfoConvertException
 {
     /**
      * @var ExceptionConverterInterface
@@ -36,7 +37,7 @@ class GetStoreInfoConvertException
     private $logger;
 
     /**
-     * GetStoreInfoConvertException constructor.
+     * GetConfigInfoConvertException constructor.
      * @param ExceptionConverterInterface $exceptionConverter
      * @param AthosCommerceLogger $logger
      */
@@ -50,38 +51,27 @@ class GetStoreInfoConvertException
     }
 
     /**
-     * @param GetStoresInfoInterface $subject
+     * @param GetConfigInfoInterface $subject
      * @param callable $proceed
-     * @return string
+     * @param string $type
+     * @param $payload
+     * @return array
      * @throws Exception
      */
-    public function aroundGetAsHtml(GetStoresInfoInterface $subject, callable $proceed): string
-    {
-        try {
-            $result = $proceed();
-        } catch (Throwable $exception) {
-            $this->logger->error($exception->getMessage(), ['trace' => $exception->getTraceAsString()]);
-            $newException = $this->exceptionConverter->convert($exception);
-            throw $newException;
-        }
-
-        return $result;
-    }
-
-    /**
-     * @param GetStoresInfoInterface $subject
-     * @param callable $proceed
-     * @return array
-     */
-    public function aroundGetAsJson(
-        GetStoresInfoInterface $subject,
+    public function aroundGet(
+        GetConfigInfoInterface $subject,
         callable               $proceed
     ): array
     {
         try {
             $result = $proceed();
         } catch (Throwable $exception) {
-            $this->logger->error($exception->getMessage(), ['trace' => $exception->getTraceAsString()]);
+            $this->logger->error(
+                $exception->getMessage(),
+                [
+                    'trace' => $exception->getTraceAsString()
+                ]
+            );
             $newException = $this->exceptionConverter->convert($exception);
             throw $newException;
         }

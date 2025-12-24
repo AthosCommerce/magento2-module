@@ -128,16 +128,15 @@
     <preference for="AthosCommerce\Feed\Api\GetConfigInfoInterface"
                 type="AthosCommerce\Feed\Model\Api\GetConfigInfo"/>
     <preference for="AthosCommerce\Feed\Api\RateLimiterInterface"
-                type="AthosCommerce\Feed\Model\LiveIndexing\RateLimiter" />
+                type="AthosCommerce\Feed\Model\LiveIndexing\RateLimiter"/>
     <preference for="AthosCommerce\Feed\Api\LiveIndexing\DeleteEntityHandlerInterface"
-                type="AthosCommerce\Feed\Model\LiveIndexing\DeleteEntityHandler" />
+                type="AthosCommerce\Feed\Model\LiveIndexing\DeleteEntityHandler"/>
     <preference for="AthosCommerce\Feed\Api\LiveIndexing\UpsertEntityHandlerInterface"
-                type="AthosCommerce\Feed\Model\LiveIndexing\UpsertEntityHandler" />
+                type="AthosCommerce\Feed\Model\LiveIndexing\UpsertEntityHandler"/>
     <preference for="AthosCommerce\Feed\Api\RetryManagerInterface"
-                type="AthosCommerce\Feed\Model\LiveIndexing\RetryManager" />
-
+                type="AthosCommerce\Feed\Model\LiveIndexing\RetryManager"/>
     <preference for="AthosCommerce\Feed\Api\Data\ConfigItemInterface"
-                type="AthosCommerce\Feed\Model\Data\ConfigItem" />
+                type="AthosCommerce\Feed\Model\Data\ConfigItem"/>
 
     <type name="AthosCommerce\Feed\Model\Task\TypeList">
         <arguments>
