@@ -95,7 +95,7 @@ class Processor
      */
     public function __construct(
         IndexingEntityProvider              $indexingEntityProvider,
-        AthosCommerceLogger                     $logger,
+        AthosCommerceLogger                 $logger,
         StoreManagerInterface               $storeManager,
         ConfigModel                         $config,
         UpdateIndexingEntitiesActionsAction $updateIndexingEntitiesActionsAction,
@@ -242,41 +242,12 @@ class Processor
         }
 
         $deleteIds = [];
-        $excludeIds = $feedSpecification->getExcludedProductIds();
-
-        $excludeIds = array_map('intval', $excludeIds);
 
         foreach ($deleteRecords as $deleteRecord) {
-
-            if (!method_exists($deleteRecord, 'getTargetId')) {
-                $this->logger->warning('Delete record missing getTargetId()', [
-                    'method' => __METHOD__,
-                    'class' => is_object($deleteRecord) ? get_class($deleteRecord) : gettype($deleteRecord),
-                ]);
-                continue;
-            }
-
-            $targetId = (int)$deleteRecord->getTargetId();
-
-            if (!in_array($targetId, $excludeIds, true)) {
-
-                $this->logger->info('[LiveIndexing] DELETE product NOT excluded → added to delete list', [
-                    'method' => __METHOD__,
-                    'targetId' => $targetId,
-                ]);
-                $deleteIds[] = $targetId;
-            } else {
-                $this->logger->info('[LiveIndexing] DELETE product Excluded → skipped', [
-                    'method' => __METHOD__,
-                    'targetId' => $targetId,
-                ]);
+            if (method_exists($deleteRecord, 'getTargetId')) {
+                $deleteIds[] = (int)$deleteRecord->getTargetId();
             }
         }
-        $this->logger->info('[LiveIndexing] DELETE  processed for only not excluded products', [
-            'method' => __METHOD__,
-            'excludeIds' => $excludeIds,
-            'deleteIds' => $deleteIds,
-        ]);
 
         $successDeleteIds = [];
         $failedDeleteIds = [];
@@ -343,44 +314,12 @@ class Processor
             $startTimestamp = microtime(true);
             $updateIds = [];
             foreach ($updateProductIds as $updateRecord) {
-
-                if (!method_exists($updateRecord, 'getTargetId')) {
-                    $this->logger->warning('Update record missing getTargetId()', [
-                        'method' => __METHOD__,
-                        'class' => is_object($updateRecord) ? get_class($updateRecord) : gettype($updateRecord),
-                    ]);
-                    continue;
-                }
-
-                $targetId = (int)$updateRecord->getTargetId();
-                $recordId = method_exists($updateRecord, 'getId')
-                    ? (int)$updateRecord->getId()
-                    : null;
-
-                if (!in_array($targetId, $excludeIds, true)) {
-                    $updateIds[$recordId] = $targetId;
-                    $this->logger->info('[LiveIndexing][UPDATE] product → added', [
-                        'method' => __METHOD__,
-                        'recordId' => $recordId,
-                        'targetId' => $targetId,
-                    ]);
-                } else {
-                    $this->logger->info('[LiveIndexing][UPDATE] product → excluded', [
-                        'method' => __METHOD__,
-                        'recordId' => $recordId,
-                        'targetId' => $targetId,
-                    ]);
+                if (method_exists($updateRecord, 'getTargetId')) {
+                    $updateIds[$updateRecord->getId()] = (int)$updateRecord->getTargetId();
                 }
             }
 
-            $this->logger->info('[LiveIndexing][Update]  processed for only not excluded products', [
-                'method' => __METHOD__,
-                'updateIds' => $updateIds,
-                'count' => count($updateIds),
-                'excludeIds' => $excludeIds
-            ]);
             $magentoEntityIds = array_values($updateIds);
-
 
             $collection = $this->collectionProcessor->getCollection($feedSpecification);
             $collection->addFieldToFilter('entity_id', ['in' => $magentoEntityIds]);

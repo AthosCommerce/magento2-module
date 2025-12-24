@@ -178,17 +178,6 @@ class GenerateFeed implements GenerateFeedInterface
         while ($currentPageNumber <= $pageCount) {
             try {
                 $collection->setCurPage($currentPageNumber);
-
-                $excludeIds = $feedSpecification->getExcludedProductIds();
-                if (!empty($excludeIds)) {
-                    $collection->addFieldToFilter('entity_id', ['nin' => $excludeIds]);
-                    $this->logger->info('Product collection  processed for only not excluded products ', [
-                        'method' => __METHOD__,
-                        'loadedIDs' => $collection->getLoadedIds(),
-                        'excludedProductIds' => $excludeIds,
-                    ]);
-                }
-
                 $collection->load();
                 $this->collectionProcessor->processAfterLoad($collection, $feedSpecification);
 
