@@ -21,7 +21,9 @@ namespace AthosCommerce\Feed\Model;
 use Exception;
 use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\ResourceModel\Product\Collection;
+use Magento\Framework\Exception\CouldNotSaveException;
 use Magento\Framework\Exception\FileSystemException;
+use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Exception\RuntimeException;
 use AthosCommerce\Feed\Model\CollectionProcessor;
 use AthosCommerce\Feed\Model\ItemsGenerator;
@@ -118,8 +120,11 @@ class GenerateFeed implements GenerateFeedInterface
 
     /**
      * @param FeedSpecificationInterface $feedSpecification
-     *
-     * @throws Exception
+     * @param int $id
+     * @throws FileSystemException
+     * @throws RuntimeException
+     * @throws CouldNotSaveException
+     * @throws NoSuchEntityException
      */
     public function execute(FeedSpecificationInterface $feedSpecification, int $id): void
     {
@@ -173,6 +178,17 @@ class GenerateFeed implements GenerateFeedInterface
         while ($currentPageNumber <= $pageCount) {
             try {
                 $collection->setCurPage($currentPageNumber);
+
+                $excludeIds = $feedSpecification->getExcludedProductIds();
+                if (!empty($excludeIds)) {
+                    $collection->addFieldToFilter('entity_id', ['nin' => $excludeIds]);
+                    $this->logger->info('Product collection  processed for only not excluded products ', [
+                        'method' => __METHOD__,
+                        'loadedIDs' => $collection->getLoadedIds(),
+                        'excludedProductIds' => $excludeIds,
+                    ]);
+                }
+
                 $collection->load();
                 $this->collectionProcessor->processAfterLoad($collection, $feedSpecification);
 

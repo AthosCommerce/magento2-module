@@ -26,6 +26,7 @@ use AthosCommerce\Feed\Model\Config as ConfigModel;
 use AthosCommerce\Feed\Model\CollectionProcessor;
 use AthosCommerce\Feed\Model\Feed\SpecificationBuilderInterface;
 use AthosCommerce\Feed\Service\Action\AddIndexingEntitiesActionInterface;
+use Exception;
 use Magento\Framework\Serialize\SerializerInterface;
 use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\StoreManagerInterface;
@@ -166,6 +167,15 @@ class EntityDiscovery implements EntityDiscoveryInterface
             while ($currentPageNumber <= $pageCount) {
                 try {
                     $collection->setCurPage($currentPageNumber);
+                    $excludeIds = $feedSpecification->getExcludedProductIds();
+                    if (!empty($excludeIds)) {
+                        $collection->addFieldToFilter('entity_id', ['nin' => $excludeIds]);
+                        $this->logger->info('Entity discovery processed for only not excluded products', [
+                            'method' => __METHOD__,
+                            'loadedIDs' => $collection->getLoadedIds(),
+                            'excludedProductIds' => $excludeIds,
+                        ]);
+                    }
                     $collection->load();
                     $items = $collection->getItems();
                     if ($items) {

@@ -107,6 +107,8 @@ interface FeedSpecificationInterface extends ExtensibleDataInterface
     //Define data providers to ignore for each indexing mode
     const BULK_INDEXING_IGNORE_DATA_PROVIDERS = ['__group_by_swatch'];
     const LIVE_INDEXING_IGNORE_DATA_PROVIDERS = ['__origin_timestamp'];
+
+    const EXCLUDE_PRODUCT_IDS = 'exclude_product_ids';
     /**
      * @return string|null
      */
@@ -341,4 +343,15 @@ interface FeedSpecificationInterface extends ExtensibleDataInterface
      * @return array
      */
     public function getAdditionalIgnoreFieldsByMode(): array;
+
+    /**
+     * @return array
+     */
+    public function getExcludedProductIds() : array;
+
+    /**
+     * @param array $productIds
+     * @return FeedSpecificationInterface
+     */
+    public function setExcludedProductIds(array $productIds) : self;
 }
