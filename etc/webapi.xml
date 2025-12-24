@@ -99,7 +99,7 @@
         </resources>
     </route>
     <route url="/V1/athoscommerce/configinfo" method="GET">
-        <service class="AthosCommerce\Feed\Api\GetConfigInfoInterface" method="getConfigDetails" />
+        <service class="AthosCommerce\Feed\Api\GetConfigInfoInterface" method="get" />
         <resources>
             <resource ref="AthosCommerce_Feed::general" />
         </resources>

@@ -5,14 +5,15 @@ namespace AthosCommerce\Feed\Model\Api;
 use AthosCommerce\Feed\Api\ConfigUpdateInterface;
 use AthosCommerce\Feed\Api\Data\ConfigItemInterface;
 use AthosCommerce\Feed\Helper\Constants;
+use AthosCommerce\Feed\Model\Config\ConfigMap;
 use Magento\Framework\App\Config\Storage\WriterInterface;
 use Magento\Framework\Encryption\EncryptorInterface;
 use Magento\Framework\Exception\LocalizedException;
+use Magento\Store\Api\StoreRepositoryInterface;
+use Magento\Store\Model\StoreRepository;
 
 class ConfigUpdate implements ConfigUpdateInterface
 {
-    const MODULE_NAME = 'AthosCommerce_Feed';
-
     const MODULE_PREFIX = 'athoscommerce/';
 
     const ALLOWED_INDEXING_VALUES = ['0', '1'];
@@ -21,116 +22,101 @@ class ConfigUpdate implements ConfigUpdateInterface
      * @var WriterInterface
      */
     private $configWriter;
-
     /**
      * @var EncryptorInterface
      */
     private $encryptor;
+    /**
+     * @var StoreRepositoryInterface
+     */
+    private $storeRepository;
 
     /**
      * @param WriterInterface $configWriter
      * @param EncryptorInterface $encryptor
+     * @param StoreRepositoryInterface $storeRepository
      */
     public function __construct(
-        WriterInterface    $configWriter,
-        EncryptorInterface $encryptor
+        WriterInterface          $configWriter,
+        EncryptorInterface       $encryptor,
+        StoreRepositoryInterface $storeRepository
     )
     {
         $this->configWriter = $configWriter;
         $this->encryptor = $encryptor;
+        $this->storeRepository = $storeRepository;
     }
 
     /**
-     * @param string $module
-     * @param ConfigItemInterface[] $configs
-     * @param string $scope
-     * @param int $scopeId
+     * @param \AthosCommerce\Feed\Api\Data\ConfigItemInterface[] $payload
      * @return array
      * @throws LocalizedException
      */
     public function update(
-        string $module,
-        array  $configs,
-        string $scope,
-        int    $scopeId,
+        \AthosCommerce\Feed\Api\Data\ConfigItemInterface $payload
     ): array
     {
-
-        if ($module !== self::MODULE_NAME) {
-            $message = sprintf(
-                "Saving config is only allowed for module %s. Provided: %s",
-                self::MODULE_NAME,
-                $module
-            );
-            throw new LocalizedException(__($message));
+        if (empty($payload->getStoreCode())) {
+            throw new LocalizedException(__('storeCode is required'));
         }
 
-        if ($scope !== 'default' && $scopeId === 0) {
-            $message = sprintf(
-                "Saving config for scopeId=0 only allowed for default scope. Provided: %s",
-                $scope
-            );
-            throw new LocalizedException(__($message));
+        try {
+            $store = $this->storeRepository->get($payload->getStoreCode());
+        } catch (\Magento\Framework\Exception\NoSuchEntityException $e) {
+            throw new LocalizedException(__('Invalid storeCode provided'));
         }
+
+        $scope = 'stores';
+        $scopeId = (int)$store->getId();
 
         $results = [];
 
-        foreach ($configs as $config) {
-            if (!$config->getPath() || !$config->getValue()) {
-                $results[] = [
-                    'success' => false,
-                    'message' => 'Missing path or value'
-                ];
+        $data = $payload->toArray();
+        foreach (ConfigMap::MAP as $requestKey => $config) {
+            //Only allowed
+            if (!array_key_exists($requestKey, $data)) {
                 continue;
             }
 
-            try {
-                $path = $config->getPath();
-                $value = $config->getValue();
+            $value = $data[$requestKey];
+            if ($value === null) {
+                continue;
+            }
+            $path = $config['path'];
 
+            try {
                 $this->validateAthosCommercePath($path, $value);
 
-                switch ($path) {
-                    case Constants::XML_PATH_LIVE_INDEXING_ENABLED:
-                        if (!in_array($value, self::ALLOWED_INDEXING_VALUES, true)) {
-                            throw new LocalizedException(
-                                __("Invalid value '%1' for %2. Allowed: 0 or 1.", $value, $path)
-                            );
+                switch ($config['validator']) {
+                    case 'validateBoolean':
+                        if (!in_array($value, [0, 1, "0", '1'], true)) {
+                            throw new LocalizedException(__('Invalid boolean value'));
                         }
                         break;
 
-                    case Constants::XML_PATH_LIVE_INDEXING_SYNC_CRON_EXPR:
+                    case 'validateCron':
                         $this->validateCronExpression($value);
                         break;
 
-                    case Constants::XML_PATH_CONFIG_ENDPOINT:
+                    case 'validateEndpoint':
                         $this->validateEndpoint($value);
                         break;
 
-                    case Constants::XML_PATH_LIVE_INDEXING_PER_MINUTE:
-                    case Constants::XML_PATH_LIVE_INDEXING_CHUNK_PER_SIZE:
+                    case 'validateNumber':
                         $this->validateNumber($value);
                         break;
 
-                    case Constants::XML_PATH_CONFIG_SITE_ID:
-                    case Constants::XML_PATH_CONFIG_SHOP_DOMAIN:
-                    case Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD:
-                    case Constants::XML_PATH_CONFIG_FEED_ID:
+                    case 'validateString':
                         $this->validateString($value);
                         break;
 
-                    case Constants::XML_PATH_CONFIG_SECRET_KEY:
+                    case 'validateSecretKey':
                         $this->validateSecretKey($value);
-                        $value = $this->encryptor->encrypt($value);
                         break;
-                    default:
-                        throw new LocalizedException(
-                            __(
-                                "Invalid path '%1' found. Only athos module configuration allowed.",
-                                $path
-                            )
-                        );
-                        break;
+                }
+
+                if (!empty($config['encrypt'])) {
+                    $value = $this->encryptor->encrypt($value);
                 }
 
                 $this->configWriter->save(
@@ -139,30 +125,28 @@ class ConfigUpdate implements ConfigUpdateInterface
                     $scope,
                     $scopeId
                 );
+
                 $results[] = [
-                    'path' => $path,
-                    'value' => $value,
+                    'key' => $requestKey,
                     'success' => true
                 ];
+
             } catch (LocalizedException $e) {
                 $results[] = [
-                    'path' => $path,
-                    'value' => $value,
+                    'key' => $requestKey,
                     'success' => false,
                     'message' => $e->getMessage()
                 ];
-                continue;
             }
         }
 
         return [
             'data' => [
                 'success' => true,
+                'message' => __('Config updated successfully. Flush the Magento cache if required.'),
+                'storeCode' => $payload['storeCode'],
                 'count' => count($results),
-                'message' => "Config updated successfully. Flush the Magento cache if required.",
                 'results' => $results,
-                'scope' => $scope,
-                'scopeId' => $scopeId
             ]
         ];
     }
@@ -242,7 +226,7 @@ class ConfigUpdate implements ConfigUpdateInterface
         }
         throw new LocalizedException(
             __(
-                'Supplied Endpoint URl is invalid. Received %1, Valid format: live-indexing.com/api/custom/webhook/  : `https://` and `feedId` should not be included.',
+                'Supplied Endpoint URl is invalid. Received %1, `https://` and `feedId` should not be included.',
                 $endpoint,
             ),
         );
@@ -262,6 +246,7 @@ class ConfigUpdate implements ConfigUpdateInterface
         if (filter_var($value, FILTER_VALIDATE_INT)) {
             return;
         }
+
         throw new LocalizedException(
             __(
                 'Supplied Value is invalid. Received %1',
@@ -354,6 +339,10 @@ class ConfigUpdate implements ConfigUpdateInterface
         $isIndexingPath = $this->validateStringPrefix(
             $path,
             static::MODULE_PREFIX . 'indexing/'
+        );
+        $isDeveloperPath = $this->validateStringPrefix(
+            $path,
+            static::MODULE_PREFIX . 'developer/'
         );
 
         if (!$isConfigPath && !$isIndexingPath) {

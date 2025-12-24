@@ -21,6 +21,14 @@
         <plugin name="AthosCommerce_Feed::getstoreinfo_exceptions" type="AthosCommerce\Feed\Plugin\Rest\GetStoreInfoConvertException"/>
     </type>
 
+    <type name="AthosCommerce\Feed\Api\ConfigUpdateInterface">
+        <plugin name="AthosCommerce_Feed::configupdate_exceptions" type="AthosCommerce\Feed\Plugin\Rest\ConfigUpdateConvertException"/>
+    </type>
+
+    <type name="AthosCommerce\Feed\Api\GetConfigInfoInterface">
+        <plugin name="AthosCommerce_Feed::getconfiginfo_exceptions" type="AthosCommerce\Feed\Plugin\Rest\GetConfigInfoConvertException"/>
+    </type>
+
     <type name="AthosCommerce\Feed\Plugin\Rest\CreateTaskConvertException">
         <arguments>
             <argument name="logger" xsi:type="object">AthosCommerce\Feed\Logger\AthosCommerceLogger</argument>
