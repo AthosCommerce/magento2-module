@@ -59,7 +59,8 @@ class SpecificationBuilder implements SpecificationBuilderInterface
         'preSignedUrl' => FeedSpecificationInterface::PRE_SIGNED_URL,
         'isMsiEnabled' => FeedSpecificationInterface::MSI_STATUS,
         'swatchOptionSourceFieldNames' => FeedSpecificationInterface::SETTING_NAME_SWATCH_OPTION_FIELD_NAMES,
-        'allVariantsAdditionalFields'  => FeedSpecificationInterface::SETTING_NAME_VARIANT_ADDITIONAL_FIELDS
+        'allVariantsAdditionalFields'  => FeedSpecificationInterface::SETTING_NAME_VARIANT_ADDITIONAL_FIELDS,
+        'excludeProductIds' => FeedSpecificationInterface::EXCLUDE_PRODUCT_IDS
     ];
     /**
      * @var array
@@ -82,6 +83,7 @@ class SpecificationBuilder implements SpecificationBuilderInterface
             FeedSpecificationInterface::MSI_STATUS => false,
             FeedSpecificationInterface::SETTING_NAME_SWATCH_OPTION_FIELD_NAMES => ['color'],
             FeedSpecificationInterface::SETTING_NAME_VARIANT_ADDITIONAL_FIELDS => [],
+            FeedSpecificationInterface::EXCLUDE_PRODUCT_IDS => [],
         ],
         'media_gallery' => [
             MediaGallerySpecificationInterface::THUMB_WIDTH => 250,

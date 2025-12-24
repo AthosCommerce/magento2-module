@@ -21,7 +21,9 @@ namespace AthosCommerce\Feed\Model;
 use Exception;
 use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\ResourceModel\Product\Collection;
+use Magento\Framework\Exception\CouldNotSaveException;
 use Magento\Framework\Exception\FileSystemException;
+use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Exception\RuntimeException;
 use AthosCommerce\Feed\Model\CollectionProcessor;
 use AthosCommerce\Feed\Model\ItemsGenerator;
@@ -118,8 +120,11 @@ class GenerateFeed implements GenerateFeedInterface
 
     /**
      * @param FeedSpecificationInterface $feedSpecification
-     *
-     * @throws Exception
+     * @param int $id
+     * @throws FileSystemException
+     * @throws RuntimeException
+     * @throws CouldNotSaveException
+     * @throws NoSuchEntityException
      */
     public function execute(FeedSpecificationInterface $feedSpecification, int $id): void
     {

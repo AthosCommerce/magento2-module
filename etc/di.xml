@@ -264,6 +264,10 @@
                     <item name="objectInstance" xsi:type="object">AthosCommerce\Feed\Model\Feed\Collection\ProductTypeIdModifier</item>
                     <item name="sortOrder" xsi:type="number">700</item>
                 </item>
+                <item name="exclude_product_ids" xsi:type="array">
+                    <item name="objectInstance" xsi:type="object">AthosCommerce\Feed\Model\Feed\Collection\ExcludeProductIdsModifier</item>
+                    <item name="sortOrder" xsi:type="number">800</item>
+                </item>
             </argument>
         </arguments>
     </type>

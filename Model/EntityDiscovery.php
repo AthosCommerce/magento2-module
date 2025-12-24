@@ -26,6 +26,7 @@ use AthosCommerce\Feed\Model\Config as ConfigModel;
 use AthosCommerce\Feed\Model\CollectionProcessor;
 use AthosCommerce\Feed\Model\Feed\SpecificationBuilderInterface;
 use AthosCommerce\Feed\Service\Action\AddIndexingEntitiesActionInterface;
+use Exception;
 use Magento\Framework\Serialize\SerializerInterface;
 use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\StoreManagerInterface;
@@ -183,7 +184,7 @@ class EntityDiscovery implements EntityDiscoveryInterface
                         ]
                     );
                     $currentPageNumber++;
-                } catch (Exception $exception) {
+                } catch (\Exception $exception) {
                     if ($errorCount == 3) {
                         $this->logger->error(
                             $exception->getMessage(),

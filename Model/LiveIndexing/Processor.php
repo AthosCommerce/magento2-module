@@ -95,7 +95,7 @@ class Processor
      */
     public function __construct(
         IndexingEntityProvider              $indexingEntityProvider,
-        AthosCommerceLogger                     $logger,
+        AthosCommerceLogger                 $logger,
         StoreManagerInterface               $storeManager,
         ConfigModel                         $config,
         UpdateIndexingEntitiesActionsAction $updateIndexingEntitiesActionsAction,
@@ -242,6 +242,7 @@ class Processor
         }
 
         $deleteIds = [];
+
         foreach ($deleteRecords as $deleteRecord) {
             if (method_exists($deleteRecord, 'getTargetId')) {
                 $deleteIds[] = (int)$deleteRecord->getTargetId();
@@ -317,8 +318,8 @@ class Processor
                     $updateIds[$updateRecord->getId()] = (int)$updateRecord->getTargetId();
                 }
             }
-            $magentoEntityIds = array_values($updateIds);
 
+            $magentoEntityIds = array_values($updateIds);
 
             $collection = $this->collectionProcessor->getCollection($feedSpecification);
             $collection->addFieldToFilter('entity_id', ['in' => $magentoEntityIds]);
