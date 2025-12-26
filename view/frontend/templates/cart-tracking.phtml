@@ -1,0 +1,23 @@
+<?php
+/**
+ * @var $block \Magento\Checkout\Block\Cart
+ * @var $viewModel \AthosCommerce\Feed\ViewModel\CartViewModel
+ * @var $escaper \Magento\Framework\Escaper
+ */
+?>
+<?php $viewModel = $block->getData('athoscommerce_cart_view_model'); ?>
+<?php $siteId = $escaper->escapeHtmlAttr($viewModel->getAthoscommerceSiteId()); ?>
+<?php echo $siteId; die; ?>
+<?php if (!empty($siteId) && !empty($block->getQuote()->getItems())): ?>
+    <script type="text/x-magento-init">
+        {
+            "*": {
+                "athoscommerce-tracking-cart": {
+                    "siteId":  "<?= $siteId ?>",
+                    "products": "<?= $viewModel->getProducts($block->getQuote()->getAllVisibleItems()) ?>",
+                    "sku": "<?= $viewModel->getProductsSku() ?>"
+        }
+    }
+}
+    </script>
+<?php endif; ?>

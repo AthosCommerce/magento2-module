@@ -16,9 +16,21 @@
 
 declare(strict_types=1);
 
-namespace AthosCommerce\Feed\Api;
+namespace AthosCommerce\Feed\Service\Tracking;
 
-interface LoggerInterface extends \Psr\Log\LoggerInterface
+use Magento\Quote\Api\Data\CartItemInterface;
+use Magento\Sales\Api\Data\OrderItemInterface;
+
+/**
+ * Interface SkuResolverInterface
+ *
+ * @package AthosCommerce\Feed\Service
+ */
+interface SkuResolverInterface
 {
-
+    /**
+     * @param CartItemInterface|OrderItemInterface $product
+     * @return string|null
+     */
+    public function getProductSku($product): ?string;
 }

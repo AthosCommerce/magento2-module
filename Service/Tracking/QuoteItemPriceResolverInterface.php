@@ -16,9 +16,20 @@
 
 declare(strict_types=1);
 
-namespace AthosCommerce\Feed\Api;
+namespace AthosCommerce\Feed\Service\Tracking;
 
-interface LoggerInterface extends \Psr\Log\LoggerInterface
+use Magento\Quote\Api\Data\CartItemInterface;
+
+/**
+ * Interface QuoteItemPriceResolverInterface
+ *
+ * @package AthosCommerce\Feed\Service
+ */
+interface QuoteItemPriceResolverInterface
 {
-
+    /**
+     * @param CartItemInterface $product
+     * @return float|null
+     */
+    public function getProductPrice(CartItemInterface $product): ?float;
 }

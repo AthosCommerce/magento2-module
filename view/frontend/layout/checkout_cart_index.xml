@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" layout="1column" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceContainer name="content">
+            <block class="Magento\Checkout\Block\Cart" name="athoscommerce.tracking.checkout.cart"
+                   template="AthosCommerce_Feed::cart-tracking.phtml" after="checkout.cart">
+                <arguments>
+                    <argument name="athoscommerce_cart_view_model"
+                              xsi:type="object">AthosCommerce\Feed\ViewModel\CartViewModel
+                    </argument>
+                </arguments>
+            </block>
+        </referenceContainer>
+    </body>
+</page>
