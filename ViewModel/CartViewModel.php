@@ -84,8 +84,7 @@ class CartViewModel implements ArgumentInterface
      */
     public function getAthoscommerceSiteId(): ?string
     {
-        echo $this->config->getSiteId(); die;
-        return 'test';
+        return $this->config->getSiteId();
     }
 
     /**
