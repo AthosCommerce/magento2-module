@@ -18,7 +18,15 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Api;
 
-interface LoggerInterface extends \Psr\Log\LoggerInterface
+/**
+ * Interface ConfigInterface
+ *
+ * @package AthosCommerce\Tracking\Api
+ */
+interface ConfigInterface
 {
-
+    /**
+     * @return string|null
+     */
+    public function getSiteId(): ?string;
 }
