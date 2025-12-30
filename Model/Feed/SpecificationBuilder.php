@@ -60,7 +60,7 @@ class SpecificationBuilder implements SpecificationBuilderInterface
         'isMsiEnabled' => FeedSpecificationInterface::MSI_STATUS,
         'swatchOptionSourceFieldNames' => FeedSpecificationInterface::SETTING_NAME_SWATCH_OPTION_FIELD_NAMES,
         'allVariantsAdditionalFields'  => FeedSpecificationInterface::SETTING_NAME_VARIANT_ADDITIONAL_FIELDS,
-        'excludeProductIds' => FeedSpecificationInterface::EXCLUDE_PRODUCT_IDS
+        'excludedProductIds' => FeedSpecificationInterface::EXCLUDE_PRODUCT_IDS
     ];
     /**
      * @var array

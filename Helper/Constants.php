@@ -30,11 +30,14 @@ class Constants
      */
     const DEFAULT_MAX_REQUEST_LIMIT = 480;
 
+    /**
+     * Magento path to get store domain to pass in headers
+     */
+    const XML_PATH_MAGE_CONFIG_STORE_DOMAIN = 'web/secure/base_url';
+
     const XML_PATH_CONFIG_SITE_ID = 'athoscommerce/configuration/siteid';
     const XML_PATH_CONFIG_ENDPOINT = 'athoscommerce/configuration/endpoint';
     const XML_PATH_CONFIG_SECRET_KEY = 'athoscommerce/configuration/secretkey';
-    const XML_PATH_CONFIG_SHOP_DOMAIN = 'athoscommerce/configuration/shopdomain';
-    const XML_PATH_CONFIG_FEED_ID = 'athoscommerce/configuration/feedid';
 
     const XML_PATH_LIVE_INDEXING_ENABLED = 'athoscommerce/indexing/enable_live_indexing';
     const XML_PATH_LIVE_INDEXING_TASK_PAYLOAD = 'athoscommerce/indexing/task_payload';

@@ -39,16 +39,6 @@ class ConfigMap
             'encrypt' => true,
             'validator' => 'validateSecretKey'
         ],
-        'shopDomain' => [
-            'path' => Constants::XML_PATH_CONFIG_SHOP_DOMAIN,
-            'type' => 'string',
-            'validator' => 'validateString'
-        ],
-        'feedId' => [
-            'path' => Constants::XML_PATH_CONFIG_FEED_ID,
-            'type' => 'string',
-            'validator' => 'validateNumber'
-        ],
         'enableLiveIndexing' => [
             'path' => Constants::XML_PATH_LIVE_INDEXING_ENABLED,
             'type' => 'bool',
@@ -68,6 +58,76 @@ class ConfigMap
             'path' => Constants::XML_PATH_LIVE_INDEXING_CHUNK_PER_SIZE,
             'type' => 'int',
             'validator' => 'validateNumber'
+        ],
+        'thumbHeight' => [
+            'path' => Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD,
+            'group' => 'taskPayload',
+            'validator' => 'validatePositiveInt'
+        ],
+        'thumbWidth' => [
+            'path' => Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD,
+            'group' => 'taskPayload',
+            'validator' => 'validatePositiveInt'
+        ],
+        'keepAspectRatio' => [
+            'path' => Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD,
+            'group' => 'taskPayload',
+            'validator' => 'validateBoolean'
+        ],
+        'imageTypes' => [
+            'path' => Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD,
+            'group' => 'taskPayload',
+            'validator' => 'validateStringArray'
+        ],
+        'multiValuedSeparator' => [
+            'path' => Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD,
+            'group' => 'taskPayload',
+            'validator' => 'validateString'
+        ],
+        'hierarchySeparator' => [
+            'path' => Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD,
+            'group' => 'taskPayload',
+            'validator' => 'validateString'
+        ],
+        'includeTierPricing' => [
+            'path' => Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD,
+            'group' => 'taskPayload',
+            'validator' => 'validateBoolean'
+        ],
+        'includeOutOfStock' => [
+            'path' => Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD,
+            'group' => 'taskPayload',
+            'validator' => 'validateBoolean'
+        ],
+        'includeMediaGallery' => [
+            'path' => Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD,
+            'group' => 'taskPayload',
+            'validator' => 'validateBoolean'
+        ],
+        'includeMenuCategories' => [
+            'path' => Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD,
+            'group' => 'taskPayload',
+            'validator' => 'validateBoolean'
+        ],
+        'includeUrlHierarchy' => [
+            'path' => Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD,
+            'group' => 'taskPayload',
+            'validator' => 'validateBoolean'
+        ],
+        'includeJSONConfig' => [
+            'path' => Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD,
+            'group' => 'taskPayload',
+            'validator' => 'validateBoolean'
+        ],
+        'swatch_option_Fields' => [
+            'path' => Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD,
+            'group' => 'taskPayload',
+            'validator' => 'validateStringArray'
+        ],
+        'ignoreFields' => [
+            'path' => Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD,
+            'group' => 'taskPayload',
+            'validator' => 'validateStringArray'
         ],
     ];
 

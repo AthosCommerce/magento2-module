@@ -69,12 +69,6 @@ $configs = [
     [
         'scope'    => 'stores',
         'scope_id' => $storeId,
-        'path'     => 'athoscommerce/configuration/shopdomain',
-        'value'    => 'test.magento-shop.com',
-    ],
-    [
-        'scope'    => 'stores',
-        'scope_id' => $storeId,
         'path'     => 'athoscommerce/configuration/secretkey',
         'value'    => 'secretKeyMerryChristmas',
     ],

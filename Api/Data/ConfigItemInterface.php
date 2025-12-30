@@ -24,14 +24,11 @@ interface ConfigItemInterface
     public const SITE_ID = 'siteId';
     public const END_POINT = 'endPoint';
     public const SECRET_KEY = 'secretKey';
-    public const SHOP_DOMAIN = 'shopDomain';
-    public const FEED_ID = 'feedId';
 
     public const ENABLE_LIVE_INDEXING = 'enableLiveIndexing';
     public const ENTITY_SYNC_CRON_EXPR = 'entitySyncCronExpr';
     public const PER_MINUTE = 'perMinute';
     public const CHUNK_SIZE = 'chunkSize';
-
 
     /**
      * @return string
@@ -40,8 +37,9 @@ interface ConfigItemInterface
 
     /**
      * @param string $storeCode
+     * @return ConfigItemInterface
      */
-    public function setStoreCode(string $storeCode): self;
+    public function setStoreCode(string $storeCode): ConfigItemInterface;
 
     /**
      * @return string|null
@@ -50,8 +48,9 @@ interface ConfigItemInterface
 
     /**
      * @param string|null $siteId
+     * @return ConfigItemInterface
      */
-    public function setSiteId(?string $siteId): self;
+    public function setSiteId(?string $siteId): ConfigItemInterface;
 
     /**
      * @return string|null
@@ -60,8 +59,9 @@ interface ConfigItemInterface
 
     /**
      * @param string|null $value
+     * @return ConfigItemInterface
      */
-    public function setEndPoint(?string $value): self;
+    public function setEndPoint(?string $value): ConfigItemInterface;
 
     /**
      * @return string|null
@@ -70,28 +70,9 @@ interface ConfigItemInterface
 
     /**
      * @param string|null $secretKey
+     * @return ConfigItemInterface
      */
-    public function setSecretKey(?string $secretKey): self;
-
-    /**
-     * @return string|null
-     */
-    public function getShopDomain(): ?string;
-
-    /**
-     * @param string|null $value
-     */
-    public function setShopDomain(?string $value): self;
-
-    /**
-     * @return int|null
-     */
-    public function getFeedId(): ?int;
-
-    /**
-     * @param int|null $value
-     */
-    public function setFeedId(?int $value): self;
+    public function setSecretKey(?string $secretKey): ConfigItemInterface;
 
     /**
      * @return int|null
@@ -100,8 +81,9 @@ interface ConfigItemInterface
 
     /**
      * @param int|null $value
+     * @return ConfigItemInterface
      */
-    public function setEnableLiveIndexing(?int $value): self;
+    public function setEnableLiveIndexing(?int $value): ConfigItemInterface;
 
     /**
      * @return string|null
@@ -110,8 +92,9 @@ interface ConfigItemInterface
 
     /**
      * @param string|null $value
+     * @return ConfigItemInterface
      */
-    public function setEntitySyncCronExpr(?string $value): self;
+    public function setEntitySyncCronExpr(?string $value): ConfigItemInterface;
 
     /**
      * @return int|null
@@ -120,8 +103,9 @@ interface ConfigItemInterface
 
     /**
      * @param int|null $value
+     * @return ConfigItemInterface
      */
-    public function setPerMinute(?int $value): self;
+    public function setPerMinute(?int $value): ConfigItemInterface;
 
     /**
      * @return int|null
@@ -130,7 +114,194 @@ interface ConfigItemInterface
 
     /**
      * @param int|null $value
+     * @return ConfigItemInterface
      */
-    public function setChunkSize(?int $value): self;
+    public function setChunkSize(?int $value): ConfigItemInterface;
 
+    /**
+     * @return string|null
+     */
+    public function getHierarchySeparator(): ?string;
+
+    /**
+     * @param string $separator
+     * @return ConfigItemInterface
+     */
+    public function setHierarchySeparator(string $separator): ConfigItemInterface;
+
+    /**
+     * @return string|null
+     */
+    public function getMultiValuedSeparator(): ?string;
+
+    /**
+     * @param string $separator
+     * @return ConfigItemInterface
+     */
+    public function setMultiValuedSeparator(string $separator): ConfigItemInterface;
+
+    /**
+     * @return bool|null
+     */
+    public function getIncludeUrlHierarchy(): ?bool;
+
+    /**
+     * @param bool $flag
+     * @return ConfigItemInterface
+     */
+    public function setIncludeUrlHierarchy(bool $flag): ConfigItemInterface;
+
+    /**
+     * @return bool|null
+     */
+    public function getIncludeMenuCategories(): ?bool;
+
+    /**
+     * @param bool $flag
+     * @return ConfigItemInterface
+     */
+    public function setIncludeMenuCategories(bool $flag): ConfigItemInterface;
+
+    /**
+     * @return bool|null
+     */
+    public function getIncludeJSONConfig(): ?bool;
+
+    /**
+     * @param bool $flag
+     * @return ConfigItemInterface
+     */
+    public function setIncludeJSONConfig(bool $flag): ConfigItemInterface;
+
+    /**
+     * @return bool|null
+     */
+    public function getIncludeChildPrices(): ?bool;
+
+    /**
+     * @param bool $flag
+     * @return ConfigItemInterface
+     */
+    public function setIncludeChildPrices(bool $flag): ConfigItemInterface;
+
+    /**
+     * @return bool|null
+     */
+    public function getIncludeTierPricing(): ?bool;
+
+    /**
+     * @param bool $flag
+     * @return ConfigItemInterface
+     */
+    public function setIncludeTierPricing(bool $flag): ConfigItemInterface;
+
+    /**
+     * @return bool|null
+     */
+    public function getIncludeOutOfStock(): ?bool;
+
+    /**
+     * @param bool $flag
+     * @return ConfigItemInterface
+     */
+    public function setIncludeOutOfStock(bool $flag): ConfigItemInterface;
+
+    /**
+     * @return string[]
+     */
+    public function getIgnoreFields();
+
+    /**
+     * @param $fields
+     * @return ConfigItemInterface
+     */
+    public function setIgnoreFields($fields): ConfigItemInterface;
+
+    /**
+     * @return bool
+     */
+    public function getMsiStatus(): bool;
+
+    /**
+     * @param bool $value
+     * @return ConfigItemInterface
+     */
+    public function setMsiStatus(bool $value): ConfigItemInterface;
+
+    /**
+     * @return string[]
+     */
+    public function getSwatchOptionFieldsNames();
+
+    /**
+     * @param $fields
+     * @return ConfigItemInterface
+     */
+    public function setSwatchOptionFieldsNames($fields): ConfigItemInterface;
+
+    /**
+     * @return string[]
+     */
+    public function getExcludedProductIds();
+
+    /**
+     * @param $productIds
+     * @return ConfigItemInterface
+     */
+    public function setExcludedProductIds($productIds): ConfigItemInterface;
+
+    /**
+     * @return int|null
+     */
+    public function getThumbWidth(): ?int;
+
+    /**
+     * @param int|null $width
+     * @return ConfigItemInterface
+     */
+    public function setThumbWidth(?int $width): ConfigItemInterface;
+
+    /**
+     * @return int|null
+     */
+    public function getThumbHeight(): ?int;
+
+    /**
+     * @param int|null $height
+     * @return ConfigItemInterface
+     */
+    public function setThumbHeight(int $height): ConfigItemInterface;
+
+    /**
+     * @return bool
+     */
+    public function getKeepAspectRatio(): ?bool;
+
+    /**
+     * @param bool $flag
+     * @return ConfigItemInterface
+     */
+    public function setKeepAspectRatio(?bool $flag): self;
+
+    /**
+     * @return string[]
+     */
+    public function getImageTypes();
+
+    /**
+     * @param $types
+     * @return ConfigItemInterface
+     */
+    public function setImageTypes($types): ConfigItemInterface;
+
+    /**
+     * @return bool
+     */
+    public function getIncludeMediaGallery(): ?bool;
+
+    /**
+     * @param bool $flag
+     * @return ConfigItemInterface
+     */
+    public function setIncludeMediaGallery(bool $flag): ConfigItemInterface;
 }

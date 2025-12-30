@@ -137,6 +137,14 @@
                 type="AthosCommerce\Feed\Model\LiveIndexing\RetryManager"/>
     <preference for="AthosCommerce\Feed\Api\Data\ConfigItemInterface"
                 type="AthosCommerce\Feed\Model\Data\ConfigItem"/>
+    <preference for="AthosCommerce\Feed\Api\Data\ConfigInfoResponseInterface"
+                type="AthosCommerce\Feed\Model\Data\ConfigInfoResponse"/>
+    <preference for="AthosCommerce\Feed\Api\Data\StoreConfigInterface"
+                type="AthosCommerce\Feed\Model\Data\StoreConfig"/>
+    <preference for="AthosCommerce\Feed\Api\Data\ConfigUpdateResponseInterface"
+                type="AthosCommerce\Feed\Model\Data\ConfigUpdateResponse"/>
+    <preference for="AthosCommerce\Feed\Api\Data\ConfigUpdateResultInterface"
+                type="AthosCommerce\Feed\Model\Data\ConfigUpdateResult"/>
 
     <type name="AthosCommerce\Feed\Model\Task\TypeList">
         <arguments>
