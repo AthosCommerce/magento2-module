@@ -39,8 +39,9 @@ class Config
      */
     public function __construct(
         ScopeConfigInterface $scopeConfig,
-        EncryptorInterface $encryptor
-    ) {
+        EncryptorInterface   $encryptor
+    )
+    {
         $this->scopeConfig = $scopeConfig;
         $this->encryptor = $encryptor;
     }
@@ -115,11 +116,20 @@ class Config
      */
     public function getShopDomainByStoreId(?int $storeId = null): string
     {
-        return (string)$this->scopeConfig->getValue(
-            Constants::XML_PATH_CONFIG_SHOP_DOMAIN,
+        $domain = (string)$this->scopeConfig->getValue(
+            Constants::XML_PATH_MAGE_CONFIG_STORE_DOMAIN,
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
             $storeId
         );
+        //remove https:// if exists
+        if (strpos($domain, 'https://') === true) {
+            $domain = str_replace('https://', '', $value);
+        }
+        //remove http:// if exists
+        if (strpos($domain, 'http://') === true) {
+            $domain = str_replace('http://', '', $value);
+        }
+        return $domain;
     }
 
     /**
@@ -176,20 +186,6 @@ class Config
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
             $storeId
         ) ?? 50;
-    }
-
-    /**
-     * @param int|null $storeId
-     *
-     * @return string
-     */
-    public function getFeedIdByStoreId(?int $storeId = null): string
-    {
-        return (string)$this->scopeConfig->getValue(
-            Constants::XML_PATH_CONFIG_FEED_ID,
-            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
-            $storeId
-        );
     }
 
     /**

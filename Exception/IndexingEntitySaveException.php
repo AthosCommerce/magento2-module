@@ -22,5 +22,24 @@ use Magento\Framework\Exception\LocalizedException;
 
 class IndexingEntitySaveException extends LocalizedException
 {
+    const CODE = 2000;
 
+    /**
+     * IndexingEntitySaveException constructor.
+     * @param string $message
+     * @param int $code
+     * @param Throwable|null $previous
+     */
+    public function __construct(
+        $message = "",
+        $code = 0,
+        ?Throwable $previous = null
+    )
+    {
+        if (!$message) {
+            $message = (string)__('Indexing entity could not be saved');
+        }
+
+        parent::__construct($message, $code, $previous);
+    }
 }

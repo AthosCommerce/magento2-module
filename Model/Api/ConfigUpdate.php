@@ -4,8 +4,13 @@ namespace AthosCommerce\Feed\Model\Api;
 
 use AthosCommerce\Feed\Api\ConfigUpdateInterface;
 use AthosCommerce\Feed\Api\Data\ConfigItemInterface;
+use AthosCommerce\Feed\Api\Data\ConfigUpdateResponseInterface;
+use AthosCommerce\Feed\Api\Data\ConfigUpdateResultInterface;
 use AthosCommerce\Feed\Helper\Constants;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Config\ConfigMap;
+use AthosCommerce\Feed\Api\Data\ConfigUpdateResponseInterfaceFactory;
+use AthosCommerce\Feed\Api\Data\ConfigUpdateResultInterfaceFactory;
 use Magento\Framework\App\Config\Storage\WriterInterface;
 use Magento\Framework\Encryption\EncryptorInterface;
 use Magento\Framework\Exception\LocalizedException;
@@ -30,38 +35,63 @@ class ConfigUpdate implements ConfigUpdateInterface
      * @var StoreRepositoryInterface
      */
     private $storeRepository;
+    /**
+     * @var ConfigUpdateResponseInterfaceFactory
+     */
+    private $responseFactory;
+    /**
+     * @var ConfigUpdateResultInterfaceFactory
+     */
+    private $configUpdateResultFactory;
+    /**
+     * @var AthosCommerceLogger
+     */
+    private $logger;
 
     /**
      * @param WriterInterface $configWriter
      * @param EncryptorInterface $encryptor
      * @param StoreRepositoryInterface $storeRepository
+     * @param ConfigUpdateResponseInterfaceFactory $responseFactory
+     * @param ConfigUpdateResultInterfaceFactory $configUpdateResultFactory
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
-        WriterInterface          $configWriter,
-        EncryptorInterface       $encryptor,
-        StoreRepositoryInterface $storeRepository
+        WriterInterface                      $configWriter,
+        EncryptorInterface                   $encryptor,
+        StoreRepositoryInterface             $storeRepository,
+        ConfigUpdateResponseInterfaceFactory $responseFactory,
+        ConfigUpdateResultInterfaceFactory   $configUpdateResultFactory,
+        AthosCommerceLogger                  $logger,
     )
     {
         $this->configWriter = $configWriter;
         $this->encryptor = $encryptor;
         $this->storeRepository = $storeRepository;
+        $this->responseFactory = $responseFactory;
+        $this->configUpdateResultFactory = $configUpdateResultFactory;
+        $this->logger = $logger;
     }
 
     /**
-     * @param \AthosCommerce\Feed\Api\Data\ConfigItemInterface[] $payload
-     * @return array
+     * @param ConfigItemInterface $payload
+     * @return ConfigUpdateResponseInterface
      * @throws LocalizedException
      */
     public function update(
         \AthosCommerce\Feed\Api\Data\ConfigItemInterface $payload
-    ): array
+    ): ConfigUpdateResponseInterface
     {
-        if (empty($payload->getStoreCode())) {
+        /** @var ConfigUpdateResponseInterface $response */
+        $response = $this->responseFactory->create();
+
+        $storeCode = $payload->getStoreCode();
+        if (empty($storeCode)) {
             throw new LocalizedException(__('storeCode is required'));
         }
 
         try {
-            $store = $this->storeRepository->get($payload->getStoreCode());
+            $store = $this->storeRepository->get($storeCode);
         } catch (\Magento\Framework\Exception\NoSuchEntityException $e) {
             throw new LocalizedException(__('Invalid storeCode provided'));
         }
@@ -70,11 +100,20 @@ class ConfigUpdate implements ConfigUpdateInterface
         $scopeId = (int)$store->getId();
 
         $results = [];
+        $taskPayload = [];
 
         $data = $payload->toArray();
         foreach (ConfigMap::MAP as $requestKey => $config) {
-            //Only allowed
+
             if (!array_key_exists($requestKey, $data)) {
+                $this->logger->debug(
+                    '[ConfigUpdateAPI]: Missing Key',
+                    [
+                        'storeCode' => $storeCode,
+                        'requestKey' => $requestKey,
+                        'data' => $data
+                    ]
+                );
                 continue;
             }
 
@@ -82,14 +121,17 @@ class ConfigUpdate implements ConfigUpdateInterface
             if ($value === null) {
                 continue;
             }
-            $path = $config['path'];
+            $path = $config['path'] ?? '';
+
+            /** @var ConfigUpdateResultInterface $configUpdateResultRow */
+            $configUpdateResultRow = $this->configUpdateResultFactory->create();
 
             try {
                 $this->validateAthosCommercePath($path, $value);
 
                 switch ($config['validator']) {
                     case 'validateBoolean':
-                        if (!in_array($value, [0, 1, "0", '1'], true)) {
+                        if (!in_array($value, [false, true, 0, 1, "0", '1'], true)) {
                             throw new LocalizedException(__('Invalid boolean value'));
                         }
                         break;
@@ -113,42 +155,93 @@ class ConfigUpdate implements ConfigUpdateInterface
                     case 'validateSecretKey':
                         $this->validateSecretKey($value);
                         break;
+
+                    case 'validatePositiveInt':
+                        $this->validatePositiveInt($value);
+                        break;
+
+                    case 'validateNullableInt':
+                        $this->validateNullableInt($value);
+                        break;
+
+                    case 'validateStringArray':
+                        $this->validateStringArray($value);
+                        break;
+
+                    default:
+                        throw new LocalizedException(
+                            __(
+                                sprintf(
+                                    'Unknown validator type (%s)',
+                                    $config['validator']
+                                )
+                            )
+                        );
+                        break;
                 }
 
-                if (!empty($config['encrypt'])) {
-                    $value = $this->encryptor->encrypt($value);
+
+                if (!empty($config['group']) && $config['group'] === 'taskPayload') {
+                    $taskPayload[$requestKey] = $value;
+                } elseif (!empty($config['path'])) {
+
+                    if (!empty($config['encrypt'])) {
+                        $value = $this->encryptor->encrypt($value);
+                    }
+
+                    $this->configWriter->save(
+                        $config['path'],
+                        $value,
+                        $scope,
+                        $scopeId
+                    );
                 }
 
-                $this->configWriter->save(
-                    $path,
-                    $value,
-                    $scope,
-                    $scopeId
-                );
-
-                $results[] = [
-                    'key' => $requestKey,
-                    'success' => true
-                ];
+                $configUpdateResultRow->setKey($requestKey);
+                $configUpdateResultRow->setSuccess(true);
+                $configUpdateResultRow->setMessage(__('Config updated successfully.')->render());
 
             } catch (LocalizedException $e) {
-                $results[] = [
-                    'key' => $requestKey,
-                    'success' => false,
-                    'message' => $e->getMessage()
-                ];
+                $configUpdateResultRow->setKey($requestKey);
+                $configUpdateResultRow->setSuccess(false);
+                $configUpdateResultRow->setMessage($e->getMessage());
             }
+            $results[] = $configUpdateResultRow;
+            $this->logger->debug(
+                sprintf('[ConfigUpdateAPI] Processed config key: %s', $requestKey),
+                [
+                    'storeCode' => $storeCode,
+                    'config' => $config,
+                    'result' => $configUpdateResultRow->toArray(),
+                ]
+            );
         }
 
-        return [
-            'data' => [
-                'success' => true,
-                'message' => __('Config updated successfully. Flush the Magento cache if required.'),
-                'storeCode' => $payload['storeCode'],
-                'count' => count($results),
-                'results' => $results,
-            ]
-        ];
+
+        if (!empty($taskPayload)) {
+            $this->logger->debug(
+                '[ConfigUpdateAPI] Task Payload: ',
+                [
+                    'storeCode' => $storeCode,
+                    'taskPayload' => $taskPayload
+                ]
+            );
+            $this->configWriter->save(
+                Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD,
+                json_encode($taskPayload, JSON_THROW_ON_ERROR),
+                $scope,
+                $scopeId
+            );
+        }
+
+
+        $response->setSuccess(true);
+        $response->setStoreCode($storeCode);
+        $response->setCount(count($results));
+        $response->setMessage(__('Config updated successfully. Flush the Magento config relevant cache if required.')->render());
+        $response->setResults($results);
+        $this->logger->info('[ConfigUpdateAPI] Config updated successfully for store: ' . $storeCode);
+        return $response;
     }
 
     /**
@@ -226,7 +319,7 @@ class ConfigUpdate implements ConfigUpdateInterface
         }
         throw new LocalizedException(
             __(
-                'Supplied Endpoint URl is invalid. Received %1, `https://` and `feedId` should not be included.',
+                'Supplied Endpoint URl is invalid. Received %1',
                 $endpoint,
             ),
         );
@@ -325,12 +418,12 @@ class ConfigUpdate implements ConfigUpdateInterface
 
     /**
      * @param string $path
-     * @param string|null $value
+     * @param $value
      *
      * @return void
      * @throws LocalizedException
      */
-    private function validateAthosCommercePath(string $path, ?string $value): void
+    private function validateAthosCommercePath(string $path, $value): void
     {
         $isConfigPath = $this->validateStringPrefix(
             $path,
@@ -347,11 +440,7 @@ class ConfigUpdate implements ConfigUpdateInterface
 
         if (!$isConfigPath && !$isIndexingPath) {
             throw new LocalizedException(
-                __(
-                    "Invalid path '%1' found. Only '%s' module configuration allowed.",
-                    $path,
-                    static::MODULE_PREFIX
-                )
+                __("Invalid path " . $path . " found. Only " . static::MODULE_PREFIX . " module configuration allowed.")
             );
         }
     }
@@ -365,5 +454,81 @@ class ConfigUpdate implements ConfigUpdateInterface
     private function validateStringPrefix(string $haystack, string $needle): bool
     {
         return $needle !== '' && substr($haystack, 0, strlen($needle)) === $needle;
+    }
+
+    /**
+     * @param $value
+     * @return void
+     * @throws LocalizedException
+     */
+    private function validatePositiveInt($value): void
+    {
+        if (!is_numeric($value) || (int)$value <= 0) {
+            throw new LocalizedException(__('Value must be a positive integer'));
+        }
+    }
+
+    /**
+     * @param $value
+     * @return void
+     * @throws LocalizedException
+     */
+    private function validateNullableInt($value): void
+    {
+        if ($value === null) {
+            return;
+        }
+        if (!is_numeric($value)) {
+            throw new LocalizedException(__('Value must be an integer or null'));
+        }
+    }
+
+    /**
+     * @param $value
+     * @return void
+     * @throws LocalizedException
+     */
+    private function validateStringArray($value): void
+    {
+        if (!is_array($value)) {
+            throw new LocalizedException(__('Value must be an array'));
+        }
+
+        foreach ($value as $item) {
+            if (!is_string($item)) {
+                throw new LocalizedException(__('Array values must be strings'));
+            }
+        }
+    }
+
+    /**
+     * Validate integer array
+     *
+     * @param mixed $value
+     * @throws LocalizedException
+     */
+    private function validateIntegerArray($value): void
+    {
+        if (!is_array($value)) {
+            throw new LocalizedException(__('Value must be an array'));
+        }
+
+        foreach ($value as $item) {
+            if (is_array($item) || is_object($item)) {
+                throw new LocalizedException(__('Array must contain only integers'));
+            }
+
+            if (!is_numeric($item) || (int)$item != $item) {
+                throw new LocalizedException(
+                    __('Array must contain only integer values')
+                );
+            }
+
+            if ((int)$item <= 0) {
+                throw new LocalizedException(
+                    __('Product IDs must be greater than zero')
+                );
+            }
+        }
     }
 }

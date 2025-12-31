@@ -95,10 +95,7 @@ class ApiClient
         $siteId = $this->config->getSiteIdByStoreId($storeId);
         $shopDomain = $this->config->getShopDomainByStoreId($storeId);
         $secretKey = $this->config->getSecretKeyByStoreId($storeId);
-        $endpoint = rtrim($this->config->getEndpointByStoreId($storeId), '/');
-        $feedId = ltrim($this->config->getFeedIdByStoreId($storeId), '/');
-
-        $endpointUrl = $endpoint . '/' . $feedId;
+        $endpointUrl = rtrim($this->config->getEndpointByStoreId($storeId), '/');
         $jsonPayload = $this->jsonSerializer->serialize($payload);
         $sizeInBytes = strlen($jsonPayload);
 
@@ -137,8 +134,6 @@ class ApiClient
                 'endpointUrl' => $endpointUrl,
                 'siteId' => $siteId,
                 'storeCode' => $storeCode,
-                'endpoint' => $endpoint,
-                'feedId' => $feedId,
                 'shopDomain' => $shopDomain,
                 'headers' => $maskedHeaders,
                 'length' => $sizeInBytes . ' bytes',
@@ -160,7 +155,6 @@ class ApiClient
                 'siteId' => $siteId,
                 'storeCode' => $storeCode,
                 'storeCode' => $storeCode,
-                'feedId' => $feedId,
                 'shopDomain' => $shopDomain,
                 'responseBody' => $responseBody,
             ]

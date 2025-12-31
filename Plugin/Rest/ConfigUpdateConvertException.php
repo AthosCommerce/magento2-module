@@ -20,6 +20,7 @@ namespace AthosCommerce\Feed\Plugin\Rest;
 
 use AthosCommerce\Feed\Api\ConfigUpdateInterface;
 use AthosCommerce\Feed\Api\Data\ConfigItemInterface;
+use AthosCommerce\Feed\Api\Data\ConfigUpdateResponseInterface;
 use Magento\Framework\Webapi\Exception;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Webapi\ExceptionConverterInterface;
@@ -53,16 +54,15 @@ class ConfigUpdateConvertException
     /**
      * @param ConfigUpdateInterface $subject
      * @param callable $proceed
-     * @param string $type
-     * @param $payload
-     * @return array
+     * @param ConfigItemInterface $payload
+     * @return ConfigUpdateResponseInterface
      * @throws Exception
      */
     public function aroundUpdate(
         ConfigUpdateInterface $subject,
         callable              $proceed,
         ConfigItemInterface   $payload
-    ): array
+    ): ConfigUpdateResponseInterface
     {
         try {
             $result = $proceed($payload);

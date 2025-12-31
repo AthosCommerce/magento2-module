@@ -18,12 +18,14 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Api;
 
+use AthosCommerce\Feed\Api\Data\ConfigInfoResponseInterface;
+
 interface GetConfigInfoInterface
 {
     /**
      * To get the configuration information
      *
-     * @return array
+     * @return ConfigInfoResponseInterface
      */
-    public function get(): array;
+    public function get(): ConfigInfoResponseInterface;
 }

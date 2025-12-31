@@ -18,17 +18,16 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Api;
 
+use AthosCommerce\Feed\Api\Data\ConfigUpdateResponseInterface;
+use AthosCommerce\Feed\Api\Data\ConfigItemInterface;
+
 interface ConfigUpdateInterface
 {
-
     /**
-     * To update the configuration
-     *
-     * @param \AthosCommerce\Feed\Api\Data\ConfigItemInterface[] $payload
-     *
-     * @return array
+     * @param ConfigItemInterface $payload
+     * @return ConfigUpdateResponseInterface
      */
     public function update(
         \AthosCommerce\Feed\Api\Data\ConfigItemInterface $payload
-    ): array;
+    ): ConfigUpdateResponseInterface;
 }

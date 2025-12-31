@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Plugin\Rest;
 
+use AthosCommerce\Feed\Api\Data\ConfigInfoResponseInterface;
 use AthosCommerce\Feed\Api\Data\ConfigItemInterface;
 use AthosCommerce\Feed\Api\GetConfigInfoInterface;
 use Magento\Framework\Webapi\Exception;
@@ -61,7 +62,7 @@ class GetConfigInfoConvertException
     public function aroundGet(
         GetConfigInfoInterface $subject,
         callable               $proceed
-    ): array
+    ): ConfigInfoResponseInterface
     {
         try {
             $result = $proceed();
