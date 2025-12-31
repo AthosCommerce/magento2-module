@@ -106,6 +106,14 @@ class ConfigUpdate implements ConfigUpdateInterface
         foreach (ConfigMap::MAP as $requestKey => $config) {
 
             if (!array_key_exists($requestKey, $data)) {
+                $this->logger->debug(
+                    '[ConfigUpdateAPI]: Missing Key',
+                    [
+                        'storeCode' => $storeCode,
+                        'requestKey' => $requestKey,
+                        'data' => $data
+                    ]
+                );
                 continue;
             }
 
@@ -199,11 +207,25 @@ class ConfigUpdate implements ConfigUpdateInterface
                 $configUpdateResultRow->setMessage($e->getMessage());
             }
             $results[] = $configUpdateResultRow;
+            $this->logger->debug(
+                sprintf('[ConfigUpdateAPI] Processed config key: %s', $requestKey),
+                [
+                    'storeCode' => $storeCode,
+                    'config' => $config,
+                    'result' => $configUpdateResultRow->toArray(),
+                ]
+            );
         }
 
-        $this->logger->info('taskPayloadayload: ' . json_encode($taskPayload));
+
         if (!empty($taskPayload)) {
-            $this->logger->info('Saving live indexing task payload: ' . json_encode($taskPayload));
+            $this->logger->debug(
+                '[ConfigUpdateAPI] Task Payload: ',
+                [
+                    'storeCode' => $storeCode,
+                    'taskPayload' => $taskPayload
+                ]
+            );
             $this->configWriter->save(
                 Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD,
                 json_encode($taskPayload, JSON_THROW_ON_ERROR),
@@ -216,8 +238,9 @@ class ConfigUpdate implements ConfigUpdateInterface
         $response->setSuccess(true);
         $response->setStoreCode($storeCode);
         $response->setCount(count($results));
-        $response->setMessage(__('Config updated successfully. Flush the Magento cache if required.')->render());
+        $response->setMessage(__('Config updated successfully. Flush the Magento config relevant cache if required.')->render());
         $response->setResults($results);
+        $this->logger->info('[ConfigUpdateAPI] Config updated successfully for store: ' . $storeCode);
         return $response;
     }
 
@@ -417,7 +440,7 @@ class ConfigUpdate implements ConfigUpdateInterface
 
         if (!$isConfigPath && !$isIndexingPath) {
             throw new LocalizedException(
-                __("Invalid path ".$path." found. Only ".static::MODULE_PREFIX." module configuration allowed.")
+                __("Invalid path " . $path . " found. Only " . static::MODULE_PREFIX . " module configuration allowed.")
             );
         }
     }
@@ -474,6 +497,37 @@ class ConfigUpdate implements ConfigUpdateInterface
         foreach ($value as $item) {
             if (!is_string($item)) {
                 throw new LocalizedException(__('Array values must be strings'));
+            }
+        }
+    }
+
+    /**
+     * Validate integer array
+     *
+     * @param mixed $value
+     * @throws LocalizedException
+     */
+    private function validateIntegerArray($value): void
+    {
+        if (!is_array($value)) {
+            throw new LocalizedException(__('Value must be an array'));
+        }
+
+        foreach ($value as $item) {
+            if (is_array($item) || is_object($item)) {
+                throw new LocalizedException(__('Array must contain only integers'));
+            }
+
+            if (!is_numeric($item) || (int)$item != $item) {
+                throw new LocalizedException(
+                    __('Array must contain only integer values')
+                );
+            }
+
+            if ((int)$item <= 0) {
+                throw new LocalizedException(
+                    __('Product IDs must be greater than zero')
+                );
             }
         }
     }

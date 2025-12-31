@@ -119,7 +119,17 @@ class ConfigMap
             'group' => 'taskPayload',
             'validator' => 'validateBoolean'
         ],
-        'swatch_option_Fields' => [
+        'isMsiEnabled' => [
+            'path' => Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD,
+            'group' => 'taskPayload',
+            'validator' => 'validateBoolean'
+        ],
+        'includeChildPrices' => [
+            'path' => Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD,
+            'group' => 'taskPayload',
+            'validator' => 'validateBoolean'
+        ],
+        'swatchOptionSourceFieldNames' => [
             'path' => Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD,
             'group' => 'taskPayload',
             'validator' => 'validateStringArray'
@@ -128,6 +138,11 @@ class ConfigMap
             'path' => Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD,
             'group' => 'taskPayload',
             'validator' => 'validateStringArray'
+        ],
+        'excludedProductIds' => [
+            'path' => Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD,
+            'group' => 'taskPayload',
+            'validator' => 'validateIntegerArray'
         ],
     ];
 

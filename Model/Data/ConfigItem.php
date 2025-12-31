@@ -334,7 +334,7 @@ class ConfigItem extends AbstractExtensibleObject implements ConfigItemInterface
     /**
      * @return string[]
      */
-    public function getSwatchOptionFieldsNames()
+    public function getSwatchOptionSourceFieldNames()
     {
         return $this->_get(FeedSpecificationInterface::SETTING_NAME_SWATCH_OPTION_FIELD_NAMES) ?? [];
     }
@@ -343,7 +343,7 @@ class ConfigItem extends AbstractExtensibleObject implements ConfigItemInterface
      * @param $fields
      * @return ConfigItemInterface
      */
-    public function setSwatchOptionFieldsNames($fields): ConfigItemInterface
+    public function setSwatchOptionSourceFieldNames($fields): ConfigItemInterface
     {
         return $this->setData(FeedSpecificationInterface::SETTING_NAME_SWATCH_OPTION_FIELD_NAMES, $fields);
     }
@@ -503,10 +503,11 @@ class ConfigItem extends AbstractExtensibleObject implements ConfigItemInterface
             'includeTierPricing' => $this->getIncludeTierPricing(),
             'includeOutOfStock' => $this->getIncludeOutOfStock(),
             'includeMenuCategories' => $this->getIncludeMenuCategories(),
+            'isMsiEnabled' => $this->getMsiStatus(),
             'ignoreFields' => $this->getIgnoreFields(),
-            'swatchOptionFieldsNames' => $this->getSwatchOptionFieldsNames(),
-            'variantAdditionalFields' => $this->getVariantAdditionalFields(),
+            'swatchOptionSourceFieldNames' => $this->getSwatchOptionFieldsNames(),
             'excludedProductIds' => $this->getExcludedProductIds(),
+            'variantAdditionalFields' => $this->getVariantAdditionalFields(),
         ];
     }
 }
