@@ -16,16 +16,27 @@
 
 declare(strict_types=1);
 
-namespace AthosCommerce\Feed\Api;
+namespace AthosCommerce\Feed\Model\Data;
 
-use AthosCommerce\Feed\Api\Data\ConfigInfoResponseInterface;
+use Magento\Framework\DataObject;
+use AthosCommerce\Feed\Api\Data\ProductCountListResponseInterface;
 
-interface GetConfigInfoInterface
+class ProductCountListResponse extends DataObject implements ProductCountListResponseInterface
 {
     /**
-     * To get the configuration information
-     *
-     * @return \AthosCommerce\Feed\Api\Data\ConfigInfoResponseInterface
+     * @return \AthosCommerce\Feed\Api\Data\ProductCountItemInterface[]
      */
-    public function get(): ConfigInfoResponseInterface;
+    public function getItems(): array
+    {
+        return $this->getData('items') ?? [];
+    }
+
+    /**
+     * @param \AthosCommerce\Feed\Api\Data\ProductCountItemInterface[] $items
+     * @return $this
+     */
+    public function setItems(array $items): self
+    {
+        return $this->setData('items', $items);
+    }
 }

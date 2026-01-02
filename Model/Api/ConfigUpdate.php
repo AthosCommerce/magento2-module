@@ -104,7 +104,7 @@ class ConfigUpdate implements ConfigUpdateInterface
 
         $data = $payload->toArray();
         foreach (ConfigMap::MAP as $requestKey => $config) {
-
+            
             if (!array_key_exists($requestKey, $data)) {
                 $this->logger->debug(
                     '[ConfigUpdateAPI]: Missing Key',
@@ -166,6 +166,10 @@ class ConfigUpdate implements ConfigUpdateInterface
 
                     case 'validateStringArray':
                         $this->validateStringArray($value);
+                        break;
+
+                    case 'validateIntegerArray':
+                        $this->validateIntegerArray($value);
                         break;
 
                     default:

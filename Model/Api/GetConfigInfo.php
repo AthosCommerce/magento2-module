@@ -101,6 +101,9 @@ class GetConfigInfo implements GetConfigInfoInterface
 
                 $key = $pathToKeyMap[$path];
                 $meta = ConfigMap::MAP[$key];
+                if(!$meta) {
+                    continue;
+                }
                 $value = $row['value'];
 
                 if (in_array($meta['type'], ['bool', 'int'], true)) {

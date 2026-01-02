@@ -314,18 +314,18 @@ class ConfigItem extends AbstractExtensibleObject implements ConfigItemInterface
     }
 
     /**
-     * @return bool
+     * @return bool|null
      */
-    public function getMsiStatus(): bool
+    public function getMsiStatus(): ?bool
     {
         return $this->_get(FeedSpecificationInterface::MSI_STATUS);
     }
 
     /**
-     * @param bool $value
+     * @param bool|null $value
      * @return ConfigItemInterface
      */
-    public function setMsiStatus(bool $value): ConfigItemInterface
+    public function setMsiStatus(?bool $value): ConfigItemInterface
     {
         return $this->setData(FeedSpecificationInterface::MSI_STATUS, $value);
     }
@@ -505,7 +505,7 @@ class ConfigItem extends AbstractExtensibleObject implements ConfigItemInterface
             'includeMenuCategories' => $this->getIncludeMenuCategories(),
             'isMsiEnabled' => $this->getMsiStatus(),
             'ignoreFields' => $this->getIgnoreFields(),
-            'swatchOptionSourceFieldNames' => $this->getSwatchOptionFieldsNames(),
+            'swatchOptionSourceFieldNames' => $this->getSwatchOptionSourceFieldNames(),
             'excludedProductIds' => $this->getExcludedProductIds(),
             'variantAdditionalFields' => $this->getVariantAdditionalFields(),
         ];

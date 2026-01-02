@@ -16,16 +16,18 @@
 
 declare(strict_types=1);
 
-namespace AthosCommerce\Feed\Api;
+namespace AthosCommerce\Feed\Api\Data;
 
-use AthosCommerce\Feed\Api\Data\ConfigInfoResponseInterface;
-
-interface GetConfigInfoInterface
+interface ProductCountListResponseInterface
 {
     /**
-     * To get the configuration information
-     *
-     * @return \AthosCommerce\Feed\Api\Data\ConfigInfoResponseInterface
+     * @return \AthosCommerce\Feed\Api\Data\ProductCountItemInterface[]
      */
-    public function get(): ConfigInfoResponseInterface;
+    public function getItems(): array;
+
+    /**
+     * @param \AthosCommerce\Feed\Api\Data\ProductCountItemInterface[] $items
+     * @return $this
+     */
+    public function setItems(array $items): self;
 }

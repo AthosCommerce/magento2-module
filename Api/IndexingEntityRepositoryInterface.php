@@ -99,4 +99,11 @@ interface IndexingEntityRepositoryInterface
      * @return string[]
      */
     public function getUniqueEntityTypes(?string $siteId = null): array;
+    
+    /**
+     * Return all distinct site IDs
+     *
+     * @return string[]
+     */
+    public function getAllSiteIds(): array;
 }

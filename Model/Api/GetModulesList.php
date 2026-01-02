@@ -21,6 +21,8 @@ namespace AthosCommerce\Feed\Model\Api;
 use Magento\Framework\Module\FullModuleList;
 use Magento\Framework\Module\Manager as ModuleManager;
 use AthosCommerce\Feed\Api\GetModulesListInterface;
+use AthosCommerce\Feed\Api\Data\ModulesListInterface;
+use AthosCommerce\Feed\Api\Data\ModulesListInterfaceFactory;
 
 class GetModulesList implements GetModulesListInterface
 {
@@ -35,26 +37,41 @@ class GetModulesList implements GetModulesListInterface
     private $moduleManager;
 
     /**
+     * @var ModulesListInterface
+     */
+    private $modulesListFactory;
+
+    /**
+     * Constructor
+     *
      * @param FullModuleList $fullModuleList
      * @param ModuleManager $moduleManager
+     * @param ModulesListInterfaceFactory $modulesListFactory
      */
     public function __construct(
-        FullModuleList $fullModuleList,
-        ModuleManager $moduleManager
-    ) {
+        FullModuleList              $fullModuleList,
+        ModuleManager               $moduleManager,
+        ModulesListInterfaceFactory $modulesListFactory
+    )
+    {
         $this->fullModuleList = $fullModuleList;
         $this->moduleManager = $moduleManager;
+        $this->modulesListFactory = $modulesListFactory;
     }
 
     /**
      * Get list of enabled and disabled modules
      *
-     * @return array
+     * @return \AthosCommerce\Feed\Api\Data\ModulesListInterface
      */
-    public function getModulesList(): array
+    public function getModulesList(): \AthosCommerce\Feed\Api\Data\ModulesListInterface
     {
+        /** @var \AthosCommerce\Feed\Api\Data\ModulesListInterface $response */
+        $response = $this->modulesListFactory->create();
+
         $enabled = [];
         $disabled = [];
+
 
         // Get all modules (both enabled and disabled) from FullModuleList
         $allModules = $this->fullModuleList->getAll();
@@ -66,14 +83,12 @@ class GetModulesList implements GetModulesListInterface
             }
         }
 
-        return [
-            'data' => [
-                'enabled' => $enabled,
-                'disabled' => $disabled,
-                'total_enabled' => count($enabled),
-                'total_disabled' => count($disabled),
-                'total_modules' => count($enabled) + count($disabled)
-            ]
-        ];
+        $response->setEnabled($enabled);
+        $response->setDisabled($disabled);
+        $response->setTotalEnabled(count($enabled));
+        $response->setTotalDisabled(count($disabled));
+        $response->setTotalModules(count($enabled) + count($disabled));
+
+        return $response;
     }
 }

@@ -23,7 +23,7 @@ interface GetModulesListInterface
     /**
      * Get list of enabled and disabled modules
      *
-     * @return array
+     * @return \AthosCommerce\Feed\Api\Data\ModulesListInterface
      */
-    public function getModulesList(): array;
+    public function getModulesList(): \AthosCommerce\Feed\Api\Data\ModulesListInterface;
 }

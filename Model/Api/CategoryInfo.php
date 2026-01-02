@@ -28,7 +28,7 @@ class CategoryInfo implements CategoryInfoApi
      * @param int $currentPage
      * @param int $pageSize
      *
-     * @return array
+     * @return mixed
      * @throws LocalizedException
      */
     public function getAllCategories(
@@ -36,7 +36,7 @@ class CategoryInfo implements CategoryInfoApi
         string $delimiter = '>',
         int $currentPage = 1,
         int $pageSize = 15
-    ): array {
+    ) {
         return [
             'data' => [
                 'categories' => $this->categoryHelper->getList(
