@@ -19,8 +19,9 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Exception;
 
 use Magento\Framework\Exception\LocalizedException;
+use Throwable;
 
-class IndexingEntitySaveException extends LocalizedException
+class IndexingEntitySaveException extends \Exception
 {
     const CODE = 2000;
 

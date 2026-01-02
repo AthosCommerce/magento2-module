@@ -64,6 +64,13 @@
     <preference for="AthosCommerce\Feed\Api\Data\CronStatusSearchResultsInterface"
                 type="AthosCommerce\Feed\Model\CronStatusSearchResults"/>
 
+    <preference for="AthosCommerce\Feed\Api\Data\ProductCountListResponseInterface"
+                type="AthosCommerce\Feed\Model\Data\ProductCountListResponse"/>
+    <preference for="AthosCommerce\Feed\Api\Data\ProductCountItemInterface"
+                type="AthosCommerce\Feed\Model\Data\ProductCountItem"/>
+
+
+
     <preference for="AthosCommerce\Feed\Api\AppConfigInterface"
                 type="AthosCommerce\Feed\Model\AppConfig"/>
     <preference for="AthosCommerce\Feed\Model\Metric\CollectorInterface"
@@ -145,6 +152,15 @@
                 type="AthosCommerce\Feed\Model\Data\ConfigUpdateResponse"/>
     <preference for="AthosCommerce\Feed\Api\Data\ConfigUpdateResultInterface"
                 type="AthosCommerce\Feed\Model\Data\ConfigUpdateResult"/>
+    <preference for="AthosCommerce\Feed\Api\Data\ProductInfoResponseInterface"
+                type="AthosCommerce\Feed\Model\Data\ProductInfoResponse"/>
+    <preference for="AthosCommerce\Feed\Api\ProductInfoInterface"
+                type="AthosCommerce\Feed\Model\Api\ProductInfo"/>
+
+    <preference for="AthosCommerce\Feed\Api\Data\ProductCountResponseInterface"
+                type="AthosCommerce\Feed\Model\Data\ProductCountResponse"/>
+    <preference for="AthosCommerce\Feed\Api\GetEntityStatsInterface"
+                type="AthosCommerce\Feed\Model\Api\GetEntityStats"/>
 
     <type name="AthosCommerce\Feed\Model\Task\TypeList">
         <arguments>

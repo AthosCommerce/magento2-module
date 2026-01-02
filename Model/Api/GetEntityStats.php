@@ -18,53 +18,91 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Model\Api;
 
+use AthosCommerce\Feed\Api\Data\ProductCountItemInterface;
+use AthosCommerce\Feed\Api\Data\ProductCountItemInterfaceFactory;
 use AthosCommerce\Feed\Api\GetEntityStatsInterface;
 use AthosCommerce\Feed\Api\IndexingEntityRepositoryInterface;
+use AthosCommerce\Feed\Api\Data\ProductCountListResponseInterface;
+use AthosCommerce\Feed\Api\Data\ProductCountListResponseInterfaceFactory;
 use AthosCommerce\Feed\Helper\Constants;
 use AthosCommerce\Feed\Model\Source\Actions;
 
 class GetEntityStats implements GetEntityStatsInterface
 {
-
     /**
      * @var IndexingEntityRepositoryInterface
      */
     private $entityRepository;
+    /**
+     * @var ProductCountListResponseInterfaceFactory
+     */
+    private $responseFactory;
+    /**
+     * @var ProductCountItemInterface
+     */
+    private $itemFactory;
 
     /**
      * @param IndexingEntityRepositoryInterface $entityRepository
+     * @param ProductCountListResponseInterfaceFactory $responseFactory
+     * @param ProductCountItemInterfaceFactory $itemFactory
      */
     public function __construct(
-        IndexingEntityRepositoryInterface $entityRepository
+        IndexingEntityRepositoryInterface    $entityRepository,
+        ProductCountListResponseInterfaceFactory $responseFactory,
+        ProductCountItemInterfaceFactory     $itemFactory
     )
     {
         $this->entityRepository = $entityRepository;
+        $this->responseFactory = $responseFactory;
+        $this->itemFactory = $itemFactory;
     }
 
     /**
-     * @param string $siteId
-     * @return array
+     * @param string|null $siteId
+     * @return \AthosCommerce\Feed\Api\Data\ProductCountListResponseInterface
      */
-    public function get(string $siteId): array
+    public function get(?string $siteId = null): \AthosCommerce\Feed\Api\Data\ProductCountListResponseInterface
     {
-        $totalProductCount = $this->entityRepository->count(
-            Constants::PRODUCT_KEY,
-            $siteId
-        );
-        $deleteProductCount = $this->entityRepository->count(
-            Constants::PRODUCT_KEY,
-            $siteId,
-            Actions::DELETE
-        );
-        $upsertProductCount = $this->entityRepository->count(
-            Constants::PRODUCT_KEY,
-            $siteId,
-            Actions::UPSERT
-        );
-        return [
-            'totalProductCount' => $totalProductCount,
-            'deleteProductCount' => $deleteProductCount,
-            'upsertProductCount' => $upsertProductCount
-        ];
+        $items = [];
+
+        $siteIds = $siteId
+            ? [$siteId]
+            : $this->entityRepository->getAllSiteIds();
+
+
+        foreach ($siteIds as $sid) {
+            /** @var \AthosCommerce\Feed\Api\Data\ProductCountItemInterface $item */
+            $item = $this->itemFactory->create();
+
+            $item->setSiteId($sid);
+            $item->setTotalProductCount(
+                $this->entityRepository->count(
+                    Constants::PRODUCT_KEY,
+                    $sid
+                )
+            );
+            $item->setDeleteProductCount(
+                $this->entityRepository->count(
+                    Constants::PRODUCT_KEY,
+                    $sid,
+                    Actions::DELETE
+                )
+            );
+            $item->setUpsertProductCount(
+                $this->entityRepository->count(
+                    Constants::PRODUCT_KEY,
+                    $sid,
+                    Actions::UPSERT
+                )
+            );
+
+            $items[] = $item;
+        }
+
+        /** @var \AthosCommerce\Feed\Api\Data\ProductCountListResponseInterface $response */
+        $response = $this->responseFactory->create();
+        $response->setItems($items);
+        return $response;
     }
 }

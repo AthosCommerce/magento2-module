@@ -220,24 +220,24 @@ interface ConfigItemInterface
     /**
      * @return bool
      */
-    public function getMsiStatus(): bool;
+    public function getMsiStatus(): ?bool;
 
     /**
-     * @param bool $value
+     * @param bool|null $value
      * @return ConfigItemInterface
      */
-    public function setMsiStatus(bool $value): ConfigItemInterface;
+    public function setMsiStatus(?bool $value): ConfigItemInterface;
 
     /**
      * @return string[]
      */
-    public function getSwatchOptionFieldsNames();
+    public function getSwatchOptionSourceFieldNames();
 
     /**
      * @param $fields
      * @return ConfigItemInterface
      */
-    public function setSwatchOptionFieldsNames($fields): ConfigItemInterface;
+    public function setSwatchOptionSourceFieldNames($fields): ConfigItemInterface;
 
     /**
      * @return string[]

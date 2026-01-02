@@ -330,4 +330,25 @@ class IndexingEntityRepository implements IndexingEntityRepositoryInterface
 
         return $connection->fetchCol($select);
     }
+
+    /**
+     * Return all distinct site IDs
+     *
+     * @return string[]
+     */
+    public function getAllSiteIds(): array
+    {
+        $connection = $this->indexingEntityResourceModel->getConnection();
+        $select = $connection->select();
+        $select->distinct();
+        $select->from(
+            $this->indexingEntityResourceModel->getTable(
+                $this->indexingEntityResourceModel::TABLE,
+            ),
+            [IndexingEntity::SITE_ID],
+        );
+        $select->where(IndexingEntity::SITE_ID . ' IS NOT NULL');
+
+        return $connection->fetchCol($select);
+    }
 }

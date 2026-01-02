@@ -21,8 +21,8 @@ namespace AthosCommerce\Feed\Api;
 interface GetEntityStatsInterface
 {
     /**
-     * @param string $siteId
-     * @return array
+     * @param string|null $siteId
+     * @return \AthosCommerce\Feed\Api\Data\ProductCountListResponseInterface
      */
-    public function get(string $siteId): array;
+    public function get(?string $siteId = null): \AthosCommerce\Feed\Api\Data\ProductCountListResponseInterface;
 }

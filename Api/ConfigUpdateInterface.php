@@ -25,9 +25,9 @@ interface ConfigUpdateInterface
 {
     /**
      * @param ConfigItemInterface $payload
-     * @return ConfigUpdateResponseInterface
+     * @return \AthosCommerce\Feed\Api\Data\ConfigUpdateResponseInterface
      */
     public function update(
         \AthosCommerce\Feed\Api\Data\ConfigItemInterface $payload
-    ): ConfigUpdateResponseInterface;
+    ): \AthosCommerce\Feed\Api\Data\ConfigUpdateResponseInterface;
 }

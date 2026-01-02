@@ -7,7 +7,7 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
@@ -31,9 +31,9 @@ interface ModulesListInterface
      * Set enabled modules
      *
      * @param string[] $enabled
-     * @return $this
+     * @return ModulesListInterface
      */
-    public function setEnabled(array $enabled): self;
+    public function setEnabled(array $enabled): ModulesListInterface;
 
     /**
      * Get disabled modules
@@ -46,7 +46,40 @@ interface ModulesListInterface
      * Set disabled modules
      *
      * @param string[] $disabled
-     * @return $this
+     * @return ModulesListInterface
      */
-    public function setDisabled(array $disabled): self;
+    public function setDisabled(array $disabled): ModulesListInterface;
+
+    /**
+     * @return int
+     */
+    public function getTotalEnabled(): int;
+
+    /**
+     * @param int $count
+     * @return ModulesListInterface
+     */
+    public function setTotalEnabled(int $count): ModulesListInterface;
+
+    /**
+     * @return int
+     */
+    public function getTotalDisabled(): int;
+
+    /**
+     * @param int $count
+     * @return ModulesListInterface
+     */
+    public function setTotalDisabled(int $count): ModulesListInterface;
+
+    /**
+     * @return int
+     */
+    public function getTotalModules(): int;
+
+    /**
+     * @param int $count
+     * @return ModulesListInterface
+     */
+    public function setTotalModules(int $count): ModulesListInterface;
 }

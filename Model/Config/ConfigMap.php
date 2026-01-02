@@ -61,61 +61,73 @@ class ConfigMap
         ],
         'thumbHeight' => [
             'path' => Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD,
+            'type' => 'int',
             'group' => 'taskPayload',
             'validator' => 'validatePositiveInt'
         ],
         'thumbWidth' => [
             'path' => Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD,
+            'type' => 'int',
             'group' => 'taskPayload',
             'validator' => 'validatePositiveInt'
         ],
         'keepAspectRatio' => [
             'path' => Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD,
+            'type' => 'bool',
             'group' => 'taskPayload',
             'validator' => 'validateBoolean'
         ],
         'imageTypes' => [
             'path' => Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD,
+            'type' => 'array',
             'group' => 'taskPayload',
             'validator' => 'validateStringArray'
         ],
         'multiValuedSeparator' => [
             'path' => Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD,
+            'type' => 'string',
             'group' => 'taskPayload',
             'validator' => 'validateString'
         ],
         'hierarchySeparator' => [
             'path' => Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD,
+            'type' => 'string',
             'group' => 'taskPayload',
             'validator' => 'validateString'
         ],
         'includeTierPricing' => [
             'path' => Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD,
+            'type' => 'bool',
             'group' => 'taskPayload',
             'validator' => 'validateBoolean'
         ],
         'includeOutOfStock' => [
             'path' => Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD,
+            'type' => 'bool',
             'group' => 'taskPayload',
             'validator' => 'validateBoolean'
         ],
         'includeMediaGallery' => [
             'path' => Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD,
+            'type' => 'bool',
             'group' => 'taskPayload',
             'validator' => 'validateBoolean'
         ],
         'includeMenuCategories' => [
             'path' => Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD,
+            'type' => 'bool',
             'group' => 'taskPayload',
             'validator' => 'validateBoolean'
         ],
         'includeUrlHierarchy' => [
             'path' => Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD,
+            'type' => 'bool',
             'group' => 'taskPayload',
             'validator' => 'validateBoolean'
         ],
         'includeJSONConfig' => [
             'path' => Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD,
+            'type' => 'bool',
             'group' => 'taskPayload',
             'validator' => 'validateBoolean'
         ],
@@ -126,21 +138,25 @@ class ConfigMap
         ],
         'includeChildPrices' => [
             'path' => Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD,
+            'type' => 'bool',
             'group' => 'taskPayload',
             'validator' => 'validateBoolean'
         ],
         'swatchOptionSourceFieldNames' => [
             'path' => Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD,
+            'type' => 'array',
             'group' => 'taskPayload',
             'validator' => 'validateStringArray'
         ],
         'ignoreFields' => [
             'path' => Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD,
+            'type' => 'array',
             'group' => 'taskPayload',
             'validator' => 'validateStringArray'
         ],
         'excludedProductIds' => [
             'path' => Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD,
+            'type' => 'array',
             'group' => 'taskPayload',
             'validator' => 'validateIntegerArray'
         ],
