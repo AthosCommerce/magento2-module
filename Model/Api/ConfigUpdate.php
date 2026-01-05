@@ -104,7 +104,7 @@ class ConfigUpdate implements ConfigUpdateInterface
 
         $data = $payload->toArray();
         foreach (ConfigMap::MAP as $requestKey => $config) {
-            
+
             if (!array_key_exists($requestKey, $data)) {
                 $this->logger->debug(
                     '[ConfigUpdateAPI]: Missing Key',
@@ -119,6 +119,12 @@ class ConfigUpdate implements ConfigUpdateInterface
 
             $value = $data[$requestKey];
             if ($value === null) {
+                continue;
+            }
+            if (is_array($value) && $value === []) {
+                continue;
+            }
+            if (is_string($value) && trim($value) === '') {
                 continue;
             }
             $path = $config['path'] ?? '';
@@ -217,17 +223,34 @@ class ConfigUpdate implements ConfigUpdateInterface
                     'storeCode' => $storeCode,
                     'config' => $config,
                     'result' => $configUpdateResultRow->toArray(),
+                    'data' => $data
                 ]
             );
         }
 
+        $taskPayload = array_filter(
+            $taskPayload,
+            static function ($value) {
+                if ($value === null) {
+                    return false;
+                }
+                if (is_array($value) && $value === []) {
+                    return false;
+                }
+                if (is_string($value) && trim($value) === '') {
+                    return false;
+                }
+                return true;
+            }
+        );
 
-        if (!empty($taskPayload)) {
+        if ($taskPayload !== []) {
             $this->logger->debug(
                 '[ConfigUpdateAPI] Task Payload: ',
                 [
                     'storeCode' => $storeCode,
-                    'taskPayload' => $taskPayload
+                    'taskPayload' => $taskPayload,
+                    'data' => $data
                 ]
             );
             $this->configWriter->save(
@@ -238,13 +261,21 @@ class ConfigUpdate implements ConfigUpdateInterface
             );
         }
 
-
         $response->setSuccess(true);
         $response->setStoreCode($storeCode);
         $response->setCount(count($results));
-        $response->setMessage(__('Config updated successfully. Flush the Magento config relevant cache if required.')->render());
+        $response->setMessage(
+            __('Config updated successfully. Flush the Magento config relevant cache if required.')->render()
+        );
         $response->setResults($results);
-        $this->logger->info('[ConfigUpdateAPI] Config updated successfully for store: ' . $storeCode);
+        $this->logger->info(
+            '[ConfigUpdateAPI] Config updated successfully',
+            [
+                'storeCode' => $storeCode,
+                'results' => $results,
+                'data' => $data
+            ],
+        );
         return $response;
     }
 

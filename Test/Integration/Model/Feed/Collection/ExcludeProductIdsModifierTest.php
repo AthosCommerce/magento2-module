@@ -77,13 +77,13 @@ class ExcludeProductIdsModifierTest extends TestCase
      */
     public function testModify(): void
     {
-        $excludeProductIds = [
+        $excludedProductIds = [
             $this->productRepository->get('athoscommerce_simple_exclude_1')->getId(),
             $this->productRepository->get('athoscommerce_simple_exclude_2')->getId()
         ];
         $specification = $this->specificationBuilder->build(
             [
-                'excludeProductIds' => $excludeProductIds
+                'excludedProductIds' => $excludedProductIds
             ]
         );
         $collection = $this->getCollection();
