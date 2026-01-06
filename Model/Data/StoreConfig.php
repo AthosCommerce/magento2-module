@@ -167,22 +167,4 @@ class StoreConfig extends AbstractExtensibleModel implements StoreConfigInterfac
     {
         return $this->setData(self::CHUNK_SIZE, $chunkSize);
     }
-
-    /**
-     * @return array
-     */
-    public function toArray(array $keys = []): array
-    {
-        return [
-            'storeId' => $this->getStoreId(),
-            'storeCode' => $this->getStoreCode(),
-            'siteId' => $this->getSiteId(),
-            'secretKey' => $this->getSecretKey(),
-            'endPoint' => $this->getEndPoint(),
-            'enableLiveIndexing' => $this->getEnableLiveIndexing(),
-            'entitySyncCronExpr' => $this->getEntitySyncCronExpr(),
-            'perMinute' => $this->getPerMinute(),
-            'chunkSize' => $this->getChunkSize(),
-        ];
-    }
 }

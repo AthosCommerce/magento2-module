@@ -46,17 +46,28 @@ class GetConfigInfoInterfaceTest extends TestCase
      */
     public function testExecute(): void
     {
+        /** @var \AthosCommerce\Feed\Api\Data\ConfigInfoResponseInterface $response */
         $response = $this->getConfigInfo->get();
 
-        $this->assertTrue($response['data']['success']);
-        $this->assertArrayHasKey('stores', $response['data']['results']);
+        $this->assertInstanceOf(
+            \AthosCommerce\Feed\Api\Data\ConfigInfoResponseInterface::class,
+            $response
+        );
 
-        $stores = $response['data']['results']['stores'];
+        $this->assertTrue($response->getSuccess());
+
+        $stores = $response->getStores();
+
+        $this->assertIsArray($stores);
         $this->assertNotEmpty($stores);
-
         $store = $stores[0];
 
-        $this->assertEquals('test', $store['storeCode']);
-        $this->assertEquals(1, $store['enableLiveIndexing']);
+        $this->assertIsArray($store);
+        $this->assertArrayHasKey('storeId', $store);
+        $this->assertArrayHasKey('storeCode', $store);
+        $this->assertArrayHasKey('enableLiveIndexing', $store);
+
+        $this->assertArrayNotHasKey('store_id', $store);
+        $this->assertArrayNotHasKey('enable_live_indexing', $store);
     }
 }

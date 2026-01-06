@@ -22,6 +22,9 @@ use AthosCommerce\Feed\Helper\Constants;
 
 class ConfigMap
 {
+    /**
+     * Configuration map
+     */
     public const MAP = [
         'siteId' => [
             'path' => Constants::XML_PATH_CONFIG_SITE_ID,
@@ -173,8 +176,8 @@ class ConfigMap
             return $cache;
         }
 
-        foreach (self::MAP as $key => $config) {
-            $cache[$config['path']] = $key;
+        foreach (self::MAP as $outputKey => $config) {
+            $cache[$config['path']] = $outputKey;
         }
 
         return $cache;

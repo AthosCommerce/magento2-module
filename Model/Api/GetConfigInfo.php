@@ -22,15 +22,16 @@ use AthosCommerce\Feed\Api\GetConfigInfoInterface;
 use AthosCommerce\Feed\Api\Data\ConfigInfoResponseInterface;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Config\ConfigMap;
+use AthosCommerce\Feed\Model\Config\StoreConfigApiMapper;
 use AthosCommerce\Feed\Model\Data\ConfigInfoResponseFactory;
 use AthosCommerce\Feed\Model\Data\StoreConfigFactory;
-use Magento\Framework\App\ResourceConnection;
+use \AthosCommerce\Feed\Model\ConfigRepository;
 use Magento\Store\Model\StoreManagerInterface;
 
 class GetConfigInfo implements GetConfigInfoInterface
 {
-    /** @var ResourceConnection */
-    private $resource;
+    /** @var ConfigRepository */
+    private $configRepository;
 
     /** @var StoreManagerInterface */
     private $storeManager;
@@ -44,19 +45,32 @@ class GetConfigInfo implements GetConfigInfoInterface
     /** @var StoreConfigFactory */
     private $storeConfigFactory;
 
+    /** @var StoreConfigApiMapper */
+    private $storeConfigApiMapper;
+
+    /**
+     * @param ConfigRepository $configRepository
+     * @param StoreManagerInterface $storeManager
+     * @param AthosCommerceLogger $logger
+     * @param ConfigInfoResponseFactory $responseFactory
+     * @param StoreConfigFactory $storeConfigFactory
+     * @param StoreConfigApiMapper $storeConfigApiMapper
+     */
     public function __construct(
-        ResourceConnection        $resource,
+        ConfigRepository          $configRepository,
         StoreManagerInterface     $storeManager,
         AthosCommerceLogger       $logger,
         ConfigInfoResponseFactory $responseFactory,
-        StoreConfigFactory        $storeConfigFactory
+        StoreConfigFactory        $storeConfigFactory,
+        StoreConfigApiMapper      $storeConfigApiMapper
     )
     {
-        $this->resource = $resource;
+        $this->configRepository = $configRepository;
         $this->storeManager = $storeManager;
         $this->logger = $logger;
         $this->responseFactory = $responseFactory;
         $this->storeConfigFactory = $storeConfigFactory;
+        $this->storeConfigApiMapper = $storeConfigApiMapper;
     }
 
     /**
@@ -68,19 +82,7 @@ class GetConfigInfo implements GetConfigInfoInterface
         $response = $this->responseFactory->create();
 
         try {
-            $connection = $this->resource->getConnection();
-            $table = $this->resource->getTableName('core_config_data');
-
-            $pathToKeyMap = ConfigMap::getPathToKeyMap();
-            $paths = array_keys($pathToKeyMap);
-
-            $select = $connection->select()
-                ->from($table, ['scope_id', 'path', 'value'])
-                ->where('scope = ?', 'stores')
-                ->where('path IN (?)', $paths)
-                ->order('scope_id ASC');
-
-            $rows = $connection->fetchAll($select);
+            $rows = $this->configRepository->fetchStoreConfigRows();
             if (!$rows) {
                 $response->setSuccess(true);
                 $response->setMessage(__('No configuration found.')->render());
@@ -90,6 +92,7 @@ class GetConfigInfo implements GetConfigInfoInterface
 
             $stores = [];
             $storeCodesCache = [];
+            $pathToKeyMap = ConfigMap::getPathToKeyMap();
 
             foreach ($rows as $row) {
                 $storeId = (int)$row['scope_id'];
@@ -98,10 +101,9 @@ class GetConfigInfo implements GetConfigInfoInterface
                 if (!isset($pathToKeyMap[$path])) {
                     continue;
                 }
-
-                $key = $pathToKeyMap[$path];
-                $meta = ConfigMap::MAP[$key];
-                if(!$meta) {
+                $outputKey = $pathToKeyMap[$path];
+                $meta = ConfigMap::MAP[$outputKey] ?? null;
+                if ($meta === null) {
                     continue;
                 }
                 $value = $row['value'];
@@ -121,30 +123,48 @@ class GetConfigInfo implements GetConfigInfoInterface
                 }
 
                 if (!isset($stores[$storeId])) {
+                    /** @var StoreConfigFactory $storeConfigModel */
                     $storeConfigModel = $this->storeConfigFactory->create();
                     $storeConfigModel->setStoreId((int)$storeId);
                     $storeConfigModel->setStoreCode($storeCodesCache[$storeId]);
                     $stores[$storeId] = $storeConfigModel;
                 }
 
-                $storeConfigModel->setData($key, $value);
-                $stores[$storeId] = $storeConfigModel->toArray();
+                $setter = 'set' . ucfirst($outputKey);
+                if (method_exists($stores[$storeId], $setter)) {
+                    $stores[$storeId]->{$setter}($value);
+                } else {
+                    $this->logger->warning(
+                        'Setter method not found in StoreConfig model',
+                        [
+                            'method' => __METHOD__,
+                            'storeId' => $storeId,
+                            'setter' => $setter,
+                            'key' => $outputKey,
+                            'path' => $path,
+                            'value' => $value
+                        ]
+                    );
+                }
+                $stores[$storeId] = $storeConfigModel;
+            }
+            $apiStores = [];
+            foreach ($stores as $storeConfig) {
+                $apiStores[] = $this->storeConfigApiMapper->map($storeConfig);
             }
 
-            $response->setSuccess(true);
-            $response->setMessage(
-                __('Configuration fetched successfully. Secret values may appear encrypted.')->render()
-            );
-            $response->setStores(array_values($stores));
+            $response
+                ->setSuccess(true)
+                ->setMessage(__('Configuration fetched successfully.')->render())
+                ->setStores($apiStores);
 
             $this->logger->info(
-                'GetConfigInfo API: ',
+                'GetConfigInfo API',
                 [
                     'method' => __METHOD__,
-                    'storesInfo' => $stores,
+                    'stores' => $apiStores,
                 ]
             );
-
         } catch (\Throwable $e) {
             $this->logger->error(
                 'GetConfigInfo API error: ' . $e->getMessage(),
