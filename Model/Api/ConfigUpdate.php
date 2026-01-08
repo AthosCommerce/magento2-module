@@ -11,6 +11,7 @@ use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Config\ConfigMap;
 use AthosCommerce\Feed\Api\Data\ConfigUpdateResponseInterfaceFactory;
 use AthosCommerce\Feed\Api\Data\ConfigUpdateResultInterfaceFactory;
+use AthosCommerce\Feed\Service\Action\DeleteIndexingEntitiesActionInterface;
 use Magento\Framework\App\Config\Storage\WriterInterface;
 use Magento\Framework\Encryption\EncryptorInterface;
 use Magento\Framework\Exception\LocalizedException;
@@ -49,12 +50,17 @@ class ConfigUpdate implements ConfigUpdateInterface
     private $logger;
 
     /**
+     * @var DeleteIndexingEntitiesActionInterface
+     */
+    private $deleteIndexingEntitiesAction;
+    /**
      * @param WriterInterface $configWriter
      * @param EncryptorInterface $encryptor
      * @param StoreRepositoryInterface $storeRepository
      * @param ConfigUpdateResponseInterfaceFactory $responseFactory
      * @param ConfigUpdateResultInterfaceFactory $configUpdateResultFactory
      * @param AthosCommerceLogger $logger
+     * @param DeleteIndexingEntitiesActionInterface $addIndexingEntitiesAction
      */
     public function __construct(
         WriterInterface                      $configWriter,
@@ -63,6 +69,7 @@ class ConfigUpdate implements ConfigUpdateInterface
         ConfigUpdateResponseInterfaceFactory $responseFactory,
         ConfigUpdateResultInterfaceFactory   $configUpdateResultFactory,
         AthosCommerceLogger                  $logger,
+        DeleteIndexingEntitiesActionInterface $addIndexingEntitiesAction,
     )
     {
         $this->configWriter = $configWriter;
@@ -71,6 +78,7 @@ class ConfigUpdate implements ConfigUpdateInterface
         $this->responseFactory = $responseFactory;
         $this->configUpdateResultFactory = $configUpdateResultFactory;
         $this->logger = $logger;
+        $this->deleteIndexingEntitiesAction = $addIndexingEntitiesAction;
     }
 
     /**
@@ -88,6 +96,13 @@ class ConfigUpdate implements ConfigUpdateInterface
         $storeCode = $payload->getStoreCode();
         if (empty($storeCode)) {
             throw new LocalizedException(__('storeCode is required'));
+        }
+
+        if ($storeCode === 'admin') {
+            $this->logger->info(
+                'Skipping update process for admin store code'
+            );
+            throw new LocalizedException(__('Skipping update process for admin store code'));
         }
 
         try {
@@ -243,6 +258,13 @@ class ConfigUpdate implements ConfigUpdateInterface
                 return true;
             }
         );
+
+        if (!$payload->getEnableLiveIndexing()) {
+            $this->deleteIndexingEntitiesAction->delete(
+                $payload->getSiteId(),
+                $payload->getEnableLiveIndexing()
+            );
+        }
 
         if ($taskPayload !== []) {
             $this->logger->debug(

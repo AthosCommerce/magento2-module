@@ -220,13 +220,13 @@ interface ConfigItemInterface
     /**
      * @return bool
      */
-    public function getMsiStatus(): ?bool;
+    public function getIsMsiEnabled(): ?bool;
 
     /**
      * @param bool|null $value
      * @return ConfigItemInterface
      */
-    public function setMsiStatus(?bool $value): ConfigItemInterface;
+    public function setIsMsiEnabled(?bool $value): ConfigItemInterface;
 
     /**
      * @return string[]

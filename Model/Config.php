@@ -123,11 +123,11 @@ class Config
         );
         //remove https:// if exists
         if (strpos($domain, 'https://') === true) {
-            $domain = str_replace('https://', '', $value);
+            $domain = str_replace('https://', '', $domain);
         }
         //remove http:// if exists
         if (strpos($domain, 'http://') === true) {
-            $domain = str_replace('http://', '', $value);
+            $domain = str_replace('http://', '', $domain);
         }
         return $domain;
     }

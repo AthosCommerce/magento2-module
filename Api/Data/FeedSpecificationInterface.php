@@ -299,13 +299,13 @@ interface FeedSpecificationInterface extends ExtensibleDataInterface
     /**
      * @return bool
      */
-    public function getMsiStatus() : bool;
+    public function getIsMsiEnabled() : bool;
 
     /**
      * @param bool $value
      * @return FeedSpecificationInterface
      */
-    public function setMsiStatus(bool $value) : self;
+    public function setIsMsiEnabled(bool $value) : self;
 
     /**
      * @return array
