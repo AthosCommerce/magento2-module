@@ -12,9 +12,9 @@
     {
         "*": {
             "athoscommerce-tracking-cart": {
-                "siteId":  "<?= $siteId ?>",
-                "products": "<?= $viewModel->getProducts($block->getQuote()->getAllVisibleItems()) ?>",
-                "sku": "<?= $viewModel->getProductsSku() ?>"
+                "siteId":  "<?= /* @noEscape */ $siteId ?>",
+                "products": "<?= /* @noEscape */ $viewModel->getProducts($block->getQuote()->getAllVisibleItems()) ?>",
+                "sku": "<?= /* @noEscape */ $viewModel->getProductsSku() ?>"
             }
         }
     }

@@ -269,6 +269,51 @@ class IndexingEntityProvider implements IndexingEntityProviderInterface
     }
 
     /**
+     * @param string $entityType
+     * @param string $siteId
+     * @param int $batchSize
+     * @return \Generator
+     */
+    public function getTargetIds(
+        string $entityType,
+        string $siteId,
+        int $batchSize = 1000
+    ): \Generator {
+        $lastEntityId = 0;
+
+        while (true) {
+            $builder = $this->searchCriteriaBuilderFactory->create();
+
+            $builder->addFilter(IndexingEntity::TARGET_ENTITY_TYPE, $entityType);
+            $builder->addFilter(IndexingEntity::SITE_ID, $siteId);
+            $builder->addFilter(IndexingEntity::ENTITY_ID, $lastEntityId, 'gt');
+            $builder->setPageSize($batchSize);
+
+            $builder->addSortOrder(
+                $this->sortOrderBuilderFactory->create()
+                    ->setField(IndexingEntity::ENTITY_ID)
+                    ->setDirection(SortOrder::SORT_ASC)
+                    ->create()
+            );
+
+            $result = $this->indexingEntityRepository->getList($builder->create());
+            $items  = $result->getItems();
+
+            if (!$items) {
+                break;
+            }
+
+            foreach ($items as $entity) {
+                $lastEntityId = (int)$entity->getEntityId();
+                yield (int)$entity->getTargetId();
+            }
+
+            unset($items, $result);
+            gc_collect_cycles();
+        }
+    }
+
+    /**
      * @param int[][] $pairs
      * @param Collection $collection
      *

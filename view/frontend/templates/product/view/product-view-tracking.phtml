@@ -13,8 +13,8 @@
         {
             "*": {
                 "athoscommerce-tracking-product-view": {
-                    "siteId": "<?= $siteId ?>",
-                    "sku":    "<?= $block->getProduct()->getSku() ?>"
+                    "siteId": "<?= /* @noEscape */ $siteId ?>",
+                    "sku":    "<?= /* @noEscape */ $block->getProduct()->getSku() ?>"
                 }
             }
         }

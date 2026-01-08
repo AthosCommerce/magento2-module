@@ -22,7 +22,7 @@ use Throwable;
 
 class GenericException extends \Exception
 {
-    const CODE = 10000;
+    public const CODE = 10000;
 
     /**
      * GenericException constructor.

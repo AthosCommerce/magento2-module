@@ -22,8 +22,8 @@ use AthosCommerce\Feed\Model\Update\EntityInterface;
 
 class Entity implements EntityInterface
 {
-    const ENTITY_TYPE = 'entityType';
-    const ENTITY_IDS = 'entityIds';
+    public const ENTITY_TYPE = 'entityType';
+    public const ENTITY_IDS = 'entityIds';
 
     /**
      * @var string
@@ -128,7 +128,7 @@ class Entity implements EntityInterface
         }
         $debugType = function_exists('get_debug_type')
             ? get_debug_type($value)
-            : gettype($value);
+            : gettype($value); //phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
         throw new \InvalidArgumentException(
             sprintf(
                 'Invalid value supplied for %s at position %s. Expects int, received %s',

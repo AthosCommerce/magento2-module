@@ -23,7 +23,7 @@ use Throwable;
 
 class IndexingEntitySaveException extends \Exception
 {
-    const CODE = 2000;
+    public const CODE = 2000;
 
     /**
      * IndexingEntitySaveException constructor.

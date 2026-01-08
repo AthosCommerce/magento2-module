@@ -20,7 +20,7 @@ namespace AthosCommerce\Feed\Model\Source;
 
 class Actions
 {
-    const NO_ACTION = '';
-    const UPSERT = 'Upsert';
-    const DELETE = 'Delete';
+    public const NO_ACTION = '';
+    public const UPSERT = 'Upsert';
+    public const DELETE = 'Delete';
 }

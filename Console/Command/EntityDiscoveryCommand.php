@@ -32,8 +32,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class EntityDiscoveryCommand extends Command
 {
-    const COMMAND_NAME = 'athoscommerce:indexing:entity-discovery';
-    const OPTION_STORE_CODES = 'storecodes';
+    public const COMMAND_NAME = 'athoscommerce:indexing:entity-discovery';
+    public const OPTION_STORE_CODES = 'storecodes';
 
     /**
      * @var EntityDiscoveryInterface
@@ -64,12 +64,13 @@ class EntityDiscoveryCommand extends Command
      */
     public function __construct(
         EntityDiscoveryInterface $entityDiscovery,
-        DateTimeFactory $dateTimeFactory,
-        State $state,
-        CliOutput $cliOutput,
-        CollectorInterface $metricCollector,
-        ?string $name = null
-    ) {
+        DateTimeFactory          $dateTimeFactory,
+        State                    $state,
+        CliOutput                $cliOutput,
+        CollectorInterface       $metricCollector,
+        ?string                  $name = null
+    )
+    {
         parent::__construct($name);
         $this->entityDiscovery = $entityDiscovery;
         $this->dateTimeFactory = $dateTimeFactory;
@@ -120,9 +121,10 @@ HELP
      * @return int
      */
     protected function execute(
-        InputInterface $input,
+        InputInterface  $input,
         OutputInterface $output
-    ): int {
+    ): int
+    {
         try {
             $filters = [];
             $storeCodes = $this->getStoreCodes($input);
@@ -150,7 +152,7 @@ HELP
             $output->writeln('<info>Execution started: ' . $dateTime->gmtDate() . '</info>');
             $this->cliOutput->setOutput($output);
             $response = $this->entityDiscovery->execute($storeCodes);
-            foreach ($response as  $storeId =>  $storeCode) {
+            foreach ($response as $storeId => $storeCode) {
                 $output->writeln(
                     '<info>Discovery completed for store code: ' . $storeCode . '</info>'
                 );

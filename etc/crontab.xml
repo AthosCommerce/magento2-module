@@ -10,10 +10,9 @@
         <job name="athoscommerce_task_execution" instance="AthosCommerce\Feed\Cron\ExecuteTasksCron" method="execute">
             <schedule>* * * * *</schedule>
         </job>
-        <!-- TODO:: Commented out to avoid conflict, if needed then will add it new group id -->
-        <!--<job name="athoscommerce_live_indexing_discovery" instance="AthosCommerce\Feed\Cron\EntityDiscoveryCron" method="execute">
+        <job name="athoscommerce_live_indexing_discovery" instance="AthosCommerce\Feed\Cron\EntityDiscoveryCron" method="execute">
             <config_path>*/30 * * * *</config_path>
-        </job>-->
+        </job>
         <job name="athoscommerce_live_indexing_sync" instance="AthosCommerce\Feed\Cron\EntitySyncCron" method="execute">
             <config_path>athoscommerce/indexing/entity_sync_cron_expr</config_path>
         </job>

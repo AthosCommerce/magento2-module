@@ -20,5 +20,5 @@ namespace AthosCommerce\Feed\Exception;
 
 class NoSuchEntityException extends GenericException
 {
-    const CODE = 100;
+    public const CODE = 100;
 }

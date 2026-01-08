@@ -25,8 +25,8 @@ use AthosCommerce\Feed\Api\AppConfigInterface;
 
 class CollectionConfig implements CollectionConfigInterface
 {
-    const DEFAULT_PAGE_SIZE = 2000;
-    const PAGE_SIZE_CONFIG_PATH = 'product_page_size';
+    public const DEFAULT_PAGE_SIZE = 2000;
+    public const PAGE_SIZE_CONFIG_PATH = 'product_page_size';
     /**
      * @var AppConfigInterface
      */

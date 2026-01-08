@@ -25,43 +25,43 @@ interface TaskInterface extends ExtensibleDataInterface
     /**
      *
      */
-    const ENTITY_ID = 'entity_id';
+    public const ENTITY_ID = 'entity_id';
     /**
      *
      */
-    const TYPE = 'type';
+    public const TYPE = 'type';
     /**
      *
      */
-    const STATUS = 'status';
+    public const STATUS = 'status';
     /**
      *
      */
-    const PAYLOAD = 'payload';
+    public const PAYLOAD = 'payload';
     /**
      *
      */
-    const ERROR = 'error';
+    public const ERROR = 'error';
     /**
      *
      */
-    const CREATED_AT = 'created_at';
+    public const CREATED_AT = 'created_at';
     /**
      *
      */
-    const STARTED_AT = 'started_at';
+    public const STARTED_AT = 'started_at';
     /**
      *
      */
-    const ENDED_AT = 'ended_at';
+    public const ENDED_AT = 'ended_at';
     /**
      *
      */
-    const Product_Count = 'product_count';
+    public const Product_Count = 'product_count';
     /**
      *
      */
-    const File_Size = 'file_size';
+    public const File_Size = 'file_size';
 
 
     /**

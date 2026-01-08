@@ -26,19 +26,19 @@ use Magento\Framework\Model\AbstractModel;
 
 class IndexingEntity extends AbstractExtensibleModel implements IndexingEntityInterface
 {
-    const ENTITY_ID = 'entity_id';
-    const TARGET_ENTITY_TYPE = 'target_entity_type';
-    const TARGET_ENTITY_SUBTYPE = 'target_entity_subtype';
-    const TARGET_ID = 'target_id';
-    const TARGET_PARENT_ID = 'target_parent_id';
-    const SITE_ID = 'site_id';
-    const NEXT_ACTION = 'next_action';
-    const LOCK_TIMESTAMP = 'lock_timestamp';
-    const LAST_ACTION = 'last_action';
-    const LAST_ACTION_TIMESTAMP = 'last_action_timestamp';
-    const IS_INDEXABLE = 'is_indexable';
-    const CREATED_AT = 'created_at';
-    const UPDATED_AT = 'updated_at';
+    public const ENTITY_ID = 'entity_id';
+    public const TARGET_ENTITY_TYPE = 'target_entity_type';
+    public const TARGET_ENTITY_SUBTYPE = 'target_entity_subtype';
+    public const TARGET_ID = 'target_id';
+    public const TARGET_PARENT_ID = 'target_parent_id';
+    public const SITE_ID = 'site_id';
+    public const NEXT_ACTION = 'next_action';
+    public const LOCK_TIMESTAMP = 'lock_timestamp';
+    public const LAST_ACTION = 'last_action';
+    public const LAST_ACTION_TIMESTAMP = 'last_action_timestamp';
+    public const IS_INDEXABLE = 'is_indexable';
+    public const CREATED_AT = 'created_at';
+    public const UPDATED_AT = 'updated_at';
 
     /**
      * @return void

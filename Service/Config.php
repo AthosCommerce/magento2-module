@@ -36,7 +36,7 @@ class Config implements ConfigInterface
      * Config path for AthosCommerce site id
      * @deprecated
      */
-    const ATHOSCOMMERCE_SITE_ID = 'athoscommerce/general/site_id';
+    public const ATHOSCOMMERCE_SITE_ID = 'athoscommerce/general/site_id';
 
     /**
      * @var ScopeConfigInterface

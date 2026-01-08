@@ -31,8 +31,8 @@ use AthosCommerce\Feed\Model\Task as TaskModel;
 
 class Task extends AbstractDb
 {
-    const TABLE = 'athoscommerce_task';
-    const ERROR_TABLE = 'athoscommerce_task_error';
+    public const TABLE = 'athoscommerce_task';
+    public const ERROR_TABLE = 'athoscommerce_task_error';
 
     /**
      * @var DeleteErrors

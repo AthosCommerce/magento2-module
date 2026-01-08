@@ -13,9 +13,9 @@
         {
             "*": {
                 "athoscommerce-tracking-checkout-success": {
-                    "siteId":  "<?= $siteId ?>",
-                    "products": "<?= $viewModel->getProducts() ?>",
-                    "orderId": "<?= $viewModel->getOrderId() ?>"
+                    "siteId":  "<?= /* @noEscape */ $siteId ?>",
+                    "products": "<?= /* @noEscape */ $viewModel->getProducts() ?>",
+                    "orderId": "<?= /* @noEscape */ $viewModel->getOrderId() ?>"
                 }
             }
         }
