@@ -30,7 +30,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class ExecutePendingTasksCommand extends Command
 {
-    const COMMAND_NAME = 'athoscommerce:feed:execute-pending-tasks';
+    public const COMMAND_NAME = 'athoscommerce:feed:execute-pending-tasks';
     /**
      * @var ExecutePendingTasksInterfaceFactory
      */
@@ -64,12 +64,13 @@ class ExecutePendingTasksCommand extends Command
      */
     public function __construct(
         ExecutePendingTasksInterfaceFactory $executePendingTasksFactory,
-        DateTimeFactory $dateTimeFactory,
-        State $state,
-        CliOutput $cliOutput,
-        CollectorInterface $metricCollector,
-        ?string $name = null
-    ) {
+        DateTimeFactory                     $dateTimeFactory,
+        State                               $state,
+        CliOutput                           $cliOutput,
+        CollectorInterface                  $metricCollector,
+        ?string                             $name = null
+    )
+    {
         parent::__construct($name);
         $this->executePendingTasksFactory = $executePendingTasksFactory;
         $this->dateTimeFactory = $dateTimeFactory;

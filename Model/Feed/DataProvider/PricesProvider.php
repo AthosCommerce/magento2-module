@@ -28,9 +28,9 @@ use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
 
 class PricesProvider implements DataProviderInterface
 {
-    const REGULAR_PRICE_KEY = 'regular_price';
-    const FINAL_PRICE_KEY = 'final_price';
-    const MAX_PRICE_KEY = 'max_price';
+    public const REGULAR_PRICE_KEY = 'regular_price';
+    public const FINAL_PRICE_KEY = 'final_price';
+    public const MAX_PRICE_KEY = 'max_price';
 
     /**
      * @var Json

@@ -252,7 +252,8 @@ class Processor
         $successDeleteIds = [];
         $failedDeleteIds = [];
         if (!empty($deleteIds)) {
-            $this->logger->info('[LiveIndexing] DELETE operation started',
+            $this->logger->info(
+                '[LiveIndexing] DELETE operation started',
                 [
                     'siteId' => $siteId,
                     'store' => $storeCode,
@@ -281,7 +282,8 @@ class Processor
                     );
                 }
             }
-            $this->logger->info('[LiveIndexing] DELETE operation completed',
+            $this->logger->info(
+                '[LiveIndexing] DELETE operation completed',
                 [
                     'siteId' => $siteId,
                     'store' => $storeCode,
@@ -408,7 +410,8 @@ class Processor
                 }
             }
 
-            $this->logger->info('[LiveIndexing] UPDATE operation completed',
+            $this->logger->info(
+                '[LiveIndexing] UPDATE operation completed',
                 [
                     'siteId' => $siteId,
                     'store' => $storeCode,
@@ -427,7 +430,8 @@ class Processor
                 Actions::UPSERT,
                 IndexingEntity::TARGET_ID
             );
-            $this->logger->info('[LiveIndexing][UPDATE] Action updates completed successfully',
+            $this->logger->info(
+                '[LiveIndexing][UPDATE] Action updates completed successfully',
                 [
                     'siteId' => $siteId,
                     'store' => $storeCode,
@@ -437,7 +441,8 @@ class Processor
         }
 
         $totalSuccessCount = count($successDeleteIds + $successUpdateIds);
-        $this->logger->info('[LiveIndexing] Summary',
+        $this->logger->info(
+            '[LiveIndexing] Summary',
             [
                 'siteId' => $siteId,
                 'store' => $storeCode,

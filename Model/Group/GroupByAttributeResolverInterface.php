@@ -16,29 +16,25 @@
 
 declare(strict_types=1);
 
-namespace AthosCommerce\Feed\Exception;
+namespace AthosCommerce\Feed\Model\Group;
 
-use Throwable;
+use AthosCommerce\Feed\Api\Data\CustomersDataInterface;
+use Magento\Catalog\Model\Product;
 
-class GenericException extends \Exception
+interface GroupByAttributeResolverInterface
 {
-    public const CODE = 10000;
+    /**
+     * Decide if the given simple product should be grouped
+     * based on its parent configurable product.
+     */
+    public function isGroupable(
+        Product $simple,
+        Product $parent,
+        array $product
+    ): bool;
 
     /**
-     * GenericException constructor.
-     * @param string $message
-     * @param int $code
-     * @param Throwable|null $previous
+     * Reset internal state (important for batch / feed runs)
      */
-    public function __construct(
-        $message = "",
-        $code = 0,
-        ?Throwable $previous = null
-    ) {
-        if (!$code) {
-            $code = static::CODE;
-        }
-
-        parent::__construct($message, $code, $previous);
-    }
+    public function reset(): void;
 }

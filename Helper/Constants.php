@@ -20,35 +20,35 @@ namespace AthosCommerce\Feed\Helper;
 
 class Constants
 {
-    const PRODUCT_KEY = '__PRODUCT';
+    public const PRODUCT_KEY = '__PRODUCT';
 
-    const API_SCOPE_DELETE = 'product/delete';
-    const API_SCOPE_UPSERT = 'product/update';
+    public const API_SCOPE_DELETE = 'product/delete';
+    public const API_SCOPE_UPSERT = 'product/update';
 
     /**
      * Setted default very minimum limit to avoid rate limit for store.
      */
-    const DEFAULT_MAX_REQUEST_LIMIT = 480;
+    public const DEFAULT_MAX_REQUEST_LIMIT = 480;
 
     /**
      * Magento path to get store domain to pass in headers
      */
-    const XML_PATH_MAGE_CONFIG_STORE_DOMAIN = 'web/secure/base_url';
+    public const XML_PATH_MAGE_CONFIG_STORE_DOMAIN = 'web/secure/base_url';
 
-    const XML_PATH_CONFIG_SITE_ID = 'athoscommerce/configuration/siteid';
-    const XML_PATH_CONFIG_ENDPOINT = 'athoscommerce/configuration/endpoint';
-    const XML_PATH_CONFIG_SECRET_KEY = 'athoscommerce/configuration/secretkey';
+    public const XML_PATH_CONFIG_SITE_ID = 'athoscommerce/configuration/siteid';
+    public const XML_PATH_CONFIG_ENDPOINT = 'athoscommerce/configuration/endpoint';
+    public const XML_PATH_CONFIG_SECRET_KEY = 'athoscommerce/configuration/secretkey';
 
-    const XML_PATH_LIVE_INDEXING_ENABLED = 'athoscommerce/indexing/enable_live_indexing';
-    const XML_PATH_LIVE_INDEXING_TASK_PAYLOAD = 'athoscommerce/indexing/task_payload';
-    const XML_PATH_LIVE_INDEXING_PER_MINUTE = 'athoscommerce/indexing/request_per_minute';
-    const XML_PATH_LIVE_INDEXING_CHUNK_PER_SIZE = 'athoscommerce/indexing/chunk_per_size';
+    public const XML_PATH_LIVE_INDEXING_ENABLED = 'athoscommerce/indexing/enable_live_indexing';
+    public const XML_PATH_LIVE_INDEXING_TASK_PAYLOAD = 'athoscommerce/indexing/task_payload';
+    public const XML_PATH_LIVE_INDEXING_PER_MINUTE = 'athoscommerce/indexing/request_per_minute';
+    public const XML_PATH_LIVE_INDEXING_CHUNK_PER_SIZE = 'athoscommerce/indexing/chunk_per_size';
 
-    const XML_PATH_LIVE_INDEXING_SYNC_CRON_EXPR = 'athoscommerce/indexing/entity_sync_cron_expr';
-    const XML_PATH_LIVE_INDEXING_MILLISECONDS_DELAY = 'athoscommerce/indexing/milliseconds_delay';
+    public const XML_PATH_LIVE_INDEXING_SYNC_CRON_EXPR = 'athoscommerce/indexing/entity_sync_cron_expr';
+    public const XML_PATH_LIVE_INDEXING_MILLISECONDS_DELAY = 'athoscommerce/indexing/milliseconds_delay';
 
     /**
      * Path to debug log enabled configuration
      */
-    const XML_PATH_DEBUG_LOG_ENABLED = 'athoscommerce/developer/enable_debug_log';
+    public const XML_PATH_DEBUG_LOG_ENABLED = 'athoscommerce/developer/enable_debug_log';
 }

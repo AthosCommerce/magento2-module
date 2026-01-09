@@ -61,7 +61,7 @@ class IndexingEntityValidator extends AbstractValidator implements ValidatorInte
             __(
                 'Invalid type provided. Expected %1, received %2.',
                 IndexingEntityInterface::class,
-                gettype($value),
+                gettype($value), //phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
             )->render(),
         ]);
 
@@ -79,9 +79,9 @@ class IndexingEntityValidator extends AbstractValidator implements ValidatorInte
         foreach ($this->fieldTypes as $field => $allowedTypes) {
             $allowedTypesArray = explode('|', $allowedTypes);
 
-            $dataType = function_exists('get_debug_type') //@phpstan-ignore-line
-                ? get_debug_type($indexingEntity->getData($field)) //@phpstan-ignore-line
-                : gettype($indexingEntity->getData($field)); //@phpstan-ignore-line
+            $dataType = function_exists('get_debug_type')
+                ? get_debug_type($indexingEntity->getData($field))
+                : gettype($indexingEntity->getData($field)); //phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
 
             if (!in_array($dataType, $allowedTypesArray, true)) {
                 $return = false;

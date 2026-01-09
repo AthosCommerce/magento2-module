@@ -116,6 +116,8 @@
                 type="AthosCommerce\Feed\Model\IndexingEntityRepository"/>
     <preference for="AthosCommerce\Feed\Service\Provider\Api\IndexingEntityProviderInterface"
                 type="AthosCommerce\Feed\Service\Provider\IndexingEntityProvider"/>
+    <preference for="AthosCommerce\Feed\Model\Group\GroupByAttributeResolverInterface"
+                type="AthosCommerce\Feed\Model\Group\DefaultGroupByAttributeResolver"/>
 
     <preference for="AthosCommerce\Feed\Service\Action\AddIndexingEntitiesActionInterface"
                 type="AthosCommerce\Feed\Service\Action\AddIndexingEntitiesAction"/>
@@ -360,6 +362,15 @@
                 <item name="__group_by_swatch" xsi:type="object">AthosCommerce\Feed\Model\Feed\DataProvider\GroupBySwatch</item>
                 <item name="__origin_timestamp" xsi:type="object">AthosCommerce\Feed\Model\Feed\DataProvider\TimeStamp</item>
             </argument>
+        </arguments>
+    </type>
+
+    <type name="AthosCommerce\Feed\Model\Group\DefaultGroupByAttributeResolver">
+        <arguments>
+            <argument name="attributesToConsider" xsi:type="array">
+                <item name="color" xsi:type="string">color</item>
+            </argument>
+            <argument name="onlySwatchAttributes" xsi:type="boolean">true</argument>
         </arguments>
     </type>
 

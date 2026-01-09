@@ -59,6 +59,7 @@ class UpdateObserver implements ObserverInterface
     }
 
     /**
+     *
      * @param Observer $observer
      *
      * @return void

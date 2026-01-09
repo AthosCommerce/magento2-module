@@ -35,8 +35,8 @@ class IndexingEntity extends AbstractDb
 {
     use CastIndexingEntityPropertiesToCorrectType;
 
-    const TABLE = 'athoscommerce_indexing_entity';
-    const ID_FIELD_NAME = 'entity_id';
+    public const TABLE = 'athoscommerce_indexing_entity';
+    public const ID_FIELD_NAME = 'entity_id';
 
     /**
      * @return void

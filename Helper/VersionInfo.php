@@ -18,11 +18,11 @@ use Magento\Framework\Module\Dir;
 
 class VersionInfo extends AbstractHelper
 {
-    const MODULE_NAME = 'AthosCommerce_Feed';
+    public const MODULE_NAME = 'AthosCommerce_Feed';
     /**
      * @var string
      */
-    const SEARCH_SPRING_FILE_NAME = 'composer.json';
+    public const SEARCH_SPRING_FILE_NAME = 'composer.json';
     /**
      * @var DirectoryList
      */

@@ -31,8 +31,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class EntitySyncCommand extends Command
 {
-    const COMMAND_NAME = 'athoscommerce:indexing:entity-sync';
-    const OPTION_STORE_CODES = 'storecodes';
+    public const COMMAND_NAME = 'athoscommerce:indexing:entity-sync';
+    public const OPTION_STORE_CODES = 'storecodes';
     /**
      * @var LiveIndexing
      */
@@ -63,13 +63,14 @@ class EntitySyncCommand extends Command
      * @param string|null $name
      */
     public function __construct(
-        LiveIndexing $liveIndexingFactory,
-        DateTimeFactory $dateTimeFactory,
-        State $state,
-        CliOutput $cliOutput,
+        LiveIndexing       $liveIndexingFactory,
+        DateTimeFactory    $dateTimeFactory,
+        State              $state,
+        CliOutput          $cliOutput,
         CollectorInterface $metricCollector,
-        ?string $name = null
-    ) {
+        ?string            $name = null
+    )
+    {
         parent::__construct($name);
         $this->liveIndexingFactory = $liveIndexingFactory;
         $this->dateTimeFactory = $dateTimeFactory;
@@ -121,9 +122,10 @@ HELP
      * @return int
      */
     protected function execute(
-        InputInterface $input,
+        InputInterface  $input,
         OutputInterface $output
-    ): int {
+    ): int
+    {
         $filters = [];
         try {
             $storeCodes = $this->getStoreCodes($input);

@@ -71,7 +71,7 @@ class BunchSaveObserver implements ObserverInterface
      */
     public function __construct(
         BaseProductObserver        $baseProductObserver,
-        AthosCommerceLogger            $logger,
+        AthosCommerceLogger        $logger,
         ResourceConnection         $resourceConnection,
         ProductRepositoryInterface $productRepository,
         ScopeConfigInterface       $scopeConfig,
@@ -103,7 +103,7 @@ class BunchSaveObserver implements ObserverInterface
             }
 
             $skus = array_column($bunch, 'sku');
-            if(empty($skus)) {
+            if (empty($skus)) {
                 $this->logger->debug('[BunchSaveObserver] No SKUs found in bunch.');
                 return;
             }
@@ -148,8 +148,12 @@ class BunchSaveObserver implements ObserverInterface
                                 $shouldProcess = true;
                             } catch (\Throwable $storeEx) {
                                 $this->logger->error(
-                                    "[BunchSaveObserver] Error for product {$productId}, store {$storeId}: " . $storeEx->getMessage(),
-                                    ['trace' => $storeEx->getTraceAsString()]
+                                    "[BunchSaveObserver] Error: " . $storeEx->getMessage(),
+                                    [
+                                        'trace' => $storeEx->getTraceAsString(),
+                                        'product_id' => $productId,
+                                        'store_id' => $storeId
+                                    ]
                                 );
                             }
                         }
@@ -168,10 +172,16 @@ class BunchSaveObserver implements ObserverInterface
             }
 
             if (!empty($productIdsToProcess)) {
-                $this->baseProductObserver->execute($productIdsToProcess, Actions::UPSERT);
+                $this->baseProductObserver->execute(
+                    $productIdsToProcess,
+                    Actions::UPSERT,
+                    true
+                );
                 $this->logger->info(
-                    '[BunchSaveObserver] executed for products',
-                    ['productIds' => $productIdsToProcess]
+                    '[BunchSaveObserver] Executed for products',
+                    [
+                        'productIds' => $productIdsToProcess
+                    ]
                 );
             }
         } catch (\Throwable $e) {

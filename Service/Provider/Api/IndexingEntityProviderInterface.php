@@ -43,14 +43,14 @@ interface IndexingEntityProviderInterface
      */
     public function get(
         ?string $entityType = null,
-        ?array $siteIds = [],
-        ?array $entityIds = [],
+        ?array  $siteIds = [],
+        ?array  $entityIds = [],
         ?string $nextAction = null,
-        ?bool $isIndexable = null,
-        ?array $sorting = [],
-        ?int $pageSize = null,
-        ?int $startFrom = 1,
-        ?array $entitySubtypes = [],
+        ?bool   $isIndexable = null,
+        ?array  $sorting = [],
+        ?int    $pageSize = null,
+        ?int    $startFrom = 1,
+        ?array  $entitySubtypes = [],
     ): array;
 
     /**
@@ -63,7 +63,7 @@ interface IndexingEntityProviderInterface
     public function getForTargetParentPairs(
         ?string $entityType = null,
         ?string $siteIds = null,
-        ?array $pairs = [],
+        ?array  $pairs = [],
     ): Collection;
 
     /**
@@ -78,7 +78,7 @@ interface IndexingEntityProviderInterface
         ?string $entityType = null,
         ?string $siteIds = null,
         ?string $nextAction = null,
-        ?bool $isIndexable = null,
+        ?bool   $isIndexable = null,
     ): int;
 
     /**
@@ -87,4 +87,17 @@ interface IndexingEntityProviderInterface
      * @return string[]
      */
     public function getTypes(string $siteIds): array;
+
+    /**
+     * @param string $entityType
+     * @param string $siteId
+     * @param int $batchSize
+     *
+     * @return \Generator<int>
+     */
+    public function getTargetIds(
+        string $entityType,
+        string $siteId,
+        int    $batchSize = 1000
+    ): \Generator;
 }

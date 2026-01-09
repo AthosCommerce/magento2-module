@@ -18,6 +18,7 @@ namespace AthosCommerce\Feed\Model\Feed\DataProvider;
 
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
+use AthosCommerce\Feed\Model\Group\GroupByAttributeResolverInterface;
 use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Catalog\Model\Product;
 use Magento\ConfigurableProduct\Model\Product\Type\Configurable as ConfigurableType;
@@ -35,29 +36,37 @@ class GroupBySwatch implements DataProviderInterface
     /**
      * @var ProductRepositoryInterface
      */
-    protected $productRepository;
+    private $productRepository;
     /**
      * @var ConfigurableResource
      */
-    protected $configurableResource;
+    private $configurableResource;
     /**
      * @var AthosCommerceLogger
      */
-    protected $logger;
+    private $logger;
+    /**
+     * @var GroupByAttributeResolverInterface
+     */
+    private $groupResolver;
 
     /**
      * @param ProductRepositoryInterface $productRepository
      * @param ConfigurableResource $configurableResource
      * @param AthosCommerceLogger $logger
+     * @param GroupByAttributeResolverInterface $groupResolver
      */
     public function __construct(
-        ProductRepositoryInterface $productRepository,
-        ConfigurableResource $configurableResource,
-        AthosCommerceLogger $logger
-    ) {
+        ProductRepositoryInterface        $productRepository,
+        ConfigurableResource              $configurableResource,
+        AthosCommerceLogger               $logger,
+        GroupByAttributeResolverInterface $groupResolver
+    )
+    {
         $this->productRepository = $productRepository;
         $this->configurableResource = $configurableResource;
         $this->logger = $logger;
+        $this->groupResolver = $groupResolver;
     }
 
     /**
@@ -67,9 +76,10 @@ class GroupBySwatch implements DataProviderInterface
      * @return array
      */
     public function getData(
-        array $products,
+        array                      $products,
         FeedSpecificationInterface $feedSpecification
-    ): array {
+    ): array
+    {
         if (in_array(
             static::GROUP_BY_SWATCH_KEY,
             $feedSpecification->getIgnoreFields(),
@@ -98,10 +108,17 @@ class GroupBySwatch implements DataProviderInterface
 
             try {
                 $parentProduct = $this->productRepository->getById($parentId);
+                $product[self::GROUP_BY_SWATCH_KEY] = $this->groupResolver->isGroupable(
+                    $simpleProduct,
+                    $parentProduct,
+                    $product
+                );
             } catch (\Exception $e) {
                 $this->logger->warning(
                     sprintf(
-                        'GroupBySwatch: cannot load parent product %s: %s',
+                        '[GroupBySwatch] Unable to evaluate swatch grouping for variant %s (parent %s). '
+                        . 'Storefront swatch display may be affected if its in use. Reason: %s',
+                        $simpleId,
                         $parentId,
                         $e->getMessage()
                     )
@@ -109,67 +126,9 @@ class GroupBySwatch implements DataProviderInterface
                 $product[self::GROUP_BY_SWATCH_KEY] = false;
                 continue;
             }
-
-            $groupData = $this->determineGroupBySwatch($simpleProduct, $parentProduct, $product);
-            $product[self::GROUP_BY_SWATCH_KEY] = $groupData;
         }
 
         return $products;
-    }
-
-    /**
-     * @param Product $simple
-     * @param Product $parent
-     * @param array $row
-     *
-     * @return bool
-     */
-    private function determineGroupBySwatch(
-        Product $simple,
-        Product $parent,
-        array $row
-    ): bool {
-        /** @var ConfigurableType $typeInstance */
-        $typeInstance = $parent->getTypeInstance();
-        $attributes = $typeInstance->getConfigurableAttributes($parent);
-
-        $swatchAttr = null;
-        foreach ($attributes as $attribute) {
-            $productAttribute = $attribute->getProductAttribute();
-            if ($productAttribute && $productAttribute->getSwatchInputType() !== null) {
-                $swatchAttr = $productAttribute;
-                break;
-            }
-        }
-
-        if (!$swatchAttr) {
-            return false;
-        }
-
-        $attrCode = $swatchAttr->getAttributeCode();
-        $parentId = (int)$parent->getId();
-
-        $label = $simple->getAttributeText($attrCode)
-            ?? $simple->getData($attrCode)
-            ?? null;
-
-        $labelNormalized = $label !== ''
-            ? (string)$label
-            : null;
-
-
-        if (!isset($this->seenSwatchValues[$parentId])) {
-            $this->seenSwatchValues[$parentId] = [];
-        }
-
-        if ($labelNormalized !== null && !isset($this->seenSwatchValues[$parentId][$labelNormalized])) {
-            $this->seenSwatchValues[$parentId][$labelNormalized] = true;
-            $groupable = true;
-        } else {
-            $groupable = false;
-        }
-
-        return $groupable;
     }
 
     /**
@@ -177,7 +136,7 @@ class GroupBySwatch implements DataProviderInterface
      */
     public function reset(): void
     {
-        $this->seenSwatchValues = [];
+        $this->groupResolver->reset();
     }
 
     /**
@@ -185,6 +144,6 @@ class GroupBySwatch implements DataProviderInterface
      */
     public function resetAfterFetchItems(): void
     {
-        $this->seenSwatchValues = [];
+        $this->groupResolver->reset();
     }
 }

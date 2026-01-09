@@ -20,9 +20,9 @@ use Magento\Store\Model\StoreRepository;
 
 class ConfigUpdate implements ConfigUpdateInterface
 {
-    const MODULE_PREFIX = 'athoscommerce/';
+    public const MODULE_PREFIX = 'athoscommerce/';
 
-    const ALLOWED_INDEXING_VALUES = ['0', '1'];
+    public const ALLOWED_INDEXING_VALUES = ['0', '1'];
 
     /**
      * @var WriterInterface

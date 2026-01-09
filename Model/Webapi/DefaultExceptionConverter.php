@@ -27,12 +27,12 @@ use Throwable;
 
 class DefaultExceptionConverter implements ExceptionConverterInterface
 {
-    const DEFAULT_HTTP_CODE = 500;
+    public const DEFAULT_HTTP_CODE = 500;
 
-    const TYPE_VALIDATION = 'validation';
-    const TYPE_UNIQUE = 'unique';
-    const TYPE_GENERAL = 'general';
-    const TYPE_NO_SUCH_ENTITY = 'no_such_entity';
+    public const TYPE_VALIDATION = 'validation';
+    public const TYPE_UNIQUE = 'unique';
+    public const TYPE_GENERAL = 'general';
+    public const TYPE_NO_SUCH_ENTITY = 'no_such_entity';
     /**
      * @var array
      */

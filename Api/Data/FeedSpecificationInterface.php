@@ -26,89 +26,89 @@ interface FeedSpecificationInterface extends ExtensibleDataInterface
     /**
      *
      */
-    const STORE_CODE = 'store_code';
+    public const STORE_CODE = 'store_code';
     /**
      *
      */
-    const HIERARCHY_SEPARATOR = 'hierarchy_separator';
+    public const HIERARCHY_SEPARATOR = 'hierarchy_separator';
     /**
      *
      */
-    const MULTI_VALUED_SEPARATOR = 'multi_valued_separator';
+    public const MULTI_VALUED_SEPARATOR = 'multi_valued_separator';
     /**
      *
      */
-    const INCLUDE_URL_HIERARCHY = 'include_url_hierarchy';
+    public const INCLUDE_URL_HIERARCHY = 'include_url_hierarchy';
     /**
      *
      */
-    const INCLUDE_MENU_CATEGORIES = 'include_menu_categories';
+    public const INCLUDE_MENU_CATEGORIES = 'include_menu_categories';
     /**
      *
      */
-    const INCLUDE_JSON_CONFIG = 'include_json_config';
+    public const INCLUDE_JSON_CONFIG = 'include_json_config';
     /**
      *
      */
-    const INCLUDE_CHILD_PRICES = 'include_child_prices';
+    public const INCLUDE_CHILD_PRICES = 'include_child_prices';
     /**
      *
      */
-    const INCLUDE_TIER_PRICES = 'include_tier_prices';
+    public const INCLUDE_TIER_PRICES = 'include_tier_prices';
     /**
      *
      */
-    const CUSTOMER_ID = 'customer_id';
+    public const CUSTOMER_ID = 'customer_id';
     /**
      *
      */
-    const CUSTOMER = 'customer';
+    public const CUSTOMER = 'customer';
     /**
      *
      */
-    const CHILD_FIELDS = 'child_fields';
+    public const CHILD_FIELDS = 'child_fields';
     /**
      *
      */
-    const INCLUDE_OUT_OF_STOCK = 'include_out_of_stock';
+    public const INCLUDE_OUT_OF_STOCK = 'include_out_of_stock';
     /**
      *
      */
-    const IGNORE_FIELDS = 'ignore_fields';
+    public const IGNORE_FIELDS = 'ignore_fields';
     /**
      *
      */
-    const FORMAT = 'format';
+    public const FORMAT = 'format';
     /**
      *
      */
-    const MEDIA_GALLERY_SPECIFICATION = 'media_gallery_specification';
+    public const MEDIA_GALLERY_SPECIFICATION = 'media_gallery_specification';
     /**
      *
      */
-    const PRE_SIGNED_URL = 'presigned_url';
+    public const PRE_SIGNED_URL = 'presigned_url';
     /**
      *
      */
-    const MSI_STATUS = true;
+    public const MSI_STATUS = true;
     /**
      *
      */
-    const SETTING_NAME_SWATCH_OPTION_FIELD_NAMES = 'swatch_option_Fields';
+    public const SETTING_NAME_SWATCH_OPTION_FIELD_NAMES = 'swatch_option_Fields';
     /**
      *
      */
-    const SETTING_NAME_VARIANT_ADDITIONAL_FIELDS = 'variant_additional_fields';
+    public const SETTING_NAME_VARIANT_ADDITIONAL_FIELDS = 'variant_additional_fields';
 
-    const INDEXING_MODE_KEY = 'indexing_mode';
-    const BULK_MODE = 'bulk';
-    const LIVE_MODE = 'live';
+    public const INDEXING_MODE_KEY = 'indexing_mode';
+    public const BULK_MODE = 'bulk';
+    public const LIVE_MODE = 'live';
 
     //Define data providers to ignore for each indexing mode
-    const BULK_INDEXING_IGNORE_DATA_PROVIDERS = ['__group_by_swatch'];
-    const LIVE_INDEXING_IGNORE_DATA_PROVIDERS = ['__origin_timestamp'];
+    public const BULK_INDEXING_IGNORE_DATA_PROVIDERS = ['__group_by_swatch'];
+    public const LIVE_INDEXING_IGNORE_DATA_PROVIDERS = ['__origin_timestamp'];
 
-    const EXCLUDE_PRODUCT_IDS = 'exclude_product_ids';
+    public const EXCLUDE_PRODUCT_IDS = 'exclude_product_ids';
     /**
      * @return string|null
      */

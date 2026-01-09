@@ -22,11 +22,11 @@ use Magento\Framework\Api\ExtensibleDataInterface;
 
 interface MediaGallerySpecificationInterface extends ExtensibleDataInterface
 {
-    const THUMB_WIDTH = 'thumb_width';
-    const THUMB_HEIGHT = 'thumb_height';
-    const KEEP_ASPECT_RATIO = 'keep_aspect_ratio';
-    const IMAGE_TYPES = 'image_types';
-    const INCLUDE_MEDIA_GALLERY = 'include_media_gallery';
+    public const THUMB_WIDTH = 'thumb_width';
+    public const THUMB_HEIGHT = 'thumb_height';
+    public const KEEP_ASPECT_RATIO = 'keep_aspect_ratio';
+    public const IMAGE_TYPES = 'image_types';
+    public const INCLUDE_MEDIA_GALLERY = 'include_media_gallery';
     /**
      * @return int
      */

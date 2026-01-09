@@ -26,7 +26,7 @@ use AthosCommerce\Feed\Api\AppConfigInterface;
 
 class AppConfig implements AppConfigInterface
 {
-    const PREFIX = 'athoscommerce_feed';
+    public const PREFIX = 'athoscommerce_feed';
     /**
      * @var DeploymentConfig
      */
@@ -92,7 +92,7 @@ class AppConfig implements AppConfigInterface
     public function isDebug(): bool
     {
         $value = $this->getValue('debug');
-        return !is_null($value) && (bool)$value;
+        return ($value === null) && (bool)$value;
     }
 
     /**

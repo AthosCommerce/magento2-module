@@ -49,9 +49,10 @@ class AddIndexingEntitiesAction implements AddIndexingEntitiesActionInterface
      */
     public function __construct(
         IndexingEntityRepositoryInterface $indexingEntityRepository,
-        SearchCriteriaBuilderFactory $searchCriteriaBuilderFactory,
-        AthosCommerceLogger $logger
-    ) {
+        SearchCriteriaBuilderFactory      $searchCriteriaBuilderFactory,
+        AthosCommerceLogger               $logger
+    )
+    {
         $this->searchCriteriaBuilderFactory = $searchCriteriaBuilderFactory;
         $this->indexingEntityRepository = $indexingEntityRepository;
         $this->logger = $logger;
@@ -92,9 +93,10 @@ class AddIndexingEntitiesAction implements AddIndexingEntitiesActionInterface
      * @return IndexingEntityInterface
      */
     private function createIndexingEntity(
-        string $type,
+        string                 $type,
         MagentoEntityInterface $magentoEntity,
-    ): IndexingEntityInterface {
+    ): IndexingEntityInterface
+    {
         $isIndexable = $magentoEntity->isIndexable();
         $indexingEntity = $this->indexingEntityRepository->create();
         $indexingEntity->setTargetEntityType($type);

@@ -18,11 +18,30 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Cron;
 
+use AthosCommerce\Feed\Api\EntityDiscoveryInterface;
+
 class EntityDiscoveryCron
 {
-    
+    /**
+     * @var EntityDiscoveryInterface
+     */
+    private $entityDiscovery;
+
+    /**
+     * @var EntityDiscoveryInterface
+     */
+    public function __construct(
+        EntityDiscoveryInterface $entityDiscovery
+    )
+    {
+        $this->entityDiscovery = $entityDiscovery;
+    }
+
+    /**
+     * @return void
+     */
     public function execute(): void
     {
-        //TODO:: to implement
+        $this->entityDiscovery->execute();
     }
 }

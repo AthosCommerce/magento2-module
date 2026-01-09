@@ -22,7 +22,7 @@ use Throwable;
 
 class ValidationException extends GenericException
 {
-    const CODE = 1000;
+    public const CODE = 1000;
 
     /**
      * ValidationException constructor.

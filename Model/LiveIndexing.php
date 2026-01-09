@@ -101,7 +101,6 @@ class LiveIndexing implements LiveIndexingInterface
                     "[LiveIndexing] Configuration incomplete for store: " . $storeCode,
                     [
                         'endpoint' => $this->config->getEndpointByStoreId($storeId),
-                        'shopdomain' => $this->config->getShopDomainByStoreId($storeId),
                         'status' => $this->config->isLiveIndexingEnabled($storeId),
                         'siteId' => $siteId,
                     ]
@@ -139,7 +138,6 @@ class LiveIndexing implements LiveIndexingInterface
     private function shouldLiveIndexingProcess(int $storeId): bool
     {
         return $this->config->getEndpointByStoreId($storeId)
-            && $this->config->getShopDomainByStoreId($storeId)
             && $this->config->isLiveIndexingEnabled($storeId)
             && $this->config->getSiteIdByStoreId($storeId);
     }

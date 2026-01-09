@@ -41,12 +41,12 @@ class BaseProductObserver
     /**
      * @param SetIndexingEntitiesToUpdateActionInterface $setIndexingEntitiesToUpdateAction
      * @param SetIndexingEntitiesToDeleteActionInterface $setIndexingEntitiesToDeleteAction
-     * @param \Magento\Framework\Logger\Monolog $logger
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
         SetIndexingEntitiesToUpdateActionInterface $setIndexingEntitiesToUpdateAction,
         SetIndexingEntitiesToDeleteActionInterface $setIndexingEntitiesToDeleteAction,
-        \Magento\Framework\Logger\Monolog                            $logger
+        AthosCommerceLogger                        $logger
     )
     {
         $this->setIndexingEntitiesToUpdateAction = $setIndexingEntitiesToUpdateAction;

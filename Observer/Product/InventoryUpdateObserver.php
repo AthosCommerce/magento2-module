@@ -51,7 +51,7 @@ class InventoryUpdateObserver implements ObserverInterface
     private $scopeConfig;
 
     public function __construct(
-        AthosCommerceLogger      $logger,
+        AthosCommerceLogger  $logger,
         ProductRepository    $productRepository,
         ScopeConfigInterface $scopeConfig,
         BaseProductObserver  $baseProductObserver
@@ -88,7 +88,7 @@ class InventoryUpdateObserver implements ObserverInterface
                 null,
                 true
             );
-            if(!$product || !$product->getId()) {
+            if (!$product || !$product->getId()) {
                 return;
             }
             $storeIds = method_exists($product, 'getStoreIds') ? $product->getStoreIds() : [];
@@ -111,27 +111,36 @@ class InventoryUpdateObserver implements ObserverInterface
 
                     $this->baseProductObserver->execute([$productId], $nextAction);
 
-                    $this->logger->debug('[InventoryUpdateObserver] Stock Update Store Check', [
-                        'product_id'    => $productId,
-                        'store_id'      => $storeId,
-                        'live_indexing' => $liveIndexing,
-                        'action'        => $nextAction
-                    ]);
+                    $this->logger->debug(
+                        '[InventoryUpdateObserver] Stock Update Store Check',
+                        [
+                            'product_id' => $productId,
+                            'store_id' => $storeId,
+                            'live_indexing' => $liveIndexing,
+                            'action' => $nextAction
+                        ]
+                    );
 
                 } catch (\Throwable $e) {
-                    $this->logger->error('[InventoryUpdateObserver] Error processing stock for store ' . $storeId, [
-                        'product_id' => $productId,
-                        'message' => $e->getMessage(),
-                    ]);
+                    $this->logger->error(
+                        '[InventoryUpdateObserver] Error processing stock for store ' . $storeId,
+                        [
+                            'product_id' => $productId,
+                            'message' => $e->getMessage(),
+                        ]
+                    );
                     continue;
                 }
             }
 
         } catch (\Throwable $e) {
-            $this->logger->error('[InventoryUpdateObserver] Exception thrown', [
-                'product_id' => $productId,
-                'message' => $e->getMessage(),
-            ]);
+            $this->logger->error(
+                '[InventoryUpdateObserver] Exception thrown',
+                [
+                    'product_id' => $productId,
+                    'message' => $e->getMessage(),
+                ]
+            );
         }
     }
 }

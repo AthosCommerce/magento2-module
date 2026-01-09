@@ -20,8 +20,8 @@ namespace AthosCommerce\Feed\Api\Data;
 
 interface TaskErrorInterface
 {
-    const CODE = 'code';
-    const MESSAGE = 'message';
+    public const CODE = 'code';
+    public const MESSAGE = 'message';
     /**
      * @return int|null
      */

@@ -8,14 +8,28 @@ use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 
 class EnsureEntityExistsService
 {
+    /**
+     * @var FilterEntitiesToAddServiceInterface
+     */
     private $filterEntitiesToAddService;
+    /**
+     * @var AddIndexingEntitiesActionInterface
+     */
     private $addIndexingEntitiesAction;
+    /**
+     * @var AthosCommerceLogger
+     */
     private $logger;
 
+    /**
+     * @param FilterEntitiesToAddServiceInterface $filterEntitiesToAddService
+     * @param AddIndexingEntitiesActionInterface $addIndexingEntitiesAction
+     * @param AthosCommerceLogger $logger
+     */
     public function __construct(
         FilterEntitiesToAddServiceInterface $filterEntitiesToAddService,
-        AddIndexingEntitiesActionInterface  $addAction,
-        AthosCommerceLogger                     $logger
+        AddIndexingEntitiesActionInterface  $addIndexingEntitiesAction,
+        AthosCommerceLogger                 $logger
     )
     {
         $this->filterEntitiesToAddService = $filterEntitiesToAddService;
