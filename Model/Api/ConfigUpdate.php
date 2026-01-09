@@ -52,7 +52,7 @@ class ConfigUpdate implements ConfigUpdateInterface
     /**
      * @var SetEntitiesToNotIndexableBySiteIdActionInterface
      */
-    private $SetEntitiesToNotIndexableBySiteIdAction;
+    private $setEntitiesToNotIndexableBySiteIdAction;
 
     /**
      * @param WriterInterface $configWriter
@@ -61,7 +61,7 @@ class ConfigUpdate implements ConfigUpdateInterface
      * @param ConfigUpdateResponseInterfaceFactory $responseFactory
      * @param ConfigUpdateResultInterfaceFactory $configUpdateResultFactory
      * @param AthosCommerceLogger $logger
-     * @param SetEntitiesToNotIndexableBySiteIdActionInterface $SetEntitiesToNotIndexableBySiteIdAction
+     * @param SetEntitiesToNotIndexableBySiteIdActionInterface $setEntitiesToNotIndexableBySiteIdAction
      */
     public function __construct(
         WriterInterface                                  $configWriter,
@@ -70,7 +70,7 @@ class ConfigUpdate implements ConfigUpdateInterface
         ConfigUpdateResponseInterfaceFactory             $responseFactory,
         ConfigUpdateResultInterfaceFactory               $configUpdateResultFactory,
         AthosCommerceLogger                              $logger,
-        SetEntitiesToNotIndexableBySiteIdActionInterface $SetEntitiesToNotIndexableBySiteIdAction,
+        SetEntitiesToNotIndexableBySiteIdActionInterface $setEntitiesToNotIndexableBySiteIdAction,
     )
     {
         $this->configWriter = $configWriter;
@@ -79,7 +79,7 @@ class ConfigUpdate implements ConfigUpdateInterface
         $this->responseFactory = $responseFactory;
         $this->configUpdateResultFactory = $configUpdateResultFactory;
         $this->logger = $logger;
-        $this->SetEntitiesToNotIndexableBySiteIdAction = $SetEntitiesToNotIndexableBySiteIdAction;
+        $this->setEntitiesToNotIndexableBySiteIdAction = $setEntitiesToNotIndexableBySiteIdAction;
     }
 
     /**
@@ -261,8 +261,8 @@ class ConfigUpdate implements ConfigUpdateInterface
         );
 
         if (!$payload->getEnableLiveIndexing()) {
-            $this->SetEntitiesToNotIndexableBySiteIdAction->update(
-                $payload->getSiteId(),
+            $this->setEntitiesToNotIndexableBySiteIdAction->update(
+                $payload->getSiteId()
             );
         }
 
