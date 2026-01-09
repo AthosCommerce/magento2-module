@@ -21,7 +21,7 @@ namespace AthosCommerce\Feed\Service\Action;
 use Magento\Framework\App\ResourceConnection;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 
-class DeleteIndexingEntitiesAction implements DeleteIndexingEntitiesActionInterface
+class SetEntitiesToNotIndexableBySiteIdAction implements SetEntitiesToNotIndexableBySiteIdActionInterface
 {
     /**
      * @var ResourceConnection
@@ -47,16 +47,11 @@ class DeleteIndexingEntitiesAction implements DeleteIndexingEntitiesActionInterf
     }
 
     /**
-     * @param int $siteId
-     * @param bool $isEnabled
+     * @param string $siteId
      * @return bool
      */
-    public function delete(int $siteId, bool $isEnabled): bool
+    public function update(string $siteId): bool
     {
-        if (!$siteId) {
-            return true;
-        }
-
         $connection = $this->resource->getConnection();
         $tableName = $this->resource->getTableName('athoscommerce_indexing_entity');
 

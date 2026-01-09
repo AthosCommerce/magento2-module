@@ -18,14 +18,13 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Service\Action;
 
-interface DeleteIndexingEntitiesActionInterface
+interface SetEntitiesToNotIndexableBySiteIdActionInterface
 {
     /**
      * Enable / Disable Live Indexing
      *
-     * @param int $siteId
-     * @param bool $isEnabled
+     * @param string $siteId
      * @return bool
      */
-    public function delete(int $siteId, bool $isEnabled): bool;
+    public function update(string $siteId): bool;
 }

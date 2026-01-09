@@ -129,8 +129,8 @@
                 type="AthosCommerce\Feed\Service\Action\SetIndexingEntitiesToNotBeIndexableAction"/>
     <preference for="AthosCommerce\Feed\Service\Action\SetIndexingEntitiesToBeIndexableActionInterface"
                 type="AthosCommerce\Feed\Service\Action\SetIndexingEntitiesToBeIndexableAction"/>
-    <preference for="AthosCommerce\Feed\Service\Action\DeleteIndexingEntitiesActionInterface"
-                type="AthosCommerce\Feed\Service\Action\DeleteIndexingEntitiesAction"/>
+    <preference for="AthosCommerce\Feed\Service\Action\SetEntitiesToNotIndexableBySiteIdActionInterface"
+                type="AthosCommerce\Feed\Service\Action\SetEntitiesToNotIndexableBySiteIdAction"/>
 
     <preference for="AthosCommerce\Feed\Api\ConfigUpdateInterface"
                 type="AthosCommerce\Feed\Model\Api\ConfigUpdate"/>

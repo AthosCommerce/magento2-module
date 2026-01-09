@@ -11,7 +11,7 @@ use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Config\ConfigMap;
 use AthosCommerce\Feed\Api\Data\ConfigUpdateResponseInterfaceFactory;
 use AthosCommerce\Feed\Api\Data\ConfigUpdateResultInterfaceFactory;
-use AthosCommerce\Feed\Service\Action\DeleteIndexingEntitiesActionInterface;
+use AthosCommerce\Feed\Service\Action\SetEntitiesToNotIndexableBySiteIdActionInterface;
 use Magento\Framework\App\Config\Storage\WriterInterface;
 use Magento\Framework\Encryption\EncryptorInterface;
 use Magento\Framework\Exception\LocalizedException;
@@ -50,9 +50,10 @@ class ConfigUpdate implements ConfigUpdateInterface
     private $logger;
 
     /**
-     * @var DeleteIndexingEntitiesActionInterface
+     * @var SetEntitiesToNotIndexableBySiteIdActionInterface
      */
-    private $deleteIndexingEntitiesAction;
+    private $SetEntitiesToNotIndexableBySiteIdAction;
+
     /**
      * @param WriterInterface $configWriter
      * @param EncryptorInterface $encryptor
@@ -60,16 +61,16 @@ class ConfigUpdate implements ConfigUpdateInterface
      * @param ConfigUpdateResponseInterfaceFactory $responseFactory
      * @param ConfigUpdateResultInterfaceFactory $configUpdateResultFactory
      * @param AthosCommerceLogger $logger
-     * @param DeleteIndexingEntitiesActionInterface $addIndexingEntitiesAction
+     * @param SetEntitiesToNotIndexableBySiteIdActionInterface $SetEntitiesToNotIndexableBySiteIdAction
      */
     public function __construct(
-        WriterInterface                      $configWriter,
-        EncryptorInterface                   $encryptor,
-        StoreRepositoryInterface             $storeRepository,
-        ConfigUpdateResponseInterfaceFactory $responseFactory,
-        ConfigUpdateResultInterfaceFactory   $configUpdateResultFactory,
-        AthosCommerceLogger                  $logger,
-        DeleteIndexingEntitiesActionInterface $addIndexingEntitiesAction,
+        WriterInterface                                  $configWriter,
+        EncryptorInterface                               $encryptor,
+        StoreRepositoryInterface                         $storeRepository,
+        ConfigUpdateResponseInterfaceFactory             $responseFactory,
+        ConfigUpdateResultInterfaceFactory               $configUpdateResultFactory,
+        AthosCommerceLogger                              $logger,
+        SetEntitiesToNotIndexableBySiteIdActionInterface $SetEntitiesToNotIndexableBySiteIdAction,
     )
     {
         $this->configWriter = $configWriter;
@@ -78,7 +79,7 @@ class ConfigUpdate implements ConfigUpdateInterface
         $this->responseFactory = $responseFactory;
         $this->configUpdateResultFactory = $configUpdateResultFactory;
         $this->logger = $logger;
-        $this->deleteIndexingEntitiesAction = $addIndexingEntitiesAction;
+        $this->SetEntitiesToNotIndexableBySiteIdAction = $SetEntitiesToNotIndexableBySiteIdAction;
     }
 
     /**
@@ -260,9 +261,8 @@ class ConfigUpdate implements ConfigUpdateInterface
         );
 
         if (!$payload->getEnableLiveIndexing()) {
-            $this->deleteIndexingEntitiesAction->delete(
+            $this->SetEntitiesToNotIndexableBySiteIdAction->update(
                 $payload->getSiteId(),
-                $payload->getEnableLiveIndexing()
             );
         }
 
