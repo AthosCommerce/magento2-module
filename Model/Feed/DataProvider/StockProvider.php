@@ -83,7 +83,7 @@ class StockProvider implements DataProviderInterface
             return $products;
         }
 
-        $stockProvider = $this->stockResolver->resolve($feedSpecification->getMsiStatus());
+        $stockProvider = $this->stockResolver->resolve($feedSpecification->getIsMsiEnabled());
         $storeId = (int)$this->storeContextManager->getStoreFromContext()->getId();
 
         $childStockData = $stockProvider->getStock($childIds);

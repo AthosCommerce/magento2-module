@@ -333,7 +333,7 @@ class Feed extends AbstractExtensibleObject implements FeedSpecificationInterfac
     /**
      * @return bool
      */
-    public function getMsiStatus(): bool
+    public function getIsMsiEnabled(): bool
     {
         return $this->_get(self::MSI_STATUS);
     }
@@ -342,7 +342,7 @@ class Feed extends AbstractExtensibleObject implements FeedSpecificationInterfac
      * @param bool $value
      * @return FeedSpecificationInterface
      */
-    public function setMsiStatus(bool $value): FeedSpecificationInterface
+    public function setIsMsiEnabled(bool $value): FeedSpecificationInterface
     {
         return $this->setData(self::MSI_STATUS, $value);
     }

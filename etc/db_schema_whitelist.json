@@ -1,0 +1,51 @@
+{
+    "athoscommerce_task": {
+        "column": {
+            "entity_id": true,
+            "type": true,
+            "status": true,
+            "payload": true,
+            "created_at": true,
+            "started_at": true,
+            "ended_at": true,
+            "product_count": true,
+            "file_size": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    },
+    "athoscommerce_task_error": {
+        "column": {
+            "task_id": true,
+            "code": true,
+            "message": true,
+            "created_at": true
+        },
+        "constraint": {
+            "ATHOSCOMMERCE_TASK_ERROR_TASK_ID": true,
+            "ATHOSCOMMERCE_TASK_ERROR_TASK_ID_ATHOSCOMMERCE_TASK_ENTITY_ID": true
+        }
+    },
+    "athoscommerce_indexing_entity": {
+        "column": {
+            "entity_id": true,
+            "target_entity_type": true,
+            "target_entity_subtype": true,
+            "target_id": true,
+            "target_parent_id": true,
+            "site_id": true,
+            "next_action": true,
+            "lock_timestamp": true,
+            "last_action": true,
+            "last_action_timestamp": true,
+            "is_indexable": true,
+            "created_at": true,
+            "updated_at": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "UNQ_4BCDD54213D94E8E9AF1B8CCBDC75F23": true
+        }
+    }
+}
