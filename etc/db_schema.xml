@@ -9,10 +9,12 @@
         <column xsi:type="mediumtext" name="payload" nullable="true" comment="Task Payload"/>
         <column xsi:type="timestamp" name="created_at" on_update="false" nullable="false" default="CURRENT_TIMESTAMP"
                 comment="Task Created At"/>
-        <column xsi:type="timestamp" name="started_at" on_update="false" nullable="true" comment="Task Execution Started At"/>
-        <column xsi:type="timestamp" name="ended_at" on_update="false" nullable="true" comment="Task Execution Ended At"/>
-        <column xsi:type="int" name="product_count" nullable="true"  comment="Total Product Count"/>
-        <column xsi:type="int" name="file_size" nullable="true"  comment="File Size"/>
+        <column xsi:type="timestamp" name="started_at" on_update="false" nullable="true"
+                comment="Task Execution Started At"/>
+        <column xsi:type="timestamp" name="ended_at" on_update="false" nullable="true"
+                comment="Task Execution Ended At"/>
+        <column xsi:type="int" name="product_count" nullable="true" comment="Total Product Count"/>
+        <column xsi:type="int" name="file_size" nullable="true" comment="File Size"/>
         <constraint xsi:type="primary" referenceId="PRIMARY">
             <column name="entity_id"/>
         </constraint>
@@ -22,6 +24,8 @@
         <column xsi:type="int" name="task_id" unsigned="true" nullable="false" comment="Task ID"/>
         <column xsi:type="int" name="code" nullable="false" comment="Error Code"/>
         <column xsi:type="text" name="message" nullable="false" comment="Error Message"/>
+        <column xsi:type="timestamp" name="created_at" on_update="false" nullable="false"
+                default="CURRENT_TIMESTAMP" comment="Task Error Created At"/>
         <constraint xsi:type="unique" referenceId="ATHOSCOMMERCE_TASK_ERROR_TASK_ID">
             <column name="task_id"/>
         </constraint>
@@ -32,5 +36,30 @@
                     referenceTable="athoscommerce_task"
                     referenceColumn="entity_id"
                     onDelete="CASCADE"/>
+    </table>
+
+    <table name="athoscommerce_indexing_entity" resource="default" engine="innodb" comment="AthosCommerce Entity Indexing">
+        <column xsi:type="int" name="entity_id" unsigned="true" nullable="false" identity="true" comment="Primary Key"/>
+        <column xsi:type="varchar" name="target_entity_type" length="50" nullable="false" comment="Entity type, e.g. __CATEGORY, __CMS, __PRODUCT, __BLOG, __RECIPE"/>
+        <column xsi:type="varchar" name="target_entity_subtype" length="50" nullable="true" comment="Entity subtype, eg simple, virtual, cms_page "/>
+        <column xsi:type="int" name="target_id" unsigned="true" nullable="false" identity="false" comment="Target ID"/>
+        <column xsi:type="int" name="target_parent_id" unsigned="true" nullable="true" identity="false" comment="Target Parent ID"/>
+        <column xsi:type="varchar" name="site_id" length="20" nullable="false" comment="AthosCommerce Site ID"/>
+        <column xsi:type="varchar" name="next_action" length="6" nullable="false" default="" comment="Next Action"/>
+        <column xsi:type="timestamp" name="lock_timestamp" nullable="true" comment="Record locked for processing at"/>
+        <column xsi:type="varchar" name="last_action" length="6" nullable="false" default="" comment="Last Action"/>
+        <column xsi:type="timestamp" name="last_action_timestamp" nullable="true" comment="Last action completed processing at"/>
+        <column xsi:type="tinyint" name="is_indexable" unsigned="true" nullable="false" identity="false" default="1" comment="Is record indexable"/>
+        <column xsi:type="timestamp" name="created_at" nullable="true" default="CURRENT_TIMESTAMP" comment="Created Date Timestamp"/>
+        <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="true" default="CURRENT_TIMESTAMP" comment="Updated Date Timestamp"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <constraint xsi:type="unique" referenceId="UNQ_TARGET_ENTITY_TYPE_TARGET_ID_SITE_ID">
+            <column name="target_entity_type"/>
+            <column name="target_id"/>
+            <column name="target_parent_id"/>
+            <column name="site_id"/>
+        </constraint>
     </table>
 </schema>

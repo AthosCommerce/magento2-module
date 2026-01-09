@@ -20,13 +20,13 @@ namespace AthosCommerce\Feed\Api;
 
 interface MetadataInterface
 {
-    const TASK_STATUS_PENDING = 'pending';
-    const TASK_STATUS_PROCESSING = 'processing';
-    const TASK_STATUS_SUCCESS = 'success';
-    const TASK_STATUS_ERROR = 'error';
-    const FEED_GENERATION_TASK_CODE = 'feed_generation';
+    public const TASK_STATUS_PENDING = 'pending';
+    public const TASK_STATUS_PROCESSING = 'processing';
+    public const TASK_STATUS_SUCCESS = 'success';
+    public const TASK_STATUS_ERROR = 'error';
+    public const FEED_GENERATION_TASK_CODE = 'feed_generation';
 
-    const FORMAT_JSON = 'json';
-    const FORMAT_GZ = 'gz';
-    const FORMAT_JSON_GZ = 'json.gz';
+    public const FORMAT_JSON = 'json';
+    public const FORMAT_GZ = 'gz';
+    public const FORMAT_JSON_GZ = 'json.gz';
 }

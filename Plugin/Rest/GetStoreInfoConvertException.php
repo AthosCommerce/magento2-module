@@ -19,7 +19,7 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Plugin\Rest;
 
 use Magento\Framework\Webapi\Exception;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Api\GetStoresInfoInterface;
 use AthosCommerce\Feed\Model\Webapi\ExceptionConverterInterface;
 use Throwable;
@@ -31,19 +31,20 @@ class GetStoreInfoConvertException
      */
     private $exceptionConverter;
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     private $logger;
 
     /**
-     * CreateTaskConvertException constructor.
+     * GetStoreInfoConvertException constructor.
      * @param ExceptionConverterInterface $exceptionConverter
-     * @param LoggerInterface $logger
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
         ExceptionConverterInterface $exceptionConverter,
-        LoggerInterface $logger
-    ) {
+        AthosCommerceLogger         $logger
+    )
+    {
         $this->exceptionConverter = $exceptionConverter;
         $this->logger = $logger;
     }
@@ -54,7 +55,28 @@ class GetStoreInfoConvertException
      * @return string
      * @throws Exception
      */
-    public function aroundGetAsHtml(GetStoresInfoInterface $subject, callable $proceed) : string
+    public function aroundGetAsHtml(GetStoresInfoInterface $subject, callable $proceed): string
+    {
+        try {
+            $result = $proceed();
+        } catch (Throwable $exception) {
+            $this->logger->error($exception->getMessage(), ['trace' => $exception->getTraceAsString()]);
+            $newException = $this->exceptionConverter->convert($exception);
+            throw $newException;
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param GetStoresInfoInterface $subject
+     * @param callable $proceed
+     * @return array
+     */
+    public function aroundGetAsJson(
+        GetStoresInfoInterface $subject,
+        callable               $proceed
+    ): array
     {
         try {
             $result = $proceed();

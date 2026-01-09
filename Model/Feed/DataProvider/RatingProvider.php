@@ -40,6 +40,7 @@ class RatingProvider implements DataProviderInterface
 
     /**
      * RatingProvider constructor.
+     *
      * @param SummaryCollectionFactory $collectionFactory
      * @param StoreManagerInterface $storeManager
      */
@@ -54,18 +55,28 @@ class RatingProvider implements DataProviderInterface
     /**
      * @param array $products
      * @param FeedSpecificationInterface $feedSpecification
+     *
      * @return array
      * @throws NoSuchEntityException
      */
-    public function getData(array $products, FeedSpecificationInterface $feedSpecification): array
-    {
+    public function getData(
+        array $products,
+        FeedSpecificationInterface $feedSpecification
+    ): array {
+
+        $ignoredFields = $feedSpecification->getIgnoreFields();
+        if (in_array('rating', $ignoredFields)
+            && in_array('rating_count', $ignoredFields)
+        ) {
+            return $products;
+        }
+
         $productIds = array_map(function ($product) {
-            return (int) $product['entity_id'] ?? -1;
+            return (int)$product['entity_id'] ?? -1;
         }, $products);
 
         $productIds = array_unique($productIds);
         $ratings = $this->getRatings($productIds, $feedSpecification);
-        $ignoredFields = $feedSpecification->getIgnoreFields();
         foreach ($products as &$product) {
             $id = $product['entity_id'] ?? null;
             if (!$id) {
@@ -91,24 +102,28 @@ class RatingProvider implements DataProviderInterface
 
     /**
      * @param Summary $summary
+     *
      * @return float
      */
-    private function convertRatingSum(Summary $summary) : float
+    private function convertRatingSum(Summary $summary): float
     {
-        return 5 * ((int) $summary->getRatingSummary() / 100);
+        return 5 * ((int)$summary->getRatingSummary() / 100);
     }
 
     /**
      * @param array $productIds
      * @param FeedSpecificationInterface $feedSpecification
+     *
      * @return array
      * @throws NoSuchEntityException
      */
-    private function getRatings(array $productIds, FeedSpecificationInterface $feedSpecification) : array
-    {
+    private function getRatings(
+        array $productIds,
+        FeedSpecificationInterface $feedSpecification
+    ): array {
         /** @var Collection $summaryCollection */
         $summaryCollection = $this->collectionFactory->create();
-        $storeId = (int) $this->storeManager->getStore($feedSpecification->getStoreCode())->getId();
+        $storeId = (int)$this->storeManager->getStore($feedSpecification->getStoreCode())->getId();
         $summaryCollection->addStoreFilter($storeId);
         $summaryCollection->getSelect()
             ->joinLeft(

@@ -10,32 +10,40 @@
     </type>
 
     <type name="AthosCommerce\Feed\Api\CreateTaskInterface">
-        <plugin name="AthosCommerce_Feed::convert_exceptions" type="AthosCommerce\Feed\Plugin\Rest\CreateTaskConvertException"/>
+        <plugin name="AthosCommerce_Feed::createtask_exceptions" type="AthosCommerce\Feed\Plugin\Rest\CreateTaskConvertException"/>
     </type>
 
     <type name="AthosCommerce\Feed\Api\TaskRepositoryInterface">
-        <plugin name="AthosCommerce_Feed::convert_exceptions" type="AthosCommerce\Feed\Plugin\Rest\GetTaskConvertException"/>
+        <plugin name="AthosCommerce_Feed::taskrepository_exceptions" type="AthosCommerce\Feed\Plugin\Rest\GetTaskConvertException"/>
     </type>
 
     <type name="AthosCommerce\Feed\Api\GetStoresInfoInterface">
-        <plugin name="AthosCommerce_Feed::convert_exceptions" type="AthosCommerce\Feed\Plugin\Rest\GetStoreInfoConvertException"/>
+        <plugin name="AthosCommerce_Feed::getstoreinfo_exceptions" type="AthosCommerce\Feed\Plugin\Rest\GetStoreInfoConvertException"/>
+    </type>
+
+    <type name="AthosCommerce\Feed\Api\ConfigUpdateInterface">
+        <plugin name="AthosCommerce_Feed::configupdate_exceptions" type="AthosCommerce\Feed\Plugin\Rest\ConfigUpdateConvertException"/>
+    </type>
+
+    <type name="AthosCommerce\Feed\Api\GetConfigInfoInterface">
+        <plugin name="AthosCommerce_Feed::getconfiginfo_exceptions" type="AthosCommerce\Feed\Plugin\Rest\GetConfigInfoConvertException"/>
     </type>
 
     <type name="AthosCommerce\Feed\Plugin\Rest\CreateTaskConvertException">
         <arguments>
-            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
+            <argument name="logger" xsi:type="object">AthosCommerce\Feed\Logger\AthosCommerceLogger</argument>
         </arguments>
     </type>
 
     <type name="AthosCommerce\Feed\Plugin\Rest\GetTaskConvertException">
         <arguments>
-            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
+            <argument name="logger" xsi:type="object">AthosCommerce\Feed\Logger\AthosCommerceLogger</argument>
         </arguments>
     </type>
 
     <type name="AthosCommerce\Feed\Plugin\Rest\GetStoreInfoConvertException">
         <arguments>
-            <argument name="logger" xsi:type="object">AthosCommerceLogger</argument>
+            <argument name="logger" xsi:type="object">AthosCommerce\Feed\Logger\AthosCommerceLogger</argument>
         </arguments>
     </type>
 </config>

@@ -7,8 +7,14 @@
 -->
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Cron:etc/crontab.xsd">
     <group id="athoscommerce_task">
-        <job name="athoscommerce_task_execution" instance="AthosCommerce\Feed\Cron\ExecuteTasks" method="execute">
+        <job name="athoscommerce_task_execution" instance="AthosCommerce\Feed\Cron\ExecuteTasksCron" method="execute">
             <schedule>* * * * *</schedule>
+        </job>
+        <job name="athoscommerce_live_indexing_discovery" instance="AthosCommerce\Feed\Cron\EntityDiscoveryCron" method="execute">
+            <config_path>*/30 * * * *</config_path>
+        </job>
+        <job name="athoscommerce_live_indexing_sync" instance="AthosCommerce\Feed\Cron\EntitySyncCron" method="execute">
+            <config_path>athoscommerce/indexing/entity_sync_cron_expr</config_path>
         </job>
     </group>
 </config>

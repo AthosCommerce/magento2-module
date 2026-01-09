@@ -67,9 +67,9 @@ class JsonConfigProviderTest extends TestCase
     /**
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable_products.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable_product_two_swatches_attributes.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/01_simple_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable/configurable_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable/configurable_product_two_swatches_attributes.php
      *
      * @throws \Exception
      */
@@ -96,7 +96,7 @@ class JsonConfigProviderTest extends TestCase
                 $this->fail('product_model is not exist');
             }
 
-            if ($model->getTypeId() === 'configurable') {
+            if ($model->getTypeId() === 'simple') {
                 $sku = $model->getSku();
                 $id = $model->getId();
                 $this->assertArrayHasKey('json_config', $item);
@@ -118,7 +118,7 @@ class JsonConfigProviderTest extends TestCase
     /**
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable/configurable_products.php
      *
      * @throws \Exception
      */

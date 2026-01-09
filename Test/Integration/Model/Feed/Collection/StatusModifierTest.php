@@ -61,8 +61,8 @@ class StatusModifierTest extends TestCase
 
     /**
      * @magentoAppIsolation enabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_product_disabled.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/01_simple_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/02_simple_product_disabled.php
      */
     public function testModify() : void
     {

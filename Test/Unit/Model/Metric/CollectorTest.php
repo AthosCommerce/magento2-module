@@ -19,7 +19,7 @@ namespace AthosCommerce\Feed\Test\Unit\Model\Metric;
 use Magento\Framework\DataObject;
 use Magento\Framework\DataObjectFactory;
 use Magento\Framework\Event\ManagerInterface;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Api\AppConfigInterface;
 use AthosCommerce\Feed\Model\Metric\Collector;
 use AthosCommerce\Feed\Model\Metric\MetricProviderInterface;
@@ -54,7 +54,7 @@ class CollectorTest extends \PHPUnit\Framework\TestCase
     private $dataObjectFactoryMock;
 
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     private $loggerMock;
     private $metricProviderMock;
@@ -68,7 +68,7 @@ class CollectorTest extends \PHPUnit\Framework\TestCase
         $this->appConfigMock = $this->createMock(AppConfigInterface::class);
         $this->eventManagerMock = $this->createMock(ManagerInterface::class);
         $this->dataObjectFactoryMock = $this->createMock(DataObjectFactory::class);
-        $this->loggerMock = $this->createMock(LoggerInterface::class);
+        $this->loggerMock = $this->createMock(AthosCommerceLogger::class);
         $this->collector = new Collector(
             $this->outputMock,
             $this->formatterMock,

@@ -333,7 +333,7 @@ class Feed extends AbstractExtensibleObject implements FeedSpecificationInterfac
     /**
      * @return bool
      */
-    public function getMsiStatus(): bool
+    public function getIsMsiEnabled(): bool
     {
         return $this->_get(self::MSI_STATUS);
     }
@@ -342,8 +342,88 @@ class Feed extends AbstractExtensibleObject implements FeedSpecificationInterfac
      * @param bool $value
      * @return FeedSpecificationInterface
      */
-    public function setMsiStatus(bool $value): FeedSpecificationInterface
+    public function setIsMsiEnabled(bool $value): FeedSpecificationInterface
     {
         return $this->setData(self::MSI_STATUS, $value);
+    }
+
+
+    /**
+     * @return array
+     */
+    public function getSwatchOptionFieldsNames(): array
+    {
+        return $this->_get(self::SETTING_NAME_SWATCH_OPTION_FIELD_NAMES) ?? [];
+    }
+
+    /**
+     * @param array $fields
+     * @return FeedSpecificationInterface
+     */
+    public function setSwatchOptionFieldsNames(array $fields): FeedSpecificationInterface
+    {
+        return $this->setData(self::SETTING_NAME_SWATCH_OPTION_FIELD_NAMES, $fields);
+    }
+
+    /**
+     * @return array
+     */
+    public function getVariantAdditionalFields(): array
+    {
+        return $this->_get(self::SETTING_NAME_VARIANT_ADDITIONAL_FIELDS) ?? [];
+    }
+
+    /**
+     * @param array $fields
+     * @return FeedSpecificationInterface
+     */
+    public function setVariantAdditionalFields(array $fields): FeedSpecificationInterface
+    {
+        return $this->setData(self::SETTING_NAME_VARIANT_ADDITIONAL_FIELDS, $fields);
+    }
+
+    /**
+     * @return string
+     */
+    public function getIndexingMode(): string
+    {
+        return $this->_get(self::INDEXING_MODE_KEY) ?? self::BULK_MODE;
+    }
+
+    /**
+     * @param string $value
+     * @return FeedSpecificationInterface
+     */
+    public function setIndexingMode(string $value): FeedSpecificationInterface
+    {
+        return $this->setData(self::INDEXING_MODE_KEY, $value);
+    }
+
+    /**
+     * @return array
+     */
+    public function getAdditionalIgnoreFieldsByMode(): array
+    {
+        if ($this->getIndexingMode() === self::LIVE_MODE) {
+            return self::LIVE_INDEXING_IGNORE_DATA_PROVIDERS;
+        }
+        return self::BULK_INDEXING_IGNORE_DATA_PROVIDERS;
+    }
+
+    /**
+     * @return array
+     */
+    public function getExcludedProductIds(): array
+    {
+        return $this->_get(self::EXCLUDE_PRODUCT_IDS) ?? [];
+    }
+
+    /**
+     * @param array $productIds
+     * @return FeedSpecificationInterface
+     */
+    public function setExcludedProductIds(array $productIds): FeedSpecificationInterface
+    {
+        return $this->setData(self::EXCLUDE_PRODUCT_IDS, $productIds);
     }
 }

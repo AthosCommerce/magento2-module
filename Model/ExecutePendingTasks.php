@@ -20,7 +20,7 @@ namespace AthosCommerce\Feed\Model;
 
 use Magento\Framework\Api\SearchCriteriaBuilder;
 use Magento\Framework\Exception\LocalizedException;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Api\Data\TaskInterface;
 use AthosCommerce\Feed\Api\ExecutePendingTasksInterface;
 use AthosCommerce\Feed\Api\ExecuteTaskInterface;
@@ -42,22 +42,23 @@ class ExecutePendingTasks implements ExecutePendingTasksInterface
      */
     private $executeTask;
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     private $logger;
 
     /**
      * ExecutePendingTasks constructor.
+     *
      * @param TaskRepositoryInterface $taskRepository
      * @param SearchCriteriaBuilder $searchCriteriaBuilder
      * @param ExecuteTaskInterface $executeTask
-     * @param LoggerInterface $logger
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
         TaskRepositoryInterface $taskRepository,
         SearchCriteriaBuilder $searchCriteriaBuilder,
         ExecuteTaskInterface $executeTask,
-        LoggerInterface $logger
+        AthosCommerceLogger $logger
     ) {
         $this->taskRepository = $taskRepository;
         $this->searchCriteriaBuilder = $searchCriteriaBuilder;
@@ -71,27 +72,39 @@ class ExecutePendingTasks implements ExecutePendingTasksInterface
      */
     public function execute(): array
     {
-        $this->logger->info('Pending status tasks execution started by cron');
+        $this->logger->info('TaskExecution: Pending tasks execution started.');
         $searchCriteria = $this->searchCriteriaBuilder
             ->addFilter(TaskInterface::STATUS, MetadataInterface::TASK_STATUS_PENDING)
             ->create();
         $taskList = $this->taskRepository->getList($searchCriteria);
+        $taskItems = $taskList->getItems();
+        $this->logger->info('TaskExecution: Total pending tasks count: ' . $taskList->getTotalCount());
+
         $result = [];
-        foreach ($taskList->getItems() as $task) {
+        foreach ($taskItems as $task) {
+            $taskId = $task->getEntityId();
             try {
-                $this->logger->info('Task execution with the entity id started', [
-                    'method' => __METHOD__,
-                    'entityId'=> $task->getEntityId(),
-                    'status' => $task->getStatus()
-                ]);
-                $result[$task->getEntityId()] = $this->executeTask->execute($task);
+                $this->logger->info(
+                    'TaskExecution: Execution started for each task',
+                    [
+                        'method' => __METHOD__,
+                        'taskId' => $taskId,
+                        'status' => $task->getStatus(),
+                    ]
+                );
+                $result[$taskId] = $this->executeTask->execute($task);
             } catch (\Throwable $exception) {
                 $this->logger->error(
-                    $exception->getMessage(),
-                    ['trace' => $exception->getTraceAsString()]
+                    sprintf('Task ID %d failed. Error: %s', $taskId, $exception->getMessage()),
+                    [
+                        'taskId' => $taskId,
+                        'trace' => $exception->getTraceAsString()
+                    ]
                 );
+                $result[$taskId] = 'ERROR';
             }
         }
+        $this->logger->info('TaskExecution: Pending tasks execution completed.');
 
         return $result;
     }

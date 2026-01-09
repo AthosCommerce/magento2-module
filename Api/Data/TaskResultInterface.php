@@ -20,8 +20,8 @@ namespace AthosCommerce\Feed\Api\Data;
 
 interface TaskResultInterface
 {
-    const TASK = 'task';
-    const RESULT = 'result';
+    public const TASK = 'task';
+    public const RESULT = 'result';
     /**
      * @return \AthosCommerce\Feed\Api\Data\TaskInterface|null
      */

@@ -26,7 +26,7 @@ interface GetCronStatusInterface
      * @param string $status
      * @param int $currentPage
      * @param int $pageSize
-     * @return array
+     * @return mixed
      */
-    public function getList(string $status = '', int $currentPage = 1, int $pageSize = 20): array;
+    public function getList(string $status = '', int $currentPage = 1, int $pageSize = 20);
 }

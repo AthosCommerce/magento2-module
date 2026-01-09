@@ -21,7 +21,7 @@ namespace AthosCommerce\Feed\Model;
 use Exception;
 use Magento\Framework\Exception\CouldNotSaveException;
 use Magento\Framework\Stdlib\DateTime\DateTime;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Api\Data\TaskErrorInterface;
 use AthosCommerce\Feed\Api\Data\TaskErrorInterfaceFactory;
 use AthosCommerce\Feed\Api\Data\TaskInterface;
@@ -50,7 +50,7 @@ class ExecuteTask implements ExecuteTaskInterface
      */
     private $taskErrorFactory;
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     private $logger;
 
@@ -60,14 +60,14 @@ class ExecuteTask implements ExecuteTaskInterface
      * @param TaskRepositoryInterface $taskRepository
      * @param DateTime $dateTime
      * @param TaskErrorInterfaceFactory $taskErrorFactory
-     * @param LoggerInterface $logger
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
         ExecutorPool $executorPool,
         TaskRepositoryInterface $taskRepository,
         DateTime $dateTime,
         TaskErrorInterfaceFactory $taskErrorFactory,
-        LoggerInterface $logger
+        AthosCommerceLogger $logger
     ) {
         $this->executorPool = $executorPool;
         $this->taskRepository = $taskRepository;
@@ -95,8 +95,9 @@ class ExecuteTask implements ExecuteTaskInterface
                 'entityId'=> $task->getEntityId(),
                 'status' => $task->getStatus()
             ]);
-            $result = $executor->execute($task);
+            $executor->execute($task);
             $task->setStatus(MetadataInterface::TASK_STATUS_SUCCESS);
+            $result = MetadataInterface::TASK_STATUS_SUCCESS;
         } catch (\Throwable $exception) {
             /** @var TaskErrorInterface $error */
             $error = $this->taskErrorFactory->create();
@@ -111,6 +112,7 @@ class ExecuteTask implements ExecuteTaskInterface
                 ->setCode($code);
             $task->setStatus(MetadataInterface::TASK_STATUS_ERROR)
                 ->setError($error);
+            $result = MetadataInterface::TASK_STATUS_ERROR;
         }
         $this->logger->info('Task execution with the entity id completed successfully', [
             'method' => __METHOD__,

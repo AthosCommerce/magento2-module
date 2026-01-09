@@ -83,7 +83,7 @@ class UrlProviderTest extends TestCase
      * @magentoConfigFixture current_store web/unsecure/base_url https://default.url/
      * @magentoConfigFixture current_store web/unsecure/base_link_url https://default.url/
      * @magentoConfigFixture current_store web/seo/use_rewrites 1
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products_with_url.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_products_with_url.php
      *
      * @throws \Exception
      */
@@ -108,7 +108,7 @@ class UrlProviderTest extends TestCase
      * @magentoConfigFixture current_store web/unsecure/base_link_url https://default.url/
      * @magentoConfigFixture current_store web/seo/use_rewrites 1
      * @magentoDataFixture AthosCommerce_Feed::Test/_files/remove_url_rewrite_suffix.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products_with_url.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_products_with_url.php
      *
      * @throws \Exception
      */
@@ -132,7 +132,7 @@ class UrlProviderTest extends TestCase
      * @magentoConfigFixture current_store web/unsecure/base_url https://default.url/
      * @magentoConfigFixture current_store web/unsecure/base_link_url https://default.url/
      * @magentoConfigFixture current_store web/seo/use_rewrites 1
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products_multistore_with_url.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_products_multistore_with_url.php
      * @magentoConfigFixture fixturestore_store web/seo/use_rewrites 1
      * @magentoConfigFixture fixturestore_store web/unsecure/base_url https://fixturestore.url/
      * @magentoConfigFixture fixturestore_store web/unsecure/base_link_url https://fixturestore.url/
@@ -165,7 +165,7 @@ class UrlProviderTest extends TestCase
      *
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products_with_url.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_products_with_url.php
      *
      * @throws \Exception
      */

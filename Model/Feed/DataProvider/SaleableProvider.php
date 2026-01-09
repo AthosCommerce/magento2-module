@@ -28,10 +28,16 @@ class SaleableProvider implements DataProviderInterface
     /**
      * @param array $products
      * @param FeedSpecificationInterface $feedSpecification
+     *
      * @return array
      */
-    public function getData(array $products, FeedSpecificationInterface $feedSpecification): array
+    public function getData(
+        array                      $products,
+        FeedSpecificationInterface $feedSpecification
+    ): array
     {
+        $ignoredFields = $feedSpecification->getIgnoreFields();
+
         foreach ($products as &$product) {
             /** @var Product $productModel */
             $productModel = $product['product_model'] ?? null;
@@ -39,7 +45,12 @@ class SaleableProvider implements DataProviderInterface
                 continue;
             }
 
-            $product['saleable'] = $productModel->isSaleable();
+            if (!in_array('saleable', $ignoredFields, true)) {
+                $product['saleable'] = $productModel->isSaleable();
+            }
+            if (!in_array('is_available', $ignoredFields, true)) {
+                $product['is_available'] = $productModel->isAvailable();
+            }
         }
 
         return $products;

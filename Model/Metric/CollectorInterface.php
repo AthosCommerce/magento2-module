@@ -29,15 +29,15 @@ interface CollectorInterface
     /**
      *
      */
-    const CODE_PRODUCT_FEED = 'product_feed';
+    public const CODE_PRODUCT_FEED = 'product_feed';
     /**
      *
      */
-    const PRINT_TYPE_FROM_PREVIOUS = 'from_previous';
+    public const PRINT_TYPE_FROM_PREVIOUS = 'from_previous';
     /**
      *
      */
-    const PRINT_TYPE_FULL = 'full';
+    public const PRINT_TYPE_FULL = 'full';
 
     /**
      * @param string $code

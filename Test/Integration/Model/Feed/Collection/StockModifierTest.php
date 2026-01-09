@@ -54,9 +54,9 @@ class StockModifierTest extends TestCase
 
     /**
      * @magentoAppIsolation enabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_product_oos.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_product_not_manage_stock.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/01_simple_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_product_oos.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_product_not_manage_stock.php
      */
     public function testModify() : void
     {
@@ -75,9 +75,9 @@ class StockModifierTest extends TestCase
 
     /**
      * @magentoAppIsolation enabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_product_oos.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_product_not_manage_stock.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/01_simple_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_product_oos.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_product_not_manage_stock.php
      */
     public function testModifyWithExcludeOutOfStockProducts() : void
     {

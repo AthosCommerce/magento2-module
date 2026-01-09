@@ -3,9 +3,11 @@
 namespace AthosCommerce\Feed\Model\Feed\DataProvider\Parent;
 
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
-use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\Collection as ParentProductCollection;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentDataContextManager;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Option\Visibility;
 use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
+use AthosCommerce\Feed\Model\Feed\ProductExclusionInterface;
+use AthosCommerce\Feed\Model\Feed\ProductTypeIdInterface;
 use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\Product\Type as MagentoProductType;
@@ -22,30 +24,44 @@ class GroupedDataProvider implements DataProviderInterface
      */
     private $relationsProvider;
     /**
-     * @var ParentProductCollection
+     * @var ParentDataContextManager
      */
-    private $parentProductCollection;
+    private $parentProductContextManager;
     /**
      * @var Visibility
      */
     private $visibility;
+    /**
+     * @var ProductExclusionInterface
+     */
+    private $productExclusion;
+    /**
+     * @var ProductTypeIdInterface
+     */
+    private $productTypeId;
 
     /**
      * @param MetadataPool $metadataPool
      * @param RelationsProvider $relationsProvider
-     * @param Collection $parentProductCollection
+     * @param ParentDataContextManager $parentProductContextManager
      * @param Visibility $visibility
+     * @param ProductExclusionInterface $productExclusion
+     * @param ProductTypeIdInterface $productTypeId
      */
     public function __construct(
         MetadataPool $metadataPool,
         RelationsProvider $relationsProvider,
-        ParentProductCollection $parentProductCollection,
+        ParentDataContextManager $parentProductContextManager,
         Visibility $visibility,
+        ProductExclusionInterface $productExclusion,
+        ProductTypeIdInterface $productTypeId
     ) {
         $this->metadataPool = $metadataPool;
         $this->relationsProvider = $relationsProvider;
-        $this->parentProductCollection = $parentProductCollection;
+        $this->parentProductContextManager = $parentProductContextManager;
         $this->visibility = $visibility;
+        $this->productExclusion = $productExclusion;
+        $this->productTypeId = $productTypeId;
     }
 
     /**
@@ -59,15 +75,12 @@ class GroupedDataProvider implements DataProviderInterface
         array $products,
         FeedSpecificationInterface $feedSpecification
     ): array {
-        $childIds = $this->getChildIds($products);
+        $childTypeIdsList = $this->productTypeId->getChildTypeIdsList();
+        $childIds = $this->getChildIds($products, $childTypeIdsList);
         if (empty($childIds)) {
             return $products;
         }
         $parentChildIds = $this->relationsProvider->getGroupRelationIds($childIds);
-
-        $childToParent = [];
-        $allParentIds = [];
-
         if (!$parentChildIds) {
             return $products;
         }
@@ -78,7 +91,7 @@ class GroupedDataProvider implements DataProviderInterface
         $childToParent = [];
         $allParentIds = [];
 
-        foreach ($parentChildIds as $productIndex => $parentChildRow) {
+        foreach ($parentChildIds as $parentChildRow) {
             if (!isset($parentChildRow['product_id'], $parentChildRow['parent_id'])) {
                 continue;
             }
@@ -89,28 +102,14 @@ class GroupedDataProvider implements DataProviderInterface
             $allParentIds[] = $parentId;
         }
 
-        $uniqueParentIds = array_values(array_unique($allParentIds));
-        $parentCollection = $this->parentProductCollection->execute(
-            $uniqueParentIds,
-            $feedSpecification
-        );
-
-        $parentsDataById = [];
-        /** @var ProductInterface $parentProduct */
-        foreach ($parentCollection as $parentProduct) {
-            $parentsDataById[(int)$parentProduct->getId()] = $parentProduct;
-        }
-        unset($parentChildIds);
-
         $linkField = $this->getLinkField();
         $finalProducts = [];
-        foreach ($products as &$product) {
+        foreach ($products as $productIndex => &$product) {
             /** @var Product $productModel */
             $productModel = $product['product_model'] ?? null;
             if (!$productModel) {
                 continue;
             }
-
             $childEntityId = (int)$productModel->getData($linkField);
             $parentIds = $childToParent[$childEntityId] ?? [];
             if (empty($parentIds)) {
@@ -120,11 +119,13 @@ class GroupedDataProvider implements DataProviderInterface
 
             $parent = null;
             foreach ($parentIds as $parentId) {
-                $parent = $parentsDataById[$parentId] ?? null;
+                $parent = $this->parentProductContextManager->getParentsDataByProductId(
+                    (int)$parentId,
+                );
                 if (!$parent) {
                     continue;
                 }
-                $shouldExclude = $this->shouldExcludeProduct($productModel, $product, $parent);
+                $shouldExclude = $this->productExclusion->shouldExclude($productModel, $parent);
                 if ($shouldExclude) {
                     unset($products[$productIndex]);
                 }
@@ -132,22 +133,37 @@ class GroupedDataProvider implements DataProviderInterface
 
                 if (in_array(
                     $productModel->getTypeId(),
-                    [MagentoProductType::TYPE_SIMPLE, MagentoProductType::TYPE_VIRTUAL],
+                    $childTypeIdsList,
                     true
                 )) {
-                    $childClone['parent_id'] = $parentId;
-                    if (method_exists($parent, 'getName') && $parent->getName()) {
+                    //Required, so not part of ignoredFields
+                    //$childClone['parent_id'] = $parent->getDataUsingMethod($this->getLinkField());
+
+                    if (!in_array('parent_name', $ignoredFields, true)
+                        && method_exists($parent, 'getName')
+                        && $parent->getName()
+                    ) {
                         $childClone['parent_name'] = $parent->getName();
                     }
-                    if (method_exists($parent, 'getStatus')) {
+
+                    if (!in_array('parent_status', $ignoredFields, true)
+                        && method_exists($parent, 'getStatus')
+                    ) {
                         $childClone['parent_status'] = $parent->getStatus()
-                            ? __('Enabled')
-                            : __('Disabled');
+                            ? __('Enabled')->getText()
+                            : __('Disabled')->getText();
                     }
-                    if (method_exists($parent, 'getTypeId')) {
+
+                    if (!in_array('parent_type_id', $ignoredFields, true)
+                        && method_exists($parent, 'getTypeId')
+                    ) {
                         $childClone['parent_type_id'] = $parent->getTypeId();
                     }
-                    if (method_exists($parent, 'getProductUrl') && $parent->getProductUrl()) {
+
+                    if (!in_array('parent_url', $ignoredFields, true)
+                        && method_exists($parent, 'getProductUrl')
+                        && $parent->getProductUrl()
+                    ) {
                         $childClone['parent_url'] = $parent->getProductUrl();
                     }
                     if (method_exists($parent, 'getVisibility') && $parent->getVisibility()) {
@@ -162,30 +178,9 @@ class GroupedDataProvider implements DataProviderInterface
                 $finalProducts[] = $childClone;
             }
         }
-        unset($childToParent, $parentsDataById);
+        unset($childToParent);
 
         return array_values($finalProducts);
-    }
-
-    /**
-     * @param array $product
-     * @param ProductInterface $parent
-     *
-     * @return bool
-     */
-    private function shouldExcludeProduct(
-        Product $productModel,
-        array $product,
-        ProductInterface $parent
-    ): bool {
-        $isExclude = false;
-        if (($productModel->getVisibility() == 1 && $parent->getVisibility() == 1)
-            || ($parent->isDisabled() && $productModel->getVisibility() == 1)
-        ) {
-            $isExclude = true;
-        }
-
-        return $isExclude;
     }
 
     /**
@@ -193,7 +188,7 @@ class GroupedDataProvider implements DataProviderInterface
      *
      * @return array
      */
-    public function getChildIds(array $products): array
+    public function getChildIds(array $products, array $childTypeIdsList): array
     {
         $childIds = [];
         foreach ($products as $product) {
@@ -202,10 +197,7 @@ class GroupedDataProvider implements DataProviderInterface
             if (!$productModel) {
                 continue;
             }
-            //TODO:: If any product types are belongs to parents. check for composites and 3rd Party
-            if (MagentoProductType::TYPE_SIMPLE === $productModel->getTypeId()
-                || MagentoProductType::TYPE_VIRTUAL === $productModel->getTypeId()
-            ) {
+            if (in_array($productModel->getTypeId(), $childTypeIdsList, true)) {
                 $childIds[] = $productModel->getId();
             }
         }

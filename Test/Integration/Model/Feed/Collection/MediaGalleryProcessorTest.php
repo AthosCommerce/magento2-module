@@ -57,7 +57,7 @@ class MediaGalleryProcessorTest extends TestCase
     /**
      * @magentoAppIsolation enabled
      * @magentoDataFixture AthosCommerce_Feed::Test/_files/product_simple_with_media_gallery_entries.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/01_simple_products.php
      * @throws LocalizedException
      */
     public function testProcessAfterLoad() : void
@@ -80,7 +80,7 @@ class MediaGalleryProcessorTest extends TestCase
     /**
      * @magentoAppIsolation enabled
      * @magentoDataFixture AthosCommerce_Feed::Test/_files/product_simple_with_media_gallery_entries.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/01_simple_products.php
      */
     public function testProcessAfterLoadWithIncludeMediaGalleryIsFalse() : void
     {
@@ -96,7 +96,7 @@ class MediaGalleryProcessorTest extends TestCase
     /**
      * @magentoAppIsolation enabled
      * @magentoDataFixture AthosCommerce_Feed::Test/_files/product_simple_with_media_gallery_entries.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/01_simple_products.php
      * @throws LocalizedException
      */
     public function testProcessAfterFetchItems() : void

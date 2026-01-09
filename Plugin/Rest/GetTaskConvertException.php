@@ -20,7 +20,7 @@ namespace AthosCommerce\Feed\Plugin\Rest;
 
 use Magento\Framework\Exception\NoSuchEntityException as OriginalNoSuchEntityException;
 use Magento\Framework\Webapi\Exception;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Api\Data\TaskInterface;
 use AthosCommerce\Feed\Api\TaskRepositoryInterface;
 use AthosCommerce\Feed\Exception\NoSuchEntityException;
@@ -34,19 +34,24 @@ class GetTaskConvertException
      */
     private $exceptionConverter;
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     private $logger;
 
     /**
-     * CreateTaskConvertException constructor.
+     * GetTaskConvertException constructor.
      * @param ExceptionConverterInterface $exceptionConverter
-     * @param LoggerInterface $logger
+     * @param AthosCommerceLogger $logger
+     */
+    /**
+     * @param ExceptionConverterInterface $exceptionConverter
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
         ExceptionConverterInterface $exceptionConverter,
-        LoggerInterface $logger
-    ) {
+        AthosCommerceLogger         $logger
+    )
+    {
         $this->exceptionConverter = $exceptionConverter;
         $this->logger = $logger;
     }
@@ -58,17 +63,35 @@ class GetTaskConvertException
      * @return TaskInterface
      * @throws Exception
      */
-    public function aroundGet(TaskRepositoryInterface $subject, callable $proceed, int $id) : TaskInterface
+    public function aroundGet(
+        TaskRepositoryInterface $subject,
+        callable                $proceed,
+        int                     $id
+    ): TaskInterface
     {
         try {
             $result = $proceed($id);
         } catch (OriginalNoSuchEntityException $exception) {
-            $this->logger->error($exception->getMessage(), ['trace' => $exception->getTraceAsString()]);
-            $newException = new NoSuchEntityException($exception->getMessage(), NoSuchEntityException::CODE, $exception);
+            $this->logger->error(
+                $exception->getMessage(),
+                [
+                    'trace' => $exception->getTraceAsString()
+                ]
+            );
+            $newException = new NoSuchEntityException(
+                $exception->getMessage(),
+                NoSuchEntityException::CODE,
+                $exception
+            );
             $convertedException = $this->exceptionConverter->convert($newException);
             throw $convertedException;
         } catch (Throwable $exception) {
-            $this->logger->error($exception->getMessage(), ['trace' => $exception->getTraceAsString()]);
+            $this->logger->error(
+                $exception->getMessage(),
+                [
+                    'trace' => $exception->getTraceAsString()
+                ]
+            );
             $newException = $this->exceptionConverter->convert($exception);
             throw $newException;
         }

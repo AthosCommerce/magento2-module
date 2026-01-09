@@ -20,7 +20,7 @@ use Magento\Catalog\Model\ResourceModel\Category\Collection;
 use Magento\Catalog\Model\ResourceModel\Category\CollectionFactory;
 use Magento\TestFramework\Helper\Bootstrap;
 
-require __DIR__ . '/store_with_second_root_category.php';
+require __DIR__ . '/../store_with_second_root_category.php';
 $objectManager = Bootstrap::getObjectManager();
 /** @var CategoryFactory $categoryFactory */
 $categoryFactory = $objectManager->get(CategoryFactory::class);

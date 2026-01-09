@@ -21,7 +21,7 @@ namespace AthosCommerce\Feed\Test\Integration\Model\Feed\Collection;
 use Magento\Catalog\Model\ResourceModel\Product\Collection;
 use Magento\TestFramework\Helper\Bootstrap;
 use PHPUnit\Framework\TestCase;
-use AthosCommerce\Feed\Model\Feed\Collection\VisibilityModifier;
+use AthosCommerce\Feed\Model\Feed\Collection\ProductTypeIdModifier;
 use AthosCommerce\Feed\Model\Feed\SpecificationBuilderInterface;
 
 /**
@@ -53,16 +53,25 @@ class ProductTypeIdModifierTest extends TestCase
     }
 
     /**
+     * @return void
+     * @throws \Exception
+     */
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+    }
+
+    /**
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_product_not_visible.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_product_visibility_catalog.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_product_visibility_search.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable_products.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/grouped_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/01_simple_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_product_not_visible.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_product_visibility_catalog.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_product_visibility_search.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable/configurable_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/grouped/grouped_products.php
      */
-    public function testModify() : void
+    public function testModify(): void
     {
         $specification = $this->specificationBuilder->build([]);
         $collection = $this->getCollection();
@@ -72,11 +81,14 @@ class ProductTypeIdModifierTest extends TestCase
             $skus[] = $item->getSku();
         }
 
-        $this->assertTrue(!in_array('athoscommerce_grouped_test_simple_1000', $skus));
-        $this->assertTrue(!in_array('athoscommerce_grouped_test_simple_1001', $skus));
-        $this->assertTrue(!in_array('athoscommerce_configurable_test_simple_10', $skus));
-        $this->assertTrue(!in_array('athoscommerce_configurable_test_simple_20', $skus));
-        
+        $this->assertTrue(!in_array('athoscommerce_grouped_test_grouped', $skus));
+        $this->assertTrue(in_array('athoscommerce_grouped_test_simple_1000', $skus));
+        $this->assertTrue(in_array('athoscommerce_grouped_test_simple_1001', $skus));
+
+        $this->assertTrue(!in_array('athoscommerce_configurable_test_configurable', $skus));
+        $this->assertTrue(in_array('athoscommerce_configurable_test_simple_10', $skus));
+        $this->assertTrue(in_array('athoscommerce_configurable_test_simple_20', $skus));
+
         $this->assertTrue(in_array('athoscommerce_simple_visibility_search', $skus));
         $this->assertTrue(in_array('athoscommerce_simple_1', $skus));
         $this->assertTrue(in_array('athoscommerce_simple_2', $skus));
@@ -85,7 +97,7 @@ class ProductTypeIdModifierTest extends TestCase
     /**
      * @return Collection
      */
-    private function getCollection() : Collection
+    private function getCollection(): Collection
     {
         return $this->objectManager->create(Collection::class);
     }

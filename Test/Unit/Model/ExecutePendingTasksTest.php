@@ -18,7 +18,7 @@ namespace AthosCommerce\Feed\Test\Unit\Model;
 
 use Magento\Framework\Api\SearchCriteriaBuilder;
 use Magento\Framework\Api\SearchCriteriaInterface;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Api\Data\TaskInterface;
 use AthosCommerce\Feed\Api\Data\TaskSearchResultsInterface;
 use AthosCommerce\Feed\Api\ExecuteTaskInterface;
@@ -43,7 +43,7 @@ class ExecutePendingTasksTest extends \PHPUnit\Framework\TestCase
     private $executeTaskMock;
 
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     private $loggerMock;
 
@@ -57,7 +57,7 @@ class ExecutePendingTasksTest extends \PHPUnit\Framework\TestCase
         $this->taskRepositoryMock = $this->createMock(TaskRepositoryInterface::class);
         $this->searchCriteriaBuilderMock = $this->createMock(SearchCriteriaBuilder::class);
         $this->executeTaskMock = $this->createMock(ExecuteTaskInterface::class);
-        $this->loggerMock = $this->createMock(LoggerInterface::class);
+        $this->loggerMock = $this->createMock(AthosCommerceLogger::class);
         $this->executePendingTasks = new ExecutePendingTasks(
             $this->taskRepositoryMock,
             $this->searchCriteriaBuilderMock,

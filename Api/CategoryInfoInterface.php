@@ -12,12 +12,12 @@ interface CategoryInfoInterface
      * @param int $currentPage
      * @param int $pageSize
      *
-     * @return array
+     * @return mixed
      */
     public function getAllCategories(
         bool $activeOnly = true,
         string $delimiter = '>',
         int $currentPage = 1,
         int $pageSize = 15
-    ): array;
+    );
 }

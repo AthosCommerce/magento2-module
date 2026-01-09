@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/events.xsd">
+
+    <event name="catalog_product_save_after">
+        <observer name="athos_commerce_product_update_observer"
+                  instance="AthosCommerce\Feed\Observer\Product\UpdateObserver"/>
+    </event>
+    <event name="catalog_product_delete_after_done">
+        <observer name="athos_commerce_product_delete_after_observer"
+                  instance="AthosCommerce\Feed\Observer\Product\DeleteObserver"/>
+    </event>
+    <event name="catalog_product_import_bunch_save_after">
+        <observer name="athos_commerce_product_import_bunch_save_observer"
+                  instance="AthosCommerce\Feed\Observer\Product\BunchSaveObserver"/>
+    </event>
+    <event name="catalog_product_import_bunch_delete_after">
+        <observer name="athos_commerce_product_import_bunch_delete_observer"
+                  instance="AthosCommerce\Feed\Observer\Product\BunchDeleteObserver"/>
+    </event>
+    <event name="cataloginventory_stock_item_save_after">
+        <observer name="athos_commerce_stock_item_save_after_observer"
+                  instance="AthosCommerce\Feed\Observer\Product\InventoryUpdateObserver"/>
+    </event>
+</config>

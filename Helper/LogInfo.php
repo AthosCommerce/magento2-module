@@ -14,7 +14,7 @@ use Magento\Framework\App\Helper\AbstractHelper;
 use Magento\Framework\App\Filesystem\DirectoryList;
 use Magento\Framework\Exception\FileSystemException;
 use Magento\Framework\Filesystem\Driver\File;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 
 class LogInfo extends AbstractHelper
 {
@@ -29,7 +29,7 @@ class LogInfo extends AbstractHelper
      */
     protected $fileDriver;
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     protected  $logger;
 
@@ -56,9 +56,9 @@ class LogInfo extends AbstractHelper
      *
      * @param DirectoryList $directoryList
      * @param File $fileDriver
-     * @param LoggerInterface $logger
+     * @param AthosCommerceLogger $logger
      */
-    public function __construct( DirectoryList $directoryList, File $fileDriver, LoggerInterface $logger)
+    public function __construct( DirectoryList $directoryList, File $fileDriver, AthosCommerceLogger $logger)
     {
         $this->directoryList = $directoryList;
         $this->fileDriver = $fileDriver;

@@ -92,4 +92,28 @@
             <resource ref="AthosCommerce_Feed::general" />
         </resources>
     </route>
+    <route url="/V1/athoscommerce/configupdate" method="POST">
+        <service class="AthosCommerce\Feed\Api\ConfigUpdateInterface" method="update" />
+        <resources>
+            <resource ref="AthosCommerce_Feed::general" />
+        </resources>
+    </route>
+    <route url="/V1/athoscommerce/configinfo" method="GET">
+        <service class="AthosCommerce\Feed\Api\GetConfigInfoInterface" method="get" />
+        <resources>
+            <resource ref="AthosCommerce_Feed::general" />
+        </resources>
+    </route>
+    <route url="/V1/athoscommerce/productinfo" method="GET">
+        <service class="AthosCommerce\Feed\Api\ProductInfoInterface" method="getInfo" />
+        <resources>
+            <resource ref="AthosCommerce_Feed::general" />
+        </resources>
+    </route>
+    <route url="/V1/athoscommerce/entity/stats" method="GET">
+        <service class="AthosCommerce\Feed\Api\GetEntityStatsInterface" method="get" />
+        <resources>
+            <resource ref="AthosCommerce_Feed::general" />
+        </resources>
+    </route>
 </routes>

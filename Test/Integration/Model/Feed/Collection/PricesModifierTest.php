@@ -54,7 +54,7 @@ class PricesModifierTest extends TestCase
 
     /**
      * @magentoAppIsolation enabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/01_simple_products.php
      */
     public function testModify() : void
     {
@@ -63,7 +63,7 @@ class PricesModifierTest extends TestCase
 
     /**
      * @magentoAppIsolation enabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/01_simple_products.php
      */
     public function testModifyWithIgnoreAllPricesFields() : void
     {
@@ -81,7 +81,7 @@ class PricesModifierTest extends TestCase
 
     /**
      * @magentoAppIsolation enabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/01_simple_products.php
      */
     public function testModifyWithIgnoreOneOrTwoPricesField() : void
     {

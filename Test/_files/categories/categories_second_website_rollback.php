@@ -14,4 +14,4 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-require __DIR__ . '/store_with_second_root_category_rollback.php';
+require __DIR__ . '/../store_with_second_root_category_rollback.php';

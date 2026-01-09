@@ -41,11 +41,11 @@ class LegacyStockProviderTest extends StockProviderTest
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
      * @magentoConfigFixture current_store cataloginventory/options/show_out_of_stock 1
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_product_oos.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable_products.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable_products_oos_simples.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/grouped_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/01_simple_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_product_oos.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable/configurable_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable/configurable_products_oos_simples.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/grouped/grouped_products.php
      *
      * @throws \Exception
      */
@@ -77,7 +77,7 @@ class LegacyStockProviderTest extends StockProviderTest
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
      * @magentoConfigFixture current_store cataloginventory/options/show_out_of_stock 1
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_product_not_manage_stock.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_product_not_manage_stock.php
      * @throws \Exception
      */
     public function testGetStockNoManageStock() : void
@@ -95,8 +95,8 @@ class LegacyStockProviderTest extends StockProviderTest
      * @magentoDbIsolation disabled
      * @magentoConfigFixture current_store cataloginventory/options/show_out_of_stock 1
      * @magentoConfigFixture current_store cataloginventory/item_options/manage_stock 0
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_product_oos.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/01_simple_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_product_oos.php
      * @throws \Exception
      */
     public function testGetStockNoManageStockFromConfig() : void
@@ -117,7 +117,7 @@ class LegacyStockProviderTest extends StockProviderTest
      * @magentoConfigFixture current_store cataloginventory/options/show_out_of_stock 1
      * @magentoConfigFixture current_store cataloginventory/item_options/manage_stock 1
      * @magentoDataFixture AthosCommerce_Feed::Test/_files/core_fixturestore.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_product_oos.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_product_oos.php
      * @magentoConfigFixture fixturestore_store cataloginventory/options/show_out_of_stock 1
      * @magentoConfigFixture fixturestore_store cataloginventory/item_options/manage_stock 0
      * @throws \Exception

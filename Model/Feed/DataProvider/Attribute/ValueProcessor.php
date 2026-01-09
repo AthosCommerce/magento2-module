@@ -24,79 +24,197 @@ use Magento\Catalog\Model\ResourceModel\Eav\Attribute;
 use Magento\Eav\Model\Entity\Attribute\Source\SpecificSourceInterface;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Phrase;
+use Magento\Framework\Serialize\Serializer\Json;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Attribute\ValueProcessorInterface;
 
-class ValueProcessor
+class ValueProcessor implements ValueProcessorInterface
 {
-    private $cache = [];
+    /**
+     * @var Json
+     */
+    private $json;
+    /**
+     * @var AthosCommerceLogger
+     */
+    private $logger;
 
-    private $sourceAttributes = [];
+    /**
+     * @param Json $json
+     * @param AthosCommerceLogger $logger
+     */
+    public function __construct(
+        Json $json,
+        AthosCommerceLogger $logger,
+    ) {
+        $this->json = $json;
+        $this->logger = $logger;
+    }
+
+    /**
+     * @var array
+     */
+    private $optionCache = [];
+
+    /**
+     * @var array
+     */
+    private $sourceAttributeCache = [];
+
+    /**
+     * @return void
+     */
+    public function reset(): void
+    {
+        $this->optionCache = [];
+        $this->sourceAttributeCache = [];
+    }
+
     /**
      * @param Attribute $attribute
      * @param $value
-     * @return bool|string|null
-     * @throws LocalizedException
-     * @throws Exception
-     */
-    public function getValue(Attribute $attribute, $value, Product $product)
-    {
-        $key = null;
-        $code = $attribute->getAttributeCode();
-        if (!is_object($value) && !is_array($value) && $this->isSourceAttribute($attribute)) {
-            $key = $code . '_' . $value;
-            if (isset($this->cache[$key])) {
-                return $this->cache[$key];
-            }
-        }
-
-        $result = null;
-        if ($this->isSourceAttribute($attribute)) {
-            $source = $attribute->getSource();
-            if ($source instanceof SpecificSourceInterface) {
-                $sourceClone = clone $source;
-                $sourceClone->getOptionsFor($product);
-                $result = $sourceClone->getOptionText($value);
-            } else {
-                $result = $source->getOptionText($value);
-            }
-        } else {
-            $result = $value;
-        }
-
-        if (is_object($result)) {
-            if ($result instanceof Phrase) {
-                $result = $result->getText();
-            } else {
-                throw new Exception("Unknown value object type " . get_class($result));
-            }
-        }
-
-        if ($key) {
-            $this->cache[$key] = $result;
-        }
-
-        return $result;
-    }
-
-    /**
+     * @param Product $product
      *
+     * @return
      */
-    public function reset() : void
-    {
-        $this->cache = [];
-        $this->sourceAttributes = [];
+    public function getValue(
+        Attribute $attribute,
+        $value,
+        Product $product
+    ) {
+        $attributeCode = $attribute->getAttributeCode();
+
+        if (!$this->isSourceAttribute($attribute)) {
+            if ($value instanceof Phrase) {
+                return $value->getText();
+            }
+
+            if (is_scalar($value) || $value === null) {
+                return $value;
+            }
+
+            if (is_array($value)) {
+                return $this->json->serialize($value);
+            }
+
+            $debugType = function_exists('get_debug_type')
+                ? get_debug_type($result)
+                : gettype($result);
+            $this->logger->error(
+                'Unexpected non-scalar value: ',
+                [
+                    'method' => __METHOD__,
+                    'entityId' => $product->getEntityId(),
+                    'code' => $attributeCode,
+                    'type' => $debugType,
+                    'value' => $value,
+                ],
+            );
+
+            return $value;
+        }
+
+        $storeId = (int)$product->getStoreId();
+
+        if (!isset($this->optionCache[$storeId][$attributeCode])) {
+            $this->optionCache[$storeId][$attributeCode] =
+                $this->loadAttributeOptions(
+                    $attribute,
+                    $product
+                );
+        }
+
+        $optionMap = $this->optionCache[$storeId][$attributeCode];
+
+        if ($attribute->getFrontendInput() === 'multiselect') {
+            $values = $this->sanitizeMultiselect($value);
+
+            $labels = [];
+            foreach ($values as $value) {
+                $labels[] = $optionMap[(string)$value] ?? null;
+            }
+
+            return implode(', ', array_filter($labels));
+        }
+
+        if (!isset($optionMap[(string)$value])) {
+            return $value;
+        }
+
+        return $optionMap[(string)$value] ?? null;
     }
 
     /**
      * @param Attribute $attribute
+     *
      * @return bool
      */
-    private function isSourceAttribute(Attribute $attribute) : bool
+    private function isSourceAttribute(Attribute $attribute): bool
     {
         $code = $attribute->getAttributeCode();
-        if (!array_key_exists($code, $this->sourceAttributes)) {
-            $this->sourceAttributes[$code] = $attribute->usesSource();
+
+        if (!array_key_exists($code, $this->sourceAttributeCache)) {
+            $this->sourceAttributeCache[$code] = (bool)$attribute->usesSource();
         }
 
-        return $this->sourceAttributes[$code];
+        return $this->sourceAttributeCache[$code];
+    }
+
+    /**
+     * @param $value
+     *
+     * @return array
+     */
+    private function sanitizeMultiselect($value): array
+    {
+        if ($value === null) {
+            return [];
+        }
+
+        if (is_array($value)) {
+            return $value;
+        }
+
+        return explode(',', (string)$value);
+    }
+
+    /**
+     * @param Attribute $attribute
+     * @param Product $product
+     *
+     * @return array
+     * @throws LocalizedException
+     */
+    private function loadAttributeOptions(
+        Attribute $attribute,
+        Product $product
+    ): array {
+        $source = $attribute->getSource();
+
+        // SpecificSourceInterface requires per-product option set
+        if ($source instanceof SpecificSourceInterface) {
+            $sourceClone = clone $source;
+            $sourceClone->getOptionsFor($product);
+            $options = $sourceClone->getAllOptions();
+        } else {
+            $options = $source->getAllOptions();
+        }
+
+        $optionMaps = [];
+
+        foreach ($options as $option) {
+            if (!isset($option['value'])) {
+                continue;
+            }
+
+            $value = (string)$option['value'];
+            $label = $option['label'] instanceof Phrase
+                ? $option['label']->getText()
+                : (string)$option['label'];
+
+            $optionMaps[$value] = $label;
+        }
+
+        return $optionMaps;
     }
 }

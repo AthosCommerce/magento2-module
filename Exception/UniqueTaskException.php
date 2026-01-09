@@ -22,7 +22,7 @@ use Throwable;
 
 class UniqueTaskException extends GenericException
 {
-    const CODE = 1;
+    public const CODE = 1;
 
     /**
      * UniqueTaskException constructor.
@@ -34,9 +34,10 @@ class UniqueTaskException extends GenericException
         $message = "",
         $code = 0,
         ?Throwable $previous = null
-    ) {
+    )
+    {
         if (!$message) {
-            $message = (string) __('Task is not unique');
+            $message = (string)__('Task is not unique');
         }
 
         parent::__construct($message, $code, $previous);

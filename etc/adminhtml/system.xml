@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <system>
+        <tab id="athoscommerce" translate="label" sortOrder="10">
+            <label>AthosCommerce</label>
+        </tab>
+        <section id="athoscommerce" translate="label" sortOrder="130" showInDefault="1" showInWebsite="1" showInStore="1">
+            <class>separator-top</class>
+            <label>Settings</label>
+            <tab>athoscommerce</tab>
+            <resource>AthosCommerce_Feed::configuration</resource>
+            <group id="general" translate="label" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Athoscommerce Tracking</label>
+                <field id="site_id" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>AthosCommerce Site ID</label>
+                    <comment>This is your AthosCommerce site id.</comment>
+                </field>
+            </group>
+        </section>
+    </system>
+</config>

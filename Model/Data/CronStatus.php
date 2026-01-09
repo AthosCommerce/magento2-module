@@ -23,14 +23,14 @@ use AthosCommerce\Feed\Api\Data\CronStatusInterface;
 
 class CronStatus extends AbstractExtensibleObject implements CronStatusInterface
 {
-    const SCHEDULE_ID = 'schedule_id';
-    const JOB_CODE = 'job_code';
-    const STATUS = 'status';
-    const MESSAGES = 'messages';
-    const CREATED_AT = 'created_at';
-    const SCHEDULED_AT = 'scheduled_at';
-    const EXECUTED_AT = 'executed_at';
-    const FINISHED_AT = 'finished_at';
+    public const SCHEDULE_ID = 'schedule_id';
+    public const JOB_CODE = 'job_code';
+    public const STATUS = 'status';
+    public const MESSAGES = 'messages';
+    public const CREATED_AT = 'created_at';
+    public const SCHEDULED_AT = 'scheduled_at';
+    public const EXECUTED_AT = 'executed_at';
+    public const FINISHED_AT = 'finished_at';
 
     /**
      * Get schedule ID

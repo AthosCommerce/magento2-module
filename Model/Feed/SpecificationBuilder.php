@@ -57,7 +57,10 @@ class SpecificationBuilder implements SpecificationBuilderInterface
         'imageTypes' => MediaGallerySpecificationInterface::IMAGE_TYPES,
         'includeMediaGallery' => MediaGallerySpecificationInterface::INCLUDE_MEDIA_GALLERY,
         'preSignedUrl' => FeedSpecificationInterface::PRE_SIGNED_URL,
-        'isMsiEnabled' => FeedSpecificationInterface::MSI_STATUS
+        'isMsiEnabled' => FeedSpecificationInterface::MSI_STATUS,
+        'swatchOptionSourceFieldNames' => FeedSpecificationInterface::SETTING_NAME_SWATCH_OPTION_FIELD_NAMES,
+        'allVariantsAdditionalFields'  => FeedSpecificationInterface::SETTING_NAME_VARIANT_ADDITIONAL_FIELDS,
+        'excludedProductIds' => FeedSpecificationInterface::EXCLUDE_PRODUCT_IDS
     ];
     /**
      * @var array
@@ -78,6 +81,9 @@ class SpecificationBuilder implements SpecificationBuilderInterface
             FeedSpecificationInterface::IGNORE_FIELDS => [],
             FeedSpecificationInterface::FORMAT => MetadataInterface::FORMAT_JSON,
             FeedSpecificationInterface::MSI_STATUS => false,
+            FeedSpecificationInterface::SETTING_NAME_SWATCH_OPTION_FIELD_NAMES => ['color'],
+            FeedSpecificationInterface::SETTING_NAME_VARIANT_ADDITIONAL_FIELDS => [],
+            FeedSpecificationInterface::EXCLUDE_PRODUCT_IDS => [],
         ],
         'media_gallery' => [
             MediaGallerySpecificationInterface::THUMB_WIDTH => 250,

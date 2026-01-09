@@ -1,0 +1,23 @@
+<?php
+/**
+ * @var $block \Magento\Checkout\Block\Onepage\Success
+ * @var $viewModel \AthosCommerce\Feed\ViewModel\CheckoutViewModel
+ * @var $escaper \Magento\Framework\Escaper
+ */
+?>
+<?php $viewModel = $block->getData('athoscommerce_checkout_view_model'); ?>
+<?php $siteId = $escaper->escapeHtmlAttr($viewModel->getAthoscommerceSiteId()); ?>
+
+<?php if (!empty($siteId)): ?>
+    <script type="text/x-magento-init">
+        {
+            "*": {
+                "athoscommerce-tracking-checkout-success": {
+                    "siteId":  "<?= /* @noEscape */ $siteId ?>",
+                    "products": "<?= /* @noEscape */ $viewModel->getProducts() ?>",
+                    "orderId": "<?= /* @noEscape */ $viewModel->getOrderId() ?>"
+                }
+            }
+        }
+    </script>
+<?php endif; ?>

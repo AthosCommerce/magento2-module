@@ -21,7 +21,9 @@ namespace AthosCommerce\Feed\Model;
 use Exception;
 use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\ResourceModel\Product\Collection;
+use Magento\Framework\Exception\CouldNotSaveException;
 use Magento\Framework\Exception\FileSystemException;
+use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Exception\RuntimeException;
 use AthosCommerce\Feed\Model\CollectionProcessor;
 use AthosCommerce\Feed\Model\ItemsGenerator;
@@ -35,7 +37,7 @@ use AthosCommerce\Feed\Model\Feed\StorageInterface;
 use AthosCommerce\Feed\Model\Feed\SystemFieldsList;
 use AthosCommerce\Feed\Model\Metric\CollectorInterface;
 use AthosCommerce\Feed\Api\TaskRepositoryInterface;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 
 class GenerateFeed implements GenerateFeedInterface
 {
@@ -71,7 +73,7 @@ class GenerateFeed implements GenerateFeedInterface
      */
     private $productCount = '';
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     private $logger;
     /**
@@ -92,7 +94,7 @@ class GenerateFeed implements GenerateFeedInterface
      * @param CollectorInterface $metricCollector
      * @param AppConfigInterface $appConfig
      * @param TaskRepositoryInterface $taskRepository
-     * @param LoggerInterface $logger
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
         CollectionProcessor $collectionProcessor,
@@ -103,7 +105,7 @@ class GenerateFeed implements GenerateFeedInterface
         CollectorInterface $metricCollector,
         AppConfigInterface $appConfig,
         TaskRepositoryInterface $taskRepository,
-        LoggerInterface $logger
+        AthosCommerceLogger $logger
     ) {
         $this->collectionProcessor = $collectionProcessor;
         $this->itemsGenerator = $itemsGenerator;
@@ -118,8 +120,11 @@ class GenerateFeed implements GenerateFeedInterface
 
     /**
      * @param FeedSpecificationInterface $feedSpecification
-     *
-     * @throws Exception
+     * @param int $id
+     * @throws FileSystemException
+     * @throws RuntimeException
+     * @throws CouldNotSaveException
+     * @throws NoSuchEntityException
      */
     public function execute(FeedSpecificationInterface $feedSpecification, int $id): void
     {

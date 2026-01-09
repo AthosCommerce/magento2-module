@@ -1,0 +1,22 @@
+<?php
+/**
+ * @var $block \Magento\Catalog\Block\Product\View
+ * @var $viewModel \AthosCommerce\Feed\ViewModel\PdpViewModel
+ * @var $escaper \Magento\Framework\Escaper
+ */
+?>
+<?php $viewModel = $block->getData('athoscommerce_pdp_view_model'); ?>
+<?php $siteId = $escaper->escapeHtmlAttr($viewModel->getAthoscommerceSiteId()); ?>
+
+<?php if (!empty($siteId)): ?>
+    <script type="text/x-magento-init">
+        {
+            "*": {
+                "athoscommerce-tracking-product-view": {
+                    "siteId": "<?= /* @noEscape */ $siteId ?>",
+                    "sku":    "<?= /* @noEscape */ $block->getProduct()->getSku() ?>"
+                }
+            }
+        }
+    </script>
+<?php endif; ?>

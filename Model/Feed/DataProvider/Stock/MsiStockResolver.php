@@ -21,7 +21,7 @@ namespace AthosCommerce\Feed\Model\Feed\DataProvider\Stock;
 use Magento\Framework\App\ObjectManager;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Module\Manager;
-use Psr\Log\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 
 class MsiStockResolver implements StockResolverInterface
 {
@@ -29,27 +29,29 @@ class MsiStockResolver implements StockResolverInterface
      * @var Manager
      */
     private $moduleManager;
-
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     protected $logger;
-
+    /**
+     * @var array
+     */
     private $moduleList = [
         'Magento_InventoryReservationsApi',
         'Magento_InventorySalesApi',
-        'Magento_InventoryCatalogApi'
+        'Magento_InventoryCatalogApi',
     ];
 
     /**
      * MsiStockResolver constructor.
+     *
      * @param Manager $moduleManager
      * @param array $moduleList
-     * @param LoggerInterface $logger
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
         Manager $moduleManager,
-        LoggerInterface $logger,
+        AthosCommerceLogger $logger,
         array $moduleList = [],
 
     ) {
@@ -96,7 +98,7 @@ class MsiStockResolver implements StockResolverInterface
     /**
      * @return bool
      */
-    private function isMsiEnabled() : bool
+    private function isMsiEnabled(): bool
     {
         $moduleExists = true;
         foreach ($this->moduleList as $moduleName) {

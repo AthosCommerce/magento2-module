@@ -63,12 +63,12 @@ class SaleableProviderTest extends TestCase
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
      * @magentoConfigFixture current_store cataloginventory/options/show_out_of_stock 1
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_product_oos.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable_products.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable_products_disabled_simple.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable_products_oos_simples.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/grouped_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/01_simple_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_product_oos.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable/configurable_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable/configurable_products_disabled_simple.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable/configurable_products_oos_simples.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/grouped/grouped_products.php
      *
      * @throws \Exception
      */
@@ -101,7 +101,7 @@ class SaleableProviderTest extends TestCase
      *
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/01_simple_products.php
      *
      * @throws \Exception
      */

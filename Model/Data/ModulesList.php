@@ -18,13 +18,16 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Model\Data;
 
-use Magento\Framework\Api\AbstractExtensibleObject;
 use AthosCommerce\Feed\Api\Data\ModulesListInterface;
+use Magento\Framework\Api\AbstractSimpleObject;
 
-class ModulesList extends AbstractExtensibleObject implements ModulesListInterface
+class ModulesList extends AbstractSimpleObject implements ModulesListInterface
 {
-    const ENABLED = 'enabled';
-    const DISABLED = 'disabled';
+    private const ENABLED = 'enabled';
+    private const DISABLED = 'disabled';
+    private const TOTAL_ENABLED = 'total_enabled';
+    private const TOTAL_DISABLED = 'total_disabled';
+    private const TOTAL_MODULES = 'total_modules';
 
     /**
      * Get enabled modules
@@ -40,9 +43,9 @@ class ModulesList extends AbstractExtensibleObject implements ModulesListInterfa
      * Set enabled modules
      *
      * @param string[] $enabled
-     * @return $this
+     * @return ModulesListInterface
      */
-    public function setEnabled(array $enabled): self
+    public function setEnabled(array $enabled): ModulesListInterface
     {
         return $this->setData(self::ENABLED, $enabled);
     }
@@ -61,10 +64,61 @@ class ModulesList extends AbstractExtensibleObject implements ModulesListInterfa
      * Set disabled modules
      *
      * @param string[] $disabled
-     * @return $this
+     * @return ModulesListInterface
      */
-    public function setDisabled(array $disabled): self
+    public function setDisabled(array $disabled): ModulesListInterface
     {
         return $this->setData(self::DISABLED, $disabled);
+    }
+
+    /**
+     * @return int
+     */
+    public function getTotalEnabled(): int
+    {
+        return (int)$this->_get(self::TOTAL_ENABLED);
+    }
+
+    /**
+     * @param int $count
+     * @return ModulesListInterface
+     */
+    public function setTotalEnabled(int $count): ModulesListInterface
+    {
+        return $this->setData(self::TOTAL_ENABLED, $count);
+    }
+
+    /**
+     * @return int
+     */
+    public function getTotalDisabled(): int
+    {
+        return (int)$this->_get(self::TOTAL_DISABLED);
+    }
+
+    /**
+     * @param int $count
+     * @return ModulesListInterface
+     */
+    public function setTotalDisabled(int $count): ModulesListInterface
+    {
+        return $this->setData(self::TOTAL_DISABLED, $count);
+    }
+
+    /**
+     * @return int
+     */
+    public function getTotalModules(): int
+    {
+        return (int)$this->_get(self::TOTAL_MODULES);
+    }
+
+    /**
+     * @param int $count
+     * @return ModulesListInterface
+     */
+    public function setTotalModules(int $count): ModulesListInterface
+    {
+        return $this->setData(self::TOTAL_MODULES, $count);
     }
 }
