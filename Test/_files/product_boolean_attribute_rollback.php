@@ -16,15 +16,15 @@
 
 use Magento\Framework\Registry;
 use Magento\TestFramework\Helper\Bootstrap;
-use Magento\Catalog\Model\ResourceModel\Eav\Attribute;
+use Magento\Catalog\Model\ResourceModel\Eav\Attribute as MagentoEavAttribute;
 
 $objectManager = Bootstrap::getObjectManager();
 
 $registry = $objectManager->get(Registry::class);
 $registry->unregister('isSecureArea');
 $registry->register('isSecureArea', true);
-/** @var Attribute $attribute */
-$attribute = $objectManager->create(Attribute::class);
+/** @var MagentoEavAttribute $attribute */
+$attribute = $objectManager->create(MagentoEavAttribute::class);
 $attribute->load('boolean_attribute', 'attribute_code');
 $attribute->delete();
 $registry->unregister('isSecureArea');

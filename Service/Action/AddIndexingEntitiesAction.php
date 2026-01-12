@@ -94,7 +94,7 @@ class AddIndexingEntitiesAction implements AddIndexingEntitiesActionInterface
      */
     private function createIndexingEntity(
         string                 $type,
-        MagentoEntityInterface $magentoEntity,
+        MagentoEntityInterface $magentoEntity
     ): IndexingEntityInterface
     {
         $isIndexable = $magentoEntity->isIndexable();

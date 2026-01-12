@@ -34,6 +34,6 @@ interface FilterEntitiesToAddServiceInterface
         array  $magentoEntities,
         string $type,
         string $siteId,
-        array  $entitySubtypes = [],
+        array  $entitySubtypes = []
     ): \Generator;
 }

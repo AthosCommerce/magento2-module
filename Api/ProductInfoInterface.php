@@ -28,6 +28,6 @@ interface ProductInfoInterface
      */
     public function getInfo(
         int $productId,
-        int $storeId = 1,
+        int $storeId = 1
     ): \AthosCommerce\Feed\Api\Data\ProductInfoResponseInterface;
 }

@@ -55,12 +55,19 @@ class VariantPosition implements DataProviderInterface
      */
     protected $logger;
 
+    /**
+     * @param ProductRepositoryInterface $productRepository
+     * @param ConfigurableResource $configurableResource
+     * @param ConfigurableHelper $configurableHelper
+     * @param ConfigurableType $configurableType
+     * @param AthosCommerceLogger $logger
+     */
     public function __construct(
         ProductRepositoryInterface $productRepository,
         ConfigurableResource       $configurableResource,
         ConfigurableHelper         $configurableHelper,
         ConfigurableType           $configurableType,
-        AthosCommerceLogger            $logger,
+        AthosCommerceLogger        $logger
     )
     {
         $this->productRepository = $productRepository;

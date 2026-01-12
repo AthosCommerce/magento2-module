@@ -55,7 +55,7 @@ class MagentoEntity implements MagentoEntityInterface
         string $siteId,
         bool $isIndexable,
         ?int $entityParentId = null,
-        ?string $entitySubtype = null,
+        ?string $entitySubtype = null
     ) {
         $this->entityId = $entityId;
         $this->siteId = $siteId;

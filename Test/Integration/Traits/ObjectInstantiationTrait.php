@@ -39,7 +39,7 @@ trait ObjectInstantiationTrait
     private ?array $constructorArgumentDefaults = null;
 
     private function instantiateTestObject(
-        ?array $arguments = null,
+        ?array $arguments = null
     ): object {
         if (!$this->implementationFqcn) {
             throw new \LogicException('Cannot instantiate test object: no implementationFqcn defined');

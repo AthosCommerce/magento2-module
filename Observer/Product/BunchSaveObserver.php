@@ -75,7 +75,7 @@ class BunchSaveObserver implements ObserverInterface
         ResourceConnection         $resourceConnection,
         ProductRepositoryInterface $productRepository,
         ScopeConfigInterface       $scopeConfig,
-        ProductResource            $productResource,
+        ProductResource            $productResource
     )
     {
         $this->baseProductObserver = $baseProductObserver;

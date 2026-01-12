@@ -108,7 +108,7 @@ class MsiStockProvider implements StockProviderInterface
         GetReservationsQuantityInterface $getReservationsQuantity,
         MsiStockResolverInterface $stockResolver,
         GetStockItemDataInterface $getStockItemData,
-        AthosCommerceLogger $logger,
+        AthosCommerceLogger $logger
     ) {
         $this->storeContextManager = $storeContextManager;
         $this->websiteRepository = $websiteRepository;

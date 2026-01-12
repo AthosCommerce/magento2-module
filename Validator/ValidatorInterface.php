@@ -27,7 +27,7 @@ interface ValidatorInterface extends MagentoValidatorInterface
      *
      * @return bool
      */
-    public function isValid(mixed $value): bool;
+    public function isValid($value): bool;
 
     /**
      * Return type omitted due to compatibility with \Magento\Framework\Validator\AbstractValidator::hasMessages

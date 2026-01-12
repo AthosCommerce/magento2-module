@@ -20,7 +20,7 @@ namespace AthosCommerce\Feed\Model\Feed\DataProvider\Attribute;
 
 use Exception;
 use Magento\Catalog\Model\Product;
-use Magento\Catalog\Model\ResourceModel\Eav\Attribute;
+use Magento\Catalog\Model\ResourceModel\Eav\Attribute as MagentoEavAttribute;
 use Magento\Eav\Model\Entity\Attribute\Source\SpecificSourceInterface;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Phrase;
@@ -45,7 +45,7 @@ class ValueProcessor implements ValueProcessorInterface
      */
     public function __construct(
         Json $json,
-        AthosCommerceLogger $logger,
+        AthosCommerceLogger $logger
     ) {
         $this->json = $json;
         $this->logger = $logger;
@@ -71,14 +71,14 @@ class ValueProcessor implements ValueProcessorInterface
     }
 
     /**
-     * @param Attribute $attribute
+     * @param MagentoEavAttribute $attribute
      * @param $value
      * @param Product $product
      *
      * @return
      */
     public function getValue(
-        Attribute $attribute,
+        MagentoEavAttribute $attribute,
         $value,
         Product $product
     ) {
@@ -97,16 +97,13 @@ class ValueProcessor implements ValueProcessorInterface
                 return $this->json->serialize($value);
             }
 
-            $debugType = function_exists('get_debug_type')
-                ? get_debug_type($result)
-                : gettype($result);
             $this->logger->error(
                 'Unexpected non-scalar value: ',
                 [
                     'method' => __METHOD__,
                     'entityId' => $product->getEntityId(),
                     'code' => $attributeCode,
-                    'type' => $debugType,
+                    'type' => gettype($result),
                     'value' => $value,
                 ],
             );
@@ -145,11 +142,11 @@ class ValueProcessor implements ValueProcessorInterface
     }
 
     /**
-     * @param Attribute $attribute
+     * @param MagentoEavAttribute $attribute
      *
      * @return bool
      */
-    private function isSourceAttribute(Attribute $attribute): bool
+    private function isSourceAttribute(MagentoEavAttribute $attribute): bool
     {
         $code = $attribute->getAttributeCode();
 
@@ -179,14 +176,14 @@ class ValueProcessor implements ValueProcessorInterface
     }
 
     /**
-     * @param Attribute $attribute
+     * @param MagentoEavAttribute $attribute
      * @param Product $product
      *
      * @return array
      * @throws LocalizedException
      */
     private function loadAttributeOptions(
-        Attribute $attribute,
+        MagentoEavAttribute $attribute,
         Product $product
     ): array {
         $source = $attribute->getSource();

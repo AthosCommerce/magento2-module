@@ -379,7 +379,7 @@ class GenerateFeed implements GenerateFeedInterface
         if ($fileBaseExtension === MetadataInterface::FORMAT_JSON) {
             $feedSpecification->setFormat($fileBaseExtension); // Set format as json based on URL extension
         } elseif ($secondExtension === MetadataInterface::FORMAT_GZ) {
-            if (str_contains($urlPath, MetadataInterface::FORMAT_JSON_GZ)) {
+            if (strpos($urlPath, MetadataInterface::FORMAT_JSON_GZ) !== false) {
                 $feedSpecification->setFormat(MetadataInterface::FORMAT_JSON); // For json.gz, treat as JSON format
             }
         } else {

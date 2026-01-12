@@ -51,7 +51,7 @@ class DeleteObserver implements ObserverInterface
     public function __construct(
         BaseProductObserver $baseProductObserver,
         AthosCommerceLogger $logger,
-        ScopeConfigInterface $scopeConfig,
+        ScopeConfigInterface $scopeConfig
     ) {
         $this->baseProductObserver = $baseProductObserver;
         $this->logger = $logger;

@@ -54,7 +54,7 @@ class RelationsProvider
         ResourceConnection $resourceConnection,
         ProductCollectionFactory $productCollectionFactory,
         MetadataPool $metadataPool,
-        AthosCommerceLogger $logger,
+        AthosCommerceLogger $logger
     ) {
         $this->productResourceModel = $productResourceModel;
         $this->optionProvider = $optionProvider;

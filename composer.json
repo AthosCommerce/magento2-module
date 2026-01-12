@@ -2,10 +2,10 @@
     "name": "athoscommerce/magento2-module",
     "description": "AthosCommerce feed generator for Magento 2.",
     "type": "magento2-module",
-    "version": "1.0.0",
+    "version": "1.0.0-alpha",
     "license": "GPL-3.0-only",
     "require": {
-        "php": "~7.1.0|~7.2.0|~7.3.0|~7.4.0|~8.0.0|~8.1.0|~8.2.0|~8.3.0|~8.4.0",
+        "php": "~7.4.0|~8.0.0|~8.1.0|~8.2.0|~8.3.0|~8.4.0",
         "magento/module-customer": "^103.0"
     },
     "support": {

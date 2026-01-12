@@ -86,7 +86,7 @@ class IndexingEntityProvider implements IndexingEntityProviderInterface
         FilterBuilderFactory $filterBuilderFactory,
         CollectionFactory $collectionFactory,
         ResourceConnection $resourceConnection,
-        SortOrderBuilderFactory $sortOrderBuilderFactory,
+        SortOrderBuilderFactory $sortOrderBuilderFactory
     ) {
         $this->searchCriteriaBuilderFactory = $searchCriteriaBuilderFactory;
         $this->indexingEntityRepository = $indexingEntityRepository;
@@ -122,7 +122,7 @@ class IndexingEntityProvider implements IndexingEntityProviderInterface
         ?array $sorting = [],
         ?int $pageSize = null,
         ?int $startFrom = 1,
-        ?array $entitySubtypes = [],
+        ?array $entitySubtypes = []
     ): array {
         /** @var SearchCriteriaBuilder $searchCriteriaBuilder */
         $searchCriteriaBuilder = $this->searchCriteriaBuilderFactory->create();
@@ -212,7 +212,7 @@ class IndexingEntityProvider implements IndexingEntityProviderInterface
     public function getForTargetParentPairs(
         ?string $entityType = null,
         ?string $siteId = null,
-        ?array $pairs = [],
+        ?array $pairs = []
     ): Collection {
         // Can't use repository and searchCriteria here due to nature of required query structure.
         // Required: (a=b AND c=d) OR (e=f AND g=h).
@@ -248,7 +248,7 @@ class IndexingEntityProvider implements IndexingEntityProviderInterface
         ?string $entityType = null,
         ?string $siteId = null,
         ?string $nextAction = null,
-        ?bool $isIndexable = null,
+        ?bool $isIndexable = null
     ): int {
         return $this->indexingEntityRepository->count(
             $entityType,

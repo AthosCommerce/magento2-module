@@ -60,7 +60,7 @@ class LegacyStockProvider implements StockProviderInterface
         StockItemRepositoryInterface $legacyStockItemRepository,
         StockConfigurationInterface $stockConfiguration,
         StoreContextManager $storeContextManager,
-        AthosCommerceLogger $logger,
+        AthosCommerceLogger $logger
     ) {
         $this->legacyStockItemCriteriaFactory = $legacyStockItemCriteriaFactory;
         $this->legacyStockItemRepository = $legacyStockItemRepository;

@@ -79,6 +79,17 @@ class JsonConfigProvider implements DataProviderInterface
      */
     protected $swatchAttributesProvider;
 
+    /**
+     * @param ProductRepositoryInterface $productRepository
+     * @param ConfigurableResource $configurableResource
+     * @param ConfigurableHelper $configurableHelper
+     * @param ConfigurableAttributeData $configurableAttributeData
+     * @param ConfigurableType $configurableType
+     * @param SwatchHelper $swatchHelper
+     * @param AthosCommerceLogger $logger
+     * @param SwatchAttributesProvider $swatchAttributesProvider
+     * @param SwatchRenderer $swatchRenderer
+     */
     public function __construct(
         ProductRepositoryInterface $productRepository,
         ConfigurableResource       $configurableResource,
@@ -86,9 +97,9 @@ class JsonConfigProvider implements DataProviderInterface
         ConfigurableAttributeData  $configurableAttributeData,
         ConfigurableType           $configurableType,
         SwatchHelper               $swatchHelper,
-        AthosCommerceLogger            $logger,
+        AthosCommerceLogger        $logger,
         SwatchAttributesProvider   $swatchAttributesProvider,
-        SwatchRenderer             $swatchRenderer,
+        SwatchRenderer             $swatchRenderer
     )
     {
         $this->productRepository = $productRepository;
