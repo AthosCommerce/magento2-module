@@ -23,7 +23,7 @@ class IndexingEntityValidator extends AbstractValidator implements ValidatorInte
         IndexingEntity::LAST_ACTION => 'string',
         IndexingEntity::LAST_ACTION_TIMESTAMP => 'int|string|null|NULL',
         IndexingEntity::NEXT_ACTION => 'string',
-        IndexingEntity::IS_INDEXABLE => 'bool|boolean',
+        IndexingEntity::IS_INDEXABLE => 'bool|boolean'
     ];
     /**
      * @var int[]
@@ -38,7 +38,7 @@ class IndexingEntityValidator extends AbstractValidator implements ValidatorInte
      *
      * @return bool
      */
-    public function isValid(mixed $value): bool
+    public function isValid($value): bool
     {
         $this->_clearMessages();
 
@@ -52,7 +52,7 @@ class IndexingEntityValidator extends AbstractValidator implements ValidatorInte
      *
      * @return bool
      */
-    private function validateType(mixed $value): bool
+    private function validateType($value): bool
     {
         if ($value instanceof IndexingEntityInterface) {
             return true;
@@ -79,9 +79,7 @@ class IndexingEntityValidator extends AbstractValidator implements ValidatorInte
         foreach ($this->fieldTypes as $field => $allowedTypes) {
             $allowedTypesArray = explode('|', $allowedTypes);
 
-            $dataType = function_exists('get_debug_type')
-                ? get_debug_type($indexingEntity->getData($field))
-                : gettype($indexingEntity->getData($field)); //phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
+            $dataType = gettype($indexingEntity->getData($field)); //phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
 
             if (!in_array($dataType, $allowedTypesArray, true)) {
                 $return = false;

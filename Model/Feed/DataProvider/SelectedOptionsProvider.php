@@ -56,20 +56,26 @@ class SelectedOptionsProvider implements DataProviderInterface
      */
     protected $configurableType;
 
-
     /**
      * @var AthosCommerceLogger
      */
     protected $logger;
 
-
+    /**
+     * @param ProductRepositoryInterface $productRepository
+     * @param ConfigurableResource $configurableResource
+     * @param ConfigurableHelper $configurableHelper
+     * @param ConfigurableAttributeData $configurableAttributeData
+     * @param ConfigurableType $configurableType
+     * @param AthosCommerceLogger $logger
+     */
     public function __construct(
         ProductRepositoryInterface $productRepository,
         ConfigurableResource       $configurableResource,
         ConfigurableHelper         $configurableHelper,
         ConfigurableAttributeData  $configurableAttributeData,
         ConfigurableType           $configurableType,
-        AthosCommerceLogger            $logger,
+        AthosCommerceLogger        $logger
     )
     {
         $this->productRepository = $productRepository;

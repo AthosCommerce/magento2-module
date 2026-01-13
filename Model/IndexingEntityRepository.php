@@ -86,7 +86,7 @@ class IndexingEntityRepository implements IndexingEntityRepositoryInterface
         CollectionProcessorInterface $collectionProcessor,
         CollectionFactory $indexingEntityCollectionFactory,
         ValidatorInterface $indexingEntityValidator,
-        AthosCommerceLogger $logger,
+        AthosCommerceLogger $logger
     ) {
         $this->indexingEntityFactory = $indexingEntityFactory;
         $this->indexingEntityResourceModel = $indexingEntityResourceModel;
@@ -138,7 +138,7 @@ class IndexingEntityRepository implements IndexingEntityRepositoryInterface
      */
     public function getList(
         SearchCriteriaInterface $searchCriteria,
-        bool $collectionSizeRequired = false,
+        bool $collectionSizeRequired = false
     ): IndexingEntitySearchResultsInterface {
         /** @var IndexingEntitySearchResults $searchResults */
         $searchResults = $this->searchResultsFactory->create();
@@ -165,7 +165,7 @@ class IndexingEntityRepository implements IndexingEntityRepositoryInterface
         $count = $searchCriteria->getPageSize() && $collectionSizeRequired
             ? $collection->getSize()
             : count($collection);
-        $searchResults->setTotalCount(count: $count);
+        $searchResults->setTotalCount($count);
         $collection->clear();
         unset($collection);
 
@@ -233,7 +233,7 @@ class IndexingEntityRepository implements IndexingEntityRepositoryInterface
             $this->logger->error(
                 (string)$message,
                 [
-                    'exception' => $exception::class,
+                    'exception' => get_class($exception),
                     'method' => __METHOD__,
                     'indexingEntity' => [
                         'entityId' => $indexingEntity->getId(),
@@ -279,7 +279,7 @@ class IndexingEntityRepository implements IndexingEntityRepositoryInterface
         ?string $entityType = null,
         ?string $siteId = null,
         ?string $nextAction = null,
-        ?bool $isIndexable = null,
+        ?bool $isIndexable = null
     ): int {
         $connection = $this->indexingEntityResourceModel->getConnection();
         $select = $connection->select();

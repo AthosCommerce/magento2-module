@@ -18,20 +18,20 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Model\Feed\DataProvider\Attribute;
 
-use Magento\Catalog\Model\ResourceModel\Eav\Attribute;
+use Magento\Catalog\Model\ResourceModel\Eav\Attribute as MagentoEavAttribute;
 use Magento\Catalog\Model\Product;
 
 interface ValueProcessorInterface
 {
     /**
-     * @param Attribute $attribute
+     * @param MagentoEavAttribute $attribute
      * @param $value
      * @param Product $product
      *
      * @return
      */
     public function getValue(
-        Attribute $attribute,
+        MagentoEavAttribute $attribute,
         $value,
         Product $product
     );

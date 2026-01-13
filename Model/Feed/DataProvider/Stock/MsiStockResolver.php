@@ -52,8 +52,7 @@ class MsiStockResolver implements StockResolverInterface
     public function __construct(
         Manager $moduleManager,
         AthosCommerceLogger $logger,
-        array $moduleList = [],
-
+        array $moduleList = []
     ) {
         $this->moduleManager = $moduleManager;
         $this->moduleList = array_merge($this->moduleList, $moduleList);

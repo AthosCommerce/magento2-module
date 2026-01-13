@@ -56,8 +56,9 @@ trait IndexingEntitiesTrait
         foreach ($indexingEntitiesToDelete->getItems() as $indexingEntity) {
             try {
                 $repository->delete($indexingEntity);
-            } catch (LocalizedException) {
+            } catch (LocalizedException $exception) {
                 // this is fine, indexingEntity already deleted
+                unset($exception);
             }
         }
     }

@@ -50,7 +50,7 @@ interface IndexingEntityProviderInterface
         ?array  $sorting = [],
         ?int    $pageSize = null,
         ?int    $startFrom = 1,
-        ?array  $entitySubtypes = [],
+        ?array  $entitySubtypes = []
     ): array;
 
     /**
@@ -63,7 +63,7 @@ interface IndexingEntityProviderInterface
     public function getForTargetParentPairs(
         ?string $entityType = null,
         ?string $siteIds = null,
-        ?array  $pairs = [],
+        ?array  $pairs = []
     ): Collection;
 
     /**
@@ -78,7 +78,7 @@ interface IndexingEntityProviderInterface
         ?string $entityType = null,
         ?string $siteIds = null,
         ?string $nextAction = null,
-        ?bool   $isIndexable = null,
+        ?bool   $isIndexable = null
     ): int;
 
     /**

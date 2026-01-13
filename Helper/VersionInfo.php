@@ -42,7 +42,11 @@ class VersionInfo extends AbstractHelper
      * @param DirectoryList $directoryList
      * @param Dir $moduleDirs
      */
-    public function __construct(ProductMetadataInterface $productMetadata, DirectoryList $directoryList, Dir $moduleDirs,)
+    public function __construct(
+        ProductMetadataInterface $productMetadata,
+        DirectoryList            $directoryList,
+        Dir                      $moduleDirs
+    )
     {
         $this->productMetadata = $productMetadata;
         $this->directoryList = $directoryList;
@@ -70,10 +74,9 @@ class VersionInfo extends AbstractHelper
     }
 
     /**
-     * Get composer based version info
-     * @return false|mixed|string
+     * @return string
      */
-    public function getVersionFromComposer(): mixed
+    public function getVersionFromComposer(): string
     {
         try {
             $version = 'unavailable';
@@ -86,7 +89,7 @@ class VersionInfo extends AbstractHelper
             }
             $composerPkg = new Package($composerObj);
             if ($composerPkg->get('version')) {
-                return $composerPkg->get('version');
+                return (string)$composerPkg->get('version');
             }
             // through native if above one not loaded, check obj type and array
             // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged

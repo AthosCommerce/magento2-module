@@ -93,7 +93,7 @@ class Entity implements EntityInterface
      * @return void
      * @throws \InvalidArgumentException
      */
-    private function setData(mixed $value, string $key): void
+    private function setData($value, string $key): void
     {
         switch ($key) {
             case static::ENTITY_TYPE:
@@ -106,7 +106,7 @@ class Entity implements EntityInterface
                 throw new \InvalidArgumentException(
                     sprintf(
                         'Invalid key provided in creation of %s. Key %s',
-                        $this::class,
+                        get_class($this),
                         $key,
                     ),
                 );
@@ -121,20 +121,17 @@ class Entity implements EntityInterface
      * @return void
      * @throws \InvalidArgumentException
      */
-    private function validateIsInt(mixed $value, mixed $key, string $attribute): void
+    private function validateIsInt($value, $key, string $attribute): void
     {
         if (is_int($value)) {
             return;
         }
-        $debugType = function_exists('get_debug_type')
-            ? get_debug_type($value)
-            : gettype($value); //phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
         throw new \InvalidArgumentException(
             sprintf(
                 'Invalid value supplied for %s at position %s. Expects int, received %s',
                 $attribute,
                 $key,
-                $debugType,
+                gettype($value), //phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
             ),
         );
     }

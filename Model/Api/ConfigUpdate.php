@@ -70,7 +70,7 @@ class ConfigUpdate implements ConfigUpdateInterface
         ConfigUpdateResponseInterfaceFactory             $responseFactory,
         ConfigUpdateResultInterfaceFactory               $configUpdateResultFactory,
         AthosCommerceLogger                              $logger,
-        SetEntitiesToNotIndexableBySiteIdActionInterface $setEntitiesToNotIndexableBySiteIdAction,
+        SetEntitiesToNotIndexableBySiteIdActionInterface $setEntitiesToNotIndexableBySiteIdAction
     )
     {
         $this->configWriter = $configWriter;
@@ -417,7 +417,7 @@ class ConfigUpdate implements ConfigUpdateInterface
             return;
         }
 
-        if (filter_var($value, FILTER_VALIDATE_BOOL)) {
+        if (filter_var($value, FILTER_VALIDATE_BOOLEAN)) {
             return;
         }
         throw new LocalizedException(

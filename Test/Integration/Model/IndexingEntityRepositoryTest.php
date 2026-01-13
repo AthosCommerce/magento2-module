@@ -537,16 +537,16 @@ class IndexingEntityRepositoryTest extends TestCase
         $searchCriteriaBuilder->setSortOrders([$sortOrder]);
 
         $searchCriteriaBuilder->addFilter(
-            field: IndexingEntity::TARGET_ENTITY_TYPE,
-            value: '__PRODUCT',
+            IndexingEntity::TARGET_ENTITY_TYPE,
+            '__PRODUCT',
         );
         $searchCriteriaBuilder->addFilter(
-            field: IndexingEntity::SITE_ID,
-            value: $siteId,
+            IndexingEntity::SITE_ID,
+            $siteId,
         );
         $searchCriteriaBuilder->addFilter(
-            field: IndexingEntity::TARGET_ENTITY_SUBTYPE,
-            value: 'simple',
+            IndexingEntity::TARGET_ENTITY_SUBTYPE,
+            'simple',
         );
         $searchCriteriaBuilder->setPageSize(2);
         $searchCriteriaBuilder->setCurrentPage(2);
@@ -560,7 +560,7 @@ class IndexingEntityRepositoryTest extends TestCase
         $this->assertEquals(4, $searchResult->getTotalCount());
         $items = $searchResult->getItems();
         // paginated number of items on this page
-        $this->assertCount(expectedCount: 2, haystack: $items);
+        $this->assertCount(2, $items);
         // get target ids and ensure we are on page 2
         $targetIds = array_map(static fn(\AthosCommerce\Feed\Api\Data\IndexingEntityInterface $indexingEntity): int => (
         $indexingEntity->getTargetId()
@@ -661,18 +661,18 @@ class IndexingEntityRepositoryTest extends TestCase
         $repository = $this->instantiateTestObject();
 
         $result = $repository->getUniqueEntityTypes($siteId);
-        $this->assertContains(needle: '__CATEGORY', haystack: $result);
-        $this->assertContains(needle: '__CMS', haystack: $result);
-        $this->assertContains(needle: '__PRODUCT', haystack: $result);
-        $this->assertContains(needle: 'CUSTOM_TYPE', haystack: $result);
-        $this->assertNotContains(needle: 'OTHER_CUSTOM_TYPE', haystack: $result);
+        $this->assertContains('__CATEGORY', $result);
+        $this->assertContains('__CMS', $result);
+        $this->assertContains('__PRODUCT', $result);
+        $this->assertContains('CUSTOM_TYPE', $result);
+        $this->assertNotContains('OTHER_CUSTOM_TYPE', $result);
 
         $result = $repository->getUniqueEntityTypes($siteId . '2');
-        $this->assertNotContains(needle: '__CATEGORY', haystack: $result);
-        $this->assertNotContains(needle: '__CMS', haystack: $result);
-        $this->assertNotContains(needle: '__PRODUCT', haystack: $result);
-        $this->assertNotContains(needle: 'CUSTOM_TYPE', haystack: $result);
-        $this->assertContains(needle: 'OTHER_CUSTOM_TYPE', haystack: $result);
+        $this->assertNotContains('__CATEGORY', $result);
+        $this->assertNotContains('__CMS', $result);
+        $this->assertNotContains('__PRODUCT', $result);
+        $this->assertNotContains('CUSTOM_TYPE', $result);
+        $this->assertContains('OTHER_CUSTOM_TYPE', $result);
     }
 
     /**

@@ -41,7 +41,7 @@ class CompositeStockResolver implements StockResolverInterface
      */
     public function __construct(
         AthosCommerceLogger $logger,
-        array $resolvers = [],
+        array $resolvers = []
     ) {
         $this->resolvers = $resolvers;
         $this->logger = $logger;

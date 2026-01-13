@@ -41,7 +41,7 @@ class EntityUpdateResponderService implements EntityUpdateResponderServiceInterf
      */
     public function __construct(
         EntityUpdateInterfaceFactory $entityUpdateFactory,
-        AthosCommerceLogger $logger,
+        AthosCommerceLogger $logger
     ) {
         $this->entityUpdateFactory = $entityUpdateFactory;
         $this->logger = $logger;

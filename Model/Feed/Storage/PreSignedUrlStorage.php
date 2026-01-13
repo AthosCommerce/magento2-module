@@ -185,7 +185,7 @@ class PreSignedUrlStorage implements StorageInterface
         $urlPath = parse_url($this->specification->getPreSignedUrl(), PHP_URL_PATH);
 
         // For json.gz treat as JSON format for compression
-        if ($urlPath && str_contains($urlPath, MetadataInterface::FORMAT_JSON_GZ)) {
+        if ($urlPath && (strpos($urlPath, MetadataInterface::FORMAT_JSON_GZ) !== false)) {
             $gzFilePath = $filePath . '.gz';
             $this->compressFile($filePath, $gzFilePath);
             $filePath = $gzFilePath;  // Use the gzipped file for saving

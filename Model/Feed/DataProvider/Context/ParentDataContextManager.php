@@ -46,7 +46,7 @@ class ParentDataContextManager
      */
     public function __construct(
         ParentProductCollection $parentProductCollection,
-        StoreContextManager $storeContextManager,
+        StoreContextManager $storeContextManager
     ) {
         $this->parentProductCollection = $parentProductCollection;
         $this->storeContextManager = $storeContextManager;

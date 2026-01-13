@@ -41,7 +41,7 @@ interface IndexingEntityRepositoryInterface
      */
     public function getList(
         SearchCriteriaInterface $searchCriteria,
-        bool $collectionSizeRequired = false,
+        bool $collectionSizeRequired = false
     ): IndexingEntitySearchResultsInterface;
 
     /**
@@ -90,7 +90,7 @@ interface IndexingEntityRepositoryInterface
         ?string $entityType = null,
         ?string $siteId = null,
         ?string $nextAction = null,
-        ?bool $isIndexable = null,
+        ?bool $isIndexable = null
     ): int;
 
     /**
@@ -99,7 +99,7 @@ interface IndexingEntityRepositoryInterface
      * @return string[]
      */
     public function getUniqueEntityTypes(?string $siteId = null): array;
-    
+
     /**
      * Return all distinct site IDs
      *

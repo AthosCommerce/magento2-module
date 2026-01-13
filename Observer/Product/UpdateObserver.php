@@ -49,8 +49,8 @@ class UpdateObserver implements ObserverInterface
      */
     public function __construct(
         BaseProductObserver  $baseProductObserver,
-        AthosCommerceLogger      $logger,
-        ScopeConfigInterface $scopeConfig,
+        AthosCommerceLogger  $logger,
+        ScopeConfigInterface $scopeConfig
     )
     {
         $this->baseProductObserver = $baseProductObserver;
