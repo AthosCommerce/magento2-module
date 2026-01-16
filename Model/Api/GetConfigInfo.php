@@ -130,6 +130,11 @@ class GetConfigInfo implements GetConfigInfoInterface
                     $stores[$storeId] = $storeConfigModel;
                 }
 
+                if (($meta['group'] ?? null) === 'taskPayload') {
+                    $stores[$storeId]->addTaskPayloadValue($outputKey, $value);
+                    continue;
+                }
+
                 $setter = 'set' . ucfirst($outputKey);
                 if (method_exists($stores[$storeId], $setter)) {
                     $stores[$storeId]->{$setter}($value);

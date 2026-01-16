@@ -476,6 +476,25 @@ class ConfigItem extends AbstractExtensibleObject implements ConfigItemInterface
     }
 
     /**
+     * @return bool|null
+     */
+    public function getEnableDebugLog(): ?bool
+    {
+        return !is_null($this->_get(self::ENABLE_DEBUG_LOG))
+            ? (bool)$this->_get(self::ENABLE_DEBUG_LOG)
+            : null;
+    }
+
+    /**
+     * @param bool|null $flag
+     * @return ConfigItemInterface
+     */
+    public function setEnableDebugLog(?bool $flag): ConfigItemInterface
+    {
+        return $this->setData(self::ENABLE_DEBUG_LOG, $flag);
+    }
+
+    /**
      * @return array
      */
     public function toArray(array $keys = []): array
@@ -488,6 +507,7 @@ class ConfigItem extends AbstractExtensibleObject implements ConfigItemInterface
             'entitySyncCronExpr' => $this->getEntitySyncCronExpr(),
             'perMinute' => $this->getPerMinute(),
             'chunkSize' => $this->getChunkSize(),
+            'enableDebugLog' => $this->getEnableDebugLog(),
             // Media Gallery Specs
             'thumbWidth' => $this->getThumbWidth(),
             'thumbHeight' => $this->getThumbHeight(),

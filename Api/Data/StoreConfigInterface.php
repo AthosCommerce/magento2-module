@@ -15,6 +15,8 @@ interface StoreConfigInterface
     public const PER_MINUTE = 'perMinute';
     public const CHUNK_SIZE = 'chunkSize';
 
+    public const TASK_PAYLOAD = 'taskPayload';
+
     /**
      * @return int
      */
@@ -113,4 +115,15 @@ interface StoreConfigInterface
      * @return self
      */
     public function setChunkSize(?int $value): self;
+
+    /**
+     * @return array|null
+     */
+    public function getTaskPayload(): ?array;
+
+    /**
+     * @param array|null $payload
+     * @return self
+     */
+    public function setTaskPayload(?array $payload): self;
 }

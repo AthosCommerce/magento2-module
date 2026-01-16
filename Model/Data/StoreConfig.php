@@ -167,4 +167,43 @@ class StoreConfig extends AbstractExtensibleModel implements StoreConfigInterfac
     {
         return $this->setData(self::CHUNK_SIZE, $chunkSize);
     }
+
+    /**
+     * @return array|null
+     */
+    public function getTaskPayload(): ?array
+    {
+        return $this->getData(self::TASK_PAYLOAD);
+    }
+
+    /**
+     * @param array|null $payload
+     * @return $this
+     */
+    public function setTaskPayload(?array $payload): self
+    {
+        $this->setData(self::TASK_PAYLOAD, $payload);
+        return $this;
+    }
+
+    /**
+     * @param string $key
+     * @param $value
+     * @return $this
+     */
+    public function addTaskPayloadValue(string $key, $value): self
+    {
+        if ($this->getData(self::TASK_PAYLOAD === null)) {
+            $this->setData(self::TASK_PAYLOAD, []);
+        }
+        $this->setData(
+            self::TASK_PAYLOAD,
+            array_merge(
+                $this->getData(self::TASK_PAYLOAD) ?? [],
+                [$value]
+            )
+        );
+
+        return $this;
+    }
 }

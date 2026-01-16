@@ -53,10 +53,11 @@ class AppConfig implements AppConfigInterface
      */
     public function __construct(
         DeploymentConfig $deploymentConfig,
-        Http $http,
-        string $prefix = self::PREFIX,
-        array $defaults = []
-    ) {
+        Http             $http,
+        string           $prefix = self::PREFIX,
+        array            $defaults = []
+    )
+    {
         $this->deploymentConfig = $deploymentConfig;
         $this->http = $http;
         $this->defaults = array_merge($this->defaults, $defaults);
@@ -91,15 +92,14 @@ class AppConfig implements AppConfigInterface
      */
     public function isDebug(): bool
     {
-        $value = $this->getValue('debug');
-        return ($value === null) && (bool)$value;
+        return $this->normalizeBool($this->getValue('debug'));
     }
 
     /**
      * @param string $code
      * @return string
      */
-    private function buildVarPath(string $code) : string
+    private function buildVarPath(string $code): string
     {
         $path = $this->prefix . '_' . $code;
         return strtoupper($path);
@@ -109,9 +109,30 @@ class AppConfig implements AppConfigInterface
      * @param string $code
      * @return string
      */
-    private function buildEnvPath(string $code) : string
+    private function buildEnvPath(string $code): string
     {
         $path = $this->prefix . '_' . $code;
         return str_replace('_', '/', $path);
+    }
+
+    /**
+     * @param $value
+     * @return bool
+     */
+    private function normalizeBool($value): bool
+    {
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if (is_numeric($value)) {
+            return (bool)$value;
+        }
+
+        if (is_string($value)) {
+            return in_array(strtolower($value), ['1', 'true', 'yes', 'on'], true);
+        }
+
+        return false;
     }
 }
