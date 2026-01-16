@@ -409,7 +409,7 @@
         </arguments>
     </type>
 
-    <type name="AthosCommerce\Feed\Model\GenerateFeed">
+    <type name="AthosCommerce\Feed\Model\CollectionProcessor">
         <arguments>
             <argument name="afterLoadProcessorPool" xsi:type="object">AthosCommerceFeedGenerateFeedAfterLoadCollectionProcessorPool</argument>
         </arguments>

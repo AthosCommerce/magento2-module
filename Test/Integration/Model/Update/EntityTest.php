@@ -38,7 +38,7 @@ use PHPUnit\Framework\TestCase;
  * @method EntityUpdateInterface instantiateTestObject(?array $arguments = null)
  * @method EntityUpdateInterface instantiateTestObjectFromInterface(?array $arguments = null)
  */
-class IndexingEntityTest extends TestCase
+class EntityTest extends TestCase
 {
     use ObjectInstantiationTrait;
 
