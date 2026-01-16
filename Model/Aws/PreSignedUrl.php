@@ -21,6 +21,7 @@ namespace AthosCommerce\Feed\Model\Aws;
 use AthosCommerce\Feed\Api\AppConfigInterface;
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Exception\ClientException;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Aws\Client\ClientInterface;
 use AthosCommerce\Feed\Model\Aws\Client\ResponseInterface;
 
@@ -30,6 +31,14 @@ class PreSignedUrl
      * @var ClientInterface
      */
     private $client;
+    /**
+     * @var AppConfigInterface
+     */
+    private $appConfig;
+    /**
+     * @var AthosCommerceLogger
+     */
+    private $logger;
     /**
      * @var array
      */
@@ -46,34 +55,34 @@ class PreSignedUrl
      * @var int
      */
     private $repeatDelay;
-    /**
-     * @var AppConfigInterface
-     */
-    private $appConfig;
 
     /**
      * PreSignedUrl constructor.
      * @param ClientInterface $client
      * @param AppConfigInterface $appConfig
+     * @param AthosCommerceLogger $logger
      * @param array $retryCodes
      * @param array $successCodes
      * @param int $retryCount
      * @param int $repeatDelay
      */
     public function __construct(
-        ClientInterface $client,
-        AppConfigInterface $appConfig,
-        array $retryCodes = [],
-        array $successCodes = [],
-        int $retryCount = 5,
-        int $repeatDelay = 30
-    ) {
+        ClientInterface     $client,
+        AppConfigInterface  $appConfig,
+        AthosCommerceLogger $logger,
+        array               $retryCodes = [],
+        array               $successCodes = [],
+        int                 $retryCount = 5,
+        int                 $repeatDelay = 30
+    )
+    {
         $this->client = $client;
+        $this->appConfig = $appConfig;
+        $this->logger = $logger;
         $this->retryCodes = array_merge($this->retryCodes, $retryCodes);
         $this->successCodes = array_merge($this->successCodes, $successCodes);
         $this->retryCount = $retryCount;
         $this->repeatDelay = $repeatDelay;
-        $this->appConfig = $appConfig;
     }
 
     /**
@@ -81,12 +90,20 @@ class PreSignedUrl
      * @param array $content
      * @throws \Exception
      */
-    public function save(FeedSpecificationInterface $feedSpecification, array $content) : void
+    public function save(FeedSpecificationInterface $feedSpecification, array $content): void
     {
         if ($this->appConfig->isDebug()
-            && !is_null($this->appConfig->getValue('product_api_mock'))
-            && $this->appConfig->getValue('product_api_mock')
+            && (bool)$this->appConfig->getValue('product_api_mock')
         ) {
+            $this->logger->info(
+                'Data feed mocked as per configuration:',
+                [
+                    'store' => $feedSpecification->getStoreCode(),
+                    'feed_spec' => method_exists($feedSpecification, '__toArray')
+                        ? $feedSpecification->__toArray()
+                        : [],
+                ]
+            );
             return;
         }
         $url = $feedSpecification->getPreSignedUrl();
@@ -103,7 +120,7 @@ class PreSignedUrl
      * @param array $content
      * @throws \Exception
      */
-    private function doRequest(string $url, array $headers, array $content) : void
+    private function doRequest(string $url, array $headers, array $content): void
     {
         $retry = true;
         $lastError = null;
@@ -149,13 +166,13 @@ class PreSignedUrl
      * @param string $url
      * @return string
      */
-    private function getErrorMessageFromResponse(ResponseInterface $response, string $url) : string
+    private function getErrorMessageFromResponse(ResponseInterface $response, string $url): string
     {
         $statusCode = $response->getCode();
         $errorMessage = $response->getBody()
             ? 'error message: ' . $response->getBody()
             : 'no error message';
-        $fullMessage = (string) __(
+        $fullMessage = (string)__(
             'Cannot save file by pre-signed url %1, response code %2, %3',
             $url,
             $statusCode,
@@ -169,7 +186,7 @@ class PreSignedUrl
      * @param ResponseInterface $response
      * @return bool
      */
-    private function isSuccess(ResponseInterface $response) : bool
+    private function isSuccess(ResponseInterface $response): bool
     {
         $statusCode = $response->getCode();
         return ($statusCode >= 200 && $statusCode < 300) || in_array($statusCode, $this->successCodes);
@@ -179,7 +196,7 @@ class PreSignedUrl
      * @param ResponseInterface $response
      * @return bool
      */
-    private function isRepeatableError(ResponseInterface $response) : bool
+    private function isRepeatableError(ResponseInterface $response): bool
     {
         $statusCode = $response->getCode();
         return in_array($statusCode, $this->retryCodes);

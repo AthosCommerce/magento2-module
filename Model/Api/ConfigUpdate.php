@@ -442,10 +442,10 @@ class ConfigUpdate implements ConfigUpdateInterface
             );
         }
 
-        //10 characters minimum, to avoid overly simple keys
-        if (strlen($value) < 10) {
+        //5 characters minimum, to avoid overly simple keys
+        if (strlen($value) < 5) {
             throw new LocalizedException(
-                __('Secret Key must be at least 10 characters long.')
+                __('Secret Key must be at least 5 characters long.')
             );
         }
     }
@@ -495,7 +495,7 @@ class ConfigUpdate implements ConfigUpdateInterface
             static::MODULE_PREFIX . 'developer/'
         );
 
-        if (!$isConfigPath && !$isIndexingPath) {
+        if (!$isConfigPath && !$isIndexingPath && !$isDeveloperPath) {
             throw new LocalizedException(
                 __("Invalid path " . $path . " found. Only " . static::MODULE_PREFIX . " module configuration allowed.")
             );

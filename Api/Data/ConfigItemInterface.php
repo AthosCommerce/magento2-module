@@ -30,6 +30,8 @@ interface ConfigItemInterface
     public const PER_MINUTE = 'perMinute';
     public const CHUNK_SIZE = 'chunkSize';
 
+    public const ENABLE_DEBUG_LOG = 'enableDebugLog';
+
     /**
      * @return string
      */
@@ -304,4 +306,15 @@ interface ConfigItemInterface
      * @return ConfigItemInterface
      */
     public function setIncludeMediaGallery(bool $flag): ConfigItemInterface;
+
+    /**
+     * @return bool|null
+     */
+    public function getEnableDebugLog(): ?bool;
+
+    /**
+     * @param bool|null $value
+     * @return ConfigItemInterface
+     */
+    public function setEnableDebugLog(?bool $value): ConfigItemInterface;
 }

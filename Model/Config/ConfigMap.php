@@ -163,6 +163,11 @@ class ConfigMap
             'group' => 'taskPayload',
             'validator' => 'validateIntegerArray'
         ],
+        'enableDebugLog' => [
+            'path' => Constants::XML_PATH_DEBUG_LOG_ENABLED,
+            'type' => 'bool',
+            'validator' => 'validateBoolean'
+        ],
     ];
 
     /**
