@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Model\Api;
 
 use AthosCommerce\Feed\Api\ProductInfoInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\CollectionProcessor;
 use AthosCommerce\Feed\Model\Feed\SpecificationBuilderInterface;
 use AthosCommerce\Feed\Model\ItemsGenerator;
@@ -53,6 +54,10 @@ class ProductInfo implements ProductInfoInterface
      * @var ProductInfoResponseInterfaceFactory
      */
     private $responseFactory;
+    /**
+     * @var AthosCommerceLogger
+     */
+    private $logger;
 
     /**
      * @param CollectionProcessor $collectionProcessor
@@ -68,7 +73,8 @@ class ProductInfo implements ProductInfoInterface
         SpecificationBuilderInterface       $specificationBuilder,
         ScopeConfigInterface                $scopeConfig,
         SerializerInterface                 $serializer,
-        ProductInfoResponseInterfaceFactory $responseFactory
+        ProductInfoResponseInterfaceFactory $responseFactory,
+        AthosCommerceLogger                 $logger
     )
     {
         $this->collectionProcessor = $collectionProcessor;
@@ -77,6 +83,7 @@ class ProductInfo implements ProductInfoInterface
         $this->scopeConfig = $scopeConfig;
         $this->serializer = $serializer;
         $this->responseFactory = $responseFactory;
+        $this->logger = $logger;
     }
 
     /**
@@ -106,11 +113,16 @@ class ProductInfo implements ProductInfoInterface
             if (!$payload) {
                 return $response
                     ->setProductInfo([])
-                    ->setMessage('Payload not available');
+                    ->setMessage(sprintf('No payload found for store ID %d', $storeId));
             }
 
             if (is_string($payload)) {
                 $payload = $this->serializer->unserialize($payload);
+            }
+            if (!is_array($payload)) {
+                return $response
+                    ->setProductInfo([])
+                    ->setMessage(sprintf('No payload found for store ID %d', $storeId));
             }
 
             $feedSpecification = $this->specificationBuilder->build($payload);
@@ -121,11 +133,17 @@ class ProductInfo implements ProductInfoInterface
             $collection->load();
 
             $this->collectionProcessor->processAfterLoad($collection, $feedSpecification);
-
+            $this->logger->info(
+                'ProductInfoAPI started fetching product info',
+                [
+                    'product_ids' => $productIds,
+                    'store_id' => $storeId
+                ]
+            );
             if (!$collection->getSize()) {
                 return $response
                     ->setProductInfo([])
-                    ->setMessage('Provided items not available');
+                    ->setMessage('No products found for the given product IDs');
             }
 
             $itemsData = $this->itemsGenerator->generate(
@@ -136,13 +154,36 @@ class ProductInfo implements ProductInfoInterface
             $this->itemsGenerator->resetDataProvidersAfterFetchItems($feedSpecification);
             $this->collectionProcessor->processAfterFetchItems($collection, $feedSpecification);
 
+            $this->logger->debug(
+                'ProductInfoAPI: ItemsData and Query',
+                [
+                    'query' => $collection->getSelect()->__toString(),
+                    'items_data' => $itemsData
+                ]
+            );
+
             $response->setProductInfo($itemsData);
         } catch (\Exception $e) {
+            $this->logger->error(
+                'ProductInfoAPI: Failed to fetch product info',
+                [
+                    'product_ids' => $productIds,
+                    'store_id' => $storeId,
+                    'message' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]
+            );
             return $response
                 ->setProductInfo([])
                 ->setMessage($e->getMessage());
         }
-
+        $this->logger->info(
+            'ProductInfoAPI completed fetching product info',
+            [
+                'product_ids' => $productIds,
+                'store_id' => $storeId
+            ]
+        );
         return $response;
     }
 
@@ -181,7 +222,7 @@ class ProductInfo implements ProductInfoInterface
             );
         } catch (Exception $e) {
             $this->logger->error(
-                'Failed to resolve parent/child IDs',
+                'ProductInfoAPI: Failed to resolve parent/child IDs',
                 [
                     'method' => __METHOD__,
                     'productId' => $productId,
