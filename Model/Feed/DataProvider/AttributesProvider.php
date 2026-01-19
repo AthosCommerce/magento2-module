@@ -62,11 +62,12 @@ class AttributesProvider implements DataProviderInterface
      * @param ParentRelationsContext $parentRelationsContext
      */
     public function __construct(
-        SystemFieldsList $systemFieldsList,
-        ValueProcessor $valueProcessor,
+        SystemFieldsList            $systemFieldsList,
+        ValueProcessor              $valueProcessor,
         AttributesProviderInterface $attributesProvider,
-        ParentRelationsContext $parentRelationsContext
-    ) {
+        ParentRelationsContext      $parentRelationsContext
+    )
+    {
         $this->systemFieldsList = $systemFieldsList;
         $this->valueProcessor = $valueProcessor;
         $this->attributesProvider = $attributesProvider;
@@ -88,7 +89,10 @@ class AttributesProvider implements DataProviderInterface
             if (!$productModel) {
                 continue;
             }
-            $product = array_merge($product, $this->getProductData($productModel));
+            $product = array_merge(
+                $product,
+                $this->getProductData($productModel, $feedSpecification)
+            );
         }
 
         return $products;
@@ -99,17 +103,18 @@ class AttributesProvider implements DataProviderInterface
      */
     private function getPriceRelatedAttributes(): array
     {
-        return ['sku','price', 'final_price', 'tier_price', 'cost', 'special_price'];
+        return ['sku', 'price', 'final_price', 'tier_price', 'cost', 'special_price'];
     }
 
     /**
      * @param Product $product
+     * @param FeedSpecificationInterface $feedSpecification
      *
      * @return array
      * @throws LocalizedException
      * @throws Exception
      */
-    private function getProductData(Product $product): array
+    private function getProductData(Product $product, FeedSpecificationInterface $feedSpecification): array
     {
         $productData = $product->getData();
         $productId = (int)$product->getData('entity_id');
@@ -141,7 +146,12 @@ class AttributesProvider implements DataProviderInterface
                 }
             }
 
-            $result[$key] = $this->valueProcessor->getValue($attribute, $fieldValue, $product);
+            $result[$key] = $this->valueProcessor->getValue(
+                $attribute,
+                $fieldValue,
+                $product,
+                $feedSpecification
+            );
         }
 
         return $result;
