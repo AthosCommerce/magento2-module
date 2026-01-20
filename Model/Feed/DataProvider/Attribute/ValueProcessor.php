@@ -19,6 +19,8 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Model\Feed\DataProvider\Attribute;
 
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Attribute\ValueProcessorInterface;
 use Exception;
 use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\ResourceModel\Eav\Attribute as MagentoEavAttribute;
@@ -26,8 +28,6 @@ use Magento\Eav\Model\Entity\Attribute\Source\SpecificSourceInterface;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Phrase;
 use Magento\Framework\Serialize\Serializer\Json;
-use AthosCommerce\Feed\Logger\AthosCommerceLogger;
-use AthosCommerce\Feed\Model\Feed\DataProvider\Attribute\ValueProcessorInterface;
 
 class ValueProcessor implements ValueProcessorInterface
 {

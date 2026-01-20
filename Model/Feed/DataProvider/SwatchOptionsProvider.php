@@ -111,7 +111,7 @@ class SwatchOptionsProvider implements DataProviderInterface
             $parentIds = $this->configurableType->getParentIdsByChild($productModel->getId());
 
             if (empty($parentIds)) {
-                $product['standard_options'] = [];
+                $product['__swatch_options'] = [];
                 continue;
             }
 

@@ -1,16 +1,16 @@
 <?php
+
 namespace AthosCommerce\Feed\Model\Feed\DataProvider;
 
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
-use AthosCommerce\Feed\Model\Feed\DataProvider\Configurable\DataProvider;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Configurable\DataProvider as ConfigurableDataProvider;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentDataContextManager;
 use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
 use Magento\Catalog\Model\Product;
 use Magento\Framework\Exception\LocalizedException;
-use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use Throwable;
 use Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable;
-
 
 class StandardOptionsProvider implements DataProviderInterface
 {
@@ -23,8 +23,9 @@ class StandardOptionsProvider implements DataProviderInterface
      * @var AthosCommerceLogger
      */
     private $logger;
+
     /**
-     * @var DataProvider
+     * @var ConfigurableDataProvider
      */
     private $provider;
 
@@ -34,17 +35,18 @@ class StandardOptionsProvider implements DataProviderInterface
     private $parentProductContextManager;
 
     /**
-     * @param DataProvider $provider
+     * @param ConfigurableDataProvider $provider
      * @param AthosCommerceLogger $logger
      * @param ParentDataContextManager $parentProductContextManager
      * @param Configurable $configurableType
      */
     public function __construct(
-        DataProvider $provider,
-        AthosCommerceLogger $logger,
+        ConfigurableDataProvider $provider,
+        AthosCommerceLogger      $logger,
         ParentDataContextManager $parentProductContextManager,
-        Configurable $configurableType
-    ) {
+        Configurable             $configurableType
+    )
+    {
         $this->provider = $provider;
         $this->logger = $logger;
         $this->parentProductContextManager = $parentProductContextManager;
@@ -52,20 +54,17 @@ class StandardOptionsProvider implements DataProviderInterface
     }
 
     /**
-     * Returns standard_options JSON for configurable product
      * @param array $products
      * @param FeedSpecificationInterface $feedSpecification
      * @return array
      * @throws LocalizedException
-     * @throws \Exception
+     * @throws Throwable
      */
-    public function getData(array $products, FeedSpecificationInterface $feedSpecification): array
+    public function getData(
+        array                      $products,
+        FeedSpecificationInterface $feedSpecification
+    ): array
     {
-        $this->logger->info('Returns __standard_options JSON for configurable product', [
-            'method' => __METHOD__,
-            'format' => $feedSpecification->getFormat(),
-        ]);
-
         foreach ($products as &$product) {
 
             /** @var Product $productModel */
@@ -90,9 +89,14 @@ class StandardOptionsProvider implements DataProviderInterface
             $parentProduct = $this->parentProductContextManager->getParentsDataByProductId($parentId);
 
             if (!$parentProduct) {
-                $this->logger->warning('Parent product missing in context', [
-                    'parent_id' => $parentId
-                ]);
+                $this->logger->warning(
+                    '[StandardOptions] Parent product missing in context',
+                    [
+                        'productId' => $productModel->getId(),
+                        'parentIds' => $parentIds,
+                        'method' => __METHOD__
+                    ]
+                );
                 continue;
             }
             // todo  performance check pending
@@ -136,7 +140,7 @@ class StandardOptionsProvider implements DataProviderInterface
      */
     public function reset(): void
     {
-    //
+        //
     }
 
     /**
@@ -144,6 +148,6 @@ class StandardOptionsProvider implements DataProviderInterface
      */
     public function resetAfterFetchItems(): void
     {
-      //
+        //
     }
 }

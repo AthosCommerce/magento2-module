@@ -18,6 +18,8 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Model\Feed\DataProvider;
 
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentRelationsContext;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Review\Model\ResourceModel\Review\Summary\Collection;
 use Magento\Review\Model\Review;
@@ -37,19 +39,34 @@ class RatingProvider implements DataProviderInterface
      * @var StoreManagerInterface
      */
     private $storeManager;
+    /**
+     * @var ParentRelationsContext
+     */
+    private $parentRelationsContext;
+    /**
+     * @var AthosCommerceLogger
+     */
+    private $logger;
 
     /**
      * RatingProvider constructor.
      *
      * @param SummaryCollectionFactory $collectionFactory
      * @param StoreManagerInterface $storeManager
+     * @param ParentRelationsContext $parentRelationsContext
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
         SummaryCollectionFactory $collectionFactory,
-        StoreManagerInterface $storeManager
-    ) {
+        StoreManagerInterface    $storeManager,
+        ParentRelationsContext   $parentRelationsContext,
+        AthosCommerceLogger      $logger
+    )
+    {
         $this->collectionFactory = $collectionFactory;
         $this->storeManager = $storeManager;
+        $this->parentRelationsContext = $parentRelationsContext;
+        $this->logger = $logger;
     }
 
     /**
@@ -60,13 +77,14 @@ class RatingProvider implements DataProviderInterface
      * @throws NoSuchEntityException
      */
     public function getData(
-        array $products,
+        array                      $products,
         FeedSpecificationInterface $feedSpecification
-    ): array {
+    ): array
+    {
 
         $ignoredFields = $feedSpecification->getIgnoreFields();
-        if (in_array('rating', $ignoredFields)
-            && in_array('rating_count', $ignoredFields)
+        if (in_array('rating', $ignoredFields, true)
+            && in_array('rating_count', $ignoredFields, true)
         ) {
             return $products;
         }
@@ -75,25 +93,29 @@ class RatingProvider implements DataProviderInterface
             return (int)$product['entity_id'] ?? -1;
         }, $products);
 
-        $productIds = array_unique($productIds);
+        $productIds = array_values(array_unique($productIds));
+
         $ratings = $this->getRatings($productIds, $feedSpecification);
+
+        $resolvedRatings = $this->getRatingSummaryWithParents(
+            $productIds,
+            $ratings,
+            $feedSpecification
+        );
         foreach ($products as &$product) {
-            $id = $product['entity_id'] ?? null;
-            if (!$id) {
+            $productId = $product['entity_id'] ?? null;
+            if (!$productId || empty($resolvedRatings[$productId])) {
                 continue;
             }
 
-            $rating = $ratings[$id] ?? null;
-            if (!$rating) {
-                continue;
+            $summary = $resolvedRatings[$productId];
+
+            if (!in_array('rating', $ignoredFields, true)) {
+                $product['rating'] = $this->convertRatingSum($summary);
             }
 
-            if (!in_array('rating', $ignoredFields)) {
-                $product['rating'] = $this->convertRatingSum($rating);
-            }
-
-            if (!in_array('rating_count', $ignoredFields)) {
-                $product['rating_count'] = $rating->getReviewsCount();
+            if (!in_array('rating_count', $ignoredFields, true)) {
+                $product['rating_count'] = (int)$summary->getReviewsCount();
             }
         }
 
@@ -118,9 +140,10 @@ class RatingProvider implements DataProviderInterface
      * @throws NoSuchEntityException
      */
     private function getRatings(
-        array $productIds,
+        array                      $productIds,
         FeedSpecificationInterface $feedSpecification
-    ): array {
+    ): array
+    {
         /** @var Collection $summaryCollection */
         $summaryCollection = $this->collectionFactory->create();
         $storeId = (int)$this->storeManager->getStore($feedSpecification->getStoreCode())->getId();
@@ -140,6 +163,58 @@ class RatingProvider implements DataProviderInterface
         }
 
         return $result;
+    }
+
+    /**
+     * @param array $productIds
+     * @param array $ratingsResult
+     * @param FeedSpecificationInterface $feedSpecification
+     * @return array
+     * @throws NoSuchEntityException
+     */
+    private function getRatingSummaryWithParents(
+        array                      $productIds,
+        array                      $ratingsResult,
+        FeedSpecificationInterface $feedSpecification
+    ): array
+    {
+
+        $ratingSummary = $ratingsResult;
+        $missingIds = array_diff($productIds, array_keys($ratingsResult));
+
+        if (!$missingIds) {
+            return $ratingSummary;
+        }
+
+        $childToParentMap = [];
+        $parentIds = [];
+
+        foreach ($missingIds as $childId) {
+            $parent = $this->parentRelationsContext->getParentsByChildId($childId);
+            if (!$parent) {
+                continue;
+            }
+
+            $parentId = (int)$parent->getId();
+            $childToParentMap[$childId] = $parentId;
+            $parentIds[] = $parentId;
+        }
+
+        if (!$parentIds) {
+            return $ratingSummary;
+        }
+
+        $parentIds = array_values(array_unique($parentIds));
+
+        $parentRatings = $this->getRatings($parentIds, $feedSpecification);
+
+        foreach ($childToParentMap as $childId => $parentId) {
+            if (!empty($parentRatings[$parentId])) {
+                $ratingSummary[$childId] = $parentRatings[$parentId];
+            }
+        }
+
+        return $ratingSummary;
     }
 
     /**

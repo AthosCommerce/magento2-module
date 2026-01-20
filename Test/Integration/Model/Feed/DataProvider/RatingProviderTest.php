@@ -94,6 +94,33 @@ class RatingProviderTest extends TestCase
      *
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable/configurable_products_with_rating.php
+     *
+     * @throws \Exception
+     */
+    public function testGetDataParentProducts() : void
+    {
+        $specification = $this->specificationBuilder->build([]);
+        $products = $this->getProducts->get($specification);
+        $data = $this->ratingProvider->getData($products, $specification);
+        $config = [
+            'athoscommerce_configurable_test_configurable' => [
+                'rating' => 1.5,
+                'rating_count' => 2
+            ],
+            'athoscommerce_configurable_test_configurable_2_attributes' => [
+                'rating' => 4,
+                'rating_count' => 3
+            ]
+        ];
+        $this->assertRating($data, $config);
+        $this->ratingProvider->reset();
+    }
+
+    /**
+     *
+     * @magentoAppIsolation enabled
+     * @magentoDbIsolation disabled
      * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_products_with_rating_multistore.php
      *
      * @throws \Exception
