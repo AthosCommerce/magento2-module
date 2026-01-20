@@ -18,6 +18,9 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Model\Feed\DataProvider\Attribute;
 
+use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Attribute\ValueProcessorInterface;
 use Exception;
 use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\ResourceModel\Eav\Attribute as MagentoEavAttribute;
@@ -25,8 +28,6 @@ use Magento\Eav\Model\Entity\Attribute\Source\SpecificSourceInterface;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Phrase;
 use Magento\Framework\Serialize\Serializer\Json;
-use AthosCommerce\Feed\Logger\AthosCommerceLogger;
-use AthosCommerce\Feed\Model\Feed\DataProvider\Attribute\ValueProcessorInterface;
 
 class ValueProcessor implements ValueProcessorInterface
 {
@@ -44,9 +45,10 @@ class ValueProcessor implements ValueProcessorInterface
      * @param AthosCommerceLogger $logger
      */
     public function __construct(
-        Json $json,
+        Json                $json,
         AthosCommerceLogger $logger
-    ) {
+    )
+    {
         $this->json = $json;
         $this->logger = $logger;
     }
@@ -74,14 +76,17 @@ class ValueProcessor implements ValueProcessorInterface
      * @param MagentoEavAttribute $attribute
      * @param $value
      * @param Product $product
+     * @param FeedSpecificationInterface $feedSpecification
      *
      * @return
      */
     public function getValue(
-        MagentoEavAttribute $attribute,
-        $value,
-        Product $product
-    ) {
+        MagentoEavAttribute        $attribute,
+                                   $value,
+        Product                    $product,
+        FeedSpecificationInterface $feedSpecification
+    )
+    {
         $attributeCode = $attribute->getAttributeCode();
 
         if (!$this->isSourceAttribute($attribute)) {
@@ -131,7 +136,10 @@ class ValueProcessor implements ValueProcessorInterface
                 $labels[] = $optionMap[(string)$value] ?? null;
             }
 
-            return implode(', ', array_filter($labels));
+            return implode(
+                $feedSpecification->getMultiValuedSeparator(),
+                array_filter($labels)
+            );
         }
 
         if (!isset($optionMap[(string)$value])) {
@@ -184,8 +192,9 @@ class ValueProcessor implements ValueProcessorInterface
      */
     private function loadAttributeOptions(
         MagentoEavAttribute $attribute,
-        Product $product
-    ): array {
+        Product             $product
+    ): array
+    {
         $source = $attribute->getSource();
 
         // SpecificSourceInterface requires per-product option set

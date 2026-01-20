@@ -14,28 +14,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-declare(strict_types=1);
-
-namespace AthosCommerce\Feed\Model\Feed\DataProvider\Attribute;
-
-use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
+use Magento\Framework\Registry;
+use Magento\TestFramework\Helper\Bootstrap;
 use Magento\Catalog\Model\ResourceModel\Eav\Attribute as MagentoEavAttribute;
-use Magento\Catalog\Model\Product;
 
-interface ValueProcessorInterface
-{
-    /**
-     * @param MagentoEavAttribute $attribute
-     * @param $value
-     * @param Product $product
-     * @param FeedSpecificationInterface $feedSpecification
-     *
-     * @return
-     */
-    public function getValue(
-        MagentoEavAttribute $attribute,
-        $value,
-        Product $product,
-        FeedSpecificationInterface $feedSpecification
-    );
-}
+$objectManager = Bootstrap::getObjectManager();
+
+$registry = $objectManager->get(Registry::class);
+$registry->unregister('isSecureArea');
+$registry->register('isSecureArea', true);
+/** @var MagentoEavAttribute $attribute */
+$attribute = $objectManager->create(MagentoEavAttribute::class);
+$attribute->load('athos_size_multi', 'attribute_code');
+$attribute->delete();
+$registry->unregister('isSecureArea');
+$registry->register('isSecureArea', false);

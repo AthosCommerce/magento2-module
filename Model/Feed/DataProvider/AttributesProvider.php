@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Model\Feed\DataProvider;
 
 use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentRelationsContext;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use Exception;
 use Magento\Catalog\Api\Data\ProductAttributeInterface;
 use Magento\Catalog\Model\Product;
@@ -52,6 +53,10 @@ class AttributesProvider implements DataProviderInterface
      * @var ParentRelationsContext
      */
     private $parentRelationsContext;
+    /**
+     * @var AthosCommerceLogger
+     */
+    private $logger;
 
     /**
      * AttributesProvider constructor.
@@ -60,25 +65,28 @@ class AttributesProvider implements DataProviderInterface
      * @param ValueProcessor $valueProcessor
      * @param AttributesProviderInterface $attributesProvider
      * @param ParentRelationsContext $parentRelationsContext
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
-        SystemFieldsList $systemFieldsList,
-        ValueProcessor $valueProcessor,
+        SystemFieldsList            $systemFieldsList,
+        ValueProcessor              $valueProcessor,
         AttributesProviderInterface $attributesProvider,
-        ParentRelationsContext $parentRelationsContext
-    ) {
+        ParentRelationsContext      $parentRelationsContext,
+        AthosCommerceLogger         $logger
+    )
+    {
         $this->systemFieldsList = $systemFieldsList;
         $this->valueProcessor = $valueProcessor;
         $this->attributesProvider = $attributesProvider;
         $this->parentRelationsContext = $parentRelationsContext;
+        $this->logger = $logger;
     }
 
     /**
      * @param array $products
      * @param FeedSpecificationInterface $feedSpecification
-     *
      * @return array
-     * @throws Exception
+     * @throws LocalizedException
      */
     public function getData(array $products, FeedSpecificationInterface $feedSpecification): array
     {
@@ -88,7 +96,10 @@ class AttributesProvider implements DataProviderInterface
             if (!$productModel) {
                 continue;
             }
-            $product = array_merge($product, $this->getProductData($productModel));
+            $product = array_merge(
+                $product,
+                $this->getProductData($productModel, $feedSpecification)
+            );
         }
 
         return $products;
@@ -99,41 +110,49 @@ class AttributesProvider implements DataProviderInterface
      */
     private function getPriceRelatedAttributes(): array
     {
-        return ['sku','price', 'final_price', 'tier_price', 'cost', 'special_price'];
+        return ['sku', 'price', 'final_price', 'tier_price', 'cost', 'special_price'];
     }
 
     /**
      * @param Product $product
+     * @param FeedSpecificationInterface $feedSpecification
      *
      * @return array
      * @throws LocalizedException
      * @throws Exception
      */
-    private function getProductData(Product $product): array
+    private function getProductData(Product $product, FeedSpecificationInterface $feedSpecification): array
     {
         $productData = $product->getData();
+        $productKeys = array_keys($productData);
         $productId = (int)$product->getData('entity_id');
+        $this->logger->debug(
+            '[Attributes]Processing product attributes',
+            [
+                'productId' => $productId,
+                'productKeys' => $productKeys
+            ]
+        );
         $result = [];
-
-        foreach ($productData as $key => $fieldValue) {
+        foreach ($productData as $attributeKey => $fieldValue) {
             /*
             For some reason the system fields does not show up
             in the attribute list resulting in missing data.
             To avoid the issue, we will include these in the
             result without any additional processing
             */
-            if (!isset($this->attributes[$key])) {
-                $result[$key] = $fieldValue;
+            if (!isset($this->attributes[$attributeKey])) {
+                $result[$attributeKey] = $fieldValue;
                 continue;
             }
             /** @var Attribute $attribute */
-            $attribute = $this->attributes[$key];
+            $attribute = $this->attributes[$attributeKey];
 
             $parentProduct = $this->parentRelationsContext->getParentsByChildId($productId);
-            if ($parentProduct) {
-                $parentValue = $parentProduct->getData($key);
+            if ($parentProduct instanceof Product) {
+                $parentValue = $parentProduct->getData($attributeKey);
                 //TODO: check for true/false or 0/1
-                if (!in_array($key, $this->getPriceRelatedAttributes())
+                if (!in_array($attributeKey, $this->getPriceRelatedAttributes())
                     && $parentValue !== null
                     && $parentValue !== ''
                 ) {
@@ -141,8 +160,31 @@ class AttributesProvider implements DataProviderInterface
                 }
             }
 
-            $result[$key] = $this->valueProcessor->getValue($attribute, $fieldValue, $product);
+            try {
+                $result[$attributeKey] = $this->valueProcessor->getValue(
+                    $attribute,
+                    $fieldValue,
+                    $product,
+                    $feedSpecification
+                );
+            } catch (\Throwable $e) {
+                $this->logger->error(
+                    '[Attributes]Failed processing product attribute', [
+                        'product_id' => $productId,
+                        'attribute' => $attributeKey,
+                        'exception' => $e
+                    ]
+                );
+                continue;
+            }
         }
+        $this->logger->debug(
+            '[Attributes]Attributes processed',
+            [
+                'productId' => $productId,
+                'fieldValue' => $fieldValue
+            ]
+        );
 
         return $result;
     }

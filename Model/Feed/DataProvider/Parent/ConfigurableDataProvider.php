@@ -74,6 +74,12 @@ class ConfigurableDataProvider implements DataProviderInterface
      * @return array
      * @throws \Exception
      */
+    /**
+     * @param array $products
+     * @param FeedSpecificationInterface $feedSpecification
+     * @return array
+     * @throws \Exception
+     */
     public function getData(
         array $products,
         FeedSpecificationInterface $feedSpecification
