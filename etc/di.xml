@@ -296,10 +296,6 @@
                     <item name="objectInstance" xsi:type="object">AthosCommerce\Feed\Model\Feed\Collection\ExcludeProductIdsModifier</item>
                     <item name="sortOrder" xsi:type="number">800</item>
                 </item>
-                <item name="ExcludeProductsByVisibility" xsi:type="array">
-                    <item name="objectInstance" xsi:type="object">AthosCommerce\Feed\Model\Feed\Collection\ExcludeProductsByVisibility</item>
-                    <item name="sortOrder" xsi:type="number">800</item>
-                </item>
             </argument>
         </arguments>
     </type>
@@ -365,6 +361,7 @@
                 <item name="__variant_position" xsi:type="object">AthosCommerce\Feed\Model\Feed\DataProvider\VariantPosition</item>
                 <item name="__group_by_swatch" xsi:type="object">AthosCommerce\Feed\Model\Feed\DataProvider\GroupBySwatch</item>
                 <item name="__origin_timestamp" xsi:type="object">AthosCommerce\Feed\Model\Feed\DataProvider\TimeStamp</item>
+                <item name="exclude_product_by_visibility" xsi:type="object">AthosCommerce\Feed\Model\Feed\DataProvider\ExcludeProductsByVisibility</item>
             </argument>
         </arguments>
     </type>
