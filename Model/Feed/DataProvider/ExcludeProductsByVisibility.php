@@ -131,7 +131,7 @@ class ExcludeProductsByVisibility implements DataProviderInterface
             }
 
             if ($excludeChild) {
-                $this->logger->notice('FEED FILTER: excluding product', [
+                $this->logger->info('FEED FILTER: excluding product', [
                     'child_id' => $product['entity_id'] ?? null,
                     'child_sku' => $product['child_sku'] ?? null,
                     'child_visibility' => $childVisibility,
