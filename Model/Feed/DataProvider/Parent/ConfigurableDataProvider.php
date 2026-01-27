@@ -52,13 +52,14 @@ class ConfigurableDataProvider implements DataProviderInterface
      * @param ProductTypeIdInterface $productTypeId
      */
     public function __construct(
-        MetadataPool $metadataPool,
-        RelationsProvider $relationsProvider,
-        ParentDataContextManager $parentProductContextManager,
-        Visibility $visibility,
+        MetadataPool              $metadataPool,
+        RelationsProvider         $relationsProvider,
+        ParentDataContextManager  $parentProductContextManager,
+        Visibility                $visibility,
         ProductExclusionInterface $productExclusion,
-        ProductTypeIdInterface $productTypeId
-    ) {
+        ProductTypeIdInterface    $productTypeId
+    )
+    {
         $this->metadataPool = $metadataPool;
         $this->relationsProvider = $relationsProvider;
         $this->parentProductContextManager = $parentProductContextManager;
@@ -81,38 +82,56 @@ class ConfigurableDataProvider implements DataProviderInterface
      * @throws \Exception
      */
     public function getData(
-        array $products,
+        array                      $products,
         FeedSpecificationInterface $feedSpecification
-    ): array {
+    ): array
+    {
         $childTypeIdsList = $this->productTypeId->getChildTypeIdsList();
-        $childIds = $this->getChildIds($products, $childTypeIdsList);
-        if (empty($childIds)) {
-            return $products;
-        }
-        $parentChildIds = $this->relationsProvider->getConfigurableRelationIds($childIds);
-        if (!$parentChildIds) {
+
+        $childEntityIds = $this->getChildIds($products, $childTypeIdsList);
+        if (!$childEntityIds) {
             return $products;
         }
 
-        //TODO:: Check needed against the each field.
+        $relations = $this->relationsProvider->getConfigurableRelationIds($childEntityIds);
+        if (!$relations) {
+            return $products;
+        }
+
         $ignoredFields = $feedSpecification->getIgnoreFields();
+        $linkField = $this->getLinkField();
+        $childToParent = [];
 
         $childToParent = [];
-        $allParentIds = [];
 
-        foreach ($parentChildIds as $parentChildRow) {
-            if (!isset($parentChildRow['product_id'], $parentChildRow['parent_id'])) {
+        foreach ($relations as $row) {
+            if (!isset($row['product_id'], $row['parent_id'])) {
                 continue;
             }
 
-            $childId = (int)$parentChildRow['product_id'];
-            $parentId = (int)$parentChildRow['parent_id'];
+            $childEntityToLink = [];
+            foreach ($products as $product) {
+                /** @var Product|null $productModel */
+                $productModel = $product['product_model'] ?? null;
+                if (!$productModel) {
+                    continue;
+                }
 
-            $childToParent[$childId][] = $parentId;
-            $allParentIds[] = $parentId;
+                $childEntityToLink[(int)$productModel->getId()] =
+                    (int)$productModel->getData($linkField);
+            }
+
+            $childEntityId = (int)$row['product_id'];
+            $childLinkId = $childEntityToLink[$childEntityId] ?? null;
+
+            if (!$childLinkId) {
+                continue;
+            }
+
+            $parentLinkId = (int)$row['parent_id'];
+            $childToParent[$childLinkId][$parentLinkId] = true;
         }
 
-        $linkField = $this->getLinkField();
         $finalProducts = [];
 
         foreach ($products as $productIndex => &$product) {
@@ -121,9 +140,10 @@ class ConfigurableDataProvider implements DataProviderInterface
             if (!$productModel) {
                 continue;
             }
-            $childEntityId = (int)$productModel->getData($linkField);
-            $parentIds = $childToParent[$childEntityId] ?? [];
-            if (empty($parentIds)) {
+            $childLinkId = (int)$productModel->getData($linkField);
+            $parentLinkIds = array_keys($childToParent[$childLinkId] ?? []);
+
+            if (!$parentLinkIds) {
                 $finalProducts[] = $product;
                 continue;
             }
@@ -145,20 +165,25 @@ class ConfigurableDataProvider implements DataProviderInterface
                     ->getMinimalPrice()
                     ->getValue();
             }
+            $product['linked_field'] = $this->getLinkField();
 
             $parent = null;
-            foreach ($parentIds as $parentId) {
+            foreach ($parentLinkIds as $parentId) {
                 /** @var Product $parent */
                 $parent = $this->parentProductContextManager->getParentsDataByProductId(
-                    (int)$parentId,
+                    (int)$parentId
                 );
                 if (!$parent) {
                     continue;
                 }
 
-                $shouldExclude = $this->productExclusion->shouldExclude($productModel, $parent);
+                $shouldExclude = $this->productExclusion->shouldExclude(
+                    $feedSpecification,
+                    $productModel,
+                    $parent
+                );
                 if ($shouldExclude) {
-                    unset($products[$productIndex]);
+                    continue;
                 }
                 $childClone = $product;
 
@@ -167,14 +192,16 @@ class ConfigurableDataProvider implements DataProviderInterface
                     $childTypeIdsList,
                     true
                 )) {
-                    //Required, so not part of ignoredFields
-                    //$childClone['parent_id'] = $parent->getDataUsingMethod($this->getLinkField());
 
-                    if (!in_array('parent_name', $ignoredFields, true)
+                    if (!in_array(['__parent_id', 'parent_id'], $ignoredFields, true)) {
+                        $childClone['__parent_id'] = $parent->getDataUsingMethod($this->getLinkField());
+                    }
+
+                    if (!in_array(['__parent_title', 'parent_title'], $ignoredFields, true)
                         && method_exists($parent, 'getName')
                         && $parent->getName()
                     ) {
-                        $childClone['parent_name'] = $parent->getName();
+                        $childClone['__parent_title'] = $parent->getName();
                     }
 
                     if (!in_array('parent_status', $ignoredFields, true)
@@ -206,11 +233,20 @@ class ConfigurableDataProvider implements DataProviderInterface
                             $parent->getVisibility()
                         );
                     }
+                    $parentImage = '';
+                    if (!in_array(['parent_image', '__parent_image'], $ignoredFields, true)) {
+                        $image = $parent->getImage()
+                            ?: $parent->getSmallImage()
+                                ?: $parent->getThumbnail();
+                        if ($image && $image !== 'no_selection') {
+                            $parentImage = $parent->getMediaConfig()->getMediaUrl($image);
+                        }
+                        $childClone['__parent_image'] = $parentImage;
+                    }
                 }
                 $finalProducts[] = $childClone;
             }
         }
-        unset($childToParent);
 
         return array_values($finalProducts);
     }

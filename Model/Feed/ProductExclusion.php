@@ -18,11 +18,28 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Model\Feed;
 
+use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Feed\ProductExclusionInterface;
 use Magento\Catalog\Api\Data\ProductInterface;
 
 class ProductExclusion implements ProductExclusionInterface
 {
+    /**
+     * @var AthosCommerceLogger
+     */
+    private $logger;
+
+    /**
+     * @param AthosCommerceLogger $logger
+     */
+    public function __construct(
+        AthosCommerceLogger $logger
+    )
+    {
+        $this->logger = $logger;
+    }
+
     /**
      * @param ProductInterface $productModel
      * @param ProductInterface|null $parent
@@ -30,9 +47,11 @@ class ProductExclusion implements ProductExclusionInterface
      * @return bool
      */
     public function shouldExclude(
-        ProductInterface $productModel,
-        ?ProductInterface $parent = null
-    ): bool {
+        FeedSpecificationInterface $feedSpecification,
+        ProductInterface           $productModel,
+        ?ProductInterface          $parent = null
+    ): bool
+    {
         if ($parent === null) {
             return false;
         }
@@ -40,6 +59,16 @@ class ProductExclusion implements ProductExclusionInterface
         if (($productModel->getVisibility() == 1 && $parent->getVisibility() == 1)
             || ($parent->getStatus() == 0 && $productModel->getVisibility() == 1)
         ) {
+            $this->logger->debug(
+                'Product Exclusion',
+                [
+                    'product_id' => $productModel->getId(),
+                    'parent_id' => $parent->getId(),
+                    'visibility_product' => $productModel->getVisibility(),
+                    'visibility_parent' => $parent->getVisibility(),
+                    'status_parent' => $parent->getStatus()
+                ]
+            );
             return true;
         }
 

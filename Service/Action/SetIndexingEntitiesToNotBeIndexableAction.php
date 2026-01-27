@@ -49,7 +49,7 @@ class SetIndexingEntitiesToNotBeIndexableAction implements SetIndexingEntitiesTo
         SearchCriteriaBuilderFactory      $searchCriteriaBuilderFactory,
         FilterBuilderFactory              $filterBuilderFactory,
         FilterGroupBuilderFactory         $filterGroupBuilderFactory,
-        AthosCommerceLogger                   $logger
+        AthosCommerceLogger               $logger
     )
     {
         $this->searchCriteriaBuilderFactory = $searchCriteriaBuilderFactory;
@@ -88,6 +88,13 @@ class SetIndexingEntitiesToNotBeIndexableAction implements SetIndexingEntitiesTo
                 ],
             );
         }
+        $this->logger->debug(
+            'Indexing Entities Set Indexable to False',
+            [
+                'entityIds' => $entityIds,
+                'indexingEntityIds' => $indexingEntityIds
+            ],
+        );
         foreach ($indexingEntities as $indexingEntity) {
             if (method_exists($indexingEntity, 'clearInstance')) {
                 $indexingEntity->clearInstance();

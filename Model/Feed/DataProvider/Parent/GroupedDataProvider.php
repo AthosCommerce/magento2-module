@@ -49,13 +49,14 @@ class GroupedDataProvider implements DataProviderInterface
      * @param ProductTypeIdInterface $productTypeId
      */
     public function __construct(
-        MetadataPool $metadataPool,
-        RelationsProvider $relationsProvider,
-        ParentDataContextManager $parentProductContextManager,
-        Visibility $visibility,
+        MetadataPool              $metadataPool,
+        RelationsProvider         $relationsProvider,
+        ParentDataContextManager  $parentProductContextManager,
+        Visibility                $visibility,
         ProductExclusionInterface $productExclusion,
-        ProductTypeIdInterface $productTypeId
-    ) {
+        ProductTypeIdInterface    $productTypeId
+    )
+    {
         $this->metadataPool = $metadataPool;
         $this->relationsProvider = $relationsProvider;
         $this->parentProductContextManager = $parentProductContextManager;
@@ -72,78 +73,95 @@ class GroupedDataProvider implements DataProviderInterface
      * @throws \Exception
      */
     public function getData(
-        array $products,
+        array                      $products,
         FeedSpecificationInterface $feedSpecification
-    ): array {
-        $childTypeIdsList = $this->productTypeId->getChildTypeIdsList();
-        $childIds = $this->getChildIds($products, $childTypeIdsList);
-        if (empty($childIds)) {
-            return $products;
-        }
-        $parentChildIds = $this->relationsProvider->getGroupRelationIds($childIds);
-        if (!$parentChildIds) {
+    ): array
+    {
+        $childTypeIds = $this->productTypeId->getChildTypeIdsList();
+        $childEntityIds = $this->getChildIds($products, $childTypeIds);
+
+        if (!$childEntityIds) {
             return $products;
         }
 
-        //TODO:: Check needed against the each field.
+        $relations = $this->relationsProvider->getGroupRelationIds($childEntityIds);
+        if (!$relations) {
+            return $products;
+        }
+
         $ignoredFields = $feedSpecification->getIgnoreFields();
+        $linkField = $this->getLinkField();
+
+        $childEntityToLink = [];
+        foreach ($products as $product) {
+            $productModel = $product['product_model'] ?? null;
+            if ($productModel) {
+                $childEntityToLink[(int)$productModel->getId()] =
+                    (int)$productModel->getData($linkField);
+            }
+        }
 
         $childToParent = [];
-        $allParentIds = [];
-
-        foreach ($parentChildIds as $parentChildRow) {
-            if (!isset($parentChildRow['product_id'], $parentChildRow['parent_id'])) {
+        foreach ($relations as $row) {
+            if (!isset($row['product_id'], $row['parent_id'])) {
                 continue;
             }
-            $childId = (int)$parentChildRow['product_id'];
-            $parentId = (int)$parentChildRow['parent_id'];
 
-            $childToParent[$childId][] = $parentId;
-            $allParentIds[] = $parentId;
+            $childEntityId = (int)$row['product_id'];
+            $childLinkId = $childEntityToLink[$childEntityId] ?? null;
+
+            if (!$childLinkId) {
+                continue;
+            }
+
+            $childToParent[$childLinkId][(int)$row['parent_id']] = true;
         }
 
-        $linkField = $this->getLinkField();
         $finalProducts = [];
-        foreach ($products as $productIndex => &$product) {
-            /** @var Product $productModel */
+
+        foreach ($products as $product) {
             $productModel = $product['product_model'] ?? null;
             if (!$productModel) {
                 continue;
             }
-            $childEntityId = (int)$productModel->getData($linkField);
-            $parentIds = $childToParent[$childEntityId] ?? [];
-            if (empty($parentIds)) {
+
+            $childLinkId = (int)$productModel->getData($linkField);
+            $parentLinkIds = array_keys($childToParent[$childLinkId] ?? []);
+
+            if (!$parentLinkIds) {
                 $finalProducts[] = $product;
                 continue;
             }
 
-            $parent = null;
-            foreach ($parentIds as $parentId) {
-                $parent = $this->parentProductContextManager->getParentsDataByProductId(
-                    (int)$parentId,
-                );
+            foreach ($parentLinkIds as $parentId) {
+                $parent = $this->parentProductContextManager
+                    ->getParentsDataByProductId((int)$parentId);
+
                 if (!$parent) {
                     continue;
                 }
-                $shouldExclude = $this->productExclusion->shouldExclude($productModel, $parent);
-                if ($shouldExclude) {
-                    unset($products[$productIndex]);
+
+                if ($this->productExclusion->shouldExclude(
+                    $feedSpecification,
+                    $productModel,
+                    $parent
+                )) {
+                    continue;
                 }
+
                 $childClone = $product;
 
-                if (in_array(
-                    $productModel->getTypeId(),
-                    $childTypeIdsList,
-                    true
-                )) {
-                    //Required, so not part of ignoredFields
-                    //$childClone['parent_id'] = $parent->getDataUsingMethod($this->getLinkField());
+                if (in_array($productModel->getTypeId(), $childTypeIds, true)) {
 
-                    if (!in_array('parent_name', $ignoredFields, true)
+                    if (!in_array(['__parent_id', 'parent_id'], $ignoredFields, true)) {
+                        $childClone['__parent_id'] = $parent->getDataUsingMethod($this->getLinkField());
+                    }
+
+                    if (!in_array(['__parent_title', 'parent_title'], $ignoredFields, true)
                         && method_exists($parent, 'getName')
                         && $parent->getName()
                     ) {
-                        $childClone['parent_name'] = $parent->getName();
+                        $childClone['__parent_title'] = $parent->getName();
                     }
 
                     if (!in_array('parent_status', $ignoredFields, true)
@@ -166,42 +184,52 @@ class GroupedDataProvider implements DataProviderInterface
                     ) {
                         $childClone['parent_url'] = $parent->getProductUrl();
                     }
-                    if (method_exists($parent, 'getVisibility') && $parent->getVisibility()) {
-                        $childClone['parent_visibility'] = $this->visibility->getVisibilityTextValue(
-                            $parent->getVisibility()
-                        );
+
+                    if (!in_array('parent_visibility', $ignoredFields, true)
+                        && method_exists($parent, 'getVisibility')
+                        && $parent->getVisibility()
+                    ) {
+                        $childClone['parent_visibility'] =
+                            $this->visibility->getVisibilityTextValue(
+                                $parent->getVisibility()
+                            );
                     }
-                    if (method_exists($parent, 'getImage') && $parent->getImage()) {
-                        $childClone['parent_image'] = $parent->getImage();
+
+                    $parentImage = '';
+                    if (!in_array(['parent_image', '__parent_image'], $ignoredFields, true)) {
+                        $image = $parent->getImage()
+                            ?: $parent->getSmallImage()
+                                ?: $parent->getThumbnail();
+                        if ($image && $image !== 'no_selection') {
+                            $parentImage = $parent->getMediaConfig()->getMediaUrl($image);
+                        }
+                        $childClone['__parent_image'] = $parentImage;
                     }
                 }
+
                 $finalProducts[] = $childClone;
             }
         }
-        unset($childToParent);
 
         return array_values($finalProducts);
     }
 
     /**
      * @param array $products
-     *
+     * @param array $childTypeIdsList
      * @return array
      */
     public function getChildIds(array $products, array $childTypeIdsList): array
     {
         $childIds = [];
         foreach ($products as $product) {
-            /** @var Product $productModel */
             $productModel = $product['product_model'] ?? null;
-            if (!$productModel) {
-                continue;
-            }
-            if (in_array($productModel->getTypeId(), $childTypeIdsList, true)) {
+            if ($productModel
+                && in_array($productModel->getTypeId(), $childTypeIdsList, true)
+            ) {
                 $childIds[] = $productModel->getId();
             }
         }
-
         return array_filter($childIds);
     }
 
@@ -211,22 +239,24 @@ class GroupedDataProvider implements DataProviderInterface
      */
     public function getLinkField(): string
     {
-        return $this->metadataPool->getMetadata(ProductInterface::class)->getLinkField();
+        return $this->metadataPool
+            ->getMetadata(ProductInterface::class)
+            ->getLinkField();
     }
 
     /**
-     * @return void
+     * Reset internal state after feed generation is complete
      */
     public function reset(): void
     {
-        //do nothing
+
     }
 
     /**
-     * @return void
+     * Reset internal state after fetching items batch
      */
     public function resetAfterFetchItems(): void
     {
-        // do nothing
+
     }
 }

@@ -16,21 +16,22 @@
 
 declare(strict_types=1);
 
-namespace AthosCommerce\Feed\Test\Integration\Model\Feed\DataProvider;
+namespace AthosCommerce\Feed\Test\Integration\Model\Feed\DataProvider\Parent;
 
-use Magento\Catalog\Model\ResourceModel\Product\Collection;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\GroupedDataProvider;
+use AthosCommerce\Feed\Model\Feed\ContextManagerInterface;
+use AthosCommerce\Feed\Model\Feed\SpecificationBuilderInterface;
+use AthosCommerce\Feed\Test\Integration\Model\Feed\DataProvider\GetProducts;
+use Magento\Catalog\Model\Product;
 use Magento\TestFramework\Helper\Bootstrap;
 use PHPUnit\Framework\TestCase;
-use AthosCommerce\Feed\Model\Feed\ContextManagerInterface;
-use AthosCommerce\Feed\Model\Feed\DataProvider\GroupedProductsProvider;
-use AthosCommerce\Feed\Model\Feed\SpecificationBuilderInterface;
 
 /**
  *
  * @magentoDbIsolation enabled
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class GroupedProductsProviderTest extends TestCase
+class GroupedDataProviderTest extends TestCase
 {
     /**
      * @var \Magento\Framework\ObjectManagerInterface
@@ -45,29 +46,48 @@ class GroupedProductsProviderTest extends TestCase
      */
     private $getProducts;
     /**
-     * @var GroupedProductsProvider
+     * @var GroupedDataProvider
      */
-    private $groupedProductsProvider;
+    private $groupedDataProvider;
     /**
      * @var ContextManagerInterface
      */
     private $contextManager;
-    /**
-     * @var AssertChildProducts
-     */
-    private $assertChildProducts;
 
+    /**
+     * @return void
+     */
     protected function setUp(): void
     {
         $this->objectManager = Bootstrap::getObjectManager();
         $this->specificationBuilder = $this->objectManager->get(SpecificationBuilderInterface::class);
         $this->getProducts = $this->objectManager->get(GetProducts::class);
-        $this->groupedProductsProvider = $this->objectManager->get(GroupedProductsProvider::class);
+        $this->groupedDataProvider = $this->objectManager->get(GroupedDataProvider::class);
         $this->contextManager = $this->objectManager->get(ContextManagerInterface::class);
-        $this->assertChildProducts = $this->objectManager->get(AssertChildProducts::class);
-        $this->markTestSkipped('All tests in this class are temporarily disabled.');
         parent::setUp();
     }
+
+    /**
+     * @magentoAppIsolation enabled
+     * @magentoDbIsolation disabled
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/grouped/grouped_products_nvi.php
+     *
+     * @throws \Exception
+     */
+    public function testGetDataWithNotVisible(): void
+    {
+        $specification = $this->specificationBuilder->build([]);
+        $products = $this->getProducts->get($specification);
+        $this->assertNotEmpty($products);
+        $data = $this->groupedDataProvider->getData(
+            $products,
+            $specification
+        );
+        $this->assertEmpty($data);
+
+        $this->groupedDataProvider->reset();
+    }
+
     /**
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
@@ -76,11 +96,11 @@ class GroupedProductsProviderTest extends TestCase
      *
      * @throws \Exception
      */
-    public function testGetData() : void
+    public function testGetData(): void
     {
         $specification = $this->specificationBuilder->build(['includeChildPrices' => true]);
         $products = $this->getProducts->get($specification);
-        $data = $this->groupedProductsProvider->getData($products, $specification);
+        $data = $this->groupedDataProvider->getData($products, $specification);
         $config = [
             'products' => [
                 'athoscommerce_grouped_test_grouped_1' => [
@@ -97,8 +117,8 @@ class GroupedProductsProviderTest extends TestCase
             'required_attributes' => ['child_sku', 'child_sku', 'child_final_price']
         ];
 
-        $this->assertChildProducts->assertChildProducts($data, $config);
-        $this->groupedProductsProvider->reset();
+        $this->assertChildProducts($data, $config);
+        $this->groupedDataProvider->reset();
     }
 
     /**
@@ -110,14 +130,14 @@ class GroupedProductsProviderTest extends TestCase
      *
      * @throws \Exception
      */
-    public function testGetDataWithAdditionalAttributes() : void
+    public function testGetDataWithAdditionalAttributes(): void
     {
         $specification = $this->specificationBuilder->build([
             'includeChildPrices' => true,
             'childFields' => ['boolean_attribute', 'decimal_attribute']
         ]);
         $products = $this->getProducts->get($specification);
-        $data = $this->groupedProductsProvider->getData($products, $specification);
+        $data = $this->groupedDataProvider->getData($products, $specification);
         $config = [
             'products' => [
                 'athoscommerce_grouped_test_grouped_1' => [
@@ -143,8 +163,8 @@ class GroupedProductsProviderTest extends TestCase
             'additional_attributes' => ['boolean_attribute', 'decimal_attribute']
         ];
 
-        $this->assertChildProducts->assertChildProducts($data, $config);
-        $this->groupedProductsProvider->reset();
+        $this->assertChildProducts($data, $config);
+        $this->groupedDataProvider->reset();
     }
 
     /**
@@ -154,11 +174,11 @@ class GroupedProductsProviderTest extends TestCase
      *
      * @throws \Exception
      */
-    public function testGetDataWithMultistoreValues() : void
+    public function testGetDataWithMultistoreValues(): void
     {
         $specification = $this->specificationBuilder->build(['includeChildPrices' => true,]);
         $products = $this->getProducts->get($specification);
-        $data = $this->groupedProductsProvider->getData($products, $specification);
+        $data = $this->groupedDataProvider->getData($products, $specification);
         $config = [
             'products' => [
                 'athoscommerce_grouped_test_grouped_1' => [
@@ -175,8 +195,8 @@ class GroupedProductsProviderTest extends TestCase
             'required_attributes' => ['child_sku', 'child_name', 'child_final_price']
         ];
 
-        $this->assertChildProducts->assertChildProducts($data, $config);
-        $this->groupedProductsProvider->reset();
+        $this->assertChildProducts($data, $config);
+        $this->groupedDataProvider->reset();
     }
 
     /**
@@ -186,11 +206,11 @@ class GroupedProductsProviderTest extends TestCase
      *
      * @throws \Exception
      */
-    public function testGetDataWithDisabledSimples() : void
+    public function testGetDataWithDisabledSimples(): void
     {
         $specification = $this->specificationBuilder->build([]);
         $products = $this->getProducts->get($specification);
-        $data = $this->groupedProductsProvider->getData($products, $specification);
+        $data = $this->groupedDataProvider->getData($products, $specification);
         foreach ($data as $product) {
             $this->assertArrayNotHasKey('child_sku', $product);
             $this->assertArrayNotHasKey('child_name', $product);
@@ -205,12 +225,108 @@ class GroupedProductsProviderTest extends TestCase
      *
      * @throws \Exception
      */
-    public function testReset() : void
+    public function testReset(): void
     {
         $specification = $this->specificationBuilder->build([]);
         $products = $this->getProducts->get($specification);
-        $this->groupedProductsProvider->getData($products, $specification);
-        $this->groupedProductsProvider->reset();
+        $this->groupedDataProvider->getData($products, $specification);
+        $this->groupedDataProvider->reset();
         $this->assertTrue(true);
+    }
+
+    /**
+     * @param array $products
+     * @param array $config
+     */
+    private function assertChildProducts(array $products, array $config): void
+    {
+        $productsConfig = $config['products'] ?? [];
+        $requiredAttributes = $config['required_attributes'] ?? [];
+        $additionalAttributes = $config['additional_attributes'] ?? [];
+        $restrictedAttributes = $config['restricted_attributes'] ?? [];
+        foreach ($products as $product) {
+            /** @var Product $productModel */
+            $productModel = $product['product_model'] ?? null;
+            if (!$productModel) {
+                continue;
+            }
+
+            $sku = $productModel->getSku();
+            // its simple product
+            if (!empty($productsConfig) && !isset($productsConfig[$sku])) {
+                // check that simple product doesnt have any configurable product related keys
+                $this->assertAttributesNotExist($product, $requiredAttributes);
+            } else {
+                $this->assertAttributesExist($product, $requiredAttributes);
+                $this->assertAttributesExist($product, $additionalAttributes);
+                $this->assertAttributesNotExist($product, $restrictedAttributes);
+
+                $childCount = $productsConfig[$sku]['child_count'] ?? null;
+                $skuPrefix = $productsConfig[$sku]['sku_prefix'] ?? null;
+                $namePrefix = $productsConfig[$sku]['name_prefix'] ?? null;
+                $valueMap = $productsConfig[$sku]['value_map'] ?? null;
+                if (!is_null($childCount)) {
+                    $this->assertCount((int)$childCount, $product['child_sku'] ?? []);
+                }
+
+                if (!is_null($skuPrefix)) {
+                    $skus = $product['child_sku'] ?? [];
+                    foreach ($skus as $childSku) {
+                        $this->assertTrue(strpos($childSku, $skuPrefix) === 0);
+                    }
+                }
+
+                if (!is_null($namePrefix)) {
+                    $names = $product['child_name'] ?? [];
+                    foreach ($names as $name) {
+                        $this->assertTrue(strpos($name, $namePrefix) === 0);
+                    }
+                }
+
+                if (!is_null($valueMap)) {
+                    $this->assertValueMap($product, $valueMap);
+                }
+            }
+        }
+    }
+
+    /**
+     * @param array $data
+     * @param array $valueMap
+     */
+    private function assertValueMap(array $data, array $valueMap): void
+    {
+        foreach ($valueMap as $field => $value) {
+            $fieldValues = $data[$field] ?? [];
+            foreach ($fieldValues as $fieldValue) {
+                $this->assertTrue(in_array($fieldValue, $value));
+                $key = array_search($fieldValue, $value);
+                unset($value[$key]);
+            }
+
+            $this->assertEmpty($value);
+        }
+    }
+
+    /**
+     * @param array $data
+     * @param array $attributes
+     */
+    private function assertAttributesExist(array $data, array $attributes): void
+    {
+        foreach ($attributes as $attribute) {
+            $this->assertArrayHasKey($attribute, $data);
+        }
+    }
+
+    /**
+     * @param array $data
+     * @param array $attributes
+     */
+    private function assertAttributesNotExist(array $data, array $attributes): void
+    {
+        foreach ($attributes as $attribute) {
+            $this->assertArrayNotHasKey($attribute, $data);
+        }
     }
 }

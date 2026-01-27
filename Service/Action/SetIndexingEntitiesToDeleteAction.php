@@ -64,11 +64,12 @@ class SetIndexingEntitiesToDeleteAction implements SetIndexingEntitiesToDeleteAc
      */
     public function __construct(
         IndexingEntityRepositoryInterface $indexingEntityRepository,
-        SearchCriteriaBuilderFactory $searchCriteriaBuilderFactory,
+        SearchCriteriaBuilderFactory      $searchCriteriaBuilderFactory,
         FilterBuilderFactory              $filterBuilderFactory,
         FilterGroupBuilderFactory         $filterGroupBuilderFactory,
-        AthosCommerceLogger $logger
-    ) {
+        AthosCommerceLogger               $logger
+    )
+    {
         $this->searchCriteriaBuilderFactory = $searchCriteriaBuilderFactory;
         $this->indexingEntityRepository = $indexingEntityRepository;
         $this->filterBuilderFactory = $filterBuilderFactory;
@@ -106,6 +107,13 @@ class SetIndexingEntitiesToDeleteAction implements SetIndexingEntitiesToDeleteAc
                 ],
             );
         }
+        $this->logger->debug(
+            'Indexing Entities Set to Delete',
+            [
+                'entityIds' => $entityIds,
+                'indexingEntityIds' => $indexingEntityIds
+            ],
+        );
         foreach ($indexingEntities as $indexingEntity) {
             if (method_exists($indexingEntity, 'clearInstance')) {
                 $indexingEntity->clearInstance();
