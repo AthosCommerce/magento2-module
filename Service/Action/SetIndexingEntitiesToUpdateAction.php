@@ -66,7 +66,7 @@ class SetIndexingEntitiesToUpdateAction implements SetIndexingEntitiesToUpdateAc
         SearchCriteriaBuilderFactory      $searchCriteriaBuilderFactory,
         FilterBuilderFactory              $filterBuilderFactory,
         FilterGroupBuilderFactory         $filterGroupBuilderFactory,
-        AthosCommerceLogger                   $logger
+        AthosCommerceLogger               $logger
     )
     {
         $this->searchCriteriaBuilderFactory = $searchCriteriaBuilderFactory;
@@ -86,8 +86,10 @@ class SetIndexingEntitiesToUpdateAction implements SetIndexingEntitiesToUpdateAc
         $indexingEntities = $this->getIndexingEntities(iterator_to_array($entityIds));
         try {
             $indexingEntityIds = [];
+            $nonIndexableEntityIds = [];
             foreach ($indexingEntities as $indexingEntity) {
                 if (!$indexingEntity->getIsIndexable() && !$forceIndexable) {
+                    $nonIndexableEntityIds[] = $indexingEntity->getId();
                     continue;
                 }
                 $indexingEntityIds[] = $indexingEntity->getId();
@@ -103,10 +105,18 @@ class SetIndexingEntitiesToUpdateAction implements SetIndexingEntitiesToUpdateAc
                 [
                     'method' => __METHOD__,
                     'exception' => $exception->getMessage(),
-                    'indexingEntityIds' => $indexingEntityIds,
+                    'indexingEntityIds' => $indexingEntityIds
                 ],
             );
         }
+        $this->logger->debug(
+            'Indexing Entities Set to Update',
+            [
+                'entityIds' => $entityIds,
+                'indexingEntityIds' => $indexingEntityIds,
+                'nonIndexableEntityIds' => $nonIndexableEntityIds
+            ],
+        );
         foreach ($indexingEntities as $indexingEntity) {
             if (method_exists($indexingEntity, 'clearInstance')) {
                 $indexingEntity->clearInstance();

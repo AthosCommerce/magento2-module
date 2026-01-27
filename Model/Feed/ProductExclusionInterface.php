@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Model\Feed;
 
+use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use Magento\Catalog\Api\Data\ProductInterface;
 
 interface ProductExclusionInterface
@@ -26,13 +27,15 @@ interface ProductExclusionInterface
      * Determines whether a product should be excluded
      * based on its attributes, or its parent's attributes.
      *
+     * @param FeedSpecificationInterface $feedSpecification
      * @param ProductInterface $productModel
      * @param ProductInterface|null $parent
      *
      * @return bool
      */
     public function shouldExclude(
-        ProductInterface $productModel,
-        ?ProductInterface $parent = null
+        FeedSpecificationInterface $feedSpecification,
+        ProductInterface           $productModel,
+        ?ProductInterface          $parent = null
     ): bool;
 }
