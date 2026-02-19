@@ -495,6 +495,23 @@ class ConfigItem extends AbstractExtensibleObject implements ConfigItemInterface
     }
 
     /**
+     * @return bool|null
+     */
+    public function getIncludeAllVariants(): ?bool
+    {
+        return $this->_get(FeedSpecificationInterface::INCLUDE_ALL_VARIANTS);
+    }
+
+    /**
+     * @param bool|null $value
+     * @return ConfigItemInterface
+     */
+    public function setIncludeAllVariants(?bool $value): ConfigItemInterface
+    {
+        return $this->setData(FeedSpecificationInterface::INCLUDE_ALL_VARIANTS, $value);
+    }
+
+    /**
      * @return array
      */
     public function toArray(array $keys = []): array
@@ -528,6 +545,7 @@ class ConfigItem extends AbstractExtensibleObject implements ConfigItemInterface
             'swatchOptionSourceFieldNames' => $this->getSwatchOptionSourceFieldNames(),
             'excludedProductIds' => $this->getExcludedProductIds(),
             'variantAdditionalFields' => $this->getVariantAdditionalFields(),
+            'includeAllVariants' => $this->getIncludeAllVariants(),
         ];
     }
 }

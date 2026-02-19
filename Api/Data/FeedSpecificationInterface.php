@@ -109,6 +109,11 @@ interface FeedSpecificationInterface extends ExtensibleDataInterface
     public const LIVE_INDEXING_IGNORE_DATA_PROVIDERS = ['__origin_timestamp'];
 
     public const EXCLUDE_PRODUCT_IDS = 'exclude_product_ids';
+
+    /**
+     *
+     */
+    public const INCLUDE_ALL_VARIANTS = false;
     /**
      * @return string|null
      */
@@ -354,4 +359,15 @@ interface FeedSpecificationInterface extends ExtensibleDataInterface
      * @return FeedSpecificationInterface
      */
     public function setExcludedProductIds(array $productIds) : self;
+
+    /**
+     * @return bool
+     */
+    public function getIncludeAllVariants() : bool;
+
+    /**
+     * @param bool $value
+     * @return FeedSpecificationInterface
+     */
+    public function setIncludeAllVariants(bool $value) : self;
 }
