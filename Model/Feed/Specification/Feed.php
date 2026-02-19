@@ -426,4 +426,21 @@ class Feed extends AbstractExtensibleObject implements FeedSpecificationInterfac
     {
         return $this->setData(self::EXCLUDE_PRODUCT_IDS, $productIds);
     }
+
+    /**
+     * @return bool
+     */
+    public function getIncludeAllVariants(): bool
+    {
+        return $this->_get(self::INCLUDE_ALL_VARIANTS);
+    }
+
+    /**
+     * @param bool $value
+     * @return FeedSpecificationInterface
+     */
+    public function setIncludeAllVariants(bool $value): FeedSpecificationInterface
+    {
+        return $this->setData(self::INCLUDE_ALL_VARIANTS, $value);
+    }
 }

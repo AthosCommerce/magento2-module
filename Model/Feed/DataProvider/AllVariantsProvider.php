@@ -70,10 +70,10 @@ class AllVariantsProvider implements DataProviderInterface
      */
     public function getData(array $products, FeedSpecificationInterface $feedSpecification): array
     {
-        $this->logger->info('Returns AllVariantsProvider JSON for configurable product', [
-            'method' => __METHOD__,
-            'format' => $feedSpecification->getFormat(),
-        ]);
+        $ignoredFields = $feedSpecification->getIgnoreFields();
+        if (in_array('__all_variants', $ignoredFields) || !$feedSpecification->getIncludeAllVariants()) {
+            return $products;
+        }
 
         foreach ($products as &$product) {
             /** @var \Magento\Catalog\Model\Product $productModel */

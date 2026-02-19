@@ -317,4 +317,15 @@ interface ConfigItemInterface
      * @return ConfigItemInterface
      */
     public function setEnableDebugLog(?bool $value): ConfigItemInterface;
+
+    /**
+     * @return bool
+     */
+    public function getIncludeAllVariants(): ?bool;
+
+    /**
+     * @param bool|null $value
+     * @return ConfigItemInterface
+     */
+    public function setIncludeAllVariants(?bool $value): ConfigItemInterface;
 }
