@@ -233,6 +233,7 @@ class ConfigurableDataProvider implements DataProviderInterface
                             $parent->getVisibility()
                         );
                     }
+
                     $parentImage = '';
                     if (!in_array(['parent_image', '__parent_image'], $ignoredFields, true)) {
                         $image = $parent->getImage()

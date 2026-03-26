@@ -56,8 +56,13 @@ class ProductExclusion implements ProductExclusionInterface
             return false;
         }
 
-        if (($productModel->getVisibility() == 1 && $parent->getVisibility() == 1)
-            || ($parent->getStatus() == 0 && $productModel->getVisibility() == 1)
+
+        /**
+         * If product and parent both has NVI or
+         * parent is disabled and product has NVI
+         */
+        if (((int)$parent->getVisibility() === 1 && (int)$productModel->getVisibility() === 1)
+            || ($parent->getStatus() == 0 && (int)$productModel->getVisibility() === 1)
         ) {
             $this->logger->debug(
                 'Product Exclusion',

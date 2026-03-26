@@ -149,7 +149,13 @@ class AttributesProvider implements DataProviderInterface
             $attribute = $this->attributes[$attributeKey];
 
             $parentProduct = $this->parentRelationsContext->getParentsByChildId($productId);
-            if ($parentProduct instanceof Product) {
+            /*
+             * If Parent has visibility set to NVI it won't consider for attribute value fallback,
+             * as the parent product won't be visible in the feed.
+             */
+            if ($parentProduct instanceof Product
+                && (int)$parentProduct->getVisibility() !== 1
+            ) {
                 $parentValue = $parentProduct->getData($attributeKey);
                 //TODO: check for true/false or 0/1
                 if (!in_array($attributeKey, $this->getPriceRelatedAttributes())

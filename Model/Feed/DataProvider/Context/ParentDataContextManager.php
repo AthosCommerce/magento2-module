@@ -81,7 +81,7 @@ class ParentDataContextManager
             $this->loadedParentIds[$storeId][] = $parentId;
         }
 
-        return $this->productData[$storeId];
+        return $this->productData[$storeId] ?? [];
     }
 
     /**

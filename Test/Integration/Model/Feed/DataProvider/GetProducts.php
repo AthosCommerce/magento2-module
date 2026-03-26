@@ -69,4 +69,20 @@ class GetProducts
 
         return $result;
     }
+
+    /**
+     * @param FeedSpecificationInterface $specification
+     * @return array
+     */
+    public function getCollectionItems(FeedSpecificationInterface $specification) : array
+    {
+        $collection = $this->collectionProvider->getCollection($specification);
+        /** @var ProcessorPool $processorPool */
+        $processorPool = Bootstrap::getObjectManager()->get('AthosCommerceFeedGenerateFeedAfterLoadCollectionProcessorPool');
+        foreach ($processorPool->getAll() as $processor) {
+            $processor->processAfterLoad($collection, $specification);
+        }
+
+        return $collection->getItems();
+    }
 }

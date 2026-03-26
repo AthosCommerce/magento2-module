@@ -21,6 +21,7 @@ namespace AthosCommerce\Feed\Test\Integration\Model\Feed\DataProvider\Parent;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\ConfigurableDataProvider;
 use AthosCommerce\Feed\Model\Feed\ContextManagerInterface;
 use AthosCommerce\Feed\Model\Feed\SpecificationBuilderInterface;
+use AthosCommerce\Feed\Model\ItemsGenerator;
 use AthosCommerce\Feed\Test\Integration\Model\Feed\DataProvider\GetProducts;
 use Magento\Catalog\Model\Product;
 use Magento\TestFramework\Helper\Bootstrap;
@@ -53,6 +54,10 @@ class ConfigurableDataProviderTest extends TestCase
      * @var ContextManagerInterface
      */
     private $contextManager;
+    /**
+     * @var ItemsGenerator
+     */
+    private $itemsGenerator;
 
     /**
      * @return void
@@ -64,6 +69,7 @@ class ConfigurableDataProviderTest extends TestCase
         $this->getProducts = $this->objectManager->get(GetProducts::class);
         $this->configurableDataProvider = $this->objectManager->get(ConfigurableDataProvider::class);
         $this->contextManager = $this->objectManager->get(ContextManagerInterface::class);
+        $this->itemsGenerator = $this->objectManager->get(ItemsGenerator::class);
         parent::setUp();
     }
 
@@ -252,6 +258,43 @@ class ConfigurableDataProviderTest extends TestCase
             $this->assertArrayNotHasKey('child_sku', $product);
             $this->assertArrayNotHasKey('child_name', $product);
         }
+    }
+
+    /**
+     * @magentoAppIsolation enabled
+     * @magentoDbIsolation disabled
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable/configurable_products_not_visible_ind_child_catalog_search.php
+     *
+     * @throws \Exception
+     */
+    public function testGetDataWithParentSetToNVIAndChildSetToCatalog(): void
+    {
+        $specification = $this->specificationBuilder->build([]);
+        $this->contextManager->setContextFromSpecification($specification);
+
+        $items = $this->getProducts->getCollectionItems($specification);
+
+        $data = $this->itemsGenerator->generate(
+            $items,
+            $specification
+        );
+
+        $this->assertNotEmpty($data);
+
+        foreach ($data as $product) {
+            $this->assertArrayNotHasKey('__parent_id', $product);
+            $this->assertArrayNotHasKey('__parent_title', $product);
+            $this->assertArrayNotHasKey('parent_status', $product);
+            $this->assertArrayNotHasKey('parent_type_id', $product);
+            $this->assertArrayNotHasKey('parent_visibility', $product);
+            $this->assertEquals(
+                Visibility::VISIBILITY_IN_CATALOG,
+                $product['product_model']['visibility'],
+                'Visibility attributes should be set to Catalog.' . var_dump($product)
+            );
+        }
+
+        $this->configurableDataProvider->reset();
     }
 
     /**
