@@ -271,11 +271,11 @@ class ConfigurableDataProviderTest extends TestCase
     /**
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable/configurable_products_not_visible_ind_child_catalog_search.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable/configurable_products_not_visible_ind_child_with_any.php
      *
      * @throws \Exception
      */
-    public function testGetDataWithParentSetToNVIAndChildSetToCatalog(): void
+    public function testGetDataWithParentSetToNVIAndChildSetToAny(): void
     {
         $specification = $this->specificationBuilder->build([]);
         $this->contextManager->setContextFromSpecification($specification);

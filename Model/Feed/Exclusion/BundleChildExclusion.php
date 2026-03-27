@@ -170,13 +170,17 @@ class BundleChildExclusion implements FeedItemFilterInterface
 
         $items = $selectionsCollection->getItems();
 
-        return $invislbleChildIds = array_map(static function ($item) {
+        $invislbleChildIds = array_map(static function ($item) {
             /**
              * @var Product $item
              */
             if ($item && $item instanceof Product && $item->getVisibility() == \Magento\Catalog\Model\Product\Visibility::VISIBILITY_NOT_VISIBLE) {
                 return $item->getId();
             }
+            return null;
         }, $items);
+        return array_filter($invislbleChildIds, static function ($childId) {
+            return $childId !== null;
+        });
     }
 }

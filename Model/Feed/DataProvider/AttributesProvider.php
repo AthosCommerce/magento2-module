@@ -154,7 +154,7 @@ class AttributesProvider implements DataProviderInterface
              * as the parent product won't be visible in the feed.
              */
             if ($parentProduct instanceof Product
-                && (int)$parentProduct->getVisibility() !== 1
+                && (int)$parentProduct->getVisibility() !== \Magento\Catalog\Model\Product\Visibility::VISIBILITY_NOT_VISIBLE
             ) {
                 $parentValue = $parentProduct->getData($attributeKey);
                 //TODO: check for true/false or 0/1

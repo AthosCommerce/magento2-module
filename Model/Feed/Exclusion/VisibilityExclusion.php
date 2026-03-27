@@ -6,8 +6,6 @@ namespace AthosCommerce\Feed\Model\Feed\Exclusion;
 use AthosCommerce\Feed\Model\Feed\Filter\FeedItemFilterInterface;
 use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\Product\Visibility;
-use Magento\Catalog\Model\Product\Attribute\Source\Status;
-use AthosCommerce\Feed\Model\Feed\ProductExclusionInterface;
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface as FeedSpecification;
 
 class VisibilityExclusion implements FeedItemFilterInterface
@@ -59,7 +57,7 @@ class VisibilityExclusion implements FeedItemFilterInterface
             return false;
         }
 
-        // Excluding products that are disabled AND not visible individually
+        // Excluding products that are not visible individually for specific product types
         if ($productModel->getVisibility() == Visibility::VISIBILITY_NOT_VISIBLE &&
             in_array($productModel->getTypeId(), $this->getProductTypesToExclude(), true)
         ) {

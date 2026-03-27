@@ -8,8 +8,6 @@ use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentRelationsContext;
 use AthosCommerce\Feed\Model\Feed\Filter\FeedItemFilterInterface;
 use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\Product\Visibility;
-use Magento\Catalog\Model\Product\Attribute\Source\Status;
-use AthosCommerce\Feed\Model\Feed\ProductExclusionInterface;
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface as FeedSpecification;
 
 class ChildVisibilityExclusion implements FeedItemFilterInterface
@@ -61,6 +59,14 @@ class ChildVisibilityExclusion implements FeedItemFilterInterface
             in_array($product->getTypeId(), $this->getProductTypesToExclude(), true)
             && $this->isProductOrphan((int)$product->getId())
         ) {
+
+            $this->logger->debug(
+                sprintf(
+                    'Excluding product ID %s because it is not visible individually, has type %s and is an orphan',
+                    $product->getId(),
+                    $product->getTypeId()
+                )
+            );
 
             return true;
         }
