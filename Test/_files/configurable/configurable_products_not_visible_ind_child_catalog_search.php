@@ -61,12 +61,18 @@ $optionsFactory = $objectManager->get(Factory::class);
 $attributeValues = [];
 $associatedProductIds = [];
 $productIds = [100, 200, 300, 400, 500];
+$productVisibilityList = [
+    Visibility::VISIBILITY_IN_CATALOG,
+    Visibility::VISIBILITY_IN_SEARCH,
+    Visibility::VISIBILITY_BOTH
+];
 array_shift($firstAttributeOptions); //remove the first option which is empty
 
 foreach ($firstAttributeOptions as $option) {
     /** @var $product Product */
     $product = $productInterfaceFactory->create();
     $productId = array_shift($productIds);
+
     $product->setTypeId(Type::TYPE_SIMPLE)
         ->setAttributeSetId($attributeSetId)
         ->setWebsiteIds([$baseWebsite->getId()])
@@ -74,7 +80,7 @@ foreach ($firstAttributeOptions as $option) {
         ->setSku('athos_config_test_simple_' . $productId)
         ->setPrice($productId)
         ->setTestConfigurableFirst($option->getValue())
-        ->setVisibility(Visibility::VISIBILITY_BOTH)
+        ->setVisibility(array_rand(array_flip($productVisibilityList)))
         ->setStatus(Status::STATUS_ENABLED)
         ->setStockData([
             'use_config_manage_stock' => 1,
@@ -114,9 +120,9 @@ $product->setExtensionAttributes($extensionConfigurableAttributes);
 $product->setTypeId(Configurable::TYPE_CODE)
     ->setAttributeSetId($attributeSetId)
     ->setWebsiteIds([$baseWebsite->getId()])
-    ->setName('AthosCommerce Configurable Product Test Not Visible Individually Child Catalog Search')
-    ->setSku('athos_config_test_nvi_configurable_child_catalog_search')
-    ->setVisibility(Visibility::VISIBILITY_NOT_VISIBLE)
+    ->setName('AthosCommerce Configurable Product Test Not Visible Individually, Child Except NVI')
+    ->setSku('athos_config_test_nvi_configurable_child_except_nvi')
+    ->setVisibility(Visibility::VISIBILITY_NOT_VISIBLE) //Parent set to NVI
     ->setStatus(Status::STATUS_ENABLED)
     ->setStockData([
         'use_config_manage_stock' => 1,

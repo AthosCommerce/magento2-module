@@ -300,6 +300,24 @@
         </arguments>
     </type>
 
+    <type name="AthosCommerce\Feed\Model\Feed\Filter\FeedItemFilterPool">
+        <arguments>
+            <argument name="filters" xsi:type="array">
+
+                <item name="visibility" xsi:type="object">
+                    AthosCommerce\Feed\Model\Feed\Exclusion\VisibilityExclusion
+                </item>
+                <item name="child_visibility" xsi:type="object">
+                    AthosCommerce\Feed\Model\Feed\Exclusion\ChildVisibilityExclusion
+                </item>
+                <item name="bundle_child" xsi:type="object">
+                    AthosCommerce\Feed\Model\Feed\Exclusion\BundleChildExclusion
+                </item>
+
+            </argument>
+        </arguments>
+    </type>
+
     <type name="AthosCommerce\Feed\Model\Task\ExecutorPool">
         <arguments>
             <argument name="executors" xsi:type="array">
