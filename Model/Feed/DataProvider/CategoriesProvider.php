@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Model\Feed\DataProvider;
 
+use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\Constant;
 use Exception;
 use Magento\Catalog\Model\Category;
 use Magento\Catalog\Model\Product;
@@ -164,6 +165,11 @@ class CategoriesProvider implements DataProviderInterface
             if (!$parentCategories) {
                 continue;
             }
+
+            if (!array_key_exists(Constant::IS_BELONG_TO_PARENT_KEY, $product)) {
+                continue;
+            }
+
             if (!in_array('parent_category_id', $ignoredFields)) {
                 $product['parent_category_id'] = $categorySourceId;
             }

@@ -6,6 +6,7 @@ namespace AthosCommerce\Feed\Model\Feed\DataProvider\Parent;
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentDataContextManager;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Option\Visibility;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\Constant;
 use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
 use AthosCommerce\Feed\Model\Feed\ProductExclusionInterface;
 use AthosCommerce\Feed\Model\Feed\ProductTypeIdInterface;
@@ -187,7 +188,7 @@ class ConfigurableDataProvider implements DataProviderInterface
     private function buildStandaloneRow(array $product): array
     {
         $standalone = $product;
-        $standalone['___standalone_product'] = true;
+        $standalone[Constant::IS_STANDALONE_PRODUCT_KEY] = true;
 
         unset(
             $standalone['__parent_id'],

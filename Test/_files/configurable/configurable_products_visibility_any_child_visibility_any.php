@@ -14,6 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+use Magento\Catalog\Api\CategoryLinkManagementInterface;
 use Magento\Catalog\Api\Data\ProductInterfaceFactory;
 use Magento\Catalog\Api\ProductAttributeRepositoryInterface;
 use Magento\Catalog\Api\ProductRepositoryInterface;
@@ -31,7 +32,7 @@ use Magento\Store\Api\WebsiteRepositoryInterface;
 use Magento\TestFramework\Helper\Bootstrap;
 
 require __DIR__ . '/configurable_attribute_first.php';
-
+require __DIR__ . '/../categories/categories.php';
 $objectManager = Bootstrap::getObjectManager();
 
 /** @var WebsiteRepositoryInterface $websiteRepository */
@@ -57,8 +58,11 @@ $attributeSetId = $installer->getAttributeSetId(Product::ENTITY, 'Default');
 /** @var Factory $optionsFactory */
 $optionsFactory = $objectManager->get(Factory::class);
 
+
+
 $attributeValues = [];
 $associatedProductIds = [];
+$associatedProductSku = [];
 $productIds = [100, 200, 300, 400];
 $productVisibilityList = [
     Visibility::VISIBILITY_IN_CATALOG,
@@ -66,6 +70,7 @@ $productVisibilityList = [
     Visibility::VISIBILITY_BOTH
 ];
 array_shift($firstAttributeOptions); //remove the first option which is empty
+$rootCategoryId = $baseWebsite->getDefaultStore()->getRootCategoryId();
 
 foreach ($firstAttributeOptions as $option) {
     /** @var $product Product */
@@ -74,7 +79,7 @@ foreach ($firstAttributeOptions as $option) {
 
     $product->setTypeId(Type::TYPE_SIMPLE)
         ->setAttributeSetId($attributeSetId)
-        ->setWebsiteIds([1])
+        ->setWebsiteIds([$baseWebsite->getId()])
         ->setName('AthosCommerce Test Configurable Option ' . $option->getLabel())
         ->setSku('athos_config_test_simple_' . $productId)
         ->setPrice($productId)
@@ -87,9 +92,12 @@ foreach ($firstAttributeOptions as $option) {
             'is_qty_decimal' => 0,
             'is_in_stock' => 1
         ])
+        ->setCategoryIds([2])
         ->setData('boolean_attribute', true)
+        ->setCategoryIds([$rootCategoryId])
         ->setData('decimal_attribute', $productId);
     $simple1 = $productRepository->save($product);
+
 
     $attributeValues[] = [
         'label' => 'test',
@@ -97,7 +105,19 @@ foreach ($firstAttributeOptions as $option) {
         'value_index' => $option->getValue(),
     ];
     $associatedProductIds[] = $simple1->getId();
+    $associatedProductSku[] = $simple1->getSku();
 }
+
+/** @var CategoryLinkManagementInterface $categoryLinkManagement */
+$categoryLinkManagement = $objectManager->get(CategoryLinkManagementInterface::class);
+
+foreach ($associatedProductSku as $productSku) {
+    $categoryLinkManagement->assignProductToCategories(
+        $productSku,
+        [1000, 1001, 1002, 1011, 1012]
+    );
+}
+
 
 /** @var $product Product */
 $product = $productInterfaceFactory->create();
@@ -116,13 +136,15 @@ $extensionConfigurableAttributes->setConfigurableProductOptions($configurableOpt
 $extensionConfigurableAttributes->setConfigurableProductLinks($associatedProductIds);
 $product->setExtensionAttributes($extensionConfigurableAttributes);
 
+
 $product->setTypeId(Configurable::TYPE_CODE)
     ->setAttributeSetId($attributeSetId)
-    ->setWebsiteIds([1])
+    ->setWebsiteIds([$baseWebsite->getId()])
     ->setName('AthosCommerce Configurable Product Test CATALOG')
     ->setSku('athos_config_test_configurable_catalog_visibility')
     ->setVisibility(Visibility::VISIBILITY_BOTH)
     ->setStatus(Status::STATUS_ENABLED)
+    ->setCategoryIds([2])
     ->setStockData([
         'use_config_manage_stock' => 1,
         'qty' => 100,
@@ -130,15 +152,8 @@ $product->setTypeId(Configurable::TYPE_CODE)
         'is_in_stock' => 1,
     ]);
 $productRepository->cleanCache();
-$productRepository->save($product);
+$configProduct = $productRepository->save($product);
 
 /** @var ChangeParentStockStatus $stockProcessor */
 $stockProcessor = $objectManager->get(ChangeParentStockStatus::class);
 $stockProcessor->execute($associatedProductIds);
-
-/** @var \Magento\Framework\Indexer\IndexerRegistry $indexerRegistry */
-$indexerRegistry = $objectManager->get(\Magento\Framework\Indexer\IndexerRegistry::class);
-//$indexerRegistry->get('catalog_product_price')->reindexAll();
-//$indexerRegistry->get('catalogrule_product')->reindexAll();
-//$indexerRegistry->get('catalogrule_rule')->reindexAll();
-

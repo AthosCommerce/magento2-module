@@ -20,6 +20,7 @@ namespace AthosCommerce\Feed\Model\Feed\DataProvider;
 
 use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentRelationsContext;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\Constant;
 use Exception;
 use Magento\Catalog\Api\Data\ProductAttributeInterface;
 use Magento\Catalog\Model\Product;
@@ -155,7 +156,7 @@ class AttributesProvider implements DataProviderInterface
              */
             if ($parentProduct instanceof Product
                 && (int)$parentProduct->getVisibility() !== \Magento\Catalog\Model\Product\Visibility::VISIBILITY_NOT_VISIBLE
-                && (array_key_exists('__is_belong_to_parent', $productData) && (int)$productData['__is_belong_to_parent'] === 1)
+                && (array_key_exists(Constant::IS_BELONG_TO_PARENT_KEY, $productData) && (int)$productData[Constant::IS_BELONG_TO_PARENT_KEY] === 1)
             ) {
                 $parentValue = $parentProduct->getData($attributeKey);
                 //TODO: check for true/false or 0/1
