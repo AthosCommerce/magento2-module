@@ -49,13 +49,14 @@ class RelationsProvider
      * @param AthosCommerceLogger $logger
      */
     public function __construct(
-        ProductResourceModel $productResourceModel,
-        OptionProvider $optionProvider,
-        ResourceConnection $resourceConnection,
+        ProductResourceModel     $productResourceModel,
+        OptionProvider           $optionProvider,
+        ResourceConnection       $resourceConnection,
         ProductCollectionFactory $productCollectionFactory,
-        MetadataPool $metadataPool,
-        AthosCommerceLogger $logger
-    ) {
+        MetadataPool             $metadataPool,
+        AthosCommerceLogger      $logger
+    )
+    {
         $this->productResourceModel = $productResourceModel;
         $this->optionProvider = $optionProvider;
         $this->resourceConnection = $resourceConnection;

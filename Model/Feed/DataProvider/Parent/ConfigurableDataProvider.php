@@ -136,6 +136,7 @@ class ConfigurableDataProvider implements DataProviderInterface
 
             if ($isChildVisible) {
                 $standalone = $this->buildStandaloneRow($product);
+
                 $finalProducts[] = $standalone;
             }
 
@@ -186,6 +187,7 @@ class ConfigurableDataProvider implements DataProviderInterface
     private function buildStandaloneRow(array $product): array
     {
         $standalone = $product;
+        $standalone['___standalone_product'] = true;
 
         unset(
             $standalone['__parent_id'],
@@ -260,6 +262,8 @@ class ConfigurableDataProvider implements DataProviderInterface
             return $childClone;
         }
 
+        $childClone['__is_belong_to_parent'] = true;
+
         if (!in_array(['__parent_id', 'parent_id'], $ignoredFields, true)) {
             $childClone['__parent_id'] = $parent->getDataUsingMethod($linkField);
         }
@@ -302,6 +306,7 @@ class ConfigurableDataProvider implements DataProviderInterface
         if (!in_array(['parent_image', '__parent_image'], $ignoredFields, true)) {
             $childClone['__parent_image'] = $this->getParentImage($parent);
         }
+
 
         return $childClone;
     }

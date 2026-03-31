@@ -155,6 +155,7 @@ class AttributesProvider implements DataProviderInterface
              */
             if ($parentProduct instanceof Product
                 && (int)$parentProduct->getVisibility() !== \Magento\Catalog\Model\Product\Visibility::VISIBILITY_NOT_VISIBLE
+                && (array_key_exists('__is_belong_to_parent', $productData) && (int)$productData['__is_belong_to_parent'] === 1)
             ) {
                 $parentValue = $parentProduct->getData($attributeKey);
                 //TODO: check for true/false or 0/1

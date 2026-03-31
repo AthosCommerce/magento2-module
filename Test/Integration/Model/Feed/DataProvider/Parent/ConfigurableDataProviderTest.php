@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Test\Integration\Model\Feed\DataProvider\Parent;
 
+use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentRelationsContext;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\ConfigurableDataProvider;
 use AthosCommerce\Feed\Model\Feed\ContextManagerInterface;
 use AthosCommerce\Feed\Model\Feed\SpecificationBuilderInterface;
@@ -59,6 +60,10 @@ class ConfigurableDataProviderTest extends TestCase
      * @var ItemsGenerator
      */
     private $itemsGenerator;
+    /**
+     * @var ParentRelationsContext|mixed
+     */
+    private $parentRelationsContext;
 
     /**
      * @return void
@@ -71,6 +76,8 @@ class ConfigurableDataProviderTest extends TestCase
         $this->configurableDataProvider = $this->objectManager->get(ConfigurableDataProvider::class);
         $this->contextManager = $this->objectManager->get(ContextManagerInterface::class);
         $this->itemsGenerator = $this->objectManager->get(ItemsGenerator::class);
+        $this->parentRelationsContext = $this->objectManager->get(ParentRelationsContext::class);
+
         parent::setUp();
     }
 
@@ -302,6 +309,90 @@ class ConfigurableDataProviderTest extends TestCase
                 ]
             );
         }
+        $this->contextManager->resetContext();
+        $this->configurableDataProvider->reset();
+    }
+
+    /**
+     * @magentoAppIsolation enabled
+     * @magentoDbIsolation disabled
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable/configurable_products_visibility_any_child_visibility_any.php
+     *
+     * @throws \Exception
+     */
+    public function testGetDataWithParentSetToAnyWhenChildSetToAny(): void
+    {
+        $specification = $this->specificationBuilder->build([]);
+        $this->contextManager->setContextFromSpecification($specification);
+        $items = $this->getProducts->getCollectionItems($specification);
+
+        $data = $this->itemsGenerator->generate(
+            $items,
+            $specification
+        );
+
+        /**
+         * 4 products simple
+         * 4 products configurable'variants
+         */
+        $this->assertCount(8, $data);
+
+        $this->assertNotEmpty($data);
+
+        $standaloneProducts = [];
+        $variantProducts = [];
+
+        foreach ($data as $product) {
+            if (isset($product['__parent_id'])) {
+                $variantProducts[] = $product;
+            } else {
+                $standaloneProducts[] = $product;
+            }
+        }
+        $this->assertCount(4, $standaloneProducts, 'Should have 4 standalone simple products');
+        $this->assertCount(4, $variantProducts, 'Should have 4 configurable variant products');
+
+        foreach ($standaloneProducts as $product) {
+            $this->assertArrayNotHasKey('__parent_id', $product, 'Standalone product should not have __parent_id');
+            $this->assertArrayNotHasKey('__parent_title', $product, 'Standalone product should not have __parent_title');
+            $this->assertArrayNotHasKey('parent_status', $product, 'Standalone product should not have parent_status');
+            $this->assertArrayNotHasKey('parent_type_id', $product, 'Standalone product should not have parent_type_id');
+            $this->assertArrayNotHasKey('parent_url', $product, 'Standalone product should not have parent_url');
+            $this->assertArrayNotHasKey('parent_visibility', $product, 'Standalone product should not have parent_visibility');
+
+            $this->assertContains(
+                $product['visibility'],
+                ['Catalog, Search', 'Catalog', 'Search'],
+                'Standalone product visibility should be valid'
+            );
+
+            $this->assertStringStartsWith('AthosCommerce Test Configurable Option', $product['name']);
+            $this->assertStringStartsWith('athos_config_test_simple', $product['sku']);
+
+        }
+
+        foreach ($variantProducts as $product) {
+            $this->assertArrayHasKey('__parent_id', $product, 'Variant should have __parent_id');
+            $this->assertArrayHasKey('__parent_title', $product, 'Variant should have __parent_title');
+            $this->assertArrayHasKey('parent_status', $product, 'Variant should have parent_status');
+            $this->assertArrayHasKey('parent_type_id', $product, 'Variant should have parent_type_id');
+            $this->assertArrayHasKey('parent_url', $product, 'Variant should have parent_url');
+            $this->assertArrayHasKey('parent_visibility', $product, 'Variant should have parent_visibility');
+
+            $this->assertStringStartsWith('AthosCommerce Configurable Product Test CATALOG', $product['__parent_title']);
+            $this->assertEquals('Enabled', $product['parent_status']);
+            $this->assertEquals('configurable', $product['parent_type_id']);
+            $this->assertEquals('Catalog, Search', $product['parent_visibility']);
+            $this->assertStringContainsString('athoscommerce-configurable-product-test-catalog', $product['parent_url']);
+
+            $this->assertContains(
+                $product['visibility'],
+                ['Catalog, Search', 'Catalog', 'Search'],
+                'Variant product visibility should be valid'
+            );
+        }
+
+
         $this->contextManager->resetContext();
         $this->configurableDataProvider->reset();
     }

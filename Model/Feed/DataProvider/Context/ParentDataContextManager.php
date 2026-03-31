@@ -19,8 +19,10 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Model\Feed\DataProvider\Context;
 
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Feed\Context\StoreContextManager;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\Collection as ParentProductCollection;
+use AthosCommerce\Feed\Service\LinkFieldResolver;
 use Magento\Catalog\Api\Data\ProductInterface;
 
 class ParentDataContextManager
@@ -37,6 +39,14 @@ class ParentDataContextManager
      * @var StoreContextManager
      */
     private $storeContextManager;
+    /**
+     * @var LinkFieldResolver
+     */
+    private $linkFieldResolver;
+    /**
+     * @var AthosCommerceLogger
+     */
+    private $logger;
     /** @var int[] */
     private $loadedParentIds = [];
 
@@ -46,10 +56,15 @@ class ParentDataContextManager
      */
     public function __construct(
         ParentProductCollection $parentProductCollection,
-        StoreContextManager $storeContextManager
-    ) {
+        StoreContextManager     $storeContextManager,
+        LinkFieldResolver       $linkFieldResolver,
+        AthosCommerceLogger     $logger
+    )
+    {
         $this->parentProductCollection = $parentProductCollection;
         $this->storeContextManager = $storeContextManager;
+        $this->linkFieldResolver = $linkFieldResolver;
+        $this->logger = $logger;
     }
 
     /**
@@ -59,9 +74,10 @@ class ParentDataContextManager
      * @return array
      */
     public function execute(
-        array $allParentIds,
+        array                      $allParentIds,
         FeedSpecificationInterface $feedSpecification
-    ): array {
+    ): array
+    {
         $storeId = $this->getCurrentStoreId();
         $loaded = $this->loadedParentIds[$storeId] ?? [];
         $loadParentIds = array_values(array_diff(array_unique($allParentIds), $loaded));
@@ -73,10 +89,11 @@ class ParentDataContextManager
             $loadParentIds,
             $feedSpecification
         );
+        $idColumnName = $this->linkFieldResolver->getLinkField();
 
         /** @var ProductInterface $parentProduct */
         foreach ($parentCollection as $parentProduct) {
-            $parentId = (int)$parentProduct->getId();
+            $parentId = (int)$parentProduct->getData($idColumnName);
             $this->productData[$storeId][$parentId] = $parentProduct;
             $this->loadedParentIds[$storeId][] = $parentId;
         }
