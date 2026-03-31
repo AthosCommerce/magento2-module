@@ -323,7 +323,10 @@ class ConfigurableDataProviderTest extends TestCase
     public function testGetDataWithParentSetToAnyWhenChildSetToAny(): void
     {
         $specification = $this->specificationBuilder->build(
-            ['include_menu_categories','include_url_hierarchy']
+            [
+                'include_menu_categories' => true,
+                'include_url_hierarchy' => true,
+            ]
         );
         $this->contextManager->setContextFromSpecification($specification);
         $items = $this->getProducts->getCollectionItems($specification);
@@ -332,7 +335,7 @@ class ConfigurableDataProviderTest extends TestCase
             $items,
             $specification
         );
-        
+
         /**
          * 4 products simple
          * 4 products configurable'variants

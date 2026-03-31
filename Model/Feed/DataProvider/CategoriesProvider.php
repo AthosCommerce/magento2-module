@@ -62,11 +62,12 @@ class CategoriesProvider implements DataProviderInterface
      * @param AthosCommerceLogger $logger
      */
     public function __construct(
-        CollectionBuilder $collectionBuilder,
+        CollectionBuilder         $collectionBuilder,
         GetCategoriesByProductIds $getCategoriesByProductIds,
-        ConfigurableType $configurableType,
-        AthosCommerceLogger $logger
-    ) {
+        ConfigurableType          $configurableType,
+        AthosCommerceLogger       $logger
+    )
+    {
         $this->collectionBuilder = $collectionBuilder;
         $this->getCategoriesByProductIds = $getCategoriesByProductIds;
         $this->configurableType = $configurableType;
@@ -81,9 +82,10 @@ class CategoriesProvider implements DataProviderInterface
      * @throws Exception
      */
     public function getData(
-        array $products,
+        array                      $products,
         FeedSpecificationInterface $feedSpecification
-    ): array {
+    ): array
+    {
         $productIds = [];
         $parentMap = []; // simpleId → parentId
 
@@ -130,36 +132,58 @@ class CategoriesProvider implements DataProviderInterface
                 ? $this->buildProductCategories($productsCategories[$categorySourceId])
                 : null;
 
+            $isProductBelongToParent = false;
+
+            if (array_key_exists(Constant::IS_BELONG_TO_PARENT_KEY, $product)
+                && (int)$product[Constant::IS_BELONG_TO_PARENT_KEY] === 1) {
+                $isProductBelongToParent = true;
+            }
+
             if (!in_array('categories', $ignoredFields)
                 && isset($productCategories['categories'])
+                && !$isProductBelongToParent
             ) {
                 $product['categories'] = $productCategories['categories'];
+            } else {
+                $product['categories'] = $parentCategories['categories'] ?? [];
             }
 
             if (!in_array('category_ids', $ignoredFields)
                 && isset($productCategories['category_ids'])
+                && !$isProductBelongToParent
             ) {
                 $product['category_ids'] = $productCategories['category_ids'];
+            } else {
+                $product['category_ids'] = $parentCategories['category_ids'] ?? [];
             }
 
             if (!in_array('category_hierarchy', $ignoredFields)
                 && isset($productCategories['category_hierarchy'])
+                && !$isProductBelongToParent
             ) {
                 $product['category_hierarchy'] = $productCategories['category_hierarchy'];
+            } else {
+                $product['category_hierarchy'] = $parentCategories['category_hierarchy'] ?? [];
             }
 
             if (!in_array('menu_hierarchy', $ignoredFields)
                 && isset($productCategories['menu_hierarchy'])
                 && $feedSpecification->getIncludeMenuCategories()
+                && !$isProductBelongToParent
             ) {
                 $product['menu_hierarchy'] = $productCategories['menu_hierarchy'];
+            } else {
+                $product['menu_hierarchy'] = $parentCategories['menu_hierarchy'] ?? [];
             }
 
             if (!in_array('url_hierarchy', $ignoredFields)
                 && isset($productCategories['url_hierarchy'])
                 && $feedSpecification->getIncludeUrlHierarchy()
+                && !$isProductBelongToParent
             ) {
                 $product['url_hierarchy'] = $productCategories['url_hierarchy'];
+            } else {
+                $product['url_hierarchy'] = $parentCategories['url_hierarchy'] ?? [];
             }
 
             if (!$parentCategories) {
@@ -270,9 +294,10 @@ class CategoriesProvider implements DataProviderInterface
      * @throws LocalizedException
      */
     private function loadCategories(
-        array $productsCategories,
+        array                      $productsCategories,
         FeedSpecificationInterface $feedSpecification
-    ): void {
+    ): void
+    {
         $productsCategoryIds = [];
         foreach ($productsCategories as $categoryList) {
             $productsCategoryIds = array_merge(
@@ -324,9 +349,10 @@ class CategoriesProvider implements DataProviderInterface
      * @return array
      */
     private function buildCategoryData(
-        Category $category,
+        Category                   $category,
         FeedSpecificationInterface $feedSpecification
-    ): array {
+    ): array
+    {
         $pathIds = $category->getPathIds();
         $hierarchySeparator = $feedSpecification->getHierarchySeparator();
         $includeUrlHierarchy = $feedSpecification->getIncludeUrlHierarchy();
