@@ -83,11 +83,6 @@ class GroupBySwatchTest extends TestCase
             ],
             'required_attributes' => ['child_sku', 'child_sku', 'child_final_price']
         ];
-        file_put_contents(
-            '/var/www/html/mage-live/ee248/var/log/log.txt',
-            print_r($data,true).PHP_EOL ,
-            FILE_APPEND | LOCK_EX
-        );
         $this->assertTrue(true);
     }
 }

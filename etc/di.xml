@@ -496,6 +496,14 @@
         </arguments>
     </type>
 
+    <type name="AthosCommerce\Feed\Model\Feed\Resolver\RowResolverPool">
+        <arguments>
+            <argument name="resolvers" xsi:type="array">
+                <item name="parent_override" xsi:type="object">AthosCommerce\Feed\Model\Feed\Resolver\ParentOverrideResolver</item>
+            </argument>
+        </arguments>
+    </type>
+
 
     <type name="AthosCommerce\Feed\Model\Metric\MetricProvider\TimerProvider" shared="false"/>
     <type name="AthosCommerce\Feed\Model\Metric\MetricProvider\FileSizeProvider" shared="false"/>

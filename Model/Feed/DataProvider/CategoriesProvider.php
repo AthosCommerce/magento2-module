@@ -139,51 +139,54 @@ class CategoriesProvider implements DataProviderInterface
                 $isProductBelongToParent = true;
             }
 
-            if (!in_array('categories', $ignoredFields)
-                && isset($productCategories['categories'])
-                && !$isProductBelongToParent
-            ) {
-                $product['categories'] = $productCategories['categories'];
-            } else {
-                $product['categories'] = $parentCategories['categories'] ?? [];
+            if (!in_array('categories', $ignoredFields) && isset($productCategories['categories'])) {
+                if (!$isProductBelongToParent) {
+                    $product['categories'] = $productCategories['categories'];
+                } else {
+                    $product['categories'] = $parentCategories['categories'] ?? [];
+                }
             }
 
             if (!in_array('category_ids', $ignoredFields)
                 && isset($productCategories['category_ids'])
-                && !$isProductBelongToParent
             ) {
-                $product['category_ids'] = $productCategories['category_ids'];
-            } else {
-                $product['category_ids'] = $parentCategories['category_ids'] ?? [];
+                if (!$isProductBelongToParent) {
+                    $product['category_ids'] = $productCategories['category_ids'];
+                } else {
+                    $product['category_ids'] = $parentCategories['category_ids'] ?? [];
+                }
             }
 
             if (!in_array('category_hierarchy', $ignoredFields)
                 && isset($productCategories['category_hierarchy'])
-                && !$isProductBelongToParent
             ) {
-                $product['category_hierarchy'] = $productCategories['category_hierarchy'];
-            } else {
-                $product['category_hierarchy'] = $parentCategories['category_hierarchy'] ?? [];
+                if (!$isProductBelongToParent) {
+                    $product['category_hierarchy'] = $productCategories['category_hierarchy'];
+                } else {
+                    $product['category_hierarchy'] = $parentCategories['category_hierarchy'] ?? [];
+                }
             }
 
             if (!in_array('menu_hierarchy', $ignoredFields)
                 && isset($productCategories['menu_hierarchy'])
                 && $feedSpecification->getIncludeMenuCategories()
-                && !$isProductBelongToParent
             ) {
-                $product['menu_hierarchy'] = $productCategories['menu_hierarchy'];
-            } else {
-                $product['menu_hierarchy'] = $parentCategories['menu_hierarchy'] ?? [];
+                if (!$isProductBelongToParent) {
+                    $product['menu_hierarchy'] = $productCategories['menu_hierarchy'];
+                } else {
+                    $product['menu_hierarchy'] = $parentCategories['menu_hierarchy'] ?? [];
+                }
             }
 
             if (!in_array('url_hierarchy', $ignoredFields)
                 && isset($productCategories['url_hierarchy'])
                 && $feedSpecification->getIncludeUrlHierarchy()
-                && !$isProductBelongToParent
             ) {
-                $product['url_hierarchy'] = $productCategories['url_hierarchy'];
-            } else {
-                $product['url_hierarchy'] = $parentCategories['url_hierarchy'] ?? [];
+                if (!$isProductBelongToParent) {
+                    $product['url_hierarchy'] = $productCategories['url_hierarchy'];
+                } else {
+                    $product['url_hierarchy'] = $parentCategories['url_hierarchy'] ?? [];
+                }
             }
 
             if (!$parentCategories) {

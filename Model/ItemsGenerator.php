@@ -24,6 +24,7 @@ use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
 use AthosCommerce\Feed\Model\Feed\DataProviderPool;
 use AthosCommerce\Feed\Model\Feed\Filter\FeedItemFilterPool;
 use AthosCommerce\Feed\Model\Feed\ProductTypeIdInterface;
+use AthosCommerce\Feed\Model\Feed\Resolver\RowResolverPool;
 use AthosCommerce\Feed\Model\Feed\SystemFieldsList;
 use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Catalog\Model\Product;
@@ -55,6 +56,10 @@ class ItemsGenerator
      * @var FeedItemFilterPool
      */
     private $feedItemFilterPool;
+    /**
+     * @var RowResolverPool
+     */
+    private $rowResolverPool;
 
     /**
      * @param DataProviderPool $dataProviderPool
@@ -63,6 +68,7 @@ class ItemsGenerator
      * @param ParentRelationsContext $parentRelationsContext
      * @param ProductTypeIdInterface $productTypeId
      * @param FeedItemFilterPool $feedItemFilterPool
+     * @param RowResolverPool $rowResolverPool
      */
     public function __construct(
         DataProviderPool       $dataProviderPool,
@@ -70,7 +76,9 @@ class ItemsGenerator
         MetadataPool           $metadataPool,
         ParentRelationsContext $parentRelationsContext,
         ProductTypeIdInterface $productTypeId,
-        FeedItemFilterPool     $feedItemFilterPool
+        FeedItemFilterPool     $feedItemFilterPool,
+        RowResolverPool        $rowResolverPool
+
     )
     {
         $this->dataProviderPool = $dataProviderPool;
@@ -79,6 +87,7 @@ class ItemsGenerator
         $this->parentRelationsContext = $parentRelationsContext;
         $this->productTypeId = $productTypeId;
         $this->feedItemFilterPool = $feedItemFilterPool;
+        $this->rowResolverPool = $rowResolverPool;
     }
 
     /**
@@ -140,6 +149,7 @@ class ItemsGenerator
             $feedSpecification
         );
 
+        $data = $this->rowResolverPool->process($data, $feedSpecification);
 
         /**
          * Apply row-level filters after all data providers have added their data,

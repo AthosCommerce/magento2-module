@@ -122,7 +122,7 @@ class ConfigurableDataProvider implements DataProviderInterface
         $finalProducts = [];
         $ignoredFields = $feedSpecification->getIgnoreFields();
 
-        foreach ($products as $product) {
+        foreach ($products as &$product) {
             $productModel = $product['product_model'] ?? null;
             if (!$productModel) {
                 continue;
@@ -177,7 +177,6 @@ class ConfigurableDataProvider implements DataProviderInterface
                 $finalProducts[] = $childClone;
             }
         }
-
         return array_values($finalProducts);
     }
 
@@ -273,6 +272,12 @@ class ConfigurableDataProvider implements DataProviderInterface
             && method_exists($parent, 'getName')
         ) {
             $childClone['__parent_title'] = $parent->getName();
+        }
+
+        if (!in_array(['__parent_sku', 'parent_sku'], $ignoredFields, true)
+            && method_exists($parent, 'getSku')
+        ) {
+            $childClone['__parent_sku'] = $parent->getSku();
         }
 
         if (!in_array('parent_status', $ignoredFields, true)

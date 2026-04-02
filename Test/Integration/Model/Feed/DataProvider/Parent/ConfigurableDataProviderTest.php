@@ -21,6 +21,7 @@ namespace AthosCommerce\Feed\Test\Integration\Model\Feed\DataProvider\Parent;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentRelationsContext;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\ConfigurableDataProvider;
 use AthosCommerce\Feed\Model\Feed\ContextManagerInterface;
+use AthosCommerce\Feed\Model\Feed\Resolver\RowResolverPool;
 use AthosCommerce\Feed\Model\Feed\SpecificationBuilderInterface;
 use AthosCommerce\Feed\Model\ItemsGenerator;
 use AthosCommerce\Feed\Test\Integration\Model\Feed\DataProvider\GetProducts;
@@ -64,6 +65,10 @@ class ConfigurableDataProviderTest extends TestCase
      * @var ParentRelationsContext|mixed
      */
     private $parentRelationsContext;
+    /**
+     * @var RowResolverPool|mixed
+     */
+    private $rowResolverPool;
 
     /**
      * @return void
@@ -77,6 +82,7 @@ class ConfigurableDataProviderTest extends TestCase
         $this->contextManager = $this->objectManager->get(ContextManagerInterface::class);
         $this->itemsGenerator = $this->objectManager->get(ItemsGenerator::class);
         $this->parentRelationsContext = $this->objectManager->get(ParentRelationsContext::class);
+        $this->rowResolverPool = $this->objectManager->get(RowResolverPool::class);
 
         parent::setUp();
     }
@@ -373,7 +379,6 @@ class ConfigurableDataProviderTest extends TestCase
 
             $this->assertStringStartsWith('AthosCommerce Test Configurable Option', $product['name']);
             $this->assertStringStartsWith('athos_config_test_simple', $product['sku']);
-
         }
 
         foreach ($variantProducts as $product) {
@@ -383,6 +388,31 @@ class ConfigurableDataProviderTest extends TestCase
             $this->assertArrayHasKey('parent_type_id', $product, 'Variant should have parent_type_id');
             $this->assertArrayHasKey('parent_url', $product, 'Variant should have parent_url');
             $this->assertArrayHasKey('parent_visibility', $product, 'Variant should have parent_visibility');
+
+            $this->assertStringStartsWith(
+                'AthosCommerce Configurable Product Test CATALOG',
+                $product['name']
+            );
+            $this->assertStringStartsWith(
+                'Catalog, Search',
+                $product['visibility']
+            );
+            $this->assertStringContainsString(
+                'athoscommerce-configurable-product-test-catalog',
+                $product['url']
+            );
+            $this->assertStringStartsWith(
+                'configurable',
+                $product['type_id']
+            );
+            $this->assertStringStartsWith(
+                'DESC: AthosCommerce Test Configurable',
+                $product['description']
+            );
+            $this->assertStringStartsWith(
+                'SHORT_DESC: AthosCommerce Test Configurable',
+                $product['short_description']
+            );
 
             $this->assertStringStartsWith('AthosCommerce Configurable Product Test CATALOG', $product['__parent_title']);
             $this->assertEquals('Enabled', $product['parent_status']);
@@ -396,7 +426,6 @@ class ConfigurableDataProviderTest extends TestCase
                 'Variant product visibility should be valid'
             );
         }
-
 
         $this->contextManager->resetContext();
         $this->configurableDataProvider->reset();

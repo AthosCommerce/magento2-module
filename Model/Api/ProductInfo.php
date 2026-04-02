@@ -134,13 +134,20 @@ class ProductInfo implements ProductInfoInterface
 
             $this->collectionProcessor->processAfterLoad($collection, $feedSpecification);
             $this->logger->info(
-                'ProductInfoAPI started fetching product info',
+                'ProductInfoAPI: started fetching product info',
                 [
                     'product_ids' => $productIds,
                     'store_id' => $storeId
                 ]
             );
             if (!$collection->getSize()) {
+                $this->logger->info(
+                    'ProductInfoAPI: Query',
+                    [
+                        'store_id' => $storeId,
+                        'query' => $collection->getSelect()->__toString()
+                    ]
+                );
                 return $response
                     ->setProductInfo([])
                     ->setMessage('No products found for the given product IDs');
@@ -154,7 +161,7 @@ class ProductInfo implements ProductInfoInterface
             $this->itemsGenerator->resetDataProvidersAfterFetchItems($feedSpecification);
             $this->collectionProcessor->processAfterFetchItems($collection, $feedSpecification);
 
-            $this->logger->debug(
+            $this->logger->info(
                 'ProductInfoAPI: ItemsData and Query',
                 [
                     'query' => $collection->getSelect()->__toString(),
