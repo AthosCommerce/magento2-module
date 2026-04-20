@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Test\Integration\Model\Feed\DataProvider;
 
+use AthosCommerce\Feed\Model\ItemsGenerator;
 use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\ResourceModel\Product\Collection;
 use Magento\Customer\Model\Group;
@@ -59,6 +60,10 @@ class PricesProviderTest extends TestCase
      * @var Json
      */
     private $json;
+    /**
+     * @var ItemsGenerator
+     */
+    private $itemsGenerator;
 
     private $defaultPriceConfig = [
         'athoscommerce_simple_1' => [
@@ -121,6 +126,7 @@ class PricesProviderTest extends TestCase
         $this->pricesProvider = $this->objectManager->get(PricesProvider::class);
         $this->contextManager = $this->objectManager->get(ContextManagerInterface::class);
         $this->json = $this->objectManager->get(Json::class);
+        $this->itemsGenerator = $this->objectManager->get(ItemsGenerator::class);
         parent::setUp();
     }
 
@@ -155,8 +161,12 @@ class PricesProviderTest extends TestCase
     public function testGetDataWithSpecialPrice(): void
     {
         $specification = $this->specificationBuilder->build([]);
-        $products = $this->getProducts->get($specification);
-        $data = $this->pricesProvider->getData($products, $specification);
+        $this->contextManager->setContextFromSpecification($specification);
+        $items = $this->getProducts->getCollectionItems($specification);
+        $data = $this->itemsGenerator->generate(
+            $items,
+            $specification
+        );
 
         $expectedConfig = [
             'athoscommerce_simple_2' => [
@@ -189,8 +199,12 @@ class PricesProviderTest extends TestCase
     public function testGetDataWithCatalogRule(): void
     {
         $specification = $this->specificationBuilder->build([]);
-        $products = $this->getProducts->get($specification);
-        $data = $this->pricesProvider->getData($products, $specification);
+        $this->contextManager->setContextFromSpecification($specification);
+        $items = $this->getProducts->getCollectionItems($specification);
+        $data = $this->itemsGenerator->generate(
+            $items,
+            $specification
+        );
         $config = [
             'athoscommerce_simple_1' => [
                 'final_price' => 3,

@@ -56,8 +56,13 @@ class ProductExclusion implements ProductExclusionInterface
             return false;
         }
 
-        if (($productModel->getVisibility() == 1 && $parent->getVisibility() == 1)
-            || ($parent->getStatus() == 0 && $productModel->getVisibility() == 1)
+
+        /**
+         * If product and parent both has NVI or
+         * parent is disabled and product has NVI
+         */
+        if (((int)$parent->getVisibility() === \Magento\Catalog\Model\Product\Visibility::VISIBILITY_NOT_VISIBLE && (int)$productModel->getVisibility() === \Magento\Catalog\Model\Product\Visibility::VISIBILITY_NOT_VISIBLE)
+            || ($parent->getStatus() == 0 && (int)$productModel->getVisibility() === \Magento\Catalog\Model\Product\Visibility::VISIBILITY_NOT_VISIBLE)
         ) {
             $this->logger->debug(
                 'Product Exclusion',

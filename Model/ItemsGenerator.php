@@ -22,7 +22,9 @@ use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentRelationsContext;
 use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
 use AthosCommerce\Feed\Model\Feed\DataProviderPool;
+use AthosCommerce\Feed\Model\Feed\Filter\FeedItemFilterPool;
 use AthosCommerce\Feed\Model\Feed\ProductTypeIdInterface;
+use AthosCommerce\Feed\Model\Feed\Resolver\RowResolverPool;
 use AthosCommerce\Feed\Model\Feed\SystemFieldsList;
 use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Catalog\Model\Product;
@@ -50,6 +52,14 @@ class ItemsGenerator
      * @var ProductTypeIdInterface
      */
     private $productTypeId;
+    /**
+     * @var FeedItemFilterPool
+     */
+    private $feedItemFilterPool;
+    /**
+     * @var RowResolverPool
+     */
+    private $rowResolverPool;
 
     /**
      * @param DataProviderPool $dataProviderPool
@@ -57,19 +67,27 @@ class ItemsGenerator
      * @param MetadataPool $metadataPool
      * @param ParentRelationsContext $parentRelationsContext
      * @param ProductTypeIdInterface $productTypeId
+     * @param FeedItemFilterPool $feedItemFilterPool
+     * @param RowResolverPool $rowResolverPool
      */
     public function __construct(
-        DataProviderPool $dataProviderPool,
-        SystemFieldsList $systemFieldsList,
-        MetadataPool $metadataPool,
+        DataProviderPool       $dataProviderPool,
+        SystemFieldsList       $systemFieldsList,
+        MetadataPool           $metadataPool,
         ParentRelationsContext $parentRelationsContext,
-        ProductTypeIdInterface $productTypeId
-    ) {
+        ProductTypeIdInterface $productTypeId,
+        FeedItemFilterPool     $feedItemFilterPool,
+        RowResolverPool        $rowResolverPool
+
+    )
+    {
         $this->dataProviderPool = $dataProviderPool;
         $this->systemFieldsList = $systemFieldsList;
         $this->metadataPool = $metadataPool;
         $this->parentRelationsContext = $parentRelationsContext;
         $this->productTypeId = $productTypeId;
+        $this->feedItemFilterPool = $feedItemFilterPool;
+        $this->rowResolverPool = $rowResolverPool;
     }
 
     /**
@@ -79,9 +97,10 @@ class ItemsGenerator
      * @return array
      */
     public function generate(
-        array $items,
+        array                      $items,
         FeedSpecificationInterface $feedSpecification
-    ): array {
+    ): array
+    {
         if (empty($items)) {
             return [];
         }
@@ -97,8 +116,18 @@ class ItemsGenerator
             $this->parentRelationsContext->buildContext($childIds, $feedSpecification);
         }
 
+        $items = $this->feedItemFilterPool->filterEntities(
+            $items,
+            $feedSpecification
+        );
+
         $data = [];
         foreach ($items as $index => $item) {
+
+            if ($this->feedItemFilterPool->shouldExcludeEntity($item, $feedSpecification)) {
+                continue;
+            }
+
             $data[$index] = [
                 'entity_id' => $item->getEntityId(),
                 'product_model' => $item,
@@ -113,6 +142,28 @@ class ItemsGenerator
         $dataProviders = $this->dataProviderPool->get($ignoreFields);
         foreach ($dataProviders as $dataProvider) {
             $data = $dataProvider->getData($data, $feedSpecification);
+        }
+
+        $data = $this->feedItemFilterPool->filterRows(
+            $data,
+            $feedSpecification
+        );
+
+        $data = $this->rowResolverPool->process($data, $feedSpecification);
+
+        /**
+         * Apply row-level filters after all data providers have added their data,
+         * so that filters can take into account all the data when deciding whether to exclude a row or not
+         */
+        foreach ($data as $index => $row) {
+            $productModel = $row['product_model'] ?? null;
+            if (!$productModel) {
+                continue;
+            }
+
+            if ($this->feedItemFilterPool->shouldExcludeRow($row, $feedSpecification)) {
+                unset($data[$index]);
+            }
         }
 
         $systemFields = $this->systemFieldsList->get();
@@ -131,7 +182,8 @@ class ItemsGenerator
      */
     public function resetDataProvidersAfterFetchItems(
         FeedSpecificationInterface $feedSpecification
-    ): void {
+    ): void
+    {
         $dataProviders = $this->getDataProviders($feedSpecification);
         foreach ($dataProviders as $dataProvider) {
             $dataProvider->resetAfterFetchItems();
@@ -143,7 +195,8 @@ class ItemsGenerator
      */
     public function resetDataProviders(
         FeedSpecificationInterface $feedSpecification
-    ): void {
+    ): void
+    {
         $dataProviders = $this->getDataProviders($feedSpecification);
         foreach ($dataProviders as $dataProvider) {
             $dataProvider->reset();
@@ -157,7 +210,8 @@ class ItemsGenerator
      */
     private function getDataProviders(
         FeedSpecificationInterface $feedSpecification
-    ): array {
+    ): array
+    {
         return $this->dataProviderPool->get(
             $feedSpecification->getIgnoreFields()
         );

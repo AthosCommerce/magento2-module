@@ -73,7 +73,7 @@ class CategoriesProviderTest extends TestCase
      *
      * @throws \Exception
      */
-    public function testGetData() : void
+    public function testGetData(): void
     {
         $specification = $this->specificationBuilder->build(['includeUrlHierarchy' => true, 'includeMenuCategories' => true]);
         $products = $this->getProducts->get($specification);
@@ -94,7 +94,7 @@ class CategoriesProviderTest extends TestCase
      *
      * @throws \Exception
      */
-    public function testGetDataWithoutMenuCategories() : void
+    public function testGetDataWithoutMenuCategories(): void
     {
         $specification = $this->specificationBuilder->build(['includeUrlHierarchy' => true]);
         $products = $this->getProducts->get($specification);
@@ -112,7 +112,7 @@ class CategoriesProviderTest extends TestCase
      *
      * @throws \Exception
      */
-    public function testGetDataWithoutUrlHierarchy() : void
+    public function testGetDataWithoutUrlHierarchy(): void
     {
         $specification = $this->specificationBuilder->build(['includeMenuCategories' => true]);
         $products = $this->getProducts->get($specification);
@@ -130,7 +130,7 @@ class CategoriesProviderTest extends TestCase
      *
      * @throws \Exception
      */
-    public function testGetDataIgnoringAllFields() : void
+    public function testGetDataIgnoringAllFields(): void
     {
         $ignoredFields = ['categories', 'category_ids', 'category_hierarchy', 'menu_hierarchy', 'url_hierarchy'];
         $specification = $this->specificationBuilder->build(
@@ -150,7 +150,7 @@ class CategoriesProviderTest extends TestCase
      *
      * @throws \Exception
      */
-    public function testGetDataWithMultistore() : void
+    public function testGetDataWithMultistore(): void
     {
         $specification = $this->specificationBuilder->build(['includeUrlHierarchy' => true, 'includeMenuCategories' => true]);
         $this->contextManager->setContextFromSpecification($specification);
@@ -184,7 +184,7 @@ class CategoriesProviderTest extends TestCase
      *
      * @throws \Exception
      */
-    public function testGetDataWithStoreSpecificCategoryChanges() : void
+    public function testGetDataWithStoreSpecificCategoryChanges(): void
     {
         $specification = $this->specificationBuilder->build(['includeUrlHierarchy' => true, 'includeMenuCategories' => true]);
         $products = $this->getProducts->get($specification);
@@ -211,7 +211,7 @@ class CategoriesProviderTest extends TestCase
      *
      * @throws \Exception
      */
-    public function testReset() : void
+    public function testReset(): void
     {
         $specification = $this->specificationBuilder->build([]);
         $products = $this->getProducts->get($specification);
@@ -231,14 +231,21 @@ class CategoriesProviderTest extends TestCase
         array $requiredFields = [],
         array $skuIdMap = [],
         array $notIncludedFields = []
-    ) : void {
+    ): void
+    {
         foreach ($items as $item) {
             foreach ($requiredFields as $field) {
-                $this->assertTrue(isset($item[$field]) && !empty($item[$field]));
+                $this->assertTrue(
+                    isset($item[$field]) && !empty($item[$field]),
+                    "Field '{$field}' is missing in item: " . print_r($item, true)
+                );
             }
 
             foreach ($notIncludedFields as $field) {
-                $this->assertTrue(!array_key_exists($field, $item));
+                $this->assertTrue(
+                    !array_key_exists($field, $item),
+                    "Field '{$field}' is present in item: " . print_r($item, true)
+                );
             }
 
             $sku = $item['product_model']->getSku();
@@ -246,7 +253,10 @@ class CategoriesProviderTest extends TestCase
             if ($categories) {
                 $categoryIds = $item['category_ids'] ?? [];
                 $check = empty(array_diff($categories, $categoryIds)) && empty(array_diff($categoryIds, $categories));
-                $this->assertTrue($check);
+                $this->assertTrue(
+                    $check,
+                    "Categories for sku '{$sku}' are not correct: " . print_r($item, true)
+                );
             }
         }
     }

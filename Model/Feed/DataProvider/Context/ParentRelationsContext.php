@@ -29,9 +29,10 @@ class ParentRelationsContext
      * @param ParentDataContextManager $parentDataContextManager
      */
     public function __construct(
-        RelationsProvider $relationsProvider,
+        RelationsProvider        $relationsProvider,
         ParentDataContextManager $parentDataContextManager
-    ) {
+    )
+    {
         $this->relationsProvider = $relationsProvider;
         $this->parentDataContextManager = $parentDataContextManager;
     }
@@ -45,9 +46,10 @@ class ParentRelationsContext
      * @return void
      */
     public function buildContext(
-        array $childIds,
+        array                      $childIds,
         FeedSpecificationInterface $feedSpecification
-    ): void {
+    ): void
+    {
         $childIds = array_values(array_unique(array_map('intval', $childIds)));
 
         // Get configurable + grouped relations
@@ -92,7 +94,7 @@ class ParentRelationsContext
             return null;
         }
 
-        $parent = null;
+        $parentData = null;
         foreach ($this->childToParentMap[$childId] as $parentId) {
             $parentData = $this->parentDataContextManager->getParentsDataByProductId($parentId);
             if (!$parentData instanceof ProductInterface) {
@@ -101,7 +103,7 @@ class ParentRelationsContext
 
             return $parentData;
         }
-        return $parent;
+        return $parentData;
     }
 
     /**

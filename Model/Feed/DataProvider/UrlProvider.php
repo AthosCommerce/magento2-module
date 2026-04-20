@@ -39,6 +39,11 @@ class UrlProvider implements DataProviderInterface
                 continue;
             }
 
+            if (array_key_exists('parent_url', $product) && $product['parent_url']) {
+                $product['url'] = $product['parent_url'];
+                continue;
+            }
+
             $product['url'] = $productModel->getProductUrl();
         }
 

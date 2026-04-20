@@ -59,13 +59,14 @@ class ConfigurableProductsProviderTest extends TestCase
 
     protected function setUp(): void
     {
+        $this->markTestSkipped('All tests in this class are temporarily disabled.');
         $this->objectManager = Bootstrap::getObjectManager();
         $this->specificationBuilder = $this->objectManager->get(SpecificationBuilderInterface::class);
         $this->getProducts = $this->objectManager->get(GetProducts::class);
         $this->configurableProductsProvider = $this->objectManager->get(ConfigurableProductsProvider::class);
         $this->contextManager = $this->objectManager->get(ContextManagerInterface::class);
         $this->assertChildProducts = $this->objectManager->get(AssertChildProducts::class);
-        $this->markTestSkipped('All tests in this class are temporarily disabled.');
+
         parent::setUp();
     }
 
@@ -104,7 +105,7 @@ class ConfigurableProductsProviderTest extends TestCase
         $this->configurableProductsProvider->reset();
     }
 
-    
+
 
     /**
      * @magentoAppIsolation enabled

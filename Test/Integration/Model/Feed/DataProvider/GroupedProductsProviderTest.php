@@ -59,13 +59,14 @@ class GroupedProductsProviderTest extends TestCase
 
     protected function setUp(): void
     {
+        $this->markTestSkipped('All tests in this class are temporarily disabled.');
         $this->objectManager = Bootstrap::getObjectManager();
         $this->specificationBuilder = $this->objectManager->get(SpecificationBuilderInterface::class);
         $this->getProducts = $this->objectManager->get(GetProducts::class);
         $this->groupedProductsProvider = $this->objectManager->get(GroupedProductsProvider::class);
         $this->contextManager = $this->objectManager->get(ContextManagerInterface::class);
         $this->assertChildProducts = $this->objectManager->get(AssertChildProducts::class);
-        $this->markTestSkipped('All tests in this class are temporarily disabled.');
+
         parent::setUp();
     }
     /**

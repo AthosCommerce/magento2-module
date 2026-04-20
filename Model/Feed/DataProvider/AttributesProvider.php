@@ -20,6 +20,7 @@ namespace AthosCommerce\Feed\Model\Feed\DataProvider;
 
 use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentRelationsContext;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\Constant;
 use Exception;
 use Magento\Catalog\Api\Data\ProductAttributeInterface;
 use Magento\Catalog\Model\Product;
@@ -127,9 +128,8 @@ class AttributesProvider implements DataProviderInterface
         $productKeys = array_keys($productData);
         $productId = (int)$product->getData('entity_id');
         $this->logger->debug(
-            '[Attributes]Processing product attributes',
+            sprintf('[Attributes][%s]Processing started', $productId),
             [
-                'productId' => $productId,
                 'productKeys' => $productKeys
             ]
         );
@@ -149,15 +149,23 @@ class AttributesProvider implements DataProviderInterface
             $attribute = $this->attributes[$attributeKey];
 
             $parentProduct = $this->parentRelationsContext->getParentsByChildId($productId);
-            if ($parentProduct instanceof Product) {
+
+            if ($parentProduct instanceof Product
+                && (int)$parentProduct->getVisibility() !== \Magento\Catalog\Model\Product\Visibility::VISIBILITY_NOT_VISIBLE
+                && (array_key_exists(Constant::IS_BELONG_TO_PARENT_KEY, $productData) && (int)$productData[Constant::IS_BELONG_TO_PARENT_KEY] === 1)
+            ) {
                 $parentValue = $parentProduct->getData($attributeKey);
+
                 //TODO: check for true/false or 0/1
-                if (!in_array($attributeKey, $this->getPriceRelatedAttributes())
-                    && $parentValue !== null
-                    && $parentValue !== ''
-                ) {
+                if ($parentValue !== null && $parentValue !== '') {
                     $fieldValue = $parentValue;
                 }
+                $this->logger->debug(
+                    sprintf('[%s]Fallback applied for attribute %s: %s', $productId, $attributeKey, $fieldValue),
+                    [
+                        'parentProduct' => $parentProduct->getId(),
+                    ]
+                );
             }
 
             try {
@@ -169,20 +177,28 @@ class AttributesProvider implements DataProviderInterface
                 );
             } catch (\Throwable $e) {
                 $this->logger->error(
-                    '[Attributes]Failed processing product attribute', [
+                    '[Attributes]Failed processing product attribute',
+                    [
                         'product_id' => $productId,
                         'attribute' => $attributeKey,
-                        'exception' => $e
+                        'value' => $fieldValue,
+                        'exception' => $e->getTraceAsString()
                     ]
                 );
                 continue;
             }
+            $this->logger->debug(
+                sprintf('Attribute (%s) processed: ', $attributeKey),
+                [
+                    'value' => $result[$attributeKey],
+                    'fieldValue' => $fieldValue,
+                ]
+            );
         }
         $this->logger->debug(
-            '[Attributes]Attributes processed',
+            sprintf('[Attributes][%s]Processing completed', $productId),
             [
-                'productId' => $productId,
-                'fieldValue' => $fieldValue
+                'productKeys' => $productKeys
             ]
         );
 
