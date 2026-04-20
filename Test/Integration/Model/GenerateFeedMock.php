@@ -30,6 +30,5 @@ class GenerateFeedMock implements GenerateFeedInterface
      */
     public function execute(FeedSpecificationInterface $feedSpecification, int $id): void
     {
-        return;
     }
 }

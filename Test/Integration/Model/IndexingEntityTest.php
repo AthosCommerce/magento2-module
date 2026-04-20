@@ -232,18 +232,20 @@ class IndexingEntityTest extends TestCase
     public function testCanLoadMultipleIndexingEntities(): void
     {
         $indexingEntityA = $this->createIndexingEntity();
-        $indexingEntityB = $this->createIndexingEntity([
-            'target_entity_type' => '__PRODUCT',
-            'target_entity_subtype' => null,
-            'target_id' => 2,
-            'target_parent_id' => 3,
-            'next_action' => Actions::UPSERT,
-            'lock_timestamp' => date('Y-m-d H:i:s', time()),
-            'last_action' => Actions::NO_ACTION,
-            'last_action_timestamp' => date('Y-m-d H:i:s', time() - 3600),
-        ]);
+        $indexingEntityB = $this->createIndexingEntity(
+            [
+                'target_entity_type' => '__PRODUCT',
+                'target_entity_subtype' => null,
+                'target_id' => 2,
+                'target_parent_id' => 3,
+                'next_action' => Actions::UPSERT,
+                'lock_timestamp' => date('Y-m-d H:i:s', time()),
+                'last_action' => Actions::NO_ACTION,
+                'last_action_timestamp' => date('Y-m-d H:i:s', time() - 3600),
+            ]
+        );
 
-        $collection = $this->objectManager->get( IndexingEntityCollection::class);
+        $collection = $this->objectManager->get(IndexingEntityCollection::class);
         $items = $collection->getItems();
         $this->assertContains(
             (int)$indexingEntityA->getId(),

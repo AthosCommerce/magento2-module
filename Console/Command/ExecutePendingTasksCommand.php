@@ -53,8 +53,6 @@ class ExecutePendingTasksCommand extends Command
     private $metricCollector;
 
     /**
-     * ExecutePendingTasks constructor.
-     *
      * @param ExecutePendingTasksInterfaceFactory $executePendingTasksFactory
      * @param DateTimeFactory $dateTimeFactory
      * @param State $state

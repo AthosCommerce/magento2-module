@@ -31,7 +31,7 @@ class LogInfo extends AbstractHelper
     /**
      * @var AthosCommerceLogger
      */
-    protected  $logger;
+    protected $logger;
 
     public const LOG = [
         'athoscommerce' => 'athoscommerce_feed.log',
@@ -58,40 +58,40 @@ class LogInfo extends AbstractHelper
      * @param File $fileDriver
      * @param AthosCommerceLogger $logger
      */
-    public function __construct( DirectoryList $directoryList, File $fileDriver, AthosCommerceLogger $logger)
+    public function __construct(DirectoryList $directoryList, File $fileDriver, AthosCommerceLogger $logger)
     {
         $this->directoryList = $directoryList;
         $this->fileDriver = $fileDriver;
         $this->logger = $logger;
     }
 
-    public function deleteExtensionLogFile() : bool
+    public function deleteExtensionLogFile(): bool
     {
         $logPath = $this->directoryList->getPath(DirectoryList::LOG);
-        $logFile = $logPath . '/'. self::LOG['athoscommerce'];
+        $logFile = $logPath . '/' . self::LOG['athoscommerce'];
 
         if ($this->fileDriver->isExists($logFile)) {
-            $this->logger->info(self::LOG['deleteExtensionLogFileInfo']. $logPath);
+            $this->logger->info(self::LOG['deleteExtensionLogFileInfo'] . $logPath);
             unlink($logFile);
-            $this->logger->info(self::LOG['deleteExtensionLogFileRemove'] . $logPath . '/'. self::LOG['athoscommerce']);
+            $this->logger->info(self::LOG['deleteExtensionLogFileRemove'] . $logPath . '/' . self::LOG['athoscommerce']);
         }
         $this->logger->error(self::LOG['deleteExtensionLogFileError'] . $logFile);
 
         return true;
     }
 
-    public function getExtensionLogFile(bool $compressOutput = false) : string
+    public function getExtensionLogFile(bool $compressOutput = false): string
     {
         $result = '';
 
         $logPath = $this->directoryList->getPath(DirectoryList::LOG);
-        $logFile = $logPath . '/'. self::LOG['athoscommerce'];
+        $logFile = $logPath . '/' . self::LOG['athoscommerce'];
 
         if ($this->fileDriver->isExists($logFile)) {
-            $this->logger->info(self::LOG['getExtensionLogFileInfo']. $logPath);
+            $this->logger->info(self::LOG['getExtensionLogFileInfo'] . $logPath);
             $result = $this->fileDriver->fileGetContents($logFile);
 
-            if (strlen($result) > 0 and $compressOutput){
+            if (strlen($result) > 0 and $compressOutput) {
                 $result = rtrim(strtr(base64_encode(gzdeflate($result, 9)), '+/', '-_'), '=');
             }
         }
@@ -100,10 +100,10 @@ class LogInfo extends AbstractHelper
         return $result;
     }
 
-    public function deleteExceptionLogFile() : bool
+    public function deleteExceptionLogFile(): bool
     {
         $logPath = $this->directoryList->getPath(DirectoryList::LOG);
-        $logFile = $logPath . '/'. self::LOG['exception'];
+        $logFile = $logPath . '/' . self::LOG['exception'];
 
         if ($this->fileDriver->isExists($logFile)) {
             $this->logger->info(self::LOG['deleteExceptionLogFileInfo'] . $logPath);
@@ -115,18 +115,18 @@ class LogInfo extends AbstractHelper
         return true;
     }
 
-    public function getExceptionLogFile(bool $compressOutput = false) : string
+    public function getExceptionLogFile(bool $compressOutput = false): string
     {
         $result = '';
 
         $logPath = $this->directoryList->getPath(DirectoryList::LOG);
-        $logFile = $logPath . '/'. self::LOG['exception'];
+        $logFile = $logPath . '/' . self::LOG['exception'];
 
         if ($this->fileDriver->isExists($logFile)) {
             $this->logger->info(self::LOG['getExceptionLogFileInfo'] . $logPath);
             $result = $this->fileDriver->fileGetContents($logFile);
 
-            if (strlen($result) > 0 and $compressOutput){
+            if (strlen($result) > 0 and $compressOutput) {
                 $result = rtrim(strtr(base64_encode(gzdeflate($result, 9)), '+/', '-_'), '=');
             }
         }

@@ -20,11 +20,6 @@ namespace AthosCommerce\Feed\Service\Tracking;
 
 use Magento\Quote\Api\Data\CartItemInterface;
 
-/**
- * Interface QuoteItemPriceResolverInterface
- *
- * @package AthosCommerce\Feed\Service
- */
 interface QuoteItemPriceResolverInterface
 {
     /**

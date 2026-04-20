@@ -105,8 +105,6 @@ class ConfigurableProductsProviderTest extends TestCase
         $this->configurableProductsProvider->reset();
     }
 
-
-
     /**
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled

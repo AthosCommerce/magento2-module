@@ -25,12 +25,25 @@ use AthosCommerce\Feed\Model\Feed\DataProvider\MediaGalleryProvider;
 
 class MediaGalleryProviderTest extends \PHPUnit\Framework\TestCase
 {
+    /**
+     * @var Image|\PHPUnit\Framework\MockObject\MockObject
+     */
     private $imageHelperMock;
 
+    /**
+     * @var Json|\PHPUnit\Framework\MockObject\MockObject
+     */
     private $jsonMock;
 
+    /**
+     * @var MediaGalleryProvider
+     */
     private $mediaGalleryProvider;
 
+    /**
+     * @return void
+     * @throws \PHPUnit\Framework\MockObject\Exception
+     */
     public function setUp(): void
     {
         $this->imageHelperMock = $this->createMock(Image::class);

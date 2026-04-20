@@ -76,7 +76,7 @@ class MediaGalleryProviderTest extends TestCase
      *
      * @throws \Exception
      */
-    public function testGetData() : void
+    public function testGetData(): void
     {
         $imageTypes = [
             'product_small_image',
@@ -84,7 +84,12 @@ class MediaGalleryProviderTest extends TestCase
             'invalid',
             'mini_cart_product_thumbnail'
         ];
-        $specification = $this->specificationBuilder->build(['includeMediaGallery' => true, 'imageTypes' => $imageTypes]);
+        $specification = $this->specificationBuilder->build(
+            [
+                'includeMediaGallery' => true,
+                'imageTypes' => $imageTypes
+            ]
+        );
         $this->contextManager->setContextFromSpecification($specification);
         $products = $this->getProducts->get($specification);
         $data = $this->mediaGalleryProvider->getData($products, $specification);
@@ -119,7 +124,7 @@ class MediaGalleryProviderTest extends TestCase
      *
      * @throws \Exception
      */
-    public function testGetDataMultistore() : void
+    public function testGetDataMultistore(): void
     {
         $imageTypes = [
             'product_small_image',
@@ -164,7 +169,7 @@ class MediaGalleryProviderTest extends TestCase
      * @param array $config
      * @param array $restrictedImages
      */
-    private function assertMediaGallery(array $items, array $config, array $restrictedImages = []) : void
+    private function assertMediaGallery(array $items, array $config, array $restrictedImages = []): void
     {
         $usedImages = [];
         foreach ($items as $item) {
@@ -176,7 +181,7 @@ class MediaGalleryProviderTest extends TestCase
                 foreach ($restrictedImages as $restrictedImage) {
                     $this->assertFalse(
                         strpos($file, $restrictedImage),
-                        (string) __('%1 in restricted images array', $file)
+                        (string)__('%1 in restricted images array', $file)
                     );
                 }
 
@@ -197,7 +202,7 @@ class MediaGalleryProviderTest extends TestCase
      * @param array $config
      * @return array
      */
-    private function findImageConfig(string $file, array $config) : array
+    private function findImageConfig(string $file, array $config): array
     {
         $result = [];
         foreach ($config as $fileName => $imageConfig) {
@@ -215,7 +220,7 @@ class MediaGalleryProviderTest extends TestCase
      * @param array $imageTypes
      * @param array $typeMap
      */
-    private function assertImagesIsCorrect(array $items, array $imageTypes, array $typeMap = []) : void
+    private function assertImagesIsCorrect(array $items, array $imageTypes, array $typeMap = []): void
     {
         $baseTypeMap = [
             'cached_thumbnail' => 'm/a/magento_thumbnail',
@@ -243,7 +248,7 @@ class MediaGalleryProviderTest extends TestCase
      * @param array $imageTypes
      * @return void
      */
-    private function assertImagesIsDifferent(array $items, array $imageTypes) : void
+    private function assertImagesIsDifferent(array $items, array $imageTypes): void
     {
         $existedImages = [];
         foreach ($items as $item) {

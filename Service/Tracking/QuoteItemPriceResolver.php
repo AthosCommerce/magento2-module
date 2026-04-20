@@ -20,13 +20,6 @@ namespace AthosCommerce\Feed\Service\Tracking;
 
 use Magento\Quote\Api\Data\CartItemInterface;
 
-/**
- * Class QuoteItemPrice
- *
- * This class gets price for quote item (cart page)
- *
- * @package AthosCommerce\Feed\Service
- */
 class QuoteItemPriceResolver implements QuoteItemPriceResolverInterface
 {
     /**

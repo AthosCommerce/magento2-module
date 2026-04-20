@@ -67,7 +67,7 @@ class ExecutorTest extends TestCase
         $task = $this->createPendingTask();
         $this->executor->execute($task);
         // check that we achieve this place and dont have any exceptions
-        $this->assertEquals(1,1);
+        $this->assertEquals(1, 1);
     }
 
     /**
@@ -84,7 +84,6 @@ class ExecutorTest extends TestCase
 
         return $task;
     }
-
 
     /**
      * @return array

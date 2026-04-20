@@ -187,7 +187,7 @@ class PreSignedUrlStorageTest extends \PHPUnit\Framework\TestCase
     {
         $this->expectExceptionMessage('file is not initialized yet');
         $this->expectException(\Exception::class);
-        $this->preSignedUrlStorage->addData([],1);
+        $this->preSignedUrlStorage->addData([], 1);
     }
 
     public function testAddDataExceptionSpecificationCase()
@@ -199,7 +199,7 @@ class PreSignedUrlStorageTest extends \PHPUnit\Framework\TestCase
         $file->setValue($this->preSignedUrlStorage, $fileMock);
         $this->expectExceptionMessage('specification is not initialized yet');
         $this->expectException(\Exception::class);
-        $this->preSignedUrlStorage->addData([],1);
+        $this->preSignedUrlStorage->addData([], 1);
     }
 
     public function testAddDataExceptionEmptyFormatCase()
@@ -218,7 +218,7 @@ class PreSignedUrlStorageTest extends \PHPUnit\Framework\TestCase
             ->willReturn('');
         $this->expectExceptionMessage('format cannot be empty');
         $this->expectException(\Exception::class);
-        $this->preSignedUrlStorage->addData([],1);
+        $this->preSignedUrlStorage->addData([], 1);
     }
 
     public function testAddData()
@@ -302,8 +302,7 @@ class PreSignedUrlStorageTest extends \PHPUnit\Framework\TestCase
             ->willReturn(false);
         $fileMock->expects($this->once())
             ->method('delete');
-
-        $this->preSignedUrlStorage->commit( $entityId );
+        $this->preSignedUrlStorage->commit($entityId);
     }
 
     public function testRollback()

@@ -74,9 +74,9 @@ trait ChildProductAssertionsTrait
             $this->assertAttributesNotExist($product, $restrictedAttributes);
 
             $childCount = $productsConfig[$sku]['child_count'] ?? null;
-            $skuPrefix  = $productsConfig[$sku]['sku_prefix']  ?? null;
+            $skuPrefix = $productsConfig[$sku]['sku_prefix'] ?? null;
             $namePrefix = $productsConfig[$sku]['name_prefix'] ?? null;
-            $valueMap   = $productsConfig[$sku]['value_map']   ?? null;
+            $valueMap = $productsConfig[$sku]['value_map'] ?? null;
 
             if ($childCount !== null) {
                 $this->assertCount((int)$childCount, $product['child_sku'] ?? []);
@@ -105,7 +105,7 @@ trait ChildProductAssertionsTrait
      * each occurrence consumed exactly once).
      *
      * @param array $data
-     * @param array $valueMap  field → list of expected values
+     * @param array $valueMap field → list of expected values
      */
     private function assertValueMap(array $data, array $valueMap): void
     {
@@ -145,4 +145,3 @@ trait ChildProductAssertionsTrait
         }
     }
 }
-

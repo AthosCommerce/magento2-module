@@ -25,13 +25,6 @@ use AthosCommerce\Feed\Service\Tracking\CompositeQuoteItemPriceResolver;
 use AthosCommerce\Feed\Service\Tracking\CompositeSkuResolver;
 use Magento\Framework\Serialize\SerializerInterface;
 
-/**
- * Class CartViewModel
- *
- * This is view model for Cart Page
- *
- * @package AthosCommerce\Feed\ViewModel
- */
 class CartViewModel implements ArgumentInterface
 {
     /**

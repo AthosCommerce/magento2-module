@@ -21,13 +21,6 @@ namespace AthosCommerce\Feed\Service\Tracking;
 use Magento\Sales\Api\Data\OrderItemInterface;
 use AthosCommerce\Feed\Api\LoggerInterface;
 
-/**
- * Class OrderItemPriceResolver
- *
- * In di.xml we can configure orderItemPriceResolversPool.This class can resolve way by which we will get product price for order item (checkout success page).
- *
- * @package AthosCommerce\Feed\Service
- */
 class CompositeOrderItemPriceResolver implements OrderItemPriceResolverInterface
 {
     /**
@@ -78,7 +71,9 @@ class CompositeOrderItemPriceResolver implements OrderItemPriceResolverInterface
             !($this->orderItemPriceResolversPool[$product->getProductType()] instanceof OrderItemPriceResolverInterface)
         ) {
             $this->logger->warning(
-                get_class($this->orderItemPriceResolversPool[$product->getProductType()]) . ' must implement ' . OrderItemPriceResolverInterface::class
+                get_class(
+                    $this->orderItemPriceResolversPool[$product->getProductType()]
+                ) . ' must implement ' . OrderItemPriceResolverInterface::class
             );
         }
 

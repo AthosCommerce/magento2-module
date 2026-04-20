@@ -68,10 +68,17 @@ class GenerateFeedTest extends \PHPUnit\Framework\TestCase
      * @var ProcessorPool
      */
     private $afterLoadProcessorPoolMock;
-
+    /**
+     * @var AppConfigInterface
+     */
     private $appConfigMock;
-
+    /**
+     * @var GenerateFeed
+     */
     private $generateFeed;
+    /**
+     * @var CollectorInterface
+     */
     private $metricCollectorMock;
 
     /**
@@ -402,7 +409,7 @@ class GenerateFeedTest extends \PHPUnit\Framework\TestCase
         $this->storageMock->expects($this->once())
             ->method('rollback');
         $this->expectException(\Exception::class);
-        $this->generateFeed->execute($feedSpecificationMock,1);
+        $this->generateFeed->execute($feedSpecificationMock, 1);
     }
 
     public function testExecuteExceptionCaseOnUnsupportedFormat()
@@ -422,6 +429,6 @@ class GenerateFeedTest extends \PHPUnit\Framework\TestCase
             ->willReturn(false);
         $this->expectExceptionMessage('format is not supported format');
         $this->expectException(\Exception::class);
-        $this->generateFeed->execute($feedSpecificationMock,1);
+        $this->generateFeed->execute($feedSpecificationMock, 1);
     }
 }

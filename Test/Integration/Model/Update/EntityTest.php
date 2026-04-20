@@ -60,8 +60,6 @@ class EntityTest extends TestCase
             'data' => [
                 'entityType' => '__CMS',
                 'entityIds' => [1, 2, 3],
-
-
             ],
         ];
         $this->objectManager = Bootstrap::getObjectManager();

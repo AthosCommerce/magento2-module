@@ -24,10 +24,9 @@ interface UpdateIndexingEntitiesActionsActionInterface
 {
     /**
      * @param array $entityIds
-     * @param string $lastAction
      * @param string $siteId
+     * @param string $lastAction
      * @param string $fieldIdentifier
-     *
      * @return void
      */
     public function execute(

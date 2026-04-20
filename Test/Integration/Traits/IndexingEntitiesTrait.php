@@ -46,8 +46,8 @@ trait IndexingEntitiesTrait
         $searchCriteriaBuilder = $searchCriteriaBuilderFactory->create();
         $searchCriteriaBuilder->addFilter(
             IndexingEntity::SITE_ID,
-             $siteId,
-             'like',
+            $siteId,
+            'like',
         );
         $searchCriteria = $searchCriteriaBuilder->create();
         /** @var IndexingEntityRepositoryInterface $repository */

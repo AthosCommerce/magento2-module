@@ -113,7 +113,6 @@ class CollectorTest extends \PHPUnit\Framework\TestCase
         $this->collector->collect('test', null, ['additional_data']);
     }
 
-
     public function testCollectExceptionCase()
     {
         $dataObjectMock = $this->createMock(DataObject::class);
@@ -187,8 +186,7 @@ class CollectorTest extends \PHPUnit\Framework\TestCase
 
         $this->collector->print('test');
     }
-
-
+    
     public function testPrintExceptionCase()
     {
         $dataObjectMock = $this->createMock(DataObject::class);

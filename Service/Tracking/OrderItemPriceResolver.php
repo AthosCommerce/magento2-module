@@ -5,13 +5,6 @@ namespace AthosCommerce\Feed\Service\Tracking;
 
 use Magento\Sales\Api\Data\OrderItemInterface;
 
-/**
- * Class OrderItemPrice
- *
- * This class gets price for order item (checkout success page)
- *
- * @package AthosCommerce\Feed\Service
- */
 class OrderItemPriceResolver implements OrderItemPriceResolverInterface
 {
     /**

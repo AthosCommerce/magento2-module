@@ -75,7 +75,12 @@ class CategoriesProviderTest extends TestCase
      */
     public function testGetData(): void
     {
-        $specification = $this->specificationBuilder->build(['includeUrlHierarchy' => true, 'includeMenuCategories' => true]);
+        $specification = $this->specificationBuilder->build(
+            [
+                'includeUrlHierarchy' => true,
+                'includeMenuCategories' => true
+            ]
+        );
         $products = $this->getProducts->get($specification);
         $data = $this->categoriesProvider->getData($products, $specification);
         $categoriesBySku = [
@@ -152,7 +157,12 @@ class CategoriesProviderTest extends TestCase
      */
     public function testGetDataWithMultistore(): void
     {
-        $specification = $this->specificationBuilder->build(['includeUrlHierarchy' => true, 'includeMenuCategories' => true]);
+        $specification = $this->specificationBuilder->build(
+            [
+                'includeUrlHierarchy' => true,
+                'includeMenuCategories' => true
+            ]
+        );
         $this->contextManager->setContextFromSpecification($specification);
         $products = $this->getProducts->get($specification);
         $data = $this->categoriesProvider->getData($products, $specification);
@@ -186,7 +196,12 @@ class CategoriesProviderTest extends TestCase
      */
     public function testGetDataWithStoreSpecificCategoryChanges(): void
     {
-        $specification = $this->specificationBuilder->build(['includeUrlHierarchy' => true, 'includeMenuCategories' => true]);
+        $specification = $this->specificationBuilder->build(
+            [
+                'includeUrlHierarchy' => true,
+                'includeMenuCategories' => true
+            ]
+        );
         $products = $this->getProducts->get($specification);
         $data = $this->categoriesProvider->getData($products, $specification);
         $categoriesBySku = [

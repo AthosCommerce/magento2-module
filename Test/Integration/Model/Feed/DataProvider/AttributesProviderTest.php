@@ -357,7 +357,6 @@ class AttributesProviderTest extends TestCase
         }
     }
 
-
     /**
      * @magentoAppIsolation enabled
      * @magentoDataFixture AthosCommerce_Feed::Test/_files/product_boolean_attribute.php

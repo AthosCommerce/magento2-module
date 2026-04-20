@@ -22,13 +22,6 @@ use Magento\Quote\Api\Data\CartItemInterface;
 use Magento\Sales\Api\Data\OrderItemInterface;
 use AthosCommerce\Feed\Api\LoggerInterface;
 
-/**
- * Class SkuResolver
- *
- * In di.xml we can configure skuResolversPool.This class can resolve way by which we will get product SKU.
- *
- * @package AthosCommerce\Feed\Service
- */
 class CompositeSkuResolver implements SkuResolverInterface
 {
     /**
@@ -54,13 +47,14 @@ class CompositeSkuResolver implements SkuResolverInterface
      * @param array $skuResolversPool
      */
     public function __construct(
-        LoggerInterface $logger,
+        LoggerInterface      $logger,
         SkuResolverInterface $defaultSkuResolver,
-        array $skuResolversPool = []
-    ) {
-        $this->logger             = $logger;
+        array                $skuResolversPool = []
+    )
+    {
+        $this->logger = $logger;
         $this->defaultSkuResolver = $defaultSkuResolver;
-        $this->skuResolversPool   = $skuResolversPool;
+        $this->skuResolversPool = $skuResolversPool;
     }
 
     /**
@@ -73,7 +67,10 @@ class CompositeSkuResolver implements SkuResolverInterface
             $this->skuResolversPool[$product->getProductType()] instanceof SkuResolverInterface) {
             return (string)$this->skuResolversPool[$product->getProductType()]->getProductSku($product);
         } elseif (!($this->skuResolversPool[$product->getProductType()] instanceof SkuResolverInterface)) {
-            $this->logger->warning(get_class($this->skuResolversPool[$product->getProductType()]) . ' must implement ' . SkuResolverInterface::class);
+            $this->logger->warning(
+                get_class(
+                    $this->skuResolversPool[$product->getProductType()]
+                ) . ' must implement ' . SkuResolverInterface::class);
         }
 
         return (string)$this->defaultSkuResolver->getProductSku($product);

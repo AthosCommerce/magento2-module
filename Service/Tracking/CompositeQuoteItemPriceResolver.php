@@ -21,13 +21,6 @@ namespace AthosCommerce\Feed\Service\Tracking;
 use Magento\Quote\Api\Data\CartItemInterface;
 use AthosCommerce\Feed\Api\LoggerInterface;
 
-/**
- * Class QuoteItemPriceResolver
- *
- * In di.xml we can configure quoteItemPriceResolversPool.This class can resolve way by which we will get product price for quote item (cart page).
- *
- * @package AthosCommerce\Feed\Service
- */
 class CompositeQuoteItemPriceResolver implements QuoteItemPriceResolverInterface
 {
     /**
@@ -77,7 +70,9 @@ class CompositeQuoteItemPriceResolver implements QuoteItemPriceResolverInterface
             !($this->quoteItemPriceResolversPool[$product->getProductType()] instanceof QuoteItemPriceResolverInterface)
         ) {
             $this->logger->warning(
-                get_class($this->quoteItemPriceResolversPool[$product->getProductType()]) . ' must implement ' . QuoteItemPriceResolverInterface::class
+                get_class(
+                    $this->quoteItemPriceResolversPool[$product->getProductType()]
+                ) . ' must implement ' . QuoteItemPriceResolverInterface::class
             );
         }
 

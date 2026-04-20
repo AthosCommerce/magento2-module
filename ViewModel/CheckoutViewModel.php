@@ -26,13 +26,6 @@ use AthosCommerce\Feed\Service\Tracking\CompositeOrderItemPriceResolver;
 use AthosCommerce\Feed\Service\Tracking\CompositeSkuResolver;
 use Magento\Framework\Serialize\SerializerInterface;
 
-/**
- * Class CheckoutViewModel
- *
- * This is view model for Checkout Success Page
- *
- * @package AthosCommerce\Feed\ViewModel
- */
 class CheckoutViewModel implements ArgumentInterface
 {
     /**
@@ -70,12 +63,13 @@ class CheckoutViewModel implements ArgumentInterface
      * @param SerializerInterface $serializer
      */
     public function __construct(
-        Config $config,
+        Config                          $config,
         CompositeOrderItemPriceResolver $priceResolver,
-        Session $checkoutSession,
-        CompositeSkuResolver $skuResolver,
-        SerializerInterface $serializer
-    ) {
+        Session                         $checkoutSession,
+        CompositeSkuResolver            $skuResolver,
+        SerializerInterface             $serializer
+    )
+    {
         $this->config = $config;
         $this->priceResolver = $priceResolver;
         $this->checkoutSession = $checkoutSession;

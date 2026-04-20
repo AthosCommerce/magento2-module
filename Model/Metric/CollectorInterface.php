@@ -20,10 +20,6 @@ namespace AthosCommerce\Feed\Model\Metric;
 
 use AthosCommerce\Feed\Model\Metric\View\FormatterInterface;
 
-/**
- * Interface CollectorInterface
- * @package AthosCommerce\Feed\Model\Metric
- */
 interface CollectorInterface
 {
     /**

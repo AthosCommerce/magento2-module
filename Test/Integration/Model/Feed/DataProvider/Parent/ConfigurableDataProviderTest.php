@@ -87,7 +87,6 @@ class ConfigurableDataProviderTest extends TestCase
         parent::setUp();
     }
 
-
     /**
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
@@ -364,17 +363,33 @@ class ConfigurableDataProviderTest extends TestCase
         $this->assertCount(4, $variantProducts, 'Should have 4 configurable variant products');
 
         foreach ($standaloneProducts as $product) {
-            $this->assertArrayNotHasKey('__parent_id', $product, 'Standalone product should not have __parent_id');
-            $this->assertArrayNotHasKey('__parent_title', $product, 'Standalone product should not have __parent_title');
-            $this->assertArrayNotHasKey('parent_status', $product, 'Standalone product should not have parent_status');
-            $this->assertArrayNotHasKey('parent_type_id', $product, 'Standalone product should not have parent_type_id');
-            $this->assertArrayNotHasKey('parent_url', $product, 'Standalone product should not have parent_url');
-            $this->assertArrayNotHasKey('parent_visibility', $product, 'Standalone product should not have parent_visibility');
+            $this->assertArrayNotHasKey('__parent_id', $product, 'Product should not have __parent_id');
+            $this->assertArrayNotHasKey(
+                '__parent_title',
+                $product,
+                'Product should not have __parent_title'
+            );
+            $this->assertArrayNotHasKey(
+                'parent_status',
+                $product,
+                'Product should not have parent_status'
+            );
+            $this->assertArrayNotHasKey(
+                'parent_type_id',
+                $product,
+                'Product should not have parent_type_id'
+            );
+            $this->assertArrayNotHasKey('parent_url', $product, 'Product should not have parent_url');
+            $this->assertArrayNotHasKey(
+                'parent_visibility',
+                $product,
+                'Product should not have parent_visibility'
+            );
 
             $this->assertContains(
                 $product['visibility'],
                 ['Catalog, Search', 'Catalog', 'Search'],
-                'Standalone product visibility should be valid'
+                'Product visibility should be valid'
             );
 
             $this->assertStringStartsWith('AthosCommerce Test Configurable Option', $product['name']);
@@ -387,7 +402,11 @@ class ConfigurableDataProviderTest extends TestCase
             $this->assertArrayHasKey('parent_status', $product, 'Variant should have parent_status');
             $this->assertArrayHasKey('parent_type_id', $product, 'Variant should have parent_type_id');
             $this->assertArrayHasKey('parent_url', $product, 'Variant should have parent_url');
-            $this->assertArrayHasKey('parent_visibility', $product, 'Variant should have parent_visibility');
+            $this->assertArrayHasKey(
+                'parent_visibility',
+                $product,
+                'Variant should have parent_visibility'
+            );
 
             $this->assertStringStartsWith(
                 'AthosCommerce Configurable Product Test CATALOG',
@@ -414,11 +433,17 @@ class ConfigurableDataProviderTest extends TestCase
                 $product['short_description']
             );
 
-            $this->assertStringStartsWith('AthosCommerce Configurable Product Test CATALOG', $product['__parent_title']);
+            $this->assertStringStartsWith(
+                'AthosCommerce Configurable Product Test CATALOG',
+                $product['__parent_title']
+            );
             $this->assertEquals('Enabled', $product['parent_status']);
             $this->assertEquals('configurable', $product['parent_type_id']);
             $this->assertEquals('Catalog, Search', $product['parent_visibility']);
-            $this->assertStringContainsString('athoscommerce-configurable-product-test-catalog', $product['parent_url']);
+            $this->assertStringContainsString(
+                'athoscommerce-configurable-product-test-catalog',
+                $product['parent_url']
+            );
 
             $this->assertContains(
                 $product['visibility'],
@@ -447,5 +472,4 @@ class ConfigurableDataProviderTest extends TestCase
         $this->configurableDataProvider->reset();
         $this->assertTrue(true);
     }
-
 }

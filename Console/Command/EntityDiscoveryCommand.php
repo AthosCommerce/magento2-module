@@ -57,10 +57,12 @@ class EntityDiscoveryCommand extends Command
     private $metricCollector;
 
     /**
+     * @param EntityDiscoveryInterface $entityDiscovery
      * @param DateTimeFactory $dateTimeFactory
      * @param State $state
      * @param CliOutput $cliOutput
      * @param CollectorInterface $metricCollector
+     * @param string|null $name
      */
     public function __construct(
         EntityDiscoveryInterface $entityDiscovery,

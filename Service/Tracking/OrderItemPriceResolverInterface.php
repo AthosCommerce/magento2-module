@@ -5,11 +5,6 @@ namespace AthosCommerce\Feed\Service\Tracking;
 
 use Magento\Sales\Api\Data\OrderItemInterface;
 
-/**
- * Interface OrderItemPriceResolverInterface
- *
- * @package AthosCommerce\Feed\Service
- */
 interface OrderItemPriceResolverInterface
 {
     /**

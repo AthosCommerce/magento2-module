@@ -234,5 +234,4 @@ class GroupedDataProviderTest extends TestCase
         $this->groupedDataProvider->reset();
         $this->assertTrue(true);
     }
-
 }

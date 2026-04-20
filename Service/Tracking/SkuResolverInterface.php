@@ -21,11 +21,6 @@ namespace AthosCommerce\Feed\Service\Tracking;
 use Magento\Quote\Api\Data\CartItemInterface;
 use Magento\Sales\Api\Data\OrderItemInterface;
 
-/**
- * Interface SkuResolverInterface
- *
- * @package AthosCommerce\Feed\Service
- */
 interface SkuResolverInterface
 {
     /**

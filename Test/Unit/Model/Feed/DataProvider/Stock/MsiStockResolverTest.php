@@ -23,14 +23,21 @@ use AthosCommerce\Feed\Model\Feed\DataProvider\Stock\MsiStockResolver;
 
 class MsiStockResolverTest extends \PHPUnit\Framework\TestCase
 {
+    /**
+     * @var string[]
+     */
     private $moduleList = [
         'Magento_InventoryReservationsApi',
         'Magento_InventorySalesApi',
         'Magento_InventoryCatalogApi'
     ];
-
+    /**
+     * @var Manager|\PHPUnit\Framework\MockObject\MockObject
+     */
     private $moduleManagerMock;
-
+    /**
+     * @var MsiStockResolver
+     */
     private $msiStockResolver;
 
     /**
@@ -38,11 +45,19 @@ class MsiStockResolverTest extends \PHPUnit\Framework\TestCase
      */
     protected $stockProviderMock;
 
+    /**
+     * @return void
+     * @throws \PHPUnit\Framework\MockObject\Exception
+     */
     public function setUp(): void
     {
         $this->moduleManagerMock = $this->createMock(Manager::class);
         $this->stockProviderMock = $this->createMock(MsiStockProvider::class);
-        $this->msiStockResolver = new MsiStockResolver($this->moduleManagerMock,  $this->stockProviderMock ,$this->moduleList);
+        $this->msiStockResolver = new MsiStockResolver(
+            $this->moduleManagerMock,
+            $this->stockProviderMock,
+            $this->moduleList
+        );
     }
 
     public function testResolve()

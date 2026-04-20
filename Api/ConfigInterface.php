@@ -18,11 +18,6 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Api;
 
-/**
- * Interface ConfigInterface
- *
- * @package AthosCommerce\Tracking\Api
- */
 interface ConfigInterface
 {
     /**

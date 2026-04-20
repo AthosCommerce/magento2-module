@@ -68,7 +68,7 @@ class ExecuteTaskInterfaceTest extends TestCase
      * @return void
      * @throws LocalizedException
      */
-    public function testExecute() : void
+    public function testExecute(): void
     {
         $task = $this->createPendingTask();
         $this->executeTask->execute($task);
@@ -83,7 +83,7 @@ class ExecuteTaskInterfaceTest extends TestCase
      * @return void
      * @throws LocalizedException
      */
-    public function testExecuteInvalidTask() : void
+    public function testExecuteInvalidTask(): void
     {
         $task = $this->createPendingTask();
         $this->executeTask->execute($task);
@@ -99,7 +99,7 @@ class ExecuteTaskInterfaceTest extends TestCase
      * @return TaskInterface
      * @throws \Magento\Framework\Exception\CouldNotSaveException
      */
-    private function createPendingTask() : TaskInterface
+    private function createPendingTask(): TaskInterface
     {
         /** @var TaskInterface $task */
         $task = $this->objectManager->create(TaskInterface::class);
@@ -109,12 +109,11 @@ class ExecuteTaskInterfaceTest extends TestCase
 
         return $this->taskRepository->save($task);
     }
-
-
+    
     /**
      * @return array
      */
-    private function getPayload() : array
+    private function getPayload(): array
     {
         return [
             'preSignedUrl' => 'https://testurl.com'

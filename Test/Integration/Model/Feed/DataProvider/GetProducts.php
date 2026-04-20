@@ -24,7 +24,6 @@ use AthosCommerce\Feed\Model\Feed\Collection\ProcessorPool;
 use AthosCommerce\Feed\Model\Feed\CollectionProviderInterface;
 use Magento\TestFramework\Helper\Bootstrap;
 
-
 class GetProducts
 {
     /**
@@ -54,7 +53,9 @@ class GetProducts
     {
         $collection = $this->collectionProvider->getCollection($specification);
         /** @var ProcessorPool $processorPool */
-        $processorPool = Bootstrap::getObjectManager()->get('AthosCommerceFeedGenerateFeedAfterLoadCollectionProcessorPool');
+        $processorPool = Bootstrap::getObjectManager()->get(
+            'AthosCommerceFeedGenerateFeedAfterLoadCollectionProcessorPool'
+        );
         foreach ($processorPool->getAll() as $processor) {
             $processor->processAfterLoad($collection, $specification);
         }
@@ -78,7 +79,9 @@ class GetProducts
     {
         $collection = $this->collectionProvider->getCollection($specification);
         /** @var ProcessorPool $processorPool */
-        $processorPool = Bootstrap::getObjectManager()->get('AthosCommerceFeedGenerateFeedAfterLoadCollectionProcessorPool');
+        $processorPool = Bootstrap::getObjectManager()->get(
+            'AthosCommerceFeedGenerateFeedAfterLoadCollectionProcessorPool'
+        );
         foreach ($processorPool->getAll() as $processor) {
             $processor->processAfterLoad($collection, $specification);
         }

@@ -23,13 +23,6 @@ use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use AthosCommerce\Feed\Api\ConfigInterface;
 
-/**
- * Class Config
- *
- * This class gets AthosCommerce site id which entered from admin panel
- *
- * @package AthosCommerce\Feed\Service
- */
 class Config implements ConfigInterface
 {
     /**

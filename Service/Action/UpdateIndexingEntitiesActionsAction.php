@@ -61,9 +61,9 @@ class UpdateIndexingEntitiesActionsAction implements UpdateIndexingEntitiesActio
 
     /**
      * @param array $entityIds
+     * @param string $siteId
      * @param string $lastAction
      * @param string $fieldIdentifier
-     *
      * @return void
      */
     public function execute(

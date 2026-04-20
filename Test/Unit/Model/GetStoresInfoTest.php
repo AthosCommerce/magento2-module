@@ -48,7 +48,9 @@ class GetStoresInfoTest extends \PHPUnit\Framework\TestCase
      * @var ScopeConfigInterface&MockObject
      */
     private $scopeConfigMock;
-
+    /**
+     * @var GetStoresInfo
+     */
     private $getStoresInfoModel;
 
     /**
@@ -270,6 +272,7 @@ class GetStoresInfoTest extends \PHPUnit\Framework\TestCase
                     'images' => $imagesSecondStore
                 ],
             ],
-            $this->getStoresInfoModel->getAsJson());
+            $this->getStoresInfoModel->getAsJson()
+        );
     }
 }
