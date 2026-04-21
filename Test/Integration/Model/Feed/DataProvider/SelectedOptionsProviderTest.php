@@ -135,13 +135,16 @@ class SelectedOptionsProviderTest extends TestCase
      */
     public function testIgnoreField(): void
     {
-        $specification = $this->specificationBuilder->build([]);
+        $ignoredFields = ['__selected_options'];
+        $specification = $this->specificationBuilder->build(['ignoreFields' => $ignoredFields]);
         $products = $this->getProducts->get($specification);
 
         $result = $this->selectedOptionsProvider->getData($products, $specification);
         $this->selectedOptionsProvider->reset();
 
-        $this->assertArrayNotHasKey('__selected_options', $result);
+        foreach ($result as $item) {
+            $this->assertArrayNotHasKey('__selected_options', $item);
+        }
     }
 
     /**
@@ -168,5 +171,30 @@ class SelectedOptionsProviderTest extends TestCase
             $this->assertArrayHasKey('__selected_options', $item);
             $this->assertNull($item['__selected_options'], 'SKU: ' . $product->getSku());
         }
+    }
+
+    /**
+     * @magentoAppIsolation enabled
+     * @magentoDbIsolation disabled
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/product_color_attribute_select.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/product_size_attribute_select.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products_for_selected_options.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable_product_for_selected_options.php
+     */
+    public function testParentCacheIsReused(): void
+    {
+        $specification = $this->specificationBuilder->build([]);
+        $products = $this->getProducts->get($specification);
+
+        $data1 = $this->selectedOptionsProvider->getData($products, $specification);
+
+        $data2 = $this->selectedOptionsProvider->getData($products, $specification);
+
+        $this->assertEquals($data1, $data2, 'Cache should not change output');
+
+        $this->selectedOptionsProvider->reset();
+        $data3 = $this->selectedOptionsProvider->getData($products, $specification);
+
+        $this->assertEquals($data1, $data3, 'Reset should not affect correctness');
     }
 }

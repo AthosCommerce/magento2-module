@@ -12,7 +12,7 @@ $installer = $objectManager->create(CategorySetup::class);
 
 $attributeCode = 'athos_color';
 
-// Prevent duplicate creation
+
 $attribute = $installer->getAttribute(Product::ENTITY, $attributeCode);
 
 if (!$attribute) {
@@ -21,7 +21,7 @@ if (!$attribute) {
         $attributeCode,
         [
             'type' => 'int',
-            'label' => 'athos_color',
+            'label' => 'Athos Color Label',
             'input' => 'select',
             'source' => \Magento\Eav\Model\Entity\Attribute\Source\Table::class,
             'required' => false,

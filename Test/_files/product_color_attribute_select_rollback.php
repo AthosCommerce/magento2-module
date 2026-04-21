@@ -14,5 +14,5 @@ try {
     $attribute = $attributeRepository->get(Product::ENTITY, 'athos_color');
     $attributeRepository->delete($attribute);
 } catch (NoSuchEntityException $e) {
-    // already removed → ignore
+    // Attribute does not exist, nothing to delete
 }
