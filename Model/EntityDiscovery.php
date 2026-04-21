@@ -177,7 +177,7 @@ class EntityDiscovery implements EntityDiscoveryInterface
 
             $payload = $this->configModel->getPayloadByStoreId($storeId);
             if (!$payload) {
-                $this->logger->debug("[Discovery] Task Payload is not found for store: $storeId");
+                $this->logger->info("[Discovery] Task Payload is not found for store: $storeId");
                 continue;
             }
             if (is_string($payload)) {
