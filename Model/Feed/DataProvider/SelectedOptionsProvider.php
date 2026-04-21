@@ -95,8 +95,7 @@ class SelectedOptionsProvider implements DataProviderInterface
     public function getData(array $products, FeedSpecificationInterface $feedSpecification): array
     {
         $ignoredFields = $feedSpecification->getIgnoreFields();
-        if (in_array('__selected_options', $ignoredFields)
-        ) {
+        if (in_array('__selected_options', $ignoredFields)) {
             return $products;
         }
 
@@ -128,6 +127,14 @@ class SelectedOptionsProvider implements DataProviderInterface
             try {
                 $parentProduct = $this->productRepository->getById($parentId);
             } catch (\Exception $e) {
+                $this->logger->error(
+                    'Exception thrown while fetching parent in SelectedOptionProvider: ',
+                    [
+                        'method' => __METHOD__,
+                        'exception' => $e->getMessage(),
+                        'trace' => $e->getTrace(),
+                    ],
+                );
                 continue;
             }
 
@@ -157,7 +164,15 @@ class SelectedOptionsProvider implements DataProviderInterface
                 $product['__selected_options'] = json_encode($selectedOptions);
 
             } catch (\Exception $e) {
-                $product['__selected_options'] = '{}';
+                $this->logger->error(
+                    "SelectedOptionProvider Exception: ",
+                    [
+                        'method' => __METHOD__,
+                        'exception' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
+                    ]
+                );
+                $product['__selected_options'] = null;
             }
         }
 
