@@ -22,8 +22,8 @@ class DataProviderPoolTest extends \PHPUnit\Framework\TestCase
 {
     private $dataProviders = [
         '__all_attributes__' => null,
-        '__configurable_child__' => null,
-        '__grouped_child__' => null,
+        'configurable_parents_info' => null,
+        'grouped_parents_info' => null,
         'prices' => null,
         'stock' => null,
         'saleable' => null,
@@ -33,6 +33,13 @@ class DataProviderPoolTest extends \PHPUnit\Framework\TestCase
         'options' => null,
         '__media_gallery__' => null,
         '__json_config__' => null,
+        '__standard_options' => null,
+        '__swatch_options' => null,
+        '__all_variants' => null,
+        '__selected_options' => null,
+        '__variant_position' => null,
+        '__group_by_swatch' => null,
+        '__origin_timestamp' => null
     ];
 
     private $dataProviderPool;

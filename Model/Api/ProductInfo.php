@@ -113,7 +113,7 @@ class ProductInfo implements ProductInfoInterface
             if (!$payload) {
                 return $response
                     ->setProductInfo([])
-                    ->setMessage(sprintf('No payload found for store ID %d', $storeId));
+                    ->setMessage(sprintf('No payload found for store ID: %d', $storeId));
             }
 
             if (is_string($payload)) {
@@ -122,7 +122,7 @@ class ProductInfo implements ProductInfoInterface
             if (!is_array($payload)) {
                 return $response
                     ->setProductInfo([])
-                    ->setMessage(sprintf('No payload found for store ID %d', $storeId));
+                    ->setMessage(sprintf('Invalid payload found for store ID: %d', $storeId));
             }
 
             $feedSpecification = $this->specificationBuilder->build($payload);
@@ -134,7 +134,7 @@ class ProductInfo implements ProductInfoInterface
 
             $this->collectionProcessor->processAfterLoad($collection, $feedSpecification);
             $this->logger->info(
-                'ProductInfoAPI: started fetching product info',
+                'ProductInfoAPI: Started fetching product info',
                 [
                     'product_ids' => $productIds,
                     'store_id' => $storeId
@@ -150,7 +150,7 @@ class ProductInfo implements ProductInfoInterface
                 );
                 return $response
                     ->setProductInfo([])
-                    ->setMessage('No products found for the given product IDs');
+                    ->setMessage('No products found in collection for the given product IDs. Please check query (ProductInfoAPI: Query) in `athoscommerce_feed.log` file.');
             }
 
             $itemsData = $this->itemsGenerator->generate(
