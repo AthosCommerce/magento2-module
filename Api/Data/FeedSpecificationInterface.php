@@ -105,7 +105,7 @@ interface FeedSpecificationInterface extends ExtensibleDataInterface
     public const LIVE_MODE = 'live';
 
     //Define data providers to ignore for each indexing mode
-    public const BULK_INDEXING_IGNORE_DATA_PROVIDERS = ['__group_by_swatch'];
+    public const BULK_INDEXING_IGNORE_DATA_PROVIDERS = [];
     public const LIVE_INDEXING_IGNORE_DATA_PROVIDERS = ['__origin_timestamp'];
 
     public const EXCLUDE_PRODUCT_IDS = 'exclude_product_ids';
