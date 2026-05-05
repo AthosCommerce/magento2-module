@@ -61,7 +61,8 @@ class SpecificationBuilder implements SpecificationBuilderInterface
         'swatchOptionSourceFieldNames' => FeedSpecificationInterface::SETTING_NAME_SWATCH_OPTION_FIELD_NAMES,
         'allVariantsAdditionalFields'  => FeedSpecificationInterface::SETTING_NAME_VARIANT_ADDITIONAL_FIELDS,
         'excludedProductIds' => FeedSpecificationInterface::EXCLUDE_PRODUCT_IDS,
-        'includeAllVariants' => FeedSpecificationInterface::INCLUDE_ALL_VARIANTS
+        'includeAllVariants' => FeedSpecificationInterface::INCLUDE_ALL_VARIANTS,
+        'parentIdSourceFieldName' => FeedSpecificationInterface::PARENT_ID_SOURCE_FIELD,
     ];
     /**
      * @var array
@@ -86,6 +87,7 @@ class SpecificationBuilder implements SpecificationBuilderInterface
             FeedSpecificationInterface::SETTING_NAME_VARIANT_ADDITIONAL_FIELDS => [],
             FeedSpecificationInterface::EXCLUDE_PRODUCT_IDS => [],
             FeedSpecificationInterface::INCLUDE_ALL_VARIANTS => false,
+            FeedSpecificationInterface::PARENT_ID_SOURCE_FIELD => null,
         ],
         'media_gallery' => [
             MediaGallerySpecificationInterface::THUMB_WIDTH => 250,

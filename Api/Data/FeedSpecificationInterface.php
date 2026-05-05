@@ -110,6 +110,8 @@ interface FeedSpecificationInterface extends ExtensibleDataInterface
 
     public const EXCLUDE_PRODUCT_IDS = 'exclude_product_ids';
 
+    public const PARENT_ID_SOURCE_FIELD = 'parentIdSourceFieldName';
+
     /**
      *
      */
@@ -370,4 +372,15 @@ interface FeedSpecificationInterface extends ExtensibleDataInterface
      * @return FeedSpecificationInterface
      */
     public function setIncludeAllVariants(bool $value) : self;
+
+    /**
+     * @param string $value
+     * @return self
+     */
+    public function setParentIdSourceFieldName(string $value) : self;
+
+    /**
+     * @return string|null
+     */
+    public function getParentIdSourceFieldName() : ?string;
 }
