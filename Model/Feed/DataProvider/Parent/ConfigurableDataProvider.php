@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Model\Feed\DataProvider\Parent;
 
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentDataContextManager;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Option\Visibility;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\Constant;
@@ -41,6 +42,10 @@ class ConfigurableDataProvider implements DataProviderInterface
      * @var ProductTypeIdInterface
      */
     private $productTypeId;
+    /**
+     * @var AthosCommerceLogger
+     */
+    private $logger;
 
     /**
      * @param MetadataPool $metadataPool
@@ -49,6 +54,7 @@ class ConfigurableDataProvider implements DataProviderInterface
      * @param Visibility $visibility
      * @param ProductExclusionInterface $productExclusion
      * @param ProductTypeIdInterface $productTypeId
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
         MetadataPool              $metadataPool,
@@ -56,7 +62,8 @@ class ConfigurableDataProvider implements DataProviderInterface
         ParentDataContextManager  $parentProductContextManager,
         Visibility                $visibility,
         ProductExclusionInterface $productExclusion,
-        ProductTypeIdInterface    $productTypeId
+        ProductTypeIdInterface    $productTypeId,
+        AthosCommerceLogger       $logger
     )
     {
         $this->metadataPool = $metadataPool;
@@ -65,6 +72,7 @@ class ConfigurableDataProvider implements DataProviderInterface
         $this->visibility = $visibility;
         $this->productExclusion = $productExclusion;
         $this->productTypeId = $productTypeId;
+        $this->logger = $logger;
     }
 
     /**
@@ -121,6 +129,7 @@ class ConfigurableDataProvider implements DataProviderInterface
     {
         $finalProducts = [];
         $ignoredFields = $feedSpecification->getIgnoreFields();
+        $parentIdIdentifier = $feedSpecification->getParentIdSourceFieldName() ?? $linkField;
 
         foreach ($products as &$product) {
             $productModel = $product['product_model'] ?? null;
@@ -171,7 +180,7 @@ class ConfigurableDataProvider implements DataProviderInterface
                     $parent,
                     $ignoredFields,
                     $childTypeIdsList,
-                    $linkField
+                    $parentIdIdentifier
                 );
 
                 $finalProducts[] = $childClone;
@@ -244,7 +253,7 @@ class ConfigurableDataProvider implements DataProviderInterface
      * @param Product $parent
      * @param array $ignoredFields
      * @param array $childTypeIdsList
-     * @param string $linkField
+     * @param string $parentIdIdentifier
      * @return array
      */
     private function buildParentContextRow(
@@ -253,7 +262,7 @@ class ConfigurableDataProvider implements DataProviderInterface
         Product $parent,
         array   $ignoredFields,
         array   $childTypeIdsList,
-        string  $linkField
+        string  $parentIdIdentifier
     ): array
     {
         $childClone = $product;
@@ -265,7 +274,7 @@ class ConfigurableDataProvider implements DataProviderInterface
         $childClone['__is_belong_to_parent'] = true;
 
         if (!in_array(['__parent_id', 'parent_id'], $ignoredFields, true)) {
-            $childClone['__parent_id'] = $parent->getDataUsingMethod($linkField);
+            $childClone['__parent_id'] = $parent->getDataUsingMethod($parentIdIdentifier);
         }
 
         if (!in_array(['__parent_title', 'parent_title'], $ignoredFields, true)

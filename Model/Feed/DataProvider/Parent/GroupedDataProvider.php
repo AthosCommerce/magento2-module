@@ -3,6 +3,7 @@
 namespace AthosCommerce\Feed\Model\Feed\DataProvider\Parent;
 
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentDataContextManager;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Option\Visibility;
 use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
@@ -39,6 +40,10 @@ class GroupedDataProvider implements DataProviderInterface
      * @var ProductTypeIdInterface
      */
     private $productTypeId;
+    /**
+     * @var AthosCommerceLogger
+     */
+    private $logger;
 
     /**
      * @param MetadataPool $metadataPool
@@ -47,6 +52,7 @@ class GroupedDataProvider implements DataProviderInterface
      * @param Visibility $visibility
      * @param ProductExclusionInterface $productExclusion
      * @param ProductTypeIdInterface $productTypeId
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
         MetadataPool              $metadataPool,
@@ -54,7 +60,8 @@ class GroupedDataProvider implements DataProviderInterface
         ParentDataContextManager  $parentProductContextManager,
         Visibility                $visibility,
         ProductExclusionInterface $productExclusion,
-        ProductTypeIdInterface    $productTypeId
+        ProductTypeIdInterface    $productTypeId,
+        AthosCommerceLogger       $logger
     )
     {
         $this->metadataPool = $metadataPool;
@@ -63,6 +70,7 @@ class GroupedDataProvider implements DataProviderInterface
         $this->visibility = $visibility;
         $this->productExclusion = $productExclusion;
         $this->productTypeId = $productTypeId;
+        $this->logger = $logger;
     }
 
     /**
@@ -154,7 +162,12 @@ class GroupedDataProvider implements DataProviderInterface
                 if (in_array($productModel->getTypeId(), $childTypeIds, true)) {
 
                     if (!in_array(['__parent_id', 'parent_id'], $ignoredFields, true)) {
-                        $childClone['__parent_id'] = $parent->getDataUsingMethod($this->getLinkField());
+                        $parentIdIdentifier = $feedSpecification->getParentIdSourceFieldName() ?? null;
+                        if ($parentIdIdentifier === null) {
+                            $childClone['__parent_id'] = $parent->getDataUsingMethod($this->getLinkField());
+                        } else {
+                            $childClone['__parent_id'] = $parent->getDataUsingMethod($parentIdIdentifier);
+                        }
                     }
 
                     if (!in_array(['__parent_title', 'parent_title'], $ignoredFields, true)
