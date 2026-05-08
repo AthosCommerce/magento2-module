@@ -512,6 +512,23 @@ class ConfigItem extends AbstractExtensibleObject implements ConfigItemInterface
     }
 
     /**
+     * @return string|null
+     */
+    public function getParentIdSourceFieldName(): ?string
+    {
+        return $this->_get(FeedSpecificationInterface::PARENT_ID_SOURCE_FIELD);
+    }
+
+    /**
+     * @param string|null $value
+     * @return ConfigItemInterface
+     */
+    public function setParentIdSourceFieldName(?string $value): ConfigItemInterface
+    {
+        return $this->setData(FeedSpecificationInterface::PARENT_ID_SOURCE_FIELD, $value);
+    }
+
+    /**
      * @return array
      */
     public function toArray(array $keys = []): array
@@ -546,6 +563,7 @@ class ConfigItem extends AbstractExtensibleObject implements ConfigItemInterface
             'excludedProductIds' => $this->getExcludedProductIds(),
             'variantAdditionalFields' => $this->getVariantAdditionalFields(),
             'includeAllVariants' => $this->getIncludeAllVariants(),
+            'parentIdSourceFieldName' => $this->getParentIdSourceFieldName(),
         ];
     }
 }
