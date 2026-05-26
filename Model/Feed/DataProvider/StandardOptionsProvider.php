@@ -202,7 +202,7 @@ class StandardOptionsProvider implements DataProviderInterface
             $optionNames = $this->json->serialize($this->optionNames);
 
             $this->configWriter->save(
-                Constants::XML_PATH_ATTRIBUTE_OPTIONS_LIST,
+                Constants::XML_PATH_ATTRIBUTE_VARIANT_OPTIONS_LIST,
                 $optionNames,
                 $scope,
                 $scopeId

@@ -108,7 +108,7 @@ class GetOptions implements GetOptionsInterface
         }
 
         $value = (string)$this->scopeConfig->getValue(
-            Constants::XML_PATH_ATTRIBUTE_OPTIONS_LIST,
+            Constants::XML_PATH_ATTRIBUTE_VARIANT_OPTIONS_LIST,
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
             $scopeId
         );
