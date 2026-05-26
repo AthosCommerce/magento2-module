@@ -166,6 +166,14 @@
     <preference for="AthosCommerce\Feed\Api\GetEntityStatsInterface"
                 type="AthosCommerce\Feed\Model\Api\GetEntityStats"/>
 
+    <preference for="AthosCommerce\Feed\Api\Data\ProductOptionsResponseInterface"
+                type="AthosCommerce\Feed\Model\Data\ProductOptionsResponse"/>
+    <preference for="AthosCommerce\Feed\Api\GetOptionsInterface"
+                type="AthosCommerce\Feed\Model\Api\GetOptions"/>
+
+    <preference for="AthosCommerce\Feed\Api\ConfigurableAttributeOptionsProviderInterface"
+                type="AthosCommerce\Feed\Model\Api\ConfigurableAttributeOptionsProvider"/>
+
     <type name="AthosCommerce\Feed\Model\Task\TypeList">
         <arguments>
             <argument name="types" xsi:type="array">
