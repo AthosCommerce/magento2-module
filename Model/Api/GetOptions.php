@@ -22,6 +22,7 @@ use AthosCommerce\Feed\Api\ConfigurableAttributeOptionsProviderInterface;
 use AthosCommerce\Feed\Api\Data\ProductOptionsResponseInterface;
 use AthosCommerce\Feed\Api\GetOptionsInterface;
 use AthosCommerce\Feed\Api\Data\ProductOptionsResponseInterfaceFactory;
+use AthosCommerce\Feed\Helper\Constants;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Service\Provider\StoreProvider;
 use Magento\Framework\App\Config\ScopeConfigInterface;
@@ -30,8 +31,6 @@ use Magento\Framework\Serialize\Serializer\Json;
 
 class GetOptions implements GetOptionsInterface
 {
-    private const XML_PATH_OPTIONS = 'athoscommerce/indexing/options';
-
     /**
      * @var ScopeConfigInterface
      */
@@ -109,7 +108,7 @@ class GetOptions implements GetOptionsInterface
         }
 
         $value = (string)$this->scopeConfig->getValue(
-            self::XML_PATH_OPTIONS,
+            Constants::XML_PATH_ATTRIBUTE_OPTIONS_LIST,
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
             $scopeId
         );
