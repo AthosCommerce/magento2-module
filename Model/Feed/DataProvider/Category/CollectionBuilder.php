@@ -18,11 +18,13 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Model\Feed\DataProvider\Category;
 
+use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
+use AthosCommerce\Feed\Model\Feed\Context\StoreContextManager;
 use Magento\Catalog\Api\Data\CategoryInterface;
 use Magento\Catalog\Model\ResourceModel\Category\Collection;
 use Magento\Catalog\Model\ResourceModel\Category\CollectionFactory;
 use Magento\Framework\Exception\LocalizedException;
-use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 
 class CollectionBuilder
 {
@@ -30,15 +32,29 @@ class CollectionBuilder
      * @var CollectionFactory
      */
     private $collectionFactory;
+    /**
+     * @var StoreContextManager
+     */
+    private $storeContextManager;
+    /**
+     * @var AthosCommerceLogger
+     */
+    private $logger;
 
     /**
-     * CollectionBuilder constructor.
      * @param CollectionFactory $collectionFactory
+     * @param StoreContextManager $storeContextManager
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
-        CollectionFactory $collectionFactory
-    ) {
+        CollectionFactory   $collectionFactory,
+        StoreContextManager $storeContextManager,
+        AthosCommerceLogger $logger
+    )
+    {
         $this->collectionFactory = $collectionFactory;
+        $this->storeContextManager = $storeContextManager;
+        $this->logger = $logger;
     }
 
     /**
@@ -48,11 +64,18 @@ class CollectionBuilder
      * @throws LocalizedException
      */
     public function buildCollection(
-        array $categoryIds,
+        array                      $categoryIds,
         FeedSpecificationInterface $feedSpecification
-    ) : Collection {
+    ): Collection
+    {
         $collection = $this->collectionFactory->create();
         $collection->setStore($feedSpecification->getStoreCode());
+        $store = $this->storeContextManager->getStoreFromContext();
+        $collection->setStoreId($store);
+
+        $storeId = $store->getId();
+        $rootId = $store->getRootCategoryId();
+
         $selectAttributes = [
             CategoryInterface::KEY_NAME,
             CategoryInterface::KEY_IS_ACTIVE,
@@ -68,8 +91,20 @@ class CollectionBuilder
 
         $collection->addAttributeToSelect($selectAttributes);
         $collection->addAttributeToFilter(CategoryInterface::KEY_IS_ACTIVE, 1)
-            ->addAttributeToFilter('entity_id', ['in' => $categoryIds]);
+            ->addAttributeToFilter('entity_id', ['in' => $categoryIds])
+            ->addAttributeToFilter(
+                [
+                    ['attribute' => 'path', 'like' => "1/{$rootId}/%"],
+                    ['attribute' => 'entity_id', 'eq' => $rootId]
+                ]
+            );
 
+        $this->logger->debug('CategoryCollectionBuilder',
+            [
+                'query' => $collection->getSelect()->__toString(),
+                'method' => __METHOD__
+            ]
+        );
         return $collection;
     }
 }
