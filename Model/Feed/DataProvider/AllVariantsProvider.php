@@ -150,6 +150,7 @@ class AllVariantsProvider implements DataProviderInterface
                     'uid' => (int)$child->getId(),
                     'msrp' => $child->getMsrp(),
                     'price' => $child->getPrice(),
+                    'final_price' => $child->getFinalPrice(),
                     'url' => $child->getProductUrl(),
                 ]
             ],
