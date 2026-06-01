@@ -155,7 +155,7 @@ foreach ($productIds as $productId) {
         $secondAttribute->getAttributeCode() => $secondOption->getValue()
     ];
     foreach ($customAttributes as $attributeCode => $attributeValue) {
-        $product->setCustomAttributes($customAttributes);
+        $product->setCustomAttribute($attributeCode,$attributeValue);
     }
     $product = $productRepository->save($product);
 
