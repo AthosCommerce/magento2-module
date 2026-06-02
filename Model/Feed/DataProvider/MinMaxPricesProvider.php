@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Model\Feed\DataProvider;
 
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentRelationsContext;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Price\BasePriceProvider;
 use Magento\ConfigurableProduct\Pricing\Price\ConfigurableOptionsProviderInterface;
@@ -28,6 +29,10 @@ class MinMaxPricesProvider implements DataProviderInterface
      * @var BasePriceProvider
      */
     private BasePriceProvider $basePriceProvider;
+    /**
+     * @var AthosCommerceLogger
+     */
+    private AthosCommerceLogger $logger;
 
     /**
      * Runtime cache
@@ -44,12 +49,14 @@ class MinMaxPricesProvider implements DataProviderInterface
     public function __construct(
         ParentRelationsContext               $parentRelationsContext,
         ConfigurableOptionsProviderInterface $configurableOptionsProvider,
-        BasePriceProvider                    $basePriceProvider
+        BasePriceProvider                    $basePriceProvider,
+        AthosCommerceLogger                  $logger,
     )
     {
         $this->parentRelationsContext = $parentRelationsContext;
         $this->configurableOptionsProvider = $configurableOptionsProvider;
         $this->basePriceProvider = $basePriceProvider;
+        $this->logger = $logger;
     }
 
     /**
@@ -100,16 +107,27 @@ class MinMaxPricesProvider implements DataProviderInterface
         if (!$parent instanceof ProductInterface) {
             return [];
         }
-
-        $cacheKey = 'parent_' . (int)$parent->getId();
+        $cacheKey = 'parent_' . (int)$parent->getId() . '_' . $parent->getTypeId();
 
         if (isset($this->cache[$cacheKey])) {
+            $this->logger->debug(
+                'MinMaxPricesProvider: Cached data found',
+                [
+                    'cacheKey' => $cacheKey,
+                    'cacheData' => $this->cache[$cacheKey]
+                ]
+            );
             return $this->cache[$cacheKey];
         }
 
         $variants = $this->getParentChildren($parent);
-
         if (empty($variants)) {
+            $this->logger->debug(
+                'MinMaxPricesProvider: Empty variants not found',
+                [
+                    'cacheKey' => $cacheKey
+                ]
+            );
             return [];
         }
 
@@ -117,6 +135,15 @@ class MinMaxPricesProvider implements DataProviderInterface
             $variants,
             $ignoredFields
         );
+
+        $this->logger->debug('MinMaxPricesProvider: Aggregated min/max prices for parent product',
+            [
+                'cacheKey' => $cacheKey,
+                'cacheData' => $this->cache[$cacheKey],
+                'variants' => array_keys($variants)
+            ]
+        );
+
         return $this->cache[$cacheKey];
     }
 
@@ -150,6 +177,14 @@ class MinMaxPricesProvider implements DataProviderInterface
                 $maxPrices[] = (float)$prices[PricesProvider::MAX_PRICE_KEY];
             }
         }
+        $this->logger->debug(
+            'Aggregated prices for parent product',
+            [
+                'regularPrices' => $regularPrices,
+                'finalPrices' => $finalPrices,
+                'maxPrices' => $maxPrices,
+            ]
+        );
 
         return [
             'ss_minimums' => [
