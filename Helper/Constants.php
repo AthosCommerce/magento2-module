@@ -51,4 +51,6 @@ class Constants
      * Path to debug log enabled configuration
      */
     public const XML_PATH_DEBUG_LOG_ENABLED = 'athoscommerce/developer/enable_debug_log';
+
+    public const XML_PATH_ATTRIBUTE_VARIANT_OPTIONS_LIST = 'athoscommerce/indexing/variant_options';
 }
