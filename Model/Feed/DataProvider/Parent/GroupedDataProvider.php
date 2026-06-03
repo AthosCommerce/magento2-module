@@ -1,4 +1,20 @@
 <?php
+/**
+ * Copyright (C) 2025 AthosCommerce <https://athoscommerce.com>
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Model\Feed\DataProvider\Parent;
 
@@ -6,6 +22,7 @@ use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentDataContextManager;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Option\Visibility;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\ParentIdSourceFieldEvaluator;
 use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
 use AthosCommerce\Feed\Model\Feed\ProductExclusionInterface;
 use AthosCommerce\Feed\Model\Feed\ProductTypeIdInterface;
@@ -44,6 +61,10 @@ class GroupedDataProvider implements DataProviderInterface
      * @var AthosCommerceLogger
      */
     private $logger;
+    /**
+     * @var ParentIdSourceFieldEvaluator
+     */
+    private $parentIdSourceFieldEvaluator;
 
     /**
      * @param MetadataPool $metadataPool
@@ -53,15 +74,17 @@ class GroupedDataProvider implements DataProviderInterface
      * @param ProductExclusionInterface $productExclusion
      * @param ProductTypeIdInterface $productTypeId
      * @param AthosCommerceLogger $logger
+     * @param ParentIdSourceFieldEvaluator $parentIdSourceFieldEvaluator
      */
     public function __construct(
-        MetadataPool              $metadataPool,
-        RelationsProvider         $relationsProvider,
-        ParentDataContextManager  $parentProductContextManager,
-        Visibility                $visibility,
-        ProductExclusionInterface $productExclusion,
-        ProductTypeIdInterface    $productTypeId,
-        AthosCommerceLogger       $logger
+        MetadataPool                 $metadataPool,
+        RelationsProvider            $relationsProvider,
+        ParentDataContextManager     $parentProductContextManager,
+        Visibility                   $visibility,
+        ProductExclusionInterface    $productExclusion,
+        ProductTypeIdInterface       $productTypeId,
+        AthosCommerceLogger          $logger,
+        ParentIdSourceFieldEvaluator $parentIdSourceFieldEvaluator
     )
     {
         $this->metadataPool = $metadataPool;
@@ -71,6 +94,7 @@ class GroupedDataProvider implements DataProviderInterface
         $this->productExclusion = $productExclusion;
         $this->productTypeId = $productTypeId;
         $this->logger = $logger;
+        $this->parentIdSourceFieldEvaluator = $parentIdSourceFieldEvaluator;
     }
 
     /**
@@ -104,8 +128,7 @@ class GroupedDataProvider implements DataProviderInterface
         foreach ($products as $product) {
             $productModel = $product['product_model'] ?? null;
             if ($productModel) {
-                $childEntityToLink[(int)$productModel->getId()] =
-                    (int)$productModel->getData($linkField);
+                $childEntityToLink[(int)$productModel->getId()] = (int)$productModel->getData($linkField);
             }
         }
 
@@ -159,13 +182,13 @@ class GroupedDataProvider implements DataProviderInterface
                 $childClone = $product;
 
                 if (in_array($productModel->getTypeId(), $childTypeIds, true)) {
-
                     if (!in_array(['__parent_id', 'parent_id'], $ignoredFields, true)) {
-                        $parentIdIdentifier = $feedSpecification->getParentIdSourceFieldName() ?? null;
-                        if ($parentIdIdentifier === null) {
-                            $childClone['__parent_id'] = $parent->getDataUsingMethod($this->getLinkField());
-                        } else {
-                            $childClone['__parent_id'] = $parent->getDataUsingMethod($parentIdIdentifier);
+                        $parentIdIdentifier = $feedSpecification->getParentIdSourceFieldName() ?: $this->getLinkField();
+
+                        $parentIdentifierValue = $this->parentIdSourceFieldEvaluator->execute($parent, $parentIdIdentifier);
+
+                        if ($parentIdentifierValue !== null) {
+                            $childClone['__parent_id'] = $parentIdentifierValue;
                         }
                     }
 
