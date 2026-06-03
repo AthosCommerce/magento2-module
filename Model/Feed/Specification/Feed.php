@@ -443,4 +443,21 @@ class Feed extends AbstractExtensibleObject implements FeedSpecificationInterfac
     {
         return $this->setData(self::INCLUDE_ALL_VARIANTS, $value);
     }
+
+    /**
+     * @return string|null
+     */
+    public function getParentIdSourceFieldName(): ?string
+    {
+        return trim((string)$this->_get(self::PARENT_ID_SOURCE_FIELD));
+    }
+
+    /**
+     * @param string $value
+     * @return FeedSpecificationInterface
+     */
+    public function setParentIdSourceFieldName(string $value): FeedSpecificationInterface
+    {
+        return (string)$this->setData(self::PARENT_ID_SOURCE_FIELD, $value);
+    }
 }
