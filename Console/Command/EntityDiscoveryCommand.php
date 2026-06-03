@@ -11,18 +11,18 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Console\Command;
 
-use AthosCommerce\Feed\Api\EntityDiscoveryInterface;
+use AthosCommerce\Feed\Api\EntityDiscoveryInterfaceFactory;
 use Magento\Framework\App\Area;
 use Magento\Framework\App\State;
+use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Stdlib\DateTime\DateTimeFactory;
-use AthosCommerce\Feed\Api\ExecutePendingTasksInterfaceFactory;
 use AthosCommerce\Feed\Model\Metric\CollectorInterface;
 use AthosCommerce\Feed\Model\Metric\Output\CliOutput;
 use Symfony\Component\Console\Command\Command;
@@ -36,9 +36,9 @@ class EntityDiscoveryCommand extends Command
     public const OPTION_STORE_CODES = 'storecodes';
 
     /**
-     * @var EntityDiscoveryInterface
+     * @var EntityDiscoveryInterfaceFactory
      */
-    private $entityDiscovery;
+    private $entityDiscoveryFactory;
     /**
      * @var DateTimeFactory
      */
@@ -57,13 +57,15 @@ class EntityDiscoveryCommand extends Command
     private $metricCollector;
 
     /**
+     * @param EntityDiscoveryInterfaceFactory $entityDiscovery
      * @param DateTimeFactory $dateTimeFactory
      * @param State $state
      * @param CliOutput $cliOutput
      * @param CollectorInterface $metricCollector
+     * @param string|null $name
      */
     public function __construct(
-        EntityDiscoveryInterface $entityDiscovery,
+        EntityDiscoveryInterfaceFactory $entityDiscoveryFactory,
         DateTimeFactory          $dateTimeFactory,
         State                    $state,
         CliOutput                $cliOutput,
@@ -72,7 +74,7 @@ class EntityDiscoveryCommand extends Command
     )
     {
         parent::__construct($name);
-        $this->entityDiscovery = $entityDiscovery;
+        $this->entityDiscoveryFactory = $entityDiscoveryFactory;
         $this->dateTimeFactory = $dateTimeFactory;
         $this->state = $state;
         $this->cliOutput = $cliOutput;
@@ -151,7 +153,8 @@ HELP
             $dateTime = $this->dateTimeFactory->create();
             $output->writeln('<info>Execution started: ' . $dateTime->gmtDate() . '</info>');
             $this->cliOutput->setOutput($output);
-            $response = $this->entityDiscovery->execute($storeCodes);
+            $entityDiscoveryFactory = $this->entityDiscoveryFactory->create();
+            $response = $entityDiscoveryFactory->execute($storeCodes);
             foreach ($response as $storeId => $storeCode) {
                 $output->writeln(
                     '<info>Discovery completed for store code: ' . $storeCode . '</info>'
@@ -183,3 +186,4 @@ HELP
             : [];
     }
 }
+

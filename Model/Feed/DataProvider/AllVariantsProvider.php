@@ -1,135 +1,128 @@
 <?php
 
+declare(strict_types=1);
+
 namespace AthosCommerce\Feed\Model\Feed\DataProvider;
 
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
-use AthosCommerce\Feed\Model\Feed\DataProvider\Configurable\DataProvider;
-use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentDataContextManager;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentRelationsContext;
 use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
 use Magento\Catalog\Model\Product;
-use Magento\Framework\Exception\LocalizedException;
-use AthosCommerce\Feed\Logger\AthosCommerceLogger;
-use Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable;
 use Magento\CatalogInventory\Api\StockRegistryInterface;
+use Magento\Framework\Exception\LocalizedException;
 
 class AllVariantsProvider implements DataProviderInterface
 {
     /**
      * @var StockRegistryInterface
      */
-    private  $stockRegistry;
-
-    /**
-     * @var Configurable
-     */
-    private  $configurableType;
+    private $stockRegistry;
 
     /**
      * @var AthosCommerceLogger
      */
     private $logger;
-    /**
-     * @var DataProvider
-     */
-    private $provider;
 
     /**
-     * @var ParentDataContextManager
+     * @var ParentRelationsContext
      */
-    private $parentProductContextManager;
+    private $parentRelationsContext;
 
     /**
-     * @param DataProvider $provider
      * @param AthosCommerceLogger $logger
-     * @param ParentDataContextManager $parentProductContextManager
-     * @param Configurable $configurableType
+     * @param ParentRelationsContext $parentRelationsContext
      * @param StockRegistryInterface $stockRegistry
      */
     public function __construct(
-        DataProvider             $provider,
-        AthosCommerceLogger          $logger,
-        ParentDataContextManager $parentProductContextManager,
-        Configurable             $configurableType,
+        AthosCommerceLogger    $logger,
+        ParentRelationsContext $parentRelationsContext,
         StockRegistryInterface $stockRegistry
     )
     {
-        $this->provider = $provider;
         $this->logger = $logger;
-        $this->parentProductContextManager = $parentProductContextManager;
-        $this->configurableType = $configurableType;
+        $this->parentRelationsContext = $parentRelationsContext;
         $this->stockRegistry = $stockRegistry;
     }
 
     /**
-     * Returns __standard_options JSON for configurable product
      * @param array $products
      * @param FeedSpecificationInterface $feedSpecification
+     *
      * @return array
      * @throws LocalizedException
-     * @throws \Exception
      */
-    public function getData(array $products, FeedSpecificationInterface $feedSpecification): array
+    public function getData(
+        array                      $products,
+        FeedSpecificationInterface $feedSpecification
+    ): array
     {
         $ignoredFields = $feedSpecification->getIgnoreFields();
-        if (in_array('__all_variants', $ignoredFields) || !$feedSpecification->getIncludeAllVariants()) {
+
+        if (
+            in_array('__all_variants', $ignoredFields, true)
+            || !$feedSpecification->getIncludeAllVariants()
+        ) {
             return $products;
         }
 
         foreach ($products as &$product) {
-            /** @var \Magento\Catalog\Model\Product $productModel */
+            /** @var Product|null $productModel */
             $productModel = $product['product_model'] ?? null;
-            if (!$productModel || $productModel->getTypeId() !== 'simple') {
+
+            if (!$productModel || !in_array($productModel->getTypeId(), ['simple', 'virtual'], true)) {
                 continue;
             }
 
-            $parentIds = $this->configurableType->getParentIdsByChild($productModel->getId());
-            if (empty($parentIds)) {
+            $parentProduct = $this->parentRelationsContext->getParentsByChildId((int)$productModel->getId());
+
+            if (!$parentProduct) {
                 $product['__all_variants'] = [];
                 continue;
             }
 
-            $parentId = (int)$parentIds[0];
-            $parentProduct = $this->parentProductContextManager->getParentsDataByProductId($parentId);
-            if (!$parentProduct) {
-                continue;
-            }
-
-            $childProducts = $parentProduct->getTypeInstance()->getUsedProducts($parentProduct);
             $allVariants = [];
 
-            foreach ($childProducts as $child) {
-                $variantOptions = [];
+            if ($parentProduct->getTypeId() === 'configurable') {
+
+                $childProducts = $parentProduct->getTypeInstance()->getUsedProducts($parentProduct);
+
                 $configurableAttributes = $parentProduct->getTypeInstance()->getConfigurableAttributes($parentProduct);
 
-                foreach ($configurableAttributes as $attribute) {
-                    $attr = $attribute->getProductAttribute();
-                    if (!$attr) continue;
+                foreach ($childProducts as $child) {
 
-                    $attrCode = $attr->getAttributeCode();
-                    $value = $child->getAttributeText($attrCode);
-                    if ($value) {
-                        $variantOptions[$attrCode] = ['value' => $value];
+                    $variantOptions = [];
+
+                    foreach ($configurableAttributes as $attribute) {
+
+                        $attr = $attribute->getProductAttribute();
+
+                        if (!$attr) {
+                            continue;
+                        }
+
+                        $attrCode = $attr->getAttributeCode();
+
+                        $value = $child->getAttributeText($attrCode);
+
+                        if ($value) {
+                            $variantOptions[$attrCode] = ['value' => $value];
+                        }
                     }
+
+                    $allVariants[] = $this->buildVariantRow($child, $variantOptions);
                 }
+            } elseif ($parentProduct->getTypeId() === 'grouped') {
 
-                $stockItem = $this->stockRegistry->getStockItem($child->getId());
-                $qty = (int) $stockItem->getQty();
+                $childProducts = $parentProduct->getTypeInstance()->getAssociatedProducts($parentProduct);
 
-                $allVariants[] = [
-                    'mappings' => [
-                        'core' => [
-                            'uid'   => $child->getId(),
-                            'msrp'  => $child->getMsrp(),
-                            'price' => $child->getPrice(),
-                            'url'   => $child->getProductUrl(),
-                        ]
-                    ],
-                    'options' => $variantOptions,
-                    'attributes' => [
-                        'inventory_quantity' => $qty,
-                        'title' => implode(' / ', array_column($variantOptions, 'value'))
-                    ]
-                ];
+                foreach ($childProducts as $child) {
+
+                    $allVariants[] = $this->buildVariantRow(
+                        $child,
+                        []
+                    );
+                }
             }
 
             $product['__all_variants'] = $allVariants;
@@ -139,7 +132,41 @@ class AllVariantsProvider implements DataProviderInterface
     }
 
     /**
+     * @param Product $child
+     * @param array $variantOptions
      *
+     * @return array
+     */
+    private function buildVariantRow(
+        Product $child,
+        array   $variantOptions = []
+    ): array
+    {
+        $stockItem = $this->stockRegistry->getStockItem((int)$child->getId());
+
+        return [
+            'mappings' => [
+                'core' => [
+                    'uid' => (int)$child->getId(),
+                    'msrp' => $child->getMsrp(),
+                    'price' => $child->getPrice(),
+                    'final_price' => $child->getFinalPrice(),
+                    'url' => $child->getProductUrl(),
+                ]
+            ],
+            'options' => $variantOptions,
+            'attributes' => [
+                'inventory_quantity' => (int)$stockItem->getQty(),
+                'title' => !empty($variantOptions)
+                    ? implode(' / ', array_column($variantOptions, 'value'))
+                    : (string)$child->getName(),
+                'sku' => (string)$child->getSku(),
+            ]
+        ];
+    }
+
+    /**
+     * @return void
      */
     public function reset(): void
     {
@@ -147,7 +174,7 @@ class AllVariantsProvider implements DataProviderInterface
     }
 
     /**
-     *
+     * @return void
      */
     public function resetAfterFetchItems(): void
     {

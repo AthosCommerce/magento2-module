@@ -157,8 +157,8 @@ class CategoriesProviderTest extends TestCase
         $products = $this->getProducts->get($specification);
         $data = $this->categoriesProvider->getData($products, $specification);
         $categoriesBySku = [
-            'athoscommerce_simple_1' => [1000, 1001, 1002, 1012, 2000, 2001],
-            'athoscommerce_simple_2' => [1002, 1012, 2000, 2001]
+            'athoscommerce_simple_1' => [1000, 1001, 1002, 1012],
+            'athoscommerce_simple_2' => [1002, 1012]
         ];
         $requiredFields = ['categories', 'category_ids', 'category_hierarchy', 'menu_hierarchy', 'url_hierarchy'];
         $this->assertCategories($data, $requiredFields, $categoriesBySku);
@@ -170,6 +170,10 @@ class CategoriesProviderTest extends TestCase
         $this->contextManager->setContextFromSpecification($specification);
         $products = $this->getProducts->get($specification);
         $data = $this->categoriesProvider->getData($products, $specification);
+        $categoriesBySku = [
+            'athoscommerce_simple_1' => [2000, 2001],
+            'athoscommerce_simple_2' => [2000, 2001]
+        ];
         $requiredFields = ['categories', 'category_ids', 'category_hierarchy', 'menu_hierarchy', 'url_hierarchy'];
         $this->assertCategories($data, $requiredFields, $categoriesBySku);
         $this->categoriesProvider->reset();
