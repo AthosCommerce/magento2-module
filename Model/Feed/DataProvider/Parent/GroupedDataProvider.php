@@ -230,17 +230,14 @@ class GroupedDataProvider implements DataProviderInterface
                         && method_exists($parent, 'getVisibility')
                         && $parent->getVisibility()
                     ) {
-                        $childClone['parent_visibility'] =
-                            $this->visibility->getVisibilityTextValue(
-                                $parent->getVisibility()
-                            );
+                        $childClone['parent_visibility'] = $this->visibility->getVisibilityTextValue(
+                            (int)$parent->getVisibility()
+                        );
                     }
 
                     $parentImage = '';
                     if (!in_array(['parent_image', '__parent_image'], $ignoredFields, true)) {
-                        $image = $parent->getImage()
-                            ?: $parent->getSmallImage()
-                                ?: $parent->getThumbnail();
+                        $image = $parent->getImage() ?: $parent->getSmallImage() ?: $parent->getThumbnail();
                         if ($image && $image !== 'no_selection') {
                             $parentImage = $parent->getMediaConfig()->getMediaUrl($image);
                         }
