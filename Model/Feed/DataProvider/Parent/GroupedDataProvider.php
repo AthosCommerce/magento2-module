@@ -142,8 +142,7 @@ class GroupedDataProvider implements DataProviderInterface
             }
 
             foreach ($parentLinkIds as $parentId) {
-                $parent = $this->parentProductContextManager
-                    ->getParentsDataByProductId((int)$parentId);
+                $parent = $this->parentProductContextManager->getParentsDataByProductId((int)$parentId);
 
                 if (!$parent) {
                     continue;
@@ -175,6 +174,12 @@ class GroupedDataProvider implements DataProviderInterface
                         && $parent->getName()
                     ) {
                         $childClone['__parent_title'] = $parent->getName();
+                    }
+
+                    if (!in_array(['__parent_sku', 'parent_sku'], $ignoredFields, true)
+                        && method_exists($parent, 'getSku')
+                    ) {
+                        $childClone['__parent_sku'] = $parent->getSku();
                     }
 
                     if (!in_array('parent_status', $ignoredFields, true)
