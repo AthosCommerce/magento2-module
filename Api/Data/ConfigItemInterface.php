@@ -328,4 +328,14 @@ interface ConfigItemInterface
      * @return ConfigItemInterface
      */
     public function setIncludeAllVariants(?bool $value): ConfigItemInterface;
+    /**
+     * @param string|null $value
+     * @return ConfigItemInterface
+     */
+    public function setParentIdSourceFieldName(?string $value) : ConfigItemInterface;
+
+    /**
+     * @return string|null
+     */
+    public function getParentIdSourceFieldName() : ?string;
 }
