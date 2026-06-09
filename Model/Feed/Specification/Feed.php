@@ -84,7 +84,7 @@ class Feed extends AbstractExtensibleObject implements FeedSpecificationInterfac
     public function getIncludeUrlHierarchy(): ?bool
     {
         return !is_null($this->_get(self::INCLUDE_URL_HIERARCHY))
-            ? (bool) $this->_get(self::INCLUDE_URL_HIERARCHY)
+            ? (bool)$this->_get(self::INCLUDE_URL_HIERARCHY)
             : null;
     }
 
@@ -103,7 +103,7 @@ class Feed extends AbstractExtensibleObject implements FeedSpecificationInterfac
     public function getIncludeMenuCategories(): ?bool
     {
         return !is_null($this->_get(self::INCLUDE_MENU_CATEGORIES))
-            ? (bool) $this->_get(self::INCLUDE_MENU_CATEGORIES)
+            ? (bool)$this->_get(self::INCLUDE_MENU_CATEGORIES)
             : null;
     }
 
@@ -122,7 +122,7 @@ class Feed extends AbstractExtensibleObject implements FeedSpecificationInterfac
     public function getIncludeJSONConfig(): ?bool
     {
         return !is_null($this->_get(self::INCLUDE_JSON_CONFIG))
-            ? (bool) $this->_get(self::INCLUDE_JSON_CONFIG)
+            ? (bool)$this->_get(self::INCLUDE_JSON_CONFIG)
             : null;
     }
 
@@ -141,7 +141,7 @@ class Feed extends AbstractExtensibleObject implements FeedSpecificationInterfac
     public function getIncludeChildPrices(): ?bool
     {
         return !is_null($this->_get(self::INCLUDE_CHILD_PRICES))
-            ? (bool) $this->_get(self::INCLUDE_CHILD_PRICES)
+            ? (bool)$this->_get(self::INCLUDE_CHILD_PRICES)
             : null;
     }
 
@@ -160,7 +160,7 @@ class Feed extends AbstractExtensibleObject implements FeedSpecificationInterfac
     public function getIncludeTierPricing(): ?bool
     {
         return !is_null($this->_get(self::INCLUDE_TIER_PRICES))
-            ? (bool) $this->_get(self::INCLUDE_TIER_PRICES)
+            ? (bool)$this->_get(self::INCLUDE_TIER_PRICES)
             : null;
     }
 
@@ -179,7 +179,7 @@ class Feed extends AbstractExtensibleObject implements FeedSpecificationInterfac
     public function getCustomerId(): ?int
     {
         return !is_null($this->_get(self::CUSTOMER_ID))
-            ? (int) $this->_get(self::CUSTOMER_ID)
+            ? (int)$this->_get(self::CUSTOMER_ID)
             : null;
     }
 
@@ -232,7 +232,7 @@ class Feed extends AbstractExtensibleObject implements FeedSpecificationInterfac
     public function getIncludeOutOfStock(): ?bool
     {
         return !is_null($this->_get(self::INCLUDE_OUT_OF_STOCK))
-            ? (bool) $this->_get(self::INCLUDE_OUT_OF_STOCK)
+            ? (bool)$this->_get(self::INCLUDE_OUT_OF_STOCK)
             : null;
     }
 
@@ -459,5 +459,22 @@ class Feed extends AbstractExtensibleObject implements FeedSpecificationInterfac
     public function setParentIdSourceFieldName(string $value): FeedSpecificationInterface
     {
         return (string)$this->setData(self::PARENT_ID_SOURCE_FIELD, $value);
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getGroupBySourceFieldName(): ?string
+    {
+        return trim((string)$this->_get(self::GROUP_ID_SOURCE_FIELD));
+    }
+
+    /**
+     * @param string $value
+     * @return FeedSpecificationInterface
+     */
+    public function setGroupBySourceFieldName(string $value): FeedSpecificationInterface
+    {
+        return (string)$this->setData(self::GROUP_ID_SOURCE_FIELD, $value);
     }
 }
