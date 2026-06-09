@@ -50,6 +50,15 @@ class CategoryList extends AbstractHelper
      * @var null|int
      */
     private $total = null;
+    /**
+     * @var int
+     */
+    private $currentPage = 1;
+
+    /**
+     * @var int
+     */
+    private $pageSize = 15;
 
     /**
      * @param Context $context
@@ -89,15 +98,23 @@ class CategoryList extends AbstractHelper
     ): array
     {
         $categories = [];
-        $currentPage = max(1, $currentPage);
-        $pageSize = max(1, $pageSize);
+        $this->currentPage = max(1, $currentPage);
+        $this->pageSize = max(1, $pageSize);
+
+        $currentPage = $this->currentPage;
+        $pageSize = $this->pageSize;
         $this->allCategoriesById = [];
+        $this->total = null;
 
         $storeId = null;
         $rootCategoryId = null;
 
         if ($storeCode !== '') {
-            $store = $this->storeManager->getStore($storeCode);
+            try {
+                $store = $this->storeManager->getStore($storeCode);
+            } catch (\Throwable $e) {
+                throw new LocalizedException(__("Invalid store code \"%1\".", $storeCode), $e);
+            }
             $storeId = (int)$store->getId();
             $rootCategoryId = (int)$store->getRootCategoryId();
         }
@@ -125,7 +142,18 @@ class CategoryList extends AbstractHelper
             $this->allCategoriesById[(int)$category->getId()] = (string)$category->getName();
         }
 
-        $categoryCollection = $this->categoryCollectionFactory->create()->addAttributeToSelect('*');
+        $categoryCollection = $this->categoryCollectionFactory->create()
+            ->addAttributeToSelect([
+                'name',
+                'image',
+                'is_active',
+                'include_in_menu',
+                'meta_title',
+                'meta_keywords',
+                'url_path',
+                'url_key',
+                'path'
+            ]);
 
         if ($storeId !== null) {
             $categoryCollection->setStoreId($storeId);
@@ -141,7 +169,7 @@ class CategoryList extends AbstractHelper
                 ['attribute' => 'path', 'like' => '1/' . $rootCategoryId . '/%']
             ]);
         }
-
+        $categoryCollection->setOrder('entity_id', 'ASC');
         $categoryCollection->setCurPage($currentPage);
         $categoryCollection->setPageSize($pageSize);
 
@@ -220,5 +248,21 @@ class CategoryList extends AbstractHelper
     public function getTotalCategories(): ?int
     {
         return $this->total;
+    }
+
+    /**
+     * @return int
+     */
+    public function getCurrentPage(): int
+    {
+        return $this->currentPage;
+    }
+
+    /**
+     * @return int
+     */
+    public function getPageSize(): int
+    {
+        return $this->pageSize;
     }
 }
