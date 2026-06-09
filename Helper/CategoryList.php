@@ -152,7 +152,8 @@ class CategoryList extends AbstractHelper
                 'meta_keywords',
                 'url_path',
                 'url_key',
-                'path'
+                'path',
+                'parent_id'
             ]);
 
         if ($storeId !== null) {
@@ -206,6 +207,19 @@ class CategoryList extends AbstractHelper
                 'UrlKey' => (string)$category->getUrlKey()
             ];
         }
+        $this->logger->info(
+            'Category list generated',
+            [
+                'store_code' => $storeCode,
+                'store_id' => $storeId,
+                'root_category_id' => $rootCategoryId,
+                'active_only' => $activeOnly,
+                'current_page' => $this->currentPage,
+                'page_size' => $this->pageSize,
+                'total_categories' => $this->total,
+                'returned_categories' => count($categories)
+            ]
+        );
 
         return $categories;
     }
