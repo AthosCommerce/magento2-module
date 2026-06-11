@@ -1,4 +1,18 @@
 <?php
+/**
+ * Copyright (C) 2025 AthosCommerce <https://athoscommerce.com>
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 declare(strict_types=1);
 
@@ -6,7 +20,7 @@ namespace AthosCommerce\Feed\Model\Feed\DataProvider;
 
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
-use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentRelationsContext;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\ParentVariantResolver;
 use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
 use Magento\Catalog\Model\Product;
 use Magento\CatalogInventory\Api\StockRegistryInterface;
@@ -25,30 +39,24 @@ class AllVariantsProvider implements DataProviderInterface
     private $logger;
 
     /**
-     * @var ParentRelationsContext
+     * @var ParentVariantResolver
      */
-    private $parentRelationsContext;
+    private $parentVariantResolver;
 
-    /**
-     * @param AthosCommerceLogger $logger
-     * @param ParentRelationsContext $parentRelationsContext
-     * @param StockRegistryInterface $stockRegistry
-     */
     public function __construct(
         AthosCommerceLogger    $logger,
-        ParentRelationsContext $parentRelationsContext,
+        ParentVariantResolver  $parentVariantResolver,
         StockRegistryInterface $stockRegistry
     )
     {
         $this->logger = $logger;
-        $this->parentRelationsContext = $parentRelationsContext;
+        $this->parentVariantResolver = $parentVariantResolver;
         $this->stockRegistry = $stockRegistry;
     }
 
     /**
      * @param array $products
      * @param FeedSpecificationInterface $feedSpecification
-     *
      * @return array
      * @throws LocalizedException
      */
@@ -74,7 +82,7 @@ class AllVariantsProvider implements DataProviderInterface
                 continue;
             }
 
-            $parentProduct = $this->parentRelationsContext->getParentsByChildId((int)$productModel->getId());
+            $parentProduct = $this->parentVariantResolver->getParentProduct($productModel);
 
             if (!$parentProduct) {
                 $product['__all_variants'] = [];
@@ -82,47 +90,12 @@ class AllVariantsProvider implements DataProviderInterface
             }
 
             $allVariants = [];
+            $childProducts = $this->parentVariantResolver->getChildProducts($parentProduct);
 
-            if ($parentProduct->getTypeId() === 'configurable') {
+            foreach ($childProducts as $child) {
+                $variantOptions = $this->parentVariantResolver->getVariantOptions($parentProduct, $child);
 
-                $childProducts = $parentProduct->getTypeInstance()->getUsedProducts($parentProduct);
-
-                $configurableAttributes = $parentProduct->getTypeInstance()->getConfigurableAttributes($parentProduct);
-
-                foreach ($childProducts as $child) {
-
-                    $variantOptions = [];
-
-                    foreach ($configurableAttributes as $attribute) {
-
-                        $attr = $attribute->getProductAttribute();
-
-                        if (!$attr) {
-                            continue;
-                        }
-
-                        $attrCode = $attr->getAttributeCode();
-
-                        $value = $child->getAttributeText($attrCode);
-
-                        if ($value) {
-                            $variantOptions[$attrCode] = ['value' => $value];
-                        }
-                    }
-
-                    $allVariants[] = $this->buildVariantRow($child, $variantOptions);
-                }
-            } elseif ($parentProduct->getTypeId() === 'grouped') {
-
-                $childProducts = $parentProduct->getTypeInstance()->getAssociatedProducts($parentProduct);
-
-                foreach ($childProducts as $child) {
-
-                    $allVariants[] = $this->buildVariantRow(
-                        $child,
-                        []
-                    );
-                }
+                $allVariants[] = $this->buildVariantRow($child, $variantOptions);
             }
 
             $product['__all_variants'] = $allVariants;
@@ -134,7 +107,6 @@ class AllVariantsProvider implements DataProviderInterface
     /**
      * @param Product $child
      * @param array $variantOptions
-     *
      * @return array
      */
     private function buildVariantRow(
@@ -165,19 +137,13 @@ class AllVariantsProvider implements DataProviderInterface
         ];
     }
 
-    /**
-     * @return void
-     */
     public function reset(): void
     {
-        //
+        // No state to reset in this provider
     }
 
-    /**
-     * @return void
-     */
     public function resetAfterFetchItems(): void
     {
-        //
+        // No state to reset after fetching items in this provider
     }
 }

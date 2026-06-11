@@ -77,7 +77,7 @@ foreach ($firstAttributeOptions as $option) {
         ->setName('AthosCommerce Test Configurable Option' . $option->getLabel())
         ->setSku('athoscommerce_configurable_test_simple_' . $productId)
         ->setPrice($productId)
-        ->setTestConfigurableFirst($option->getValue())
+        ->setCustomAttribute($firstAttribute->getAttributeCode(), $option->getValue())
         ->setVisibility(Visibility::VISIBILITY_NOT_VISIBLE)
         ->setStatus(Status::STATUS_ENABLED)
         ->setStockData(['use_config_manage_stock' => 1, 'qty' => 100, 'is_qty_decimal' => 0, 'is_in_stock' => 1])
@@ -132,7 +132,7 @@ array_shift($firstAttributeOptions); //remove the first option which is empty
 
 $firstAttributeValues = [];
 $secondAttributeValues = [];
-$i = 1;
+$i = 0;
 foreach ($productIds as $productId) {
     $firstOption = $firstAttributeOptions[$i];
     $secondOption = $secondAttributeOptions[$i];
