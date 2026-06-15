@@ -68,23 +68,16 @@ class CartViewModel implements ArgumentInterface
      * @param SerializerInterface $serializer
      */
     public function __construct(
-        Config $config,
+        Config                          $config,
         CompositeQuoteItemPriceResolver $priceResolver,
-        CompositeSkuResolver $skuResolver,
-        SerializerInterface $serializer
-    ) {
-        $this->config = $config;
-        $this->priceResolver         = $priceResolver;
-        $this->skuResolver           = $skuResolver;
-        $this->serializer            = $serializer;
-    }
-
-    /**
-     * @return string|null
-     */
-    public function getAthoscommerceSiteId(): ?string
+        CompositeSkuResolver            $skuResolver,
+        SerializerInterface             $serializer
+    )
     {
-        return $this->config->getSiteId();
+        $this->config = $config;
+        $this->priceResolver = $priceResolver;
+        $this->skuResolver = $skuResolver;
+        $this->serializer = $serializer;
     }
 
     /**
@@ -94,13 +87,21 @@ class CartViewModel implements ArgumentInterface
     public function getProducts(array $quoteItems): ?string
     {
         $this->productsSku = [];
+        $products = [];
         foreach ($quoteItems as $quoteItem) {
+            if (!$quoteItem instanceof CartItemInterface) {
+                continue;
+            }
             $this->productsSku[] = $this->skuResolver->getProductSku($quoteItem);
 
             $products[] = [
+                'uid' => (string)$quoteItem->getItemId() ?? '',
+                'name' => $quoteItem->getName(),
+                'sku' => $quoteItem->getSku(),
                 'price' => $this->priceResolver->getProductPrice($quoteItem),
-                'sku' => $this->skuResolver->getProductSku($quoteItem),
-                'qty' => $this->getProductQuantity($quoteItem)
+                'qty' => $this->getProductQuantity($quoteItem),
+                'calculatedPrice' => method_exists($quoteItem, 'getCalculationPrice') ? $quoteItem->getCalculationPrice() : 0.00,
+                'parentSku' => $this->skuResolver->getProductSku($quoteItem),
             ];
         }
         return $this->serializer->serialize($products);

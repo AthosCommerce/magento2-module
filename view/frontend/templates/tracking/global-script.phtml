@@ -1,0 +1,26 @@
+<?php
+declare(strict_types=1);
+
+/** @var \Magento\Framework\View\Element\Template $block */
+/** @var \AthosCommerce\Feed\ViewModel\GlobalScriptViewModel $viewModel */
+
+$viewModel = $block->getData('global_script_model');
+if (!$viewModel) {
+    return;
+}
+
+$siteId = $viewModel->getSiteId();
+$src = $viewModel->getTrackingScriptSrc();
+
+if (!$siteId || !$src) {
+    return;
+}
+?>
+<script id="athoscommerce_beacon" siteId="<?= /* @noEscape */ $block->escapeHtmlAttr($siteId) ?>"
+        src="<?= /* @noEscape */ $block->escapeUrl($src) ?>"></script>
+
+<script type="text/javascript" id="athoscommerce_init">
+    window.athos = window.athos || {};
+    window.athos.tracker = window.athos.tracker || {};
+    window.athos.tracker.events = window.athos.tracker.events || {};
+</script>

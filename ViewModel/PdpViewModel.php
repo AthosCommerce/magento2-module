@@ -1,57 +1,90 @@
 <?php
-/**
- * Copyright (C) 2025 AthosCommerce <https://athoscommerce.com>
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, version 3 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-
 declare(strict_types=1);
 
 namespace AthosCommerce\Feed\ViewModel;
 
+use Magento\Catalog\Api\Data\ProductInterface;
+use Magento\Framework\Registry;
 use Magento\Framework\View\Element\Block\ArgumentInterface;
-use AthosCommerce\Feed\Service\Config;
+use Magento\Store\Model\StoreManagerInterface;
 
-/**
- * Class PdpViewModel
- *
- * This is view model for Product Detail Page
- *
- * @package AthosCommerce\Feed\ViewModel
- */
 class PdpViewModel implements ArgumentInterface
 {
     /**
-     * @var Config
+     * @var Registry
      */
-    private $config;
+    private $registry;
+    /**
+     * @var StoreManagerInterface
+     */
+    private $storeManager;
 
     /**
-     * PdpViewModel constructor.
-     *
-     * @param Config $config
+     * @param Registry $registry
+     * @param StoreManagerInterface $storeManager
      */
     public function __construct(
-        Config $config
+        Registry              $registry,
+        StoreManagerInterface $storeManager
     )
     {
-        $this->config = $config;
+        $this->registry = $registry;
+        $this->storeManager = $storeManager;
+
     }
 
     /**
-     * @return string|null
+     * @return array
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
      */
-    public function getAthoscommerceSiteId(): ?string
+    public function getTrackingData(): array
     {
-        return (string)$this->config->getSiteId();
+        $product = $this->getCurrentProduct();
+        if (!$product || !(int)$product->getId()) {
+            return [];
+        }
+
+        return [
+            'uid' => (string)$product->getDataUsingMethod('entity_id'),
+            'sku' => (string)$product->getSku(),
+            'price' => $this->getProductPrice($product),
+            'currency' => $this->getCurrency(),
+        ];
+    }
+
+    /**
+     * @return ProductInterface|null
+     */
+    private function getCurrentProduct(): ?ProductInterface
+    {
+        $product = $this->registry->registry('current_product');
+        return $product instanceof ProductInterface ? $product : null;
+    }
+
+    /**
+     * @return null|string
+     */
+    private function getCurrency(): ?string
+    {
+        try {
+            return (string)$this->storeManager->getStore()->getCurrentCurrencyCode();
+        } catch (\Magento\Framework\Exception\NoSuchEntityException $e) {
+            return null;
+        }
+    }
+
+    /**
+     * @param ProductInterface $product
+     * @return float
+     */
+    private function getProductPrice(ProductInterface $product): float
+    {
+        $finalPrice = (float)$product->getFinalPrice();
+        if ($finalPrice > 0) {
+            return $finalPrice;
+        }
+
+        $price = (float)$product->getPrice();
+        return $price;
     }
 }

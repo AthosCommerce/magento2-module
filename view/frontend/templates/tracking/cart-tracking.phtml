@@ -1,0 +1,33 @@
+<?php
+declare(strict_types=1);
+
+/** @var \Magento\Framework\View\Element\Template $block */
+/** @var \AthosCommerce\Feed\ViewModel\CartViewModel $viewModel */
+/** @var \AthosCommerce\Feed\ViewModel\GlobalScriptViewModel $scriptModel */
+
+$viewModel = $block->getData('cart_view_model');
+$scriptModel = $block->getData('global_script_model');
+
+if (!$scriptModel || !$viewModel || !$scriptModel->shouldRender()) {
+    return;
+}
+$products = $viewModel->getProducts($block->getQuote()->getAllVisibleItems());
+?>
+
+<script type="text/javascript" id="athoscommerce_tracking_cart_page">
+    (function () {
+        window.customVendor.tracker.events.cart = window.customVendor.tracker.events.cart || {};
+
+        window.customVendor.tracker.events.cart.products = <?= /* @noEscape */ $products; ?>;
+        
+
+        if (typeof window.customVendor.tracker.events.cart.add === 'function') {
+            window.customVendor.tracker.events.cart.add({
+                data: {
+                    results: config.products,
+                    cart: config.products
+                }
+            });
+        }
+    })();
+</script>

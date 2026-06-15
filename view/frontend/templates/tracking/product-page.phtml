@@ -1,0 +1,41 @@
+<?php
+declare(strict_types=1);
+
+/** @var \Magento\Framework\View\Element\Template $block */
+/** @var \AthosCommerce\Feed\ViewModel\PdpViewModel $viewModel */
+/** @var \AthosCommerce\Feed\ViewModel\GlobalScriptViewModel $scriptModel */
+
+$viewModel = $block->getData('view_model');
+$scriptModel = $block->getData('global_script_model');
+
+if (!$scriptModel || !$viewModel) {
+    return;
+}
+
+$config = $viewModel->getTrackingData();
+if (!$config) {
+    return;
+}
+?>
+
+<script type="text/javascript" id="athoscommerce_tracking_product_page">
+    (function () {
+        var config = <?= /* @noEscape */ json_encode($config, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
+        window.athos.config = config;
+
+        window.athos.tracker.events.product = window.athos.tracker.events.product || {};
+
+        if (typeof window.athos.tracker.events.product.pageView === 'function') {
+            window.athos.tracker.events.product.pageView({
+                data: {
+                    result: {
+                        uid: config.uid,
+                        sku: config.sku,
+                        price: config.price,
+                        currency: config.currency
+                    }
+                }
+            });
+        }
+    })();
+</script>
