@@ -22,13 +22,11 @@ use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentDataContextManager;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Option\Visibility;
-use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\ParentIdSourceFieldEvaluator;
 use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
 use AthosCommerce\Feed\Model\Feed\ProductExclusionInterface;
 use AthosCommerce\Feed\Model\Feed\ProductTypeIdInterface;
 use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Catalog\Model\Product;
-use Magento\Catalog\Model\Product\Type as MagentoProductType;
 use Magento\Framework\EntityManager\MetadataPool;
 
 class GroupedDataProvider implements DataProviderInterface
@@ -123,6 +121,7 @@ class GroupedDataProvider implements DataProviderInterface
 
         $ignoredFields = $feedSpecification->getIgnoreFields();
         $linkField = $this->getLinkField();
+        $parentIdIdentifier = $feedSpecification->getParentIdSourceFieldName() ?: $linkField;
 
         $childEntityToLink = [];
         foreach ($products as $product) {
@@ -159,8 +158,23 @@ class GroupedDataProvider implements DataProviderInterface
             $childLinkId = (int)$productModel->getData($linkField);
             $parentLinkIds = array_keys($childToParent[$childLinkId] ?? []);
 
+            $isChildVisible = $this->isVisibleIndividually($productModel);
+
+            $product = $this->enrichChildData(
+                $product,
+                $productModel,
+                $feedSpecification,
+                $ignoredFields
+            );
+
+            if ($isChildVisible) {
+                $finalProducts[] = $this->buildStandaloneRow($product);
+            }
+
             if (!$parentLinkIds) {
-                $finalProducts[] = $product;
+                if (!$isChildVisible) {
+                    $finalProducts[] = $product;
+                }
                 continue;
             }
 
@@ -179,71 +193,14 @@ class GroupedDataProvider implements DataProviderInterface
                     continue;
                 }
 
-                $childClone = $product;
-
-                if (in_array($productModel->getTypeId(), $childTypeIds, true)) {
-                    if (!in_array(['__parent_id', 'parent_id'], $ignoredFields, true)) {
-                        $parentIdIdentifier = $feedSpecification->getParentIdSourceFieldName() ?: $this->getLinkField();
-
-                        $parentIdentifierValue = $this->parentIdSourceFieldEvaluator->execute($parent, $parentIdIdentifier);
-
-                        if ($parentIdentifierValue !== null) {
-                            $childClone['__parent_id'] = $parentIdentifierValue;
-                        }
-                    }
-
-                    if (!in_array(['__parent_title', 'parent_title'], $ignoredFields, true)
-                        && method_exists($parent, 'getName')
-                        && $parent->getName()
-                    ) {
-                        $childClone['__parent_title'] = $parent->getName();
-                    }
-
-                    if (!in_array(['__parent_sku', 'parent_sku'], $ignoredFields, true)
-                        && method_exists($parent, 'getSku')
-                    ) {
-                        $childClone['__parent_sku'] = $parent->getSku();
-                    }
-
-                    if (!in_array('parent_status', $ignoredFields, true)
-                        && method_exists($parent, 'getStatus')
-                    ) {
-                        $childClone['parent_status'] = $parent->getStatus()
-                            ? __('Enabled')->getText()
-                            : __('Disabled')->getText();
-                    }
-
-                    if (!in_array('parent_type_id', $ignoredFields, true)
-                        && method_exists($parent, 'getTypeId')
-                    ) {
-                        $childClone['parent_type_id'] = $parent->getTypeId();
-                    }
-
-                    if (!in_array('parent_url', $ignoredFields, true)
-                        && method_exists($parent, 'getProductUrl')
-                        && $parent->getProductUrl()
-                    ) {
-                        $childClone['parent_url'] = $parent->getProductUrl();
-                    }
-
-                    if (!in_array('parent_visibility', $ignoredFields, true)
-                        && method_exists($parent, 'getVisibility')
-                        && $parent->getVisibility()
-                    ) {
-                        $childClone['parent_visibility'] = $this->visibility->getVisibilityTextValue(
-                            (int)$parent->getVisibility()
-                        );
-                    }
-
-                    $parentImage = '';
-                    if (!in_array(['parent_image', '__parent_image'], $ignoredFields, true)) {
-                        $image = $parent->getImage() ?: $parent->getSmallImage() ?: $parent->getThumbnail();
-                        if ($image && $image !== 'no_selection') {
-                            $parentImage = $parent->getMediaConfig()->getMediaUrl($image);
-                        }
-                        $childClone['__parent_image'] = $parentImage;
-                    }
-                }
+                $childClone = $this->buildParentContextRow(
+                    $product,
+                    $productModel,
+                    $parent,
+                    $ignoredFields,
+                    $childTypeIds,
+                    $parentIdIdentifier
+                );
 
                 $finalProducts[] = $childClone;
             }
@@ -268,6 +225,7 @@ class GroupedDataProvider implements DataProviderInterface
                 $childIds[] = $productModel->getId();
             }
         }
+
         return array_filter($childIds);
     }
 
@@ -283,11 +241,176 @@ class GroupedDataProvider implements DataProviderInterface
     }
 
     /**
+     * @param Product $parent
+     * @return string
+     */
+    private function getParentImage(Product $parent): string
+    {
+        $image = $parent->getImage() ?: $parent->getSmallImage() ?: $parent->getThumbnail();
+
+        if ($image && $image !== 'no_selection') {
+            return $parent->getMediaConfig()->getMediaUrl($image);
+        }
+
+        return '';
+    }
+
+    /**
+     * @param array $product
+     * @param Product $productModel
+     * @param Product $parent
+     * @param array $ignoredFields
+     * @param array $childTypeIds
+     * @param string $parentIdIdentifier
+     * @return array
+     */
+    private function buildParentContextRow(
+        array   $product,
+        Product $productModel,
+        Product $parent,
+        array   $ignoredFields,
+        array   $childTypeIds,
+        string  $parentIdIdentifier
+    ): array
+    {
+        $childClone = $product;
+
+        if (!in_array($productModel->getTypeId(), $childTypeIds, true)) {
+            return $childClone;
+        }
+
+        $childClone['__is_belong_to_parent'] = true;
+
+        if (
+            !in_array('__parent_id', $ignoredFields, true)
+            && !in_array('parent_id', $ignoredFields, true)
+        ) {
+            $parentIdentifierValue = $this->parentIdSourceFieldEvaluator->execute($parent, $parentIdIdentifier);
+
+            if ($parentIdentifierValue !== null) {
+                $childClone['__parent_id'] = $parentIdentifierValue;
+            }
+        }
+
+        if (
+            !in_array('__parent_title', $ignoredFields, true)
+            && !in_array('parent_title', $ignoredFields, true)
+            && method_exists($parent, 'getName')
+            && $parent->getName()
+        ) {
+            $childClone['__parent_title'] = $parent->getName();
+        }
+
+        if (
+            !in_array('__parent_sku', $ignoredFields, true)
+            && !in_array('parent_sku', $ignoredFields, true)
+            && method_exists($parent, 'getSku')
+        ) {
+            $childClone['__parent_sku'] = $parent->getSku();
+        }
+
+        if (!in_array('parent_status', $ignoredFields, true)
+            && method_exists($parent, 'getStatus')
+        ) {
+            $childClone['parent_status'] = $parent->getStatus()
+                ? __('Enabled')->getText()
+                : __('Disabled')->getText();
+        }
+
+        if (!in_array('parent_type_id', $ignoredFields, true)
+            && method_exists($parent, 'getTypeId')
+        ) {
+            $childClone['parent_type_id'] = $parent->getTypeId();
+        }
+
+        if (!in_array('parent_url', $ignoredFields, true)
+            && method_exists($parent, 'getProductUrl')
+            && $parent->getProductUrl()
+        ) {
+            $childClone['parent_url'] = $parent->getProductUrl();
+        }
+
+        if (!in_array('parent_visibility', $ignoredFields, true)
+            && method_exists($parent, 'getVisibility')
+        ) {
+            $childClone['parent_visibility'] = $this->visibility->getVisibilityTextValue(
+                (int)$parent->getVisibility()
+            );
+        }
+
+        if (
+            !in_array('parent_image', $ignoredFields, true)
+            && !in_array('__parent_image', $ignoredFields, true)
+        ) {
+            $childClone['__parent_image'] = $this->getParentImage($parent);
+        }
+
+        return $childClone;
+    }
+
+    /**
+     * @param array $product
+     * @param Product $productModel
+     * @param FeedSpecificationInterface $feedSpecification
+     * @param array $ignoredFields
+     * @return array
+     */
+    private function enrichChildData(
+        array                      $product,
+        Product                    $productModel,
+        FeedSpecificationInterface $feedSpecification,
+        array                      $ignoredFields
+    ): array
+    {
+        if (!in_array('child_name', $ignoredFields, true)) {
+            $product['child_name'] = $productModel->getName();
+        }
+
+        if (!in_array('child_sku', $ignoredFields, true)) {
+            $product['child_sku'] = $productModel->getSku();
+        }
+
+        return $product;
+    }
+
+    /**
+     * @param array $product
+     * @return array
+     */
+    private function buildStandaloneRow(array $product): array
+    {
+        $standalone = $product;
+        $standalone[Constant::IS_STANDALONE_PRODUCT_KEY] = true;
+
+        unset(
+            $standalone['__is_belong_to_parent'],
+            $standalone['__parent_id'],
+            $standalone['__parent_title'],
+            $standalone['__parent_sku'],
+            $standalone['parent_status'],
+            $standalone['parent_type_id'],
+            $standalone['parent_url'],
+            $standalone['parent_visibility'],
+            $standalone['__parent_image']
+        );
+
+        return $standalone;
+    }
+
+    /**
+     * @param Product $product
+     * @return bool
+     */
+    private function isVisibleIndividually(Product $product): bool
+    {
+        return (int)$product->getVisibility() !== \Magento\Catalog\Model\Product\Visibility::VISIBILITY_NOT_VISIBLE;
+    }
+
+    /**
      * Reset internal state after feed generation is complete
      */
     public function reset(): void
     {
-
     }
 
     /**
@@ -295,6 +418,5 @@ class GroupedDataProvider implements DataProviderInterface
      */
     public function resetAfterFetchItems(): void
     {
-
     }
 }
