@@ -111,6 +111,8 @@ interface FeedSpecificationInterface extends ExtensibleDataInterface
     public const EXCLUDE_PRODUCT_IDS = 'exclude_product_ids';
 
     public const PARENT_ID_SOURCE_FIELD = 'parentIdSourceFieldName';
+    public const GROUP_ID_SOURCE_FIELD = 'groupBySourceFieldName';
+
 
     /**
      *
@@ -383,4 +385,15 @@ interface FeedSpecificationInterface extends ExtensibleDataInterface
      * @return string|null
      */
     public function getParentIdSourceFieldName() : ?string;
+
+    /**
+     * @param string $value
+     * @return self
+     */
+    public function setGroupBySourceFieldName(string $value):self;
+
+    /**
+     * @return string|null
+     */
+    public function getGroupBySourceFieldName() : ?string;
 }
