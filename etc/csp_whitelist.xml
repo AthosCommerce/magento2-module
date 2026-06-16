@@ -10,9 +10,7 @@
         <policy id="connect-src">
             <values>
                 <value id="searchspring_connect_net" type="host">*.searchspring.net</value>
-                <value id="searchspring_connect_io" type="host">*.searchspring.io</value>
                 <value id="athoscommerce_connect_net" type="host">*.athoscommerce.net</value>
-                <value id="athoscommerce_connect_io" type="host">*.athoscommerce.io</value>
             </values>
         </policy>
         <policy id="style-src">
