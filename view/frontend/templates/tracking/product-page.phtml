@@ -8,20 +8,19 @@ declare(strict_types=1);
 $viewModel = $block->getData('view_model');
 $scriptModel = $block->getData('global_script_model');
 
-if (!$scriptModel || !$viewModel) {
+if (!$scriptModel || !$viewModel || !$scriptModel->shouldRender()) {
     return;
 }
 
-$config = $viewModel->getTrackingData();
-if (!$config) {
+$productPageData = $viewModel->getProductPageData();
+if (!$productPageData) {
     return;
 }
 ?>
 
 <script type="text/javascript" id="athoscommerce_tracking_product_page">
     (function () {
-        var config = <?= /* @noEscape */ json_encode($config, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
-        window.athos.config = config;
+        var productPageData = <?= /* @noEscape */ $productPageData ?>;
 
         window.athos.tracker.events.product = window.athos.tracker.events.product || {};
 
@@ -29,10 +28,11 @@ if (!$config) {
             window.athos.tracker.events.product.pageView({
                 data: {
                     result: {
-                        uid: config.uid,
-                        sku: config.sku,
-                        price: config.price,
-                        currency: config.currency
+                        uid: productPageData.uid,
+                        sku: productPageData.sku,
+                        parentId: productPageData.parentId,
+                        price: productPageData.price,
+                        currency: productPageData.currency
                     }
                 }
             });

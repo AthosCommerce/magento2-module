@@ -10,9 +10,10 @@
                 </arguments>
             </block>
         </referenceContainer>
-        <referenceContainer name="content">
-            <block class="Magento\Checkout\Block\Cart" name="athoscommerce.tracking.checkout.cart"
-                   template="AthosCommerce_Feed::tracking/cart-tracking.phtml" after="-">
+        <referenceContainer name="before.body.end">
+            <block class="Magento\Framework\View\Element\Template"
+                   name="athoscommerce.feed.tracking.checkout.cart"
+                   template="AthosCommerce_Feed::tracking/cart-tracking.phtml">
                 <arguments>
                     <argument name="global_script_model" xsi:type="object">AthosCommerce\Feed\ViewModel\GlobalScriptViewModel</argument>
                     <argument name="cart_view_model" xsi:type="object">AthosCommerce\Feed\ViewModel\CartViewModel</argument>

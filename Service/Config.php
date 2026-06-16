@@ -83,10 +83,14 @@ class Config implements ConfigInterface
      */
     public function getTrackingScriptSrc(?int $storeId = null): string
     {
-        return (string)$this->scopeConfig->getValue(
+        $url = (string)$this->scopeConfig->getValue(
             self::ATHOSCOMMERCE_TRACKING_SCRIPT_SRC,
             ScopeInterface::SCOPE_STORE,
             $storeId
         );
+        if (empty($url)) {
+            $url = 'https://cdn.athoscommerce.net/analytics/beacon.js';
+        }
+        return $url;
     }
 }

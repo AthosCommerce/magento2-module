@@ -7,23 +7,26 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 declare(strict_types=1);
 
 namespace AthosCommerce\Feed\ViewModel;
 
-use Magento\Framework\View\Element\Block\ArgumentInterface;
-use Magento\Quote\Api\Data\CartItemInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Service\Config;
 use AthosCommerce\Feed\Service\Tracking\CompositeQuoteItemPriceResolver;
 use AthosCommerce\Feed\Service\Tracking\CompositeSkuResolver;
+use Magento\Checkout\Model\Session as CheckoutSession;
+use Magento\Framework\View\Element\Block\ArgumentInterface;
 use Magento\Framework\Serialize\SerializerInterface;
+use Magento\Quote\Api\Data\CartItemInterface;
+use Magento\Quote\Model\Quote\Item;
 
 /**
  * Class CartViewModel
@@ -53,6 +56,14 @@ class CartViewModel implements ArgumentInterface
      * @var SerializerInterface
      */
     private $serializer;
+    /**
+     * @var CheckoutSession
+     */
+    private $checkoutSession;
+    /**
+     * @var AthosCommerceLogger
+     */
+    private $logger;
 
     /**
      * @var array
@@ -60,51 +71,78 @@ class CartViewModel implements ArgumentInterface
     private $productsSku = [];
 
     /**
-     * CartViewModel constructor.
-     *
-     * @param Config $getAthoscommerceSiteId
+     * @param Config $config
      * @param CompositeQuoteItemPriceResolver $priceResolver
      * @param CompositeSkuResolver $skuResolver
      * @param SerializerInterface $serializer
+     * @param CheckoutSession $checkoutSession
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
         Config                          $config,
         CompositeQuoteItemPriceResolver $priceResolver,
         CompositeSkuResolver            $skuResolver,
-        SerializerInterface             $serializer
+        SerializerInterface             $serializer,
+        CheckoutSession                 $checkoutSession,
+        AthosCommerceLogger             $logger
     )
     {
         $this->config = $config;
         $this->priceResolver = $priceResolver;
         $this->skuResolver = $skuResolver;
         $this->serializer = $serializer;
+        $this->checkoutSession = $checkoutSession;
+        $this->logger = $logger;
     }
 
     /**
-     * @param array $quoteItems
-     * @return string|null
+     * @return array|array[]
+     * @throws \Magento\Framework\Exception\LocalizedException
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
      */
-    public function getProducts(array $quoteItems): ?string
+    public function getCartPageData(): array
     {
-        $this->productsSku = [];
-        $products = [];
-        foreach ($quoteItems as $quoteItem) {
-            if (!$quoteItem instanceof CartItemInterface) {
-                continue;
+        try {
+            $quote = $this->checkoutSession->getQuote();
+            if (!$quote || !$quote->getId()) {
+                return [
+                    'products' => []
+                ];
             }
-            $this->productsSku[] = $this->skuResolver->getProductSku($quoteItem);
 
-            $products[] = [
-                'uid' => (string)$quoteItem->getItemId() ?? '',
-                'name' => $quoteItem->getName(),
-                'sku' => $quoteItem->getSku(),
-                'price' => $this->priceResolver->getProductPrice($quoteItem),
-                'qty' => $this->getProductQuantity($quoteItem),
-                'calculatedPrice' => method_exists($quoteItem, 'getCalculationPrice') ? $quoteItem->getCalculationPrice() : 0.00,
-                'parentSku' => $this->skuResolver->getProductSku($quoteItem),
+            $products = [];
+            foreach ($quote->getAllVisibleItems() as $item) {
+                if (!$item instanceof Item) {
+                    continue;
+                }
+                $products[] = $this->formatQuoteItem($item);
+            }
+            return [
+                'products' => $this->serializer->serialize($products)
+            ];
+        } catch (\Throwable $e) {
+            $this->logger->error($e->getMessage());
+            return [
+                'products' => []
             ];
         }
-        return $this->serializer->serialize($products);
+    }
+
+    /**
+     * @param Item $item
+     * @return array
+     */
+    private function formatQuoteItem(Item $quoteItem): array
+    {
+        $product = $quoteItem->getProduct();
+
+        return [
+            'uid' => (string)$quoteItem->getItemId() ?? '',
+            'name' => (string)$quoteItem->getName() ?? '',
+            'sku' => $this->skuResolver->getProductSku($quoteItem),
+            'qty' => $this->getProductQuantity($quoteItem),
+            'price' => $this->priceResolver->getProductPrice($quoteItem),
+        ];
     }
 
     /**
@@ -114,13 +152,5 @@ class CartViewModel implements ArgumentInterface
     private function getProductQuantity(CartItemInterface $quoteItem): ?int
     {
         return (int)$quoteItem->getQty();
-    }
-
-    /**
-     * @return string|null
-     */
-    public function getProductsSku(): ?string
-    {
-        return $this->serializer->serialize($this->productsSku);
     }
 }

@@ -11,21 +11,22 @@ $scriptModel = $block->getData('global_script_model');
 if (!$scriptModel || !$viewModel || !$scriptModel->shouldRender()) {
     return;
 }
-$products = $viewModel->getProducts($block->getQuote()->getAllVisibleItems());
+$cartData = $viewModel->getCartPageData();
+if (empty($cartData['products'])) {
+    return;
+}
 ?>
 
 <script type="text/javascript" id="athoscommerce_tracking_cart_page">
     (function () {
-        window.customVendor.tracker.events.cart = window.customVendor.tracker.events.cart || {};
+        window.athos.tracker.events.cart = window.athos.tracker.events.cart || {};
+        var cartPageData = <?= /* @noEscape */ $cartData['products'] ?? [] ?>;
 
-        window.customVendor.tracker.events.cart.products = <?= /* @noEscape */ $products; ?>;
-        
-
-        if (typeof window.customVendor.tracker.events.cart.add === 'function') {
-            window.customVendor.tracker.events.cart.add({
+        if (typeof window.athos.tracker.events.cart.add === 'function') {
+            window.athos.tracker.events.cart.add({
                 data: {
-                    results: config.products,
-                    cart: config.products
+                    results: cartPageData.products,
+                    cart: cartPageData.products
                 }
             });
         }
