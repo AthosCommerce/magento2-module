@@ -1,34 +1,57 @@
 <?php
 declare(strict_types=1);
 
-/** @var \Magento\Framework\View\Element\Template $block */
-/** @var \AthosCommerce\Feed\ViewModel\CartViewModel $viewModel */
-/** @var \AthosCommerce\Feed\ViewModel\GlobalScriptViewModel $scriptModel */
+use AthosCommerce\Feed\ViewModel\CartViewModel;
+use AthosCommerce\Feed\ViewModel\Escaper;
+use AthosCommerce\Feed\ViewModel\GlobalScriptViewModel;
+use Magento\Framework\View\Element\Template;
+use Magento\Framework\View\Helper\SecureHtmlRenderer;
 
-$viewModel = $block->getData('cart_view_model');
-$scriptModel = $block->getData('global_script_model');
+/** @var Template $block */
+/** @var CartViewModel $cartViewModel */
+/** @var GlobalScriptViewModel $globalScriptViewModel */
+/** @var SecureHtmlRenderer $secureRenderer */
+/** @var Escaper $escaperViewModel */
 
-if (!$scriptModel || !$viewModel || !$scriptModel->shouldRender()) {
+$cartViewModel = $block->getCartViewModel();
+$globalScriptViewModel = $block->getGlobalScriptViewModel();
+$escaperViewModel = $block->getEscaperViewModel();
+$escaper = $escaperViewModel->getEscaper();
+
+if (!$globalScriptViewModel || !$cartViewModel || !$globalScriptViewModel->shouldRender()) {
     return;
 }
-$cartData = $viewModel->getCartPageData();
-if (empty($cartData['products'])) {
+$cartPageData = $cartViewModel->getCartPageData();
+if (empty($cartPageData)) {
     return;
 }
 ?>
-
-<script type="text/javascript" id="athoscommerce_tracking_cart_page">
+<?php
+$scriptString = "
     (function () {
         window.athos.tracker.events.cart = window.athos.tracker.events.cart || {};
-        var cartPageData = <?= /* @noEscape */ $cartData['products'] ?? [] ?>;
+        var cartPageProducts = {$cartPageData};
+
+        window.athos.tracker.events.cartPageProducts = cartPageProducts || {};
 
         if (typeof window.athos.tracker.events.cart.add === 'function') {
             window.athos.tracker.events.cart.add({
                 data: {
-                    results: cartPageData.products,
-                    cart: cartPageData.products
+                    results: cartPageProducts,
+                    cart: cartPageProducts
                 }
             });
         }
     })();
-</script>
+";
+?>
+<?= /* @noEscape */
+$secureRenderer->renderTag(
+    tagName: 'script',
+    attributes: [
+        'type' => 'text/javascript',
+        'id' => 'athoscommerce_tracking_cart_page',
+    ],
+    content: $scriptString,
+    textContent: false,
+) ?>

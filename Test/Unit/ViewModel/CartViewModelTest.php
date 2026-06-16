@@ -3,39 +3,27 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Test\Unit\ViewModel;
 
-use PHPUnit\Framework\TestCase;
-use AthosCommerce\Feed\ViewModel\CartViewModel;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Service\Config;
 use AthosCommerce\Feed\Service\Tracking\CompositeQuoteItemPriceResolver;
 use AthosCommerce\Feed\Service\Tracking\CompositeSkuResolver;
+use AthosCommerce\Feed\Service\Tracking\SkuResolverInterface;
+use AthosCommerce\Feed\ViewModel\CartViewModel;
+use Magento\Checkout\Model\Session;
 use Magento\Framework\Serialize\SerializerInterface;
 use Magento\Quote\Api\Data\CartItemInterface;
+use Magento\Quote\Model\Quote;
+use Magento\Quote\Model\Quote\Item;
+use PHPUnit\Framework\TestCase;
 
 class CartViewModelTest extends TestCase
 {
-    /**
-     * @var Config|\PHPUnit\Framework\MockObject\MockObject
-     */
     private $configMock;
-
-    /**
-     * @var CompositeQuoteItemPriceResolver|\PHPUnit\Framework\MockObject\MockObject
-     */
     private $priceResolverMock;
-
-    /**
-     * @var CompositeSkuResolver|\PHPUnit\Framework\MockObject\MockObject
-     */
     private $skuResolverMock;
-
-    /**
-     * @var SerializerInterface|\PHPUnit\Framework\MockObject\MockObject
-     */
     private $serializerMock;
-
-    /**
-     * @var CartViewModel
-     */
+    private $checkoutSessionMock;
+    private $loggerMock;
     private $viewModel;
 
     protected function setUp(): void
@@ -44,91 +32,159 @@ class CartViewModelTest extends TestCase
         $this->priceResolverMock = $this->createMock(CompositeQuoteItemPriceResolver::class);
         $this->skuResolverMock = $this->createMock(CompositeSkuResolver::class);
         $this->serializerMock = $this->createMock(SerializerInterface::class);
+        $this->checkoutSessionMock = $this->createMock(Session::class);
+        $this->loggerMock = $this->createMock(AthosCommerceLogger::class);
 
         $this->viewModel = new CartViewModel(
             $this->configMock,
             $this->priceResolverMock,
             $this->skuResolverMock,
-            $this->serializerMock
+            $this->serializerMock,
+            $this->checkoutSessionMock,
+            $this->loggerMock
         );
     }
 
-    public function testGetAthoscommerceSiteId(): void
+
+    public function testReturnsEmptyArrayWhenRenderingDisabled(): void
     {
-        $this->configMock
+        $this->configMock->expects($this->once())->method('shouldRender')->willReturn(false);
+
+        $this->assertSame('', $this->viewModel->getCartPageData());
+    }
+
+    public function testReturnsEmptyProductsWhenQuoteDoesNotExist(): void
+    {
+        $quote = $this->createMock(Quote::class);
+
+        $this->configMock->method('shouldRender')->willReturn(true);
+
+        $quote->method('getId')->willReturn(null);
+
+        $this->checkoutSessionMock->method('getQuote')->willReturn($quote);
+
+        $this->assertSame(
+            '',
+            $this->viewModel->getCartPageData()
+        );
+    }
+
+    public function testReturnsEmptyProductsWhenNoVisibleItemsExist(): void
+    {
+        $quote = $this->createMock(Quote::class);
+
+        $this->configMock->method('shouldRender')->willReturn(true);
+
+        $quote->method('getId')->willReturn(1);
+        $quote->method('getAllVisibleItems')->willReturn([]);
+
+        $this->checkoutSessionMock->method('getQuote')->willReturn($quote);
+
+        $this->assertSame(
+            '',
+            $this->viewModel->getCartPageData()
+        );
+    }
+
+    public function testReturnsSerializedProducts(): void
+    {
+        $quote = $this->createMock(Quote::class);
+        $item = $this->createMock(Item::class);
+
+        $this->configMock->method('shouldRender')->willReturn(true);
+
+        $quote->method('getId')->willReturn(1);
+        $quote->method('getAllVisibleItems')->willReturn([$item]);
+
+        $this->checkoutSessionMock->method('getQuote')->willReturn($quote);
+
+        $item->method('getItemId')->willReturn(1890);
+        $item->method('getName')->willReturn('Test Athos Product');
+        $item->method('getQty')->willReturn(2);
+
+        $this->skuResolverMock
             ->expects($this->once())
-            ->method('getSiteId')
-            ->willReturn('site_456');
-
-        $this->assertSame(
-            'site_456',
-            $this->viewModel->getAthoscommerceSiteId()
-        );
-    }
-
-    public function testGetProductsReturnsSerializedProducts(): void
-    {
-        $quoteItem = $this->createMock(CartItemInterface::class);
-
-        $quoteItem->expects($this->once())
-            ->method('getQty')
-            ->willReturn(5);
-
-        $this->skuResolverMock->expects($this->exactly(2))
             ->method('getProductSku')
-            ->with($quoteItem)
-            ->willReturn('SKU-156');
+            ->with($item)
+            ->willReturn('SKU-90001');
 
-        $this->priceResolverMock->expects($this->once())
+        $this->priceResolverMock
+            ->expects($this->once())
             ->method('getProductPrice')
-            ->with($quoteItem)
-            ->willReturn(199.99);
+            ->with($item)
+            ->willReturn(92349.99);
 
-        $expectedProductsArray = [
-            [
-                'price' => 199.99,
-                'sku' => 'SKU-156',
-                'qty' => 5
-            ]
-        ];
+        $expectedProducts = [[
+            'uid' => '1890',
+            'name' => 'Test Athos Product',
+            'sku' => 'SKU-90001',
+            'qty' => 2,
+            'price' => 92349.99,
+        ]];
 
-        $this->serializerMock->expects($this->once())
+        $this->serializerMock
+            ->expects($this->once())
             ->method('serialize')
-            ->with($expectedProductsArray)
-            ->willReturn(json_encode($expectedProductsArray));
-
-        $result = $this->viewModel->getProducts([$quoteItem]);
+            ->with($expectedProducts)
+            ->willReturn('serialized-products');
 
         $this->assertSame(
-            json_encode($expectedProductsArray),
-            $result
+            'serialized-products',
+            $this->viewModel->getCartPageData()
         );
     }
 
-    public function testGetProductsSkuReturnsSerializedSkus(): void
+    public function testLogsErrorAndReturnsEmptyProductsWhenExceptionOccurs(): void
     {
-        $quoteItem = $this->createMock(CartItemInterface::class);
+        $this->configMock->method('shouldRender')->willReturn(true);
 
-        $quoteItem->method('getQty')->willReturn(1);
+        $this->checkoutSessionMock
+            ->method('getQuote')
+            ->willThrowException(new \RuntimeException('Something failed'));
 
-        $this->skuResolverMock->method('getProductSku')
-            ->willReturn('Athos-sku-741');
+        $this->loggerMock
+            ->expects($this->once())
+            ->method('error')
+            ->with('Something failed');
 
-        $this->priceResolverMock->method('getProductPrice')
-            ->willReturn(10.45);
+        $this->assertSame('', $this->viewModel->getCartPageData());
+    }
 
-        $this->serializerMock->method('serialize')
-            ->willReturnCallback(static function ($data) {
-                return json_encode($data);
-            });
-
-        $this->viewModel->getProducts([$quoteItem]);
-
-        $result = $this->viewModel->getProductsSku();
-
-        $this->assertSame(
-            json_encode(['Athos-sku-741']),
-            $result
+    public function testUsesResolverFromPool(): void
+    {
+        $product = $this->createConfiguredMock(
+            CartItemInterface::class,
+            ['getProductType' => 'configurable']
         );
+
+        $resolver = $this->createMock(SkuResolverInterface::class);
+        $resolver->method('getProductSku')->willReturn('configurable-sku');
+
+        $defaultResolver = $this->createMock(SkuResolverInterface::class);
+
+        $subject = new CompositeSkuResolver(
+            $this->loggerMock,
+            $defaultResolver,
+            ['configurable' => $resolver]
+        );
+
+        $this->assertSame('configurable-sku', $subject->getProductSku($product));
+    }
+
+    public function testFallsBackToDefaultResolver(): void
+    {
+        $product = $this->createConfiguredMock(CartItemInterface::class, ['getProductType' => 'simple']);
+
+        $defaultResolver = $this->createMock(SkuResolverInterface::class);
+
+        $defaultResolver->method('getProductSku')->willReturn('DEFAULT');
+
+        $subject = new CompositeSkuResolver(
+            $this->loggerMock,
+            $defaultResolver,
+            []
+        );
+
+        $this->assertSame('DEFAULT', $subject->getProductSku($product));
     }
 }

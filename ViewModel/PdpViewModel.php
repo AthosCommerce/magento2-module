@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\ViewModel;
 
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
+use AthosCommerce\Feed\Service\Config;
 use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\ConfigurableProduct\Model\Product\Type\Configurable;
 use Magento\Framework\Registry;
@@ -29,6 +30,10 @@ use Magento\Store\Model\StoreManagerInterface;
 
 class PdpViewModel implements ArgumentInterface
 {
+    /**
+     * @var Config
+     */
+    private $config;
     /**
      * @var Registry
      */
@@ -55,6 +60,7 @@ class PdpViewModel implements ArgumentInterface
     private $logger;
 
     /**
+     * @param Config $config
      * @param Registry $registry
      * @param Configurable $configurableType
      * @param Grouped $groupedType
@@ -63,6 +69,7 @@ class PdpViewModel implements ArgumentInterface
      * @param AthosCommerceLogger $logger
      */
     public function __construct(
+        Config                $config,
         Registry              $registry,
         Configurable          $configurableType,
         Grouped               $groupedType,
@@ -71,6 +78,7 @@ class PdpViewModel implements ArgumentInterface
         AthosCommerceLogger   $logger
     )
     {
+        $this->config = $config;
         $this->registry = $registry;
         $this->configurableType = $configurableType;
         $this->groupedType = $groupedType;
@@ -80,22 +88,30 @@ class PdpViewModel implements ArgumentInterface
     }
 
     /**
-     * @return array
+     * @return string
      */
-    public function getProductPageData(): array
+    public function getProductPageData(): string
     {
-        $product = $this->getCurrentProduct();
-        if (!$product || !(int)$product->getId()) {
-            return [];
+        if (true !== $this->config->shouldRender()) {
+            return '';
         }
 
-        return $this->serializer->serialize([
+        $product = $this->getCurrentProduct();
+        if (!$product || !(int)$product->getId()) {
+            return '';
+        }
+
+        $data = $this->serializer->serialize([
             'uid' => (string)$product->getDataUsingMethod('entity_id'),
             'sku' => (string)$product->getSku(),
-            'parentId' => (string)$this->getParentId($product),
+            'parentId' => $this->getParentId($product),
             'price' => $this->getProductPrice($product),
             'currency' => $this->getCurrency(),
         ]);
+        if (!is_string($data)) {
+            $data = '';
+        }
+        return $data;
     }
 
     /**

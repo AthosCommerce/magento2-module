@@ -22,36 +22,29 @@ use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Service\Config;
 use AthosCommerce\Feed\Service\Tracking\CompositeQuoteItemPriceResolver;
 use AthosCommerce\Feed\Service\Tracking\CompositeSkuResolver;
+use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Checkout\Model\Session as CheckoutSession;
+use Magento\ConfigurableProduct\Model\Product\Type\Configurable;
 use Magento\Framework\View\Element\Block\ArgumentInterface;
 use Magento\Framework\Serialize\SerializerInterface;
+use Magento\GroupedProduct\Model\Product\Type\Grouped;
 use Magento\Quote\Api\Data\CartItemInterface;
 use Magento\Quote\Model\Quote\Item;
 
-/**
- * Class CartViewModel
- *
- * This is view model for Cart Page
- *
- * @package AthosCommerce\Feed\ViewModel
- */
 class CartViewModel implements ArgumentInterface
 {
     /**
      * @var Config
      */
     private $config;
-
     /**
      * @var CompositeQuoteItemPriceResolver
      */
     private $priceResolver;
-
     /**
      * @var CompositeSkuResolver
      */
     private $skuResolver;
-
     /**
      * @var SerializerInterface
      */
@@ -64,11 +57,14 @@ class CartViewModel implements ArgumentInterface
      * @var AthosCommerceLogger
      */
     private $logger;
-
     /**
-     * @var array
+     * @var Configurable
      */
-    private $productsSku = [];
+    private $configurableType;
+    /**
+     * @var Grouped
+     */
+    private $groupedType;
 
     /**
      * @param Config $config
@@ -77,6 +73,8 @@ class CartViewModel implements ArgumentInterface
      * @param SerializerInterface $serializer
      * @param CheckoutSession $checkoutSession
      * @param AthosCommerceLogger $logger
+     * @param Configurable $configurableType
+     * @param Grouped $groupedType
      */
     public function __construct(
         Config                          $config,
@@ -84,7 +82,9 @@ class CartViewModel implements ArgumentInterface
         CompositeSkuResolver            $skuResolver,
         SerializerInterface             $serializer,
         CheckoutSession                 $checkoutSession,
-        AthosCommerceLogger             $logger
+        AthosCommerceLogger             $logger,
+        Configurable                    $configurableType,
+        Grouped                         $groupedType
     )
     {
         $this->config = $config;
@@ -93,21 +93,22 @@ class CartViewModel implements ArgumentInterface
         $this->serializer = $serializer;
         $this->checkoutSession = $checkoutSession;
         $this->logger = $logger;
+        $this->configurableType = $configurableType;
+        $this->groupedType = $groupedType;
     }
 
     /**
-     * @return array|array[]
-     * @throws \Magento\Framework\Exception\LocalizedException
-     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     * @return string
      */
-    public function getCartPageData(): array
+    public function getCartPageData(): string
     {
+        if (true !== $this->config->shouldRender()) {
+            return '';
+        }
         try {
             $quote = $this->checkoutSession->getQuote();
             if (!$quote || !$quote->getId()) {
-                return [
-                    'products' => []
-                ];
+                return '';
             }
 
             $products = [];
@@ -117,14 +118,18 @@ class CartViewModel implements ArgumentInterface
                 }
                 $products[] = $this->formatQuoteItem($item);
             }
-            return [
-                'products' => $this->serializer->serialize($products)
-            ];
+
+            if (empty($products)) {
+                return '';
+            }
+            $data = $this->serializer->serialize($products);
+            if (!is_string($data)) {
+                $data = '';
+            }
+            return $data;
         } catch (\Throwable $e) {
             $this->logger->error($e->getMessage());
-            return [
-                'products' => []
-            ];
+            return '';
         }
     }
 
@@ -134,15 +139,33 @@ class CartViewModel implements ArgumentInterface
      */
     private function formatQuoteItem(Item $quoteItem): array
     {
-        $product = $quoteItem->getProduct();
-
         return [
-            'uid' => (string)$quoteItem->getItemId() ?? '',
-            'name' => (string)$quoteItem->getName() ?? '',
+            'uid' => (string)$quoteItem->getItemId(),
+            'name' => (string)$quoteItem->getName(),
             'sku' => $this->skuResolver->getProductSku($quoteItem),
             'qty' => $this->getProductQuantity($quoteItem),
             'price' => $this->priceResolver->getProductPrice($quoteItem),
+            'parentId' => $this->getParentId($quoteItem),
         ];
+    }
+
+    /**
+     * @param CartItemInterface $cartItem
+     * @return string|null
+     */
+    private function getParentId(CartItemInterface $cartItem): ?string
+    {
+        $parentIds = $this->configurableType->getParentIdsByChild((int)$cartItem->getId());
+        if (!empty($parentIds)) {
+            return (string)reset($parentIds);
+        }
+
+        $groupedParentIds = $this->groupedType->getParentIdsByChild((int)$cartItem->getId());
+        if (!empty($groupedParentIds)) {
+            return (string)reset($groupedParentIds);
+        }
+
+        return null;
     }
 
     /**

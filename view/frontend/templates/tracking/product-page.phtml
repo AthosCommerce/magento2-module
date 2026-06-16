@@ -1,28 +1,38 @@
 <?php
 declare(strict_types=1);
 
-/** @var \Magento\Framework\View\Element\Template $block */
-/** @var \AthosCommerce\Feed\ViewModel\PdpViewModel $viewModel */
-/** @var \AthosCommerce\Feed\ViewModel\GlobalScriptViewModel $scriptModel */
+use AthosCommerce\Feed\ViewModel\Escaper;
+use AthosCommerce\Feed\ViewModel\GlobalScriptViewModel;
+use AthosCommerce\Feed\ViewModel\PdpViewModel;
+use Magento\Framework\View\Element\Template;
+use Magento\Framework\View\Helper\SecureHtmlRenderer;
 
-$viewModel = $block->getData('view_model');
-$scriptModel = $block->getData('global_script_model');
+/** @var Template $block */
+/** @var PdpViewModel $productPageViewModel */
+/** @var GlobalScriptViewModel $globalScriptViewModel */
+/** @var Escaper $escaperViewModel */
 
-if (!$scriptModel || !$viewModel || !$scriptModel->shouldRender()) {
+$productPageViewModel = $block->getProductPageViewModel();
+$globalScriptViewModel = $block->getGlobalScriptViewModel();
+$escaperViewModel = $block->getEscaperViewModel();
+$escaper = $escaperViewModel->getEscaper();
+
+if (!$globalScriptViewModel || !$productPageViewModel || !$globalScriptViewModel->shouldRender()) {
     return;
 }
 
-$productPageData = $viewModel->getProductPageData();
+$productPageData = $productPageViewModel->getProductPageData();
 if (!$productPageData) {
     return;
 }
 ?>
 
-<script type="text/javascript" id="athoscommerce_tracking_product_page">
+<?php
+$scriptString = "
     (function () {
-        var productPageData = <?= /* @noEscape */ $productPageData ?>;
-
+        var productPageData = '{$escaper->escapeJs($productPageData)}' ;
         window.athos.tracker.events.product = window.athos.tracker.events.product || {};
+        window.athos.tracker.events.productData = productPageData || {};
 
         if (typeof window.athos.tracker.events.product.pageView === 'function') {
             window.athos.tracker.events.product.pageView({
@@ -38,4 +48,16 @@ if (!$productPageData) {
             });
         }
     })();
-</script>
+";
+?>
+
+<?= /* @noEscape */
+$secureRenderer->renderTag(
+    tagName: 'script',
+    attributes: [
+        'type' => 'text/javascript',
+        'id' => 'athoscommerce_tracking_product_page',
+    ],
+    content: $scriptString,
+    textContent: false,
+) ?>

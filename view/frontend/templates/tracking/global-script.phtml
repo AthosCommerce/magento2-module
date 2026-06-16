@@ -1,26 +1,46 @@
 <?php
 declare(strict_types=1);
 
-/** @var \Magento\Framework\View\Element\Template $block */
-/** @var \AthosCommerce\Feed\ViewModel\GlobalScriptViewModel $viewModel */
+use AthosCommerce\Feed\ViewModel\Escaper;
+use AthosCommerce\Feed\ViewModel\GlobalScriptViewModel;
+use Magento\Framework\View\Element\Template;
+use Magento\Framework\View\Helper\SecureHtmlRenderer;
 
-$viewModel = $block->getData('global_script_model');
-if (!$viewModel) {
+/** @var Template $block */
+/** @var GlobalScriptViewModel $globalScriptViewModel */
+/** @var SecureHtmlRenderer $secureRenderer */
+/** @var Escaper $escaperViewModel */
+
+$globalScriptViewModel = $block->getGlobalScriptViewModel();
+$escaperViewModel = $block->getEscaperViewModel();
+$escaper = $escaperViewModel->getEscaper();
+if (!$globalScriptViewModel) {
     return;
 }
 
-$siteId = $viewModel->getSiteId();
-$src = $viewModel->getTrackingScriptSrc();
+$siteId = $globalScriptViewModel->getSiteId();
+$src = $globalScriptViewModel->getTrackingScriptSrc();
 
-if (!$siteId || !$src) {
+if (!$siteId || !$src || !$globalScriptViewModel->shouldRender()) {
     return;
 }
 ?>
-<script id="athoscommerce_beacon" siteId="<?= /* @noEscape */ $block->escapeHtmlAttr($siteId) ?>"
-        src="<?= /* @noEscape */ $block->escapeUrl($src) ?>"></script>
-
-<script type="text/javascript" id="athoscommerce_init">
+<?php
+$scriptString = "
     window.athos = window.athos || {};
     window.athos.tracker = window.athos.tracker || {};
     window.athos.tracker.events = window.athos.tracker.events || {};
-</script>
+";
+?>
+
+<script siteId="<?= /* @noEscape */ $block->escapeHtmlAttr($siteId) ?>" src="<?= /* @noEscape */ $block->escapeUrl($src) ?>"></script>
+
+<?= /* @noEscape */ $secureRenderer->renderTag(
+    tagName: 'script',
+    attributes: [
+        'type' => 'text/javascript',
+        'id' => 'athoscommerce_init',
+    ],
+    content: $scriptString,
+    textContent: false,
+) ?>

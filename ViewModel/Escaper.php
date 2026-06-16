@@ -18,47 +18,29 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\ViewModel;
 
+use Magento\Framework\Escaper as FrameworkEscaper;
 use Magento\Framework\View\Element\Block\ArgumentInterface;
-use AthosCommerce\Feed\Service\Config;
 
-class GlobalScriptViewModel implements ArgumentInterface
+class Escaper implements ArgumentInterface
 {
     /**
-     * @var Config
+     * @var FrameworkEscaper
      */
-    private $config;
+    private $escaper;
 
     /**
-     * @param Config $config
+     * @param FrameworkEscaper $escaper
      */
-    public function __construct(
-        Config $config
-    )
+    public function __construct(FrameworkEscaper $escaper)
     {
-        $this->config = $config;
+        $this->escaper = $escaper;
     }
 
     /**
-     * @return string|null
+     * @return FrameworkEscaper
      */
-    public function getSiteId(): ?string
+    public function getEscaper(): FrameworkEscaper
     {
-        return (string)$this->config->getSiteId();
-    }
-
-    /**
-     * @return string
-     */
-    public function getTrackingScriptSrc(): string
-    {
-        return $this->config->getTrackingScriptSrc();
-    }
-
-    /**
-     * @return bool
-     */
-    public function shouldRender(): bool
-    {
-        return $this->config->shouldRender();
+        return $this->escaper;
     }
 }
