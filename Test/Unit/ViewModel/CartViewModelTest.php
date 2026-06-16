@@ -10,7 +10,9 @@ use AthosCommerce\Feed\Service\Tracking\CompositeSkuResolver;
 use AthosCommerce\Feed\Service\Tracking\SkuResolverInterface;
 use AthosCommerce\Feed\ViewModel\CartViewModel;
 use Magento\Checkout\Model\Session;
+use Magento\ConfigurableProduct\Model\Product\Type\Configurable;
 use Magento\Framework\Serialize\SerializerInterface;
+use Magento\GroupedProduct\Model\Product\Type\Grouped;
 use Magento\Quote\Api\Data\CartItemInterface;
 use Magento\Quote\Model\Quote;
 use Magento\Quote\Model\Quote\Item;
@@ -24,6 +26,8 @@ class CartViewModelTest extends TestCase
     private $serializerMock;
     private $checkoutSessionMock;
     private $loggerMock;
+    private $configurableMock;
+    private $groupedMock;
     private $viewModel;
 
     protected function setUp(): void
@@ -34,6 +38,8 @@ class CartViewModelTest extends TestCase
         $this->serializerMock = $this->createMock(SerializerInterface::class);
         $this->checkoutSessionMock = $this->createMock(Session::class);
         $this->loggerMock = $this->createMock(AthosCommerceLogger::class);
+        $this->configurableMock = $this->createMock(Configurable::class);
+        $this->groupedMock = $this->createMock(Grouped::class);
 
         $this->viewModel = new CartViewModel(
             $this->configMock,
@@ -41,7 +47,9 @@ class CartViewModelTest extends TestCase
             $this->skuResolverMock,
             $this->serializerMock,
             $this->checkoutSessionMock,
-            $this->loggerMock
+            $this->loggerMock,
+            $this->configurableMock,
+            $this->groupedMock
         );
     }
 
@@ -120,6 +128,7 @@ class CartViewModelTest extends TestCase
             'sku' => 'SKU-90001',
             'qty' => 2,
             'price' => 92349.99,
+            'parentId' => null,
         ]];
 
         $this->serializerMock

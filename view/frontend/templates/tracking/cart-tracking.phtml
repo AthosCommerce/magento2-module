@@ -30,9 +30,13 @@ if (empty($cartPageData)) {
 $scriptString = "
     (function () {
         window.athos.tracker.events.cart = window.athos.tracker.events.cart || {};
-        var cartPageProducts = {$cartPageData};
-
-        window.athos.tracker.events.cartPageProducts = cartPageProducts || {};
+        var cartPageProducts = [];
+         try {
+             cartPageProducts = JSON.parse('{$escaper->escapeJs($cartPageData)}') || [];
+         } catch (e) {
+             cartPageProducts = [];
+         }
+         window.athos.tracker.events.cartPageProducts = cartPageProducts;
 
         if (typeof window.athos.tracker.events.cart.add === 'function') {
             window.athos.tracker.events.cart.add({

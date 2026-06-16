@@ -113,9 +113,6 @@ class CartViewModel implements ArgumentInterface
 
             $products = [];
             foreach ($quote->getAllVisibleItems() as $item) {
-                if (!$item instanceof Item) {
-                    continue;
-                }
                 $products[] = $this->formatQuoteItem($item);
             }
 
@@ -155,12 +152,12 @@ class CartViewModel implements ArgumentInterface
      */
     private function getParentId(CartItemInterface $cartItem): ?string
     {
-        $parentIds = $this->configurableType->getParentIdsByChild((int)$cartItem->getId());
+        $parentIds = $this->configurableType->getParentIdsByChild((int)$cartItem->getProductId());
         if (!empty($parentIds)) {
             return (string)reset($parentIds);
         }
 
-        $groupedParentIds = $this->groupedType->getParentIdsByChild((int)$cartItem->getId());
+        $groupedParentIds = $this->groupedType->getParentIdsByChild((int)$cartItem->getProductId());
         if (!empty($groupedParentIds)) {
             return (string)reset($groupedParentIds);
         }

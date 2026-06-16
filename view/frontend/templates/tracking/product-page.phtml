@@ -30,21 +30,18 @@ if (!$productPageData) {
 <?php
 $scriptString = "
     (function () {
-        var productPageData = '{$escaper->escapeJs($productPageData)}' ;
+        var productPageData = {};
+         try {
+             productPageData = JSON.parse('{$escaper->escapeJs($productPageData)}') || {};
+         } catch (e) {
+             productPageData = {};
+        }
         window.athos.tracker.events.product = window.athos.tracker.events.product || {};
-        window.athos.tracker.events.productData = productPageData || {};
+        window.athos.tracker.events.productData = productPageData;
 
         if (typeof window.athos.tracker.events.product.pageView === 'function') {
             window.athos.tracker.events.product.pageView({
-                data: {
-                    result: {
-                        uid: productPageData.uid,
-                        sku: productPageData.sku,
-                        parentId: productPageData.parentId,
-                        price: productPageData.price,
-                        currency: productPageData.currency
-                    }
-                }
+                data: { result: productPageData }
             });
         }
     })();
