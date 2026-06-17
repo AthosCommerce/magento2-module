@@ -80,7 +80,7 @@ class ParentIdSourceFieldEvaluator
                 ),
                 [
                     'supported types' => $this->supportedInputTypes,
-                    'sku' => $parent->getSku()
+                    'sku' => $product->getSku()
                 ]
             );
             return null;
