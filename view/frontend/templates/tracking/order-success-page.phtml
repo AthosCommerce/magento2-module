@@ -1,0 +1,63 @@
+<?php
+declare(strict_types=1);
+
+use AthosCommerce\Feed\ViewModel\CheckoutSuccessViewModel;
+use AthosCommerce\Feed\ViewModel\Escaper;
+use Magento\Framework\View\Element\Template;
+use Magento\Framework\View\Helper\SecureHtmlRenderer;
+
+/** @var Template $block */
+/** @var CheckoutSuccessViewModel $checkoutSucessViewModel */
+/** @var SecureHtmlRenderer $secureRenderer */
+/** @var Escaper $escaperViewModel */
+
+$checkoutSucessViewModel = $block->getCheckoutSuccessViewModel();
+$escaperViewModel = $block->getEscaperViewModel();
+$escaper = $escaperViewModel->getEscaper();
+
+if (!$checkoutSucessViewModel) {
+    return;
+}
+
+$configJson = $checkoutSucessViewModel->getSuccessPageConfig();
+if (empty($configJson) || $configJson === '[]') {
+    return;
+}
+?>
+<?php
+$scriptString = "
+    (function () {
+        var config = {};
+        try {
+            config = JSON.parse('{$escaper->escapeJs($configJson)}') || {};
+        } catch (e) {
+            config = {};
+        }
+
+        window.athos.tracker.events.successPageData = config;
+
+        if (typeof window.athos.tracker.events.order?.transaction === 'function') {
+            window.athos.tracker.events.order.transaction({
+                data: {
+                    orderId: config.orderId,
+                    transactionTotal: config.totals?.transactionTotal,
+                    total: config.totals?.total,
+                    city: config.totals?.city,
+                    state: config.totals?.state,
+                    country: config.totals?.country,
+                    results: config.products || []
+                }
+            });
+        }
+    })();
+";
+?>
+<?= /* @noEscape */ $secureRenderer->renderTag(
+    tagName: 'script',
+    attributes: [
+        'type' => 'text/javascript',
+        'id' => 'athoscommerce_tracking_order_success_page',
+    ],
+    content: $scriptString,
+    textContent: false,
+) ?>
