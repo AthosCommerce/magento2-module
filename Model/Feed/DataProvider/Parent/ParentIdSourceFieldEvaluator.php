@@ -72,7 +72,7 @@ class ParentIdSourceFieldEvaluator
 
         $inputType = $attribute->getFrontendInput();
         if (!in_array($inputType, $this->supportedInputTypes, true)) {
-            $this->logger->warning(
+            $this->logger->debug(
                 sprintf(
                     "Feed Config Issue: The attribute '%s' has an input type of '%s', which is not supported.",
                     $identifier,
@@ -80,7 +80,7 @@ class ParentIdSourceFieldEvaluator
                 ),
                 [
                     'supported types' => $this->supportedInputTypes,
-                    'sku' => $parent->getSku()
+                    'sku' => $product->getSku()
                 ]
             );
             return null;
