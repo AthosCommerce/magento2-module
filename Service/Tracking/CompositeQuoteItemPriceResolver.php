@@ -69,15 +69,24 @@ class CompositeQuoteItemPriceResolver implements QuoteItemPriceResolverInterface
      */
     public function getProductPrice(CartItemInterface $product): ?float
     {
-        if ((isset($this->quoteItemPriceResolversPool[$product->getProductType()]) &&
-            $this->quoteItemPriceResolversPool[$product->getProductType()] instanceof QuoteItemPriceResolverInterface)
+        $productType = $product->getProductType();
+
+        if (
+            isset($this->quoteItemPriceResolversPool[$productType]) &&
+            $this->quoteItemPriceResolversPool[$productType] instanceof QuoteItemPriceResolverInterface
         ) {
-            return (float)$this->quoteItemPriceResolversPool[$product->getProductType()]->getProductPrice($product);
-        } elseif (isset($this->quoteItemPriceResolversPool[$product->getProductType()]) &&
-            !($this->quoteItemPriceResolversPool[$product->getProductType()] instanceof QuoteItemPriceResolverInterface)
+            return (float)$this->quoteItemPriceResolversPool[$productType]
+                ->getProductPrice($product);
+        }
+
+        if (
+            isset($this->quoteItemPriceResolversPool[$productType]) &&
+            !($this->quoteItemPriceResolversPool[$productType] instanceof QuoteItemPriceResolverInterface)
         ) {
             $this->logger->warning(
-                get_class($this->quoteItemPriceResolversPool[$product->getProductType()]) . ' must implement ' . QuoteItemPriceResolverInterface::class
+                get_class($this->quoteItemPriceResolversPool[$productType])
+                . ' must implement '
+                . QuoteItemPriceResolverInterface::class
             );
         }
 

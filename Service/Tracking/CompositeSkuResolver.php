@@ -69,11 +69,25 @@ class CompositeSkuResolver implements SkuResolverInterface
      */
     public function getProductSku($product): ?string
     {
-        if (isset($this->skuResolversPool[$product->getProductType()]) &&
-            $this->skuResolversPool[$product->getProductType()] instanceof SkuResolverInterface) {
-            return (string)$this->skuResolversPool[$product->getProductType()]->getProductSku($product);
-        } elseif (!($this->skuResolversPool[$product->getProductType()] instanceof SkuResolverInterface)) {
-            $this->logger->warning(get_class($this->skuResolversPool[$product->getProductType()]) . ' must implement ' . SkuResolverInterface::class);
+        $productType = $product->getProductType();
+
+        if (
+            isset($this->skuResolversPool[$productType]) &&
+            $this->skuResolversPool[$productType] instanceof SkuResolverInterface
+        ) {
+            return (string)$this->skuResolversPool[$productType]
+                ->getProductSku($product);
+        }
+
+        if (
+            isset($this->skuResolversPool[$productType]) &&
+            !($this->skuResolversPool[$productType] instanceof SkuResolverInterface)
+        ) {
+            $this->logger->warning(
+                get_class($this->skuResolversPool[$productType])
+                . ' must implement '
+                . SkuResolverInterface::class
+            );
         }
 
         return (string)$this->defaultSkuResolver->getProductSku($product);

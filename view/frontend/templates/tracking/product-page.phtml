@@ -1,0 +1,60 @@
+<?php
+declare(strict_types=1);
+
+use AthosCommerce\Feed\ViewModel\Escaper;
+use AthosCommerce\Feed\ViewModel\GlobalScriptViewModel;
+use AthosCommerce\Feed\ViewModel\PdpViewModel;
+use Magento\Framework\View\Element\Template;
+use Magento\Framework\View\Helper\SecureHtmlRenderer;
+
+/** @var Template $block */
+/** @var PdpViewModel $productPageViewModel */
+/** @var GlobalScriptViewModel $globalScriptViewModel */
+/** @var Escaper $escaperViewModel */
+
+$productPageViewModel = $block->getProductPageViewModel();
+$globalScriptViewModel = $block->getGlobalScriptViewModel();
+$escaperViewModel = $block->getEscaperViewModel();
+$escaper = $escaperViewModel->getEscaper();
+
+if (!$globalScriptViewModel || !$productPageViewModel || !$globalScriptViewModel->shouldRender()) {
+    return;
+}
+
+$productPageData = $productPageViewModel->getProductPageData();
+if (!$productPageData) {
+    return;
+}
+?>
+
+<?php
+$scriptString = "
+    (function () {
+        var productPageData = {};
+         try {
+             productPageData = JSON.parse('{$escaper->escapeJs($productPageData)}') || {};
+         } catch (e) {
+             productPageData = {};
+        }
+        window.athos.tracker.events.product = window.athos.tracker.events.product || {};
+        window.athos.tracker.events.productData = productPageData;
+
+        if (typeof window.athos.tracker.events.product.pageView === 'function') {
+            window.athos.tracker.events.product.pageView({
+                data: { result: productPageData }
+            });
+        }
+    })();
+";
+?>
+
+<?= /* @noEscape */
+$secureRenderer->renderTag(
+    'script',
+    [
+        'type' => 'text/javascript',
+        'id' => 'athoscommerce_tracking_product_page',
+    ],
+    $scriptString,
+    false,
+) ?>

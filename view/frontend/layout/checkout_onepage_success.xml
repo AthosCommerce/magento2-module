@@ -1,13 +1,34 @@
 <?xml version="1.0"?>
 <page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" layout="1column" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
     <body>
-        <referenceContainer name="content">
-            <block class="Magento\Framework\View\Element\Template" name="athoscommerce.tracking.checkout.success"
-                   template="AthosCommerce_Feed::checkout-success-tracking.phtml" after="checkout.success">
+        <referenceContainer name="head.additional">
+            <block class="Magento\Framework\View\Element\Template"
+                   name="athoscommerce.tracking.success.page.global"
+                   template="AthosCommerce_Feed::tracking/global-script.phtml">
                 <arguments>
-                    <argument name="athoscommerce_checkout_view_model"
-                              xsi:type="object">AthosCommerce\Feed\ViewModel\CheckoutViewModel
+                    <argument name="global_script_view_model" xsi:type="object">AthosCommerce\Feed\ViewModel\GlobalScriptViewModel</argument>
+                    <argument name="escaper_view_model" xsi:type="object">AthosCommerce\Feed\ViewModel\Escaper</argument>
+                </arguments>
+            </block>
+            <block class="Magento\Framework\View\Element\Template"
+                   name="athoscommerce.tracking.success.page.shopperId"
+                   template="AthosCommerce_Feed::tracking/shopper-id.phtml">
+                <arguments>
+                    <argument name="global_script_view_model" xsi:type="object">AthosCommerce\Feed\ViewModel\GlobalScriptViewModel</argument>
+                    <argument name="escaper_view_model" xsi:type="object">AthosCommerce\Feed\ViewModel\Escaper</argument>
+                    <argument name="shopper_id_timeout" xsi:type="number">3600000</argument><!-- 1 hour in milliseconds -->
+                </arguments>
+            </block>
+        </referenceContainer>
+        <referenceContainer name="before.body.end">
+            <block class="Magento\Framework\View\Element\Template"
+                   name="athoscommerce.tracking.success.success"
+                   template="AthosCommerce_Feed::tracking/order-success-page.phtml" after="-">
+                <arguments>
+                    <argument name="checkout_success_view_model"
+                              xsi:type="object">AthosCommerce\Feed\ViewModel\CheckoutSuccessViewModel
                     </argument>
+                    <argument name="escaper_view_model" xsi:type="object">AthosCommerce\Feed\ViewModel\Escaper</argument>
                 </arguments>
             </block>
         </referenceContainer>
