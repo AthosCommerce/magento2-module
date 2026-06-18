@@ -22,7 +22,6 @@ use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Service\Config;
 use AthosCommerce\Feed\Service\Tracking\CompositeQuoteItemPriceResolver;
 use AthosCommerce\Feed\Service\Tracking\CompositeSkuResolver;
-use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Checkout\Model\Session as CheckoutSession;
 use Magento\ConfigurableProduct\Model\Product\Type\Configurable;
 use Magento\Framework\View\Element\Block\ArgumentInterface;

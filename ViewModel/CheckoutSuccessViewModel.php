@@ -143,6 +143,9 @@ class CheckoutSuccessViewModel implements ArgumentInterface
      */
     public function getSuccessPageConfig(): string
     {
+        if (true !== $this->config->shouldRender()) {
+            return $this->serializer->serialize([]);
+        }
         $order = $this->getOrder();
 
         if (!$order) {
@@ -153,13 +156,11 @@ class CheckoutSuccessViewModel implements ArgumentInterface
 
         $config = [
             'orderId' => (string)$order->getId(),
-            'totals' => [
-                'transactionTotal' => (float)$order->getGrandTotal(),
-                'total' => (float)$order->getSubtotal(),
-                'city' => $billingAddress ? (string)$billingAddress->getCity() : '',
-                'state' => $billingAddress ? (string)$billingAddress->getRegion() : '',
-                'country' => $billingAddress ? (string)$billingAddress->getCountryId() : '',
-            ],
+            'subTotal' => (float)$order->getGrandTotal(),
+            'total' => (float)$order->getSubtotal(),
+            'city' => $billingAddress ? (string)$billingAddress->getCity() : '',
+            'state' => $billingAddress ? (string)$billingAddress->getRegion() : '',
+            'country' => $billingAddress ? (string)$billingAddress->getCountryId() : '',
             'products' => $this->getProducts(),
         ];
 

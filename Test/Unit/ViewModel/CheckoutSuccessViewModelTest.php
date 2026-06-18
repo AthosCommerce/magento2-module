@@ -14,10 +14,11 @@ use Magento\Sales\Model\Order;
 use Magento\Sales\Model\Order\Item as OrderItem;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+
 /**
  * @covers \AthosCommerce\Feed\ViewModel\CheckoutSuccessViewModel
  */
-class CheckoutViewModelTest extends TestCase
+class CheckoutSuccessViewModelTest extends TestCase
 {
     /**
      * @var Config|MockObject
@@ -50,7 +51,7 @@ class CheckoutViewModelTest extends TestCase
     private $orderMock;
 
     /**
-     * @var CheckoutViewModel
+     * @var CheckoutSuccessViewModel
      */
     private $viewModel;
 
@@ -63,13 +64,11 @@ class CheckoutViewModelTest extends TestCase
         $this->serializerMock = $this->createMock(SerializerInterface::class);
         $this->orderMock = $this->createMock(Order::class);
 
-        $this->checkoutSessionMock->method('getLastRealOrder')
-            ->willReturn($this->orderMock);
+        $this->checkoutSessionMock->method('getLastRealOrder')->willReturn($this->orderMock);
 
-        $this->orderMock->method('getId')
-            ->willReturn(12345);
+        $this->orderMock->method('getId')->willReturn('ORD#100001234');
 
-        $this->viewModel = new CheckoutViewModel(
+        $this->viewModel = new CheckoutSuccessViewModel(
             $this->configMock,
             $this->priceResolverMock,
             $this->checkoutSessionMock,
@@ -78,13 +77,18 @@ class CheckoutViewModelTest extends TestCase
         );
     }
 
-    public function testGetAthoscommerceSiteId(): void
+    public function testGetSuccessPageConfigReturnsEmptyArrayWhenRenderingDisabled(): void
     {
         $this->configMock->expects($this->once())
-            ->method('getSiteId')
-            ->willReturn('site_1565');
+            ->method('shouldRender')
+            ->willReturn(false);
 
-        $this->assertSame('site_1565', $this->viewModel->getAthoscommerceSiteId());
+        $this->serializerMock->expects($this->once())
+            ->method('serialize')
+            ->with([])
+            ->willReturn('[]');
+
+        $this->assertSame('[]', $this->viewModel->getSuccessPageConfig());
     }
 
     public function testGetProductsReturnsProductsArray(): void
@@ -184,36 +188,18 @@ class CheckoutViewModelTest extends TestCase
         );
     }
 
-    public function testGetOrderIdReturnsOrderId(): void
-    {
-        $this->orderMock->method('getId')
-            ->willReturn(12345);
-
-        $this->assertSame(12345, $this->viewModel->getOrderId());
-    }
-
-    public function testGetOrderIdReturnsNullWhenOrderIsMissing(): void
-    {
-        $checkoutSessionMock = $this->createMock(Session::class);
-
-        $checkoutSessionMock->method('getLastRealOrder')
-            ->willReturn(null);
-
-        $viewModel = new CheckoutViewModel(
-            $this->configMock,
-            $this->priceResolverMock,
-            $checkoutSessionMock,
-            $this->skuResolverMock,
-            $this->serializerMock
-        );
-
-        $this->assertNull($viewModel->getOrderId());
-    }
-
     public function testGetSuccessPageConfigReturnsSerializedConfig(): void
     {
         $billingAddressMock = $this->createMock(OrderAddressInterface::class);
         $orderItem = $this->createMock(OrderItem::class);
+
+        $viewModel = new CheckoutSuccessViewModel(
+            $this->configMock,
+            $this->priceResolverMock,
+            $this->checkoutSessionMock,
+            $this->skuResolverMock,
+            $this->serializerMock
+        );
 
         $orderItem->method('getParentItem')->willReturn(null);
         $orderItem->method('getProductId')->willReturn(555);
@@ -257,14 +243,12 @@ class CheckoutViewModelTest extends TestCase
             ->willReturn($billingAddressMock);
 
         $expectedConfig = [
-            'orderId' => '12345',
-            'totals' => [
-                'transactionTotal' => 500.50,
-                'total' => 450.00,
-                'city' => 'London',
-                'state' => 'London Region',
-                'country' => 'GB',
-            ],
+            'orderId' => 'ORD#100001234',
+            'subTotal' => 500.50,
+            'total' => 450.00,
+            'city' => 'London',
+            'state' => 'London Region',
+            'country' => 'GB',
             'products' => [
                 [
                     'uid' => '555',
@@ -281,7 +265,11 @@ class CheckoutViewModelTest extends TestCase
             ->with($expectedConfig)
             ->willReturn(json_encode($expectedConfig));
 
-        $result = $this->viewModel->getSuccessPageConfig();
+        $this->configMock->expects($this->once())
+            ->method('shouldRender')
+            ->willReturn(true);
+
+        $result = $viewModel->getSuccessPageConfig();
 
         $this->assertSame(json_encode($expectedConfig), $result);
     }
@@ -289,17 +277,22 @@ class CheckoutViewModelTest extends TestCase
     public function testGetSuccessPageConfigReturnsSerializedEmptyArrayWhenOrderIsMissing(): void
     {
         $checkoutSessionMock = $this->createMock(Session::class);
+        $configMock = $this->createMock(Config::class);
 
         $checkoutSessionMock->method('getLastRealOrder')
             ->willReturn(null);
+
+        $configMock->expects($this->once())
+            ->method('shouldRender')
+            ->willReturn(true);
 
         $this->serializerMock->expects($this->once())
             ->method('serialize')
             ->with([])
             ->willReturn('[]');
 
-        $viewModel = new CheckoutViewModel(
-            $this->configMock,
+        $viewModel = new CheckoutSuccessViewModel(
+            $configMock,
             $this->priceResolverMock,
             $checkoutSessionMock,
             $this->skuResolverMock,

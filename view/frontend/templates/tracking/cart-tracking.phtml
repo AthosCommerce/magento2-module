@@ -51,11 +51,11 @@ $scriptString = "
 ?>
 <?= /* @noEscape */
 $secureRenderer->renderTag(
-    tagName: 'script',
-    attributes: [
+     'script',
+    [
         'type' => 'text/javascript',
         'id' => 'athoscommerce_tracking_cart_page',
     ],
-    content: $scriptString,
-    textContent: false,
+    $scriptString,
+    false,
 ) ?>

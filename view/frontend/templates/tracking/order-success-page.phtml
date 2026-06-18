@@ -19,33 +19,31 @@ if (!$checkoutSucessViewModel) {
     return;
 }
 
-$configJson = $checkoutSucessViewModel->getSuccessPageConfig();
-if (empty($configJson) || $configJson === '[]') {
+$orderSuccessPageData = $checkoutSucessViewModel->getSuccessPageConfig();
+if (empty($orderSuccessPageData) || $orderSuccessPageData === '[]') {
     return;
 }
 ?>
 <?php
 $scriptString = "
     (function () {
-        var config = {};
+        var orderData = {};
         try {
-            config = JSON.parse('{$escaper->escapeJs($configJson)}') || {};
+            orderData = JSON.parse('{$escaper->escapeJs($orderSuccessPageData)}') || {};
         } catch (e) {
-            config = {};
+            orderData = {};
         }
 
-        window.athos.tracker.events.successPageData = config;
-
-        if (typeof window.athos.tracker.events.order?.transaction === 'function') {
+        if (window.athos.tracker.events.order && typeof window.athos.tracker.events.order.transaction === 'function') {
             window.athos.tracker.events.order.transaction({
                 data: {
-                    orderId: config.orderId,
-                    transactionTotal: config.totals?.transactionTotal,
-                    total: config.totals?.total,
-                    city: config.totals?.city,
-                    state: config.totals?.state,
-                    country: config.totals?.country,
-                    results: config.products || []
+                    orderId: orderData.orderId,
+                    subTotal: orderData.subTotal,
+                    total: orderData.total,
+                    city: orderData.city || '',
+                    state: orderData.state || '',
+                    country: orderData.country || '',
+                    results: orderData.products || []
                 }
             });
         }
@@ -53,11 +51,11 @@ $scriptString = "
 ";
 ?>
 <?= /* @noEscape */ $secureRenderer->renderTag(
-    tagName: 'script',
-    attributes: [
+    'script',
+     [
         'type' => 'text/javascript',
         'id' => 'athoscommerce_tracking_order_success_page',
     ],
-    content: $scriptString,
-    textContent: false,
+    $scriptString,
+    false,
 ) ?>

@@ -93,4 +93,12 @@ class Config implements ConfigInterface
         }
         return $url;
     }
+
+    /**
+     * @return bool
+     */
+    public function shouldRender(): bool
+    {
+        return $this->getSiteId() && $this->getTrackingScriptSrc();
+    }
 }
