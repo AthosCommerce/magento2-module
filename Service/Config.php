@@ -71,7 +71,7 @@ class Config implements ConfigInterface
      */
     public function getSiteId(?int $storeId = null): ?string
     {
-        return (string)$this->scopeConfig->getValue(
+        return $this->scopeConfig->getValue(
             self::ATHOSCOMMERCE_SITE_ID,
             ScopeInterface::SCOPE_STORE,
             $storeId

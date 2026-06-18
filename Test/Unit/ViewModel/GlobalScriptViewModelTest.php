@@ -43,7 +43,7 @@ class GlobalScriptViewModelTest extends TestCase
         );
     }
 
-    public function testReturnsEmptyStringWhenSiteIdIsNull(): void
+    public function testReturnsNullWhenSiteIdIsNull(): void
     {
         $this->configMock
             ->expects($this->once())
@@ -51,7 +51,7 @@ class GlobalScriptViewModelTest extends TestCase
             ->willReturn(null);
 
         $this->assertSame(
-            '',
+            null,
             $this->viewModel->getSiteId()
         );
     }
