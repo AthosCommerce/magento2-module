@@ -30,22 +30,22 @@ $scriptString = "
         var orderData = {};
         try {
             orderData = JSON.parse('{$escaper->escapeJs($orderSuccessPageData)}') || {};
+
+            if (window.athos.tracker.events.order && typeof window.athos.tracker.events.order.transaction === 'function') {
+                window.athos.tracker.events.order.transaction({
+                    data: {
+                        orderId: orderData.orderId,
+                        transactionTotal: orderData.subTotal,
+                        total: orderData.total,
+                        city: orderData.city || '',
+                        state: orderData.state || '',
+                        country: orderData.country || '',
+                        results: orderData.products || []
+                    }
+                });
+            }
         } catch (e) {
             orderData = {};
-        }
-
-        if (window.athos.tracker.events.order && typeof window.athos.tracker.events.order.transaction === 'function') {
-            window.athos.tracker.events.order.transaction({
-                data: {
-                    orderId: orderData.orderId,
-                    transactionTotal: orderData.subTotal,
-                    total: orderData.total,
-                    city: orderData.city || '',
-                    state: orderData.state || '',
-                    country: orderData.country || '',
-                    results: orderData.products || []
-                }
-            });
         }
     })();
 ";
