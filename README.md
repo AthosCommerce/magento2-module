@@ -187,16 +187,6 @@ Also you can do the same for `quoteItem`:
 Then add to `app/code/AthosCommerce/Feed/Service/Tracking` directory your custom class, 
 for example `YourProductTypeItemPriceResolver.php`:
 
-```php
-class YourProductTypeItemPriceResolver implements QuoteItemPriceResolverInterface
-{
-    public function getProductPrice(CartItemInterface $product): ?float
-    {
-        //your custom code
-    }
-}
-```
-
 
 Also, you can do the same for `quoteItem`:
 
