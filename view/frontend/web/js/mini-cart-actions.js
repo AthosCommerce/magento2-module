@@ -47,7 +47,10 @@ define([
             parentId: normalizeNullableString(
                 item.parent_id ||
                 item.parentId ||
-                null
+                item.product_id ||
+                item.item_id ||
+                item.id ||
+                item.uid
             ),
             sku: normalizeString(
                 item.product_sku ||

@@ -69,7 +69,8 @@
     <preference for="AthosCommerce\Feed\Api\Data\ProductCountItemInterface"
                 type="AthosCommerce\Feed\Model\Data\ProductCountItem"/>
 
-
+    <preference for="AthosCommerce\Feed\Service\Tracking\IdProviderInterface"
+                type="AthosCommerce\Feed\Service\Tracking\IdProvider"/>
 
     <preference for="AthosCommerce\Feed\Api\AppConfigInterface"
                 type="AthosCommerce\Feed\Model\AppConfig"/>

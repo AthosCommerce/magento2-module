@@ -20,12 +20,12 @@ namespace AthosCommerce\Feed\ViewModel;
 
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Service\Config;
+use AthosCommerce\Feed\Service\Tracking\IdProvider;
+use AthosCommerce\Feed\Service\Tracking\IdProviderInterface;
 use Magento\Catalog\Api\Data\ProductInterface;
-use Magento\ConfigurableProduct\Model\Product\Type\Configurable;
 use Magento\Framework\Registry;
 use Magento\Framework\Serialize\SerializerInterface;
 use Magento\Framework\View\Element\Block\ArgumentInterface;
-use Magento\GroupedProduct\Model\Product\Type\Grouped;
 use Magento\Store\Model\StoreManagerInterface;
 
 class PdpViewModel implements ArgumentInterface
@@ -39,14 +39,6 @@ class PdpViewModel implements ArgumentInterface
      */
     private $registry;
     /**
-     * @var Configurable
-     */
-    private $configurableType;
-    /**
-     * @var Grouped
-     */
-    private $groupedType;
-    /**
      * @var StoreManagerInterface
      */
     private $storeManager;
@@ -58,12 +50,15 @@ class PdpViewModel implements ArgumentInterface
      * @var AthosCommerceLogger
      */
     private $logger;
+    /**
+     * @var IdProviderInterface
+     */
+    private $idProvider;
 
     /**
      * @param Config $config
      * @param Registry $registry
-     * @param Configurable $configurableType
-     * @param Grouped $groupedType
+     * @param IdProviderInterface $idProvider
      * @param StoreManagerInterface $storeManager
      * @param SerializerInterface $serializer
      * @param AthosCommerceLogger $logger
@@ -71,8 +66,7 @@ class PdpViewModel implements ArgumentInterface
     public function __construct(
         Config                $config,
         Registry              $registry,
-        Configurable          $configurableType,
-        Grouped               $groupedType,
+        IdProviderInterface   $idProvider,
         StoreManagerInterface $storeManager,
         SerializerInterface   $serializer,
         AthosCommerceLogger   $logger
@@ -80,8 +74,7 @@ class PdpViewModel implements ArgumentInterface
     {
         $this->config = $config;
         $this->registry = $registry;
-        $this->configurableType = $configurableType;
-        $this->groupedType = $groupedType;
+        $this->idProvider = $idProvider;
         $this->storeManager = $storeManager;
         $this->serializer = $serializer;
         $this->logger = $logger;
@@ -102,9 +95,9 @@ class PdpViewModel implements ArgumentInterface
         }
 
         $data = $this->serializer->serialize([
-            'uid' => (string)$product->getDataUsingMethod('entity_id'),
-            'sku' => (string)$product->getSku(),
-            'parentId' => $this->getParentId($product),
+            'uid' => $this->idProvider->getItemId($product),
+            'sku' => $this->idProvider->getItemSku($product),
+            'parentId' => $this->idProvider->getItemParentId($product),
             'price' => $this->getProductPrice($product),
             'currency' => $this->getCurrency(),
         ]);
@@ -113,6 +106,7 @@ class PdpViewModel implements ArgumentInterface
         }
         return $data;
     }
+
 
     /**
      * @return ProductInterface|null
@@ -134,25 +128,6 @@ class PdpViewModel implements ArgumentInterface
             $this->logger->error($e->getMessage());
             return null;
         }
-    }
-
-    /**
-     * @param ProductInterface $product
-     * @return string|null
-     */
-    private function getParentId(ProductInterface $product): ?string
-    {
-        $parentIds = $this->configurableType->getParentIdsByChild((int)$product->getId());
-        if (!empty($parentIds)) {
-            return (string)reset($parentIds);
-        }
-
-        $groupedParentIds = $this->groupedType->getParentIdsByChild((int)$product->getId());
-        if (!empty($groupedParentIds)) {
-            return (string)reset($groupedParentIds);
-        }
-
-        return null;
     }
 
     /**
