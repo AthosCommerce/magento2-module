@@ -1,18 +1,4 @@
 <?php
-/**
- * Copyright (C) 2025 AthosCommerce <https://athoscommerce.com>
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, version 3 of the License.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
 
 declare(strict_types=1);
 
@@ -30,10 +16,12 @@ class IdProvider implements IdProviderInterface
      * @var LinkManagementInterface
      */
     private $linkManagement;
+
     /**
      * @var Configurable
      */
     private $configurableType;
+
     /**
      * @var Grouped
      */
@@ -57,16 +45,15 @@ class IdProvider implements IdProviderInterface
 
     /**
      * @param ProductInterface $product
-     *
      * @return string
      */
     public function getItemId(ProductInterface $product): string
     {
         if ($product->getTypeId() === Configurable::TYPE_CODE || $product->getTypeId() === Grouped::TYPE_CODE) {
             return $this->getChildProductId($product);
-        } else {
-            return (string)$product->getId();
         }
+
+        return (string)$product->getId();
     }
 
     /**
@@ -77,38 +64,37 @@ class IdProvider implements IdProviderInterface
     {
         if ($product->getTypeId() === Configurable::TYPE_CODE || $product->getTypeId() === Grouped::TYPE_CODE) {
             return $this->getChildProductSku($product);
-        } else {
-            return (string)$product->getSku();
         }
+
+        return (string)$product->getSku();
     }
 
     /**
      * @param ProductInterface $product
-     *
      * @return string
      */
     public function getItemParentId(ProductInterface $product): string
     {
         $productId = (string)$product->getId();
+
         if ($product->getTypeId() === Configurable::TYPE_CODE || $product->getTypeId() === Grouped::TYPE_CODE) {
             return $productId;
-        } else {
-            return $this->getParentId($product) ?? $productId;
         }
+
+        return $this->getParentId($product) ?? $productId;
     }
 
     /**
      * @param ProductInterface $product
-     *
      * @return string
      */
     private function getChildProductId(ProductInterface $product): string
     {
-        $childProduct = $this->getConfigurableChildProduct($product);
+        $childProduct = $this->getChildProduct($product);
         $childProductId = $childProduct ? $childProduct->getId() : null;
 
         return $childProductId
-            ? $childProductId
+            ? (string)$childProductId
             : (string)$product->getId();
     }
 
@@ -118,35 +104,46 @@ class IdProvider implements IdProviderInterface
      */
     private function getChildProductSku(ProductInterface $product): string
     {
-        $childProduct = $this->getConfigurableChildProduct($product);
+        $childProduct = $this->getChildProduct($product);
         $childProductSku = $childProduct ? $childProduct->getSku() : null;
 
         return $childProductSku
-            ? $childProductSku
+            ? (string)$childProductSku
             : (string)$product->getSku();
     }
 
     /**
      * @param ProductInterface $product
-     *
+     * @return ProductInterface|null
+     */
+    private function getChildProduct(ProductInterface $product): ?ProductInterface
+    {
+        if ($product->getTypeId() === Configurable::TYPE_CODE) {
+            return $this->getConfigurableChildProduct($product);
+        }
+
+        if ($product->getTypeId() === Grouped::TYPE_CODE) {
+            return $this->getGroupedChildProduct($product);
+        }
+
+        return null;
+    }
+
+    /**
+     * @param ProductInterface $product
      * @return ProductInterface|null
      */
     private function getConfigurableChildProduct(ProductInterface $product): ?ProductInterface
     {
         $childProducts = $this->linkManagement->getChildren($product->getSku());
-        $return = null;
+
         foreach ($childProducts as $childProduct) {
             if (method_exists($childProduct, 'isAvailable') && $childProduct->isAvailable()) {
-                $return = $childProduct;
-                break;
+                return $childProduct;
             }
         }
 
-        if (!$return) {
-            $return = $this->getGroupedChildProduct($product);
-        }
-
-        return $return;
+        return null;
     }
 
     /**
@@ -156,15 +153,14 @@ class IdProvider implements IdProviderInterface
     private function getGroupedChildProduct(ProductInterface $product): ?ProductInterface
     {
         $groupedChildProducts = $product->getTypeInstance()->getAssociatedProducts($product);
-        $return = null;
+
         foreach ($groupedChildProducts as $childProduct) {
             if (method_exists($childProduct, 'isAvailable') && $childProduct->isAvailable()) {
-                $return = $childProduct;
-                break;
+                return $childProduct;
             }
         }
 
-        return $return;
+        return null;
     }
 
     /**

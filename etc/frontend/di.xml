@@ -64,6 +64,7 @@
         <arguments>
             <argument name="sectionSourceMap" xsi:type="array">
                 <item name="athoscommerce-tracking" xsi:type="string">AthosCommerce\Feed\CustomerData\Tracking</item>
+                <item name="athos_pagemeta_cart" xsi:type="string">AthosCommerce\Feed\CustomerData\PageMetaCart</item>
             </argument>
         </arguments>
     </type>
