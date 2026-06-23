@@ -20,7 +20,6 @@ namespace AthosCommerce\Feed\ViewModel;
 
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Service\Config;
-use AthosCommerce\Feed\Service\Tracking\IdProvider;
 use AthosCommerce\Feed\Service\Tracking\IdProviderInterface;
 use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Framework\Registry;
@@ -94,10 +93,13 @@ class PdpViewModel implements ArgumentInterface
             return '';
         }
 
+        $parentId = $this->idProvider->getItemParentId($product);
+        $parentId = $parentId !== null && $parentId !== '' ? $parentId : null;
+
         $data = $this->serializer->serialize([
             'uid' => $this->idProvider->getItemId($product),
             'sku' => $this->idProvider->getItemSku($product),
-            'parentId' => $this->idProvider->getItemParentId($product),
+            'parentId' => $parentId,
             'price' => $this->getProductPrice($product),
             'currency' => $this->getCurrency(),
         ]);

@@ -7,7 +7,6 @@ namespace AthosCommerce\Feed\Service\Tracking;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use Magento\Checkout\Model\Session as CheckoutSession;
 use Magento\Framework\App\RequestInterface;
-use Magento\Framework\DataObject;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Quote\Api\Data\CartInterface;
 use Magento\Quote\Api\Data\CartItemInterface;
@@ -130,7 +129,7 @@ class CartMetaProvider
     }
 
     /**
-     * @param DataObject|CartItemInterface $cartItem
+     * @param CartItemInterface $cartItem
      * @return array
      */
     private function getMetaForCartItem(CartItemInterface $cartItem): array

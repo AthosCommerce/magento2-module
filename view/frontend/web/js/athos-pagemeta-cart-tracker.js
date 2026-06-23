@@ -1,5 +1,5 @@
 define([
-    'Magento_Customer/js/customer-data',
+    'Magento_Customer/js/customer-data'
 ], function (customerData) {
     'use strict';
 

@@ -8,6 +8,7 @@ use AthosCommerce\Feed\Service\Config;
 use AthosCommerce\Feed\Service\Tracking\IdProviderInterface;
 use AthosCommerce\Feed\ViewModel\PdpViewModel;
 use Magento\Catalog\Api\Data\ProductInterface;
+use Magento\Catalog\Model\Product;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Registry;
 use Magento\Framework\Serialize\SerializerInterface;
@@ -120,7 +121,7 @@ class PdpViewModelTest extends TestCase
 
     public function testReturnsSerializedProductData(): void
     {
-        $product = $this->createMock(ProductInterface::class);
+        $product = $this->createProductMock();
         $store = $this->getStoreMockup();
 
         $this->configMock
@@ -180,7 +181,7 @@ class PdpViewModelTest extends TestCase
 
     public function testUsesRegularPriceWhenFinalPriceIsZero(): void
     {
-        $product = $this->createMock(ProductInterface::class);
+        $product = $this->createProductMock();
         $store = $this->getStoreMockup();
 
         $this->configMock->method('shouldRender')->willReturn(true);
@@ -192,7 +193,7 @@ class PdpViewModelTest extends TestCase
 
         $this->idProviderMock->method('getItemId')->willReturn('10');
         $this->idProviderMock->method('getItemSku')->willReturn('SKU');
-        $this->idProviderMock->method('getItemParentId')->willReturn(null);
+        $this->idProviderMock->method('getItemParentId')->willReturn('');
 
         $store->method('getCurrentCurrencyCode')->willReturn('USD');
 
@@ -211,9 +212,9 @@ class PdpViewModelTest extends TestCase
         $this->viewModel->getProductPageData();
     }
 
-    public function testReturnsNullParentIdWhenNoParentProductExists(): void
+    public function testPassesThroughEmptyParentIdWhenNoParentProductExists(): void
     {
-        $product = $this->createMock(ProductInterface::class);
+        $product = $this->createProductMock();
         $store = $this->getStoreMockup();
 
         $this->configMock
@@ -229,7 +230,7 @@ class PdpViewModelTest extends TestCase
 
         $this->idProviderMock->method('getItemId')->willReturn('10');
         $this->idProviderMock->method('getItemSku')->willReturn('SKU-001');
-        $this->idProviderMock->method('getItemParentId')->willReturn(null);
+        $this->idProviderMock->method('getItemParentId')->willReturn('');
 
         $store->method('getCurrentCurrencyCode')
             ->willReturn('USD');
@@ -251,7 +252,7 @@ class PdpViewModelTest extends TestCase
 
     public function testReturnsNullCurrencyAndLogsErrorWhenStoreThrowsException(): void
     {
-        $product = $this->createMock(ProductInterface::class);
+        $product = $this->createProductMock();
 
         $this->configMock->method('shouldRender')->willReturn(true);
         $this->registryMock->method('registry')->willReturn($product);
@@ -261,7 +262,7 @@ class PdpViewModelTest extends TestCase
 
         $this->idProviderMock->method('getItemId')->willReturn('10');
         $this->idProviderMock->method('getItemSku')->willReturn('SKU');
-        $this->idProviderMock->method('getItemParentId')->willReturn(null);
+        $this->idProviderMock->method('getItemParentId')->willReturn('');
 
         $this->storeManagerMock
             ->expects($this->once())
@@ -288,7 +289,7 @@ class PdpViewModelTest extends TestCase
 
     public function testReturnsEmptyStringWhenSerializerReturnsNonString(): void
     {
-        $product = $this->createMock(ProductInterface::class);
+        $product = $this->createProductMock();
         $store = $this->getStoreMockup();
 
         $this->configMock->method('shouldRender')->willReturn(true);
@@ -299,7 +300,7 @@ class PdpViewModelTest extends TestCase
 
         $this->idProviderMock->method('getItemId')->willReturn('10');
         $this->idProviderMock->method('getItemSku')->willReturn('SKU');
-        $this->idProviderMock->method('getItemParentId')->willReturn(null);
+        $this->idProviderMock->method('getItemParentId')->willReturn('');
 
         $store->method('getCurrentCurrencyCode')->willReturn('USD');
 
@@ -311,6 +312,17 @@ class PdpViewModelTest extends TestCase
             ->willReturn(null);
 
         $this->assertSame('', $this->viewModel->getProductPageData());
+    }
+
+    /**
+     * @return Product
+     */
+    private function createProductMock(): Product
+    {
+        return $this->getMockBuilder(Product::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(array('getId', 'getFinalPrice', 'getPrice'))
+            ->getMock();
     }
 
     /**
