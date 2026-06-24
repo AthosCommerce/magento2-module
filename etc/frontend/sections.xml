@@ -56,4 +56,13 @@
     <action name="customer_order/cart/updateFailedItemOptions">
         <section name="athos_pagemeta_cart"/>
     </action>
+    <action name="sales/order/reorder">
+        <section name="athos_pagemeta_cart"/>
+    </action>
+    <action name="stores/store/switch">
+        <section name="athos_pagemeta_cart"/>
+    </action>
+    <action name="checkout/onepage/saveOrder">
+        <section name="athos_pagemeta_cart"/>
+    </action>
 </config>

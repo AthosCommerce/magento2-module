@@ -19,7 +19,7 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Service\Tracking;
 
 use Magento\Sales\Api\Data\OrderItemInterface;
-use AthosCommerce\Feed\Api\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 
 /**
  * Class OrderItemPriceResolver
@@ -31,7 +31,7 @@ use AthosCommerce\Feed\Api\LoggerInterface;
 class CompositeOrderItemPriceResolver implements OrderItemPriceResolverInterface
 {
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     private $logger;
 
@@ -48,12 +48,12 @@ class CompositeOrderItemPriceResolver implements OrderItemPriceResolverInterface
     /**
      * OrderItemPriceResolver constructor.
      *
-     * @param LoggerInterface $logger
+     * @param AthosCommerceLogger $logger
      * @param OrderItemPriceResolverInterface $defaultPriceResolver
      * @param array $orderItemPriceResolversPool
      */
     public function __construct(
-        LoggerInterface                 $logger,
+        AthosCommerceLogger             $logger,
         OrderItemPriceResolverInterface $defaultPriceResolver,
         array                           $orderItemPriceResolversPool = []
     )

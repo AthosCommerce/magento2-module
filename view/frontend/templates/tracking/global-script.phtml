@@ -13,6 +13,7 @@ use Magento\Framework\View\Helper\SecureHtmlRenderer;
 
 $globalScriptViewModel = $block->getGlobalScriptViewModel();
 $escaperViewModel = $block->getEscaperViewModel();
+$secureRenderer = $block->getSecureRenderer();
 $escaper = $escaperViewModel->getEscaper();
 if (!$globalScriptViewModel) {
     return;
