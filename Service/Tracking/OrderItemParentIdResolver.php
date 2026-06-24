@@ -44,7 +44,8 @@ class OrderItemParentIdResolver implements OrderItemParentIdResolverInterface
         if ($groupedParentId !== null && $groupedParentId !== '') {
             return (string)$groupedParentId;
         }
-        return (string)$orderItem->getProductId();
+        $productId = $orderItem->getProductId();
+        return $productId !== null ? (string)$productId : null;
     }
 
 

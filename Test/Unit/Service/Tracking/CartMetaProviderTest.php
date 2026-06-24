@@ -120,7 +120,7 @@ class CartMetaProviderTest extends TestCase
             array(
                 'products' => array(
                     array(
-                        'key' => '17::17',
+                        'key' => '17::::17',
                         'uid' => '17',
                         'parentId' => '17',
                         'sku' => 'simple-sku',
@@ -129,7 +129,7 @@ class CartMetaProviderTest extends TestCase
                         'productType' => 'simple',
                     ),
                     array(
-                        'key' => '9::12',
+                        'key' => '12::::9',
                         'uid' => '9',
                         'parentId' => '12',
                         'sku' => 'child-sku',
@@ -183,7 +183,7 @@ class CartMetaProviderTest extends TestCase
             array(
                 'products' => array(
                     array(
-                        'key' => '18::18',
+                        'key' => '18::::18',
                         'uid' => '18',
                         'parentId' => '18',
                         'sku' => 'standalone-sku',
@@ -260,6 +260,9 @@ class CartMetaProviderTest extends TestCase
         );
     }
 
+    /**
+     * @return Quote
+     */
     private function createQuoteMock(): Quote
     {
         return $this->getMockBuilder(Quote::class)
@@ -268,11 +271,14 @@ class CartMetaProviderTest extends TestCase
             ->getMock();
     }
 
+    /**
+     * @return Item
+     */
     private function createCartItemMock(): Item
     {
         return $this->getMockBuilder(Item::class)
             ->disableOriginalConstructor()
-            ->onlyMethods(array('getDataUsingMethod', 'getProductType'))
+            ->onlyMethods(array('getQty', 'getDataUsingMethod', 'getProductType'))
             ->getMock();
     }
 }

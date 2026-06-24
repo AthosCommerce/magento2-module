@@ -33,12 +33,7 @@ class ConfigurableSkuResolver implements SkuResolverInterface
         if ($childOrderItem) {
             return (string)$childOrderItem->getSku();
         }
-
-        if (method_exists($item, 'getProduct')) {
-            return (string)$item->getProduct()->getData('sku');
-        }
-
-        return null;
+        return (string)$item->getSku();
     }
 
 
