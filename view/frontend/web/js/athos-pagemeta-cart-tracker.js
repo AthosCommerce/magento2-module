@@ -31,11 +31,10 @@ define([
             return;
         }
 
-        isInitialized = true;
-
         if (!state) {
             return;
         }
+        isInitialized = true;
 
         if (isMagentoCartEmpty() && hasAthosCartProducts(state)) {
             previousSnapshot = null;

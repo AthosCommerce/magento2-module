@@ -34,10 +34,6 @@ class OrderItemParentIdResolver implements OrderItemParentIdResolverInterface
         if ($parentItem && $parentItem->getProductId()) {
             return (string)$parentItem->getProductId();
         }
-        $parentItemId = $orderItem->getParentItemId();
-        if ($parentItemId) {
-            return (string)$parentItemId;
-        }
 
         $childOrderItem = $this->getChildOrderItem($orderItem);
         if ($childOrderItem) {

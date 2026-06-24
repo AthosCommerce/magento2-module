@@ -17,7 +17,7 @@ $escaperViewModel = $block->getEscaperViewModel();
 $secureRenderer = $block->getSecureRenderer();
 $escaper = $escaperViewModel->getEscaper();
 
-if (!$globalScriptViewModel || $globalScriptViewModel->shouldRender()) {
+if (!$globalScriptViewModel || !$globalScriptViewModel->shouldRender()) {
     return;
 }
 ?>
