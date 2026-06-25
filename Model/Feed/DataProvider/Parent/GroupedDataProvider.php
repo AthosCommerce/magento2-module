@@ -109,7 +109,6 @@ class GroupedDataProvider implements DataProviderInterface
     {
         $childTypeIds = $this->productTypeId->getChildTypeIdsList();
         $childEntityIds = $this->getChildIds($products, $childTypeIds);
-
         if (!$childEntityIds) {
             return $products;
         }
@@ -121,7 +120,11 @@ class GroupedDataProvider implements DataProviderInterface
 
         $ignoredFields = $feedSpecification->getIgnoreFields();
         $linkField = $this->getLinkField();
-        $parentIdIdentifier = $feedSpecification->getParentIdSourceFieldName() ?: $linkField;
+
+        $parentIdIdentifier = $feedSpecification->getParentIdSourceFieldName();
+        if (empty($parentIdIdentifier)) {
+            $parentIdIdentifier = $linkField;
+        }
 
         $childEntityToLink = [];
         foreach ($products as $product) {
@@ -280,6 +283,7 @@ class GroupedDataProvider implements DataProviderInterface
         }
 
         $childClone['__is_belong_to_parent'] = true;
+        $childClone['___standalone_product'] = false;
 
         if (
             !in_array('__parent_id', $ignoredFields, true)
@@ -381,9 +385,9 @@ class GroupedDataProvider implements DataProviderInterface
     {
         $standalone = $product;
         $standalone[Constant::IS_STANDALONE_PRODUCT_KEY] = true;
+        $standalone[Constant::IS_BELONG_TO_PARENT_KEY] = false;
 
         unset(
-            $standalone['__is_belong_to_parent'],
             $standalone['__parent_id'],
             $standalone['__parent_title'],
             $standalone['__parent_sku'],

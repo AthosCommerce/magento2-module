@@ -20,6 +20,7 @@ namespace AthosCommerce\Feed\Model\Feed\DataProvider;
 
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\Constant;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\ParentVariantResolver;
 use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
 use Magento\Catalog\Model\Product;
@@ -48,6 +49,11 @@ class GroupIdProvider implements DataProviderInterface
         $this->logger = $logger;
     }
 
+    /**
+     * @param array $products
+     * @param FeedSpecificationInterface $feedSpecification
+     * @return array
+     */
     public function getData(
         array                      $products,
         FeedSpecificationInterface $feedSpecification
@@ -75,8 +81,13 @@ class GroupIdProvider implements DataProviderInterface
                 continue;
             }
 
-            if ($parentProduct->getTypeId() === 'grouped') {
+            if ($parentProduct->getTypeId() === 'grouped' && $product[Constant::IS_BELONG_TO_PARENT_KEY] === true) {
                 $product['__group_id'] = (string)$parentProduct->getId();
+                continue;
+            }
+
+            if ($parentProduct->getTypeId() === 'grouped' && $product[Constant::IS_BELONG_TO_PARENT_KEY] === false) {
+                $product['__group_id'] = (string)$productModel->getId();
                 continue;
             }
 
@@ -102,6 +113,12 @@ class GroupIdProvider implements DataProviderInterface
         return $products;
     }
 
+    /**
+     * @param Product $parentProduct
+     * @param array $variantOptions
+     * @param string|null $groupByAttribute
+     * @return string
+     */
     private function buildGroupId(
         Product $parentProduct,
         array   $variantOptions,

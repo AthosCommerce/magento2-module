@@ -152,7 +152,11 @@ class ConfigurableDataProvider implements DataProviderInterface
     {
         $finalProducts = [];
         $ignoredFields = $feedSpecification->getIgnoreFields();
-        $parentIdIdentifier = $feedSpecification->getParentIdSourceFieldName() ?? $linkField;
+
+        $parentIdIdentifier = $feedSpecification->getParentIdSourceFieldName();
+        if (empty($parentIdIdentifier)) {
+            $parentIdIdentifier = $linkField;
+        }
 
         foreach ($products as &$product) {
             $productModel = $product['product_model'] ?? null;
@@ -219,6 +223,7 @@ class ConfigurableDataProvider implements DataProviderInterface
     {
         $standalone = $product;
         $standalone[Constant::IS_STANDALONE_PRODUCT_KEY] = true;
+        $standalone[Constant::IS_BELONG_TO_PARENT_KEY] = false;
 
         unset(
             $standalone['__parent_id'],
