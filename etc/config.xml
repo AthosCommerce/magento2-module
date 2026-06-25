@@ -22,6 +22,9 @@
             <developer>
                 <enable_debug_log>0</enable_debug_log>
             </developer>
+            <tracking>
+                <script_src>https://cdn.athoscommerce.net/analytics/beacon.js</script_src>
+            </tracking>
         </athoscommerce>
     </default>
 </config>

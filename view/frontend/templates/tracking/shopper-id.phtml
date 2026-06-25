@@ -1,0 +1,92 @@
+<?php
+declare(strict_types=1);
+
+use AthosCommerce\Feed\ViewModel\Escaper;
+use AthosCommerce\Feed\ViewModel\GlobalScriptViewModel;
+use Magento\Framework\View\Element\Template;
+use Magento\Framework\View\Helper\SecureHtmlRenderer;
+
+/** @var Template $block */
+/** @var GlobalScriptViewModel $globalScriptViewModel */
+/** @var SecureHtmlRenderer $secureRenderer */
+/** @var Escaper $escaperViewModel */
+
+$globalScriptViewModel = $block->getGlobalScriptViewModel();
+$escaperViewModel = $block->getEscaperViewModel();
+$escaper = $escaperViewModel->getEscaper();
+if (!$globalScriptViewModel) {
+    return;
+}
+
+$siteId = $globalScriptViewModel->getSiteId();
+$src = $globalScriptViewModel->getTrackingScriptSrc();
+
+if (!$siteId || !$src || !$globalScriptViewModel->shouldRender()) {
+    return;
+}
+//default 1 hour
+$timeoutMs = (int)($block->getData('shopper_id_timeout') ?? 3600000);
+?>
+<?php
+$scriptString = "
+    document.addEventListener('DOMContentLoaded', function () {
+        'use strict';
+
+        const timeoutMs = {$timeoutMs};
+
+        const processShopperId = function (shopperId) {
+            if (shopperId) {
+                const lastTime = localStorage.getItem('athosMagentoShopperLastTime');
+                const lastId = localStorage.getItem('athosMagentoShopperLastId');
+                const now = Date.now();
+
+                if (lastId === shopperId && lastTime && (now - parseInt(lastTime, 10) < timeoutMs)) {
+                    return;
+                }
+
+                window.athos.tracker.setShopperId(shopperId);
+                localStorage.setItem('athosMagentoShopperLastTime', now);
+                localStorage.setItem('athosMagentoShopperLastId', shopperId);
+            }
+        };
+
+        const fetchIdFromStorage = function () {
+            const isLoggedIn = localStorage.getItem('mage-customer-login');
+            if (isLoggedIn !== '1') {
+                processShopperId(null);
+                return;
+            }
+
+            try {
+                const storage = JSON.parse(localStorage.getItem('mage-cache-storage') || '{}');
+                if (storage['athoscommerce-tracking']) {
+                    processShopperId(storage['athoscommerce-tracking'].shopper_id);
+                }
+            } catch (e) {
+                console.error('Error parsing mage-cache-storage', e);
+            }
+        };
+
+        fetchIdFromStorage();
+
+        window.addEventListener('private-content-loaded', function (event) {
+            const data = event.detail.data;
+            if (data && data['athoscommerce-tracking']) {
+                processShopperId(data['athoscommerce-tracking'].shopper_id);
+            }
+        });
+    });
+";
+?>
+
+
+<?= /* @noEscape */
+$secureRenderer->renderTag(
+    'script',
+    [
+        'type' => 'text/javascript',
+        'id' => 'athoscommerce_shopperId',
+    ],
+    $scriptString,
+    false,
+) ?>

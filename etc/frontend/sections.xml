@@ -14,4 +14,55 @@
     <action name="customer/ajax/login">
         <section name="athoscommerce-tracking"/>
     </action>
+    <action name="checkout/cart/add">
+        <section name="athos_pagemeta_cart"/>
+    </action>
+    <action name="checkout/cart/updatePost">
+        <section name="athos_pagemeta_cart"/>
+    </action>
+    <action name="checkout/cart/delete">
+        <section name="athos_pagemeta_cart"/>
+    </action>
+    <action name="checkout/cart/advancedAdd">
+        <section name="athos_pagemeta_cart"/>
+    </action>
+    <action name="checkout/cart/couponPost">
+        <section name="athos_pagemeta_cart"/>
+    </action>
+    <action name="checkout/sidebar/removeItem">
+        <section name="athos_pagemeta_cart"/>
+    </action>
+    <action name="checkout/sidebar/updateItemQty">
+        <section name="athos_pagemeta_cart"/>
+    </action>
+    <action name="checkout/cart/addFailedItems">
+        <section name="athos_pagemeta_cart"/>
+    </action>
+    <action name="checkout/cart/updateFailedItemOptions">
+        <section name="athos_pagemeta_cart"/>
+    </action>
+    <action name="checkout/cart/removeFailed">
+        <section name="athos_pagemeta_cart"/>
+    </action>
+    <action name="checkout/cart/removeAllFailed">
+        <section name="athos_pagemeta_cart"/>
+    </action>
+    <action name="customer_order/cart/advancedAdd">
+        <section name="athos_pagemeta_cart"/>
+    </action>
+    <action name="customer_order/cart/addFailedItems">
+        <section name="athos_pagemeta_cart"/>
+    </action>
+    <action name="customer_order/cart/updateFailedItemOptions">
+        <section name="athos_pagemeta_cart"/>
+    </action>
+    <action name="sales/order/reorder">
+        <section name="athos_pagemeta_cart"/>
+    </action>
+    <action name="stores/store/switch">
+        <section name="athos_pagemeta_cart"/>
+    </action>
+    <action name="checkout/onepage/saveOrder">
+        <section name="athos_pagemeta_cart"/>
+    </action>
 </config>

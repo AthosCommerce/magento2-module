@@ -20,7 +20,7 @@ namespace AthosCommerce\Feed\Service\Tracking;
 
 use Magento\Quote\Api\Data\CartItemInterface;
 use Magento\Sales\Api\Data\OrderItemInterface;
-use AthosCommerce\Feed\Api\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 
 /**
  * Class SkuResolver
@@ -37,7 +37,7 @@ class CompositeSkuResolver implements SkuResolverInterface
     private $skuResolversPool;
 
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     private $logger;
 
@@ -49,12 +49,12 @@ class CompositeSkuResolver implements SkuResolverInterface
     /**
      * SkuResolver constructor.
      *
-     * @param LoggerInterface $logger
+     * @param AthosCommerceLogger $logger
      * @param SkuResolverInterface $defaultSkuResolver
      * @param array $skuResolversPool
      */
     public function __construct(
-        LoggerInterface $logger,
+        AthosCommerceLogger $logger,
         SkuResolverInterface $defaultSkuResolver,
         array $skuResolversPool = []
     ) {
@@ -69,11 +69,24 @@ class CompositeSkuResolver implements SkuResolverInterface
      */
     public function getProductSku($product): ?string
     {
-        if (isset($this->skuResolversPool[$product->getProductType()]) &&
-            $this->skuResolversPool[$product->getProductType()] instanceof SkuResolverInterface) {
-            return (string)$this->skuResolversPool[$product->getProductType()]->getProductSku($product);
-        } elseif (!($this->skuResolversPool[$product->getProductType()] instanceof SkuResolverInterface)) {
-            $this->logger->warning(get_class($this->skuResolversPool[$product->getProductType()]) . ' must implement ' . SkuResolverInterface::class);
+        $productType = $product->getProductType();
+
+        if (
+            isset($this->skuResolversPool[$productType]) &&
+            $this->skuResolversPool[$productType] instanceof SkuResolverInterface
+        ) {
+            return (string)$this->skuResolversPool[$productType]->getProductSku($product);
+        }
+
+        if (
+            isset($this->skuResolversPool[$productType]) &&
+            !($this->skuResolversPool[$productType] instanceof SkuResolverInterface)
+        ) {
+            $this->logger->warning(
+                get_class($this->skuResolversPool[$productType])
+                . ' must implement '
+                . SkuResolverInterface::class
+            );
         }
 
         return (string)$this->defaultSkuResolver->getProductSku($product);

@@ -1,0 +1,242 @@
+<?php
+
+declare(strict_types=1);
+
+use AthosCommerce\Feed\ViewModel\Escaper;
+use AthosCommerce\Feed\ViewModel\GlobalScriptViewModel;
+use Magento\Framework\View\Element\Template;
+use Magento\Framework\View\Helper\SecureHtmlRenderer;
+
+/** @var Template $block */
+/** @var GlobalScriptViewModel $globalScriptViewModel */
+/** @var Escaper $escaperViewModel */
+/** @var SecureHtmlRenderer $secureRenderer */
+
+$globalScriptViewModel = $block->getGlobalScriptViewModel();
+$escaperViewModel = $block->getEscaperViewModel();
+$escaper = $escaperViewModel->getEscaper();
+
+if (!$globalScriptViewModel || !$globalScriptViewModel->shouldRender()) {
+    return;
+}
+?>
+<?php
+$scriptString = "
+(function (window) {
+    'use strict';
+
+    window.athosMagentoCartTrackerState = window.athosMagentoCartTrackerState || {
+        clone: function (value) {
+            try {
+                return JSON.parse(JSON.stringify(value || {}));
+            } catch (e) {
+                return value || {};
+            }
+        },
+
+        toNumber: function (value, fallback) {
+            var parsed = Number(value);
+            return Number.isFinite(parsed) ? parsed : fallback;
+        },
+
+        getProducts: function (snapshot) {
+            return snapshot && Array.isArray(snapshot.products) ? snapshot.products : [];
+        },
+
+        normalizeItem: function (item) {
+            return {
+                key: String(item.key || ''),
+                uid: String(item.uid || ''),
+                parentId: item.parentId === null || item.parentId === undefined ? null : String(item.parentId),
+                sku: String(item.sku || ''),
+                qty: this.toNumber(item.qty, 0),
+                price: this.toNumber(item.price, 0)
+            };
+        },
+
+        normalizeProducts: function (snapshot) {
+            var self = this;
+
+            return self.getProducts(snapshot).map(function (item) {
+                return self.normalizeItem(item);
+            });
+        },
+
+        aggregateItems: function (items) {
+            var aggregated = {};
+            var self = this;
+
+            items.forEach(function (item) {
+                var key;
+
+                if (!item || !item.key) {
+                    return;
+                }
+
+                key = item.key;
+
+                if (!aggregated[key]) {
+                    aggregated[key] = {
+                        key: item.key,
+                        uid: item.uid,
+                        parentId: item.parentId,
+                        sku: item.sku,
+                        qty: 0,
+                        price: item.price
+                    };
+                }
+
+                aggregated[key].qty += self.toNumber(item.qty, 0);
+
+                if (!aggregated[key].price && item.price) {
+                    aggregated[key].price = item.price;
+                }
+            });
+
+            return aggregated;
+        },
+
+        aggregatedItemsToArray: function (index) {
+            return Object.keys(index).map(function (key) {
+                return index[key];
+            });
+        },
+
+        reduceForBeacon: function (items) {
+            return items.map(function (item) {
+                return {
+                    uid: item.uid,
+                    parentId: item.parentId,
+                    sku: item.sku,
+                    qty: item.qty,
+                    price: item.price
+                };
+            });
+        },
+
+        buildPayload: function (results, cartItems) {
+            return {
+                data: {
+                    results: this.reduceForBeacon(results),
+                    cart: this.reduceForBeacon(cartItems)
+                }
+            };
+        },
+
+        dispatchEvent: function (action, payload) {
+            window.dispatchEvent(new CustomEvent('athos:magento:cart:' + action, {
+                detail: payload
+            }));
+
+            if (
+                window.athos &&
+                window.athos.tracker &&
+                window.athos.tracker.events &&
+                window.athos.tracker.events.cart &&
+                typeof window.athos.tracker.events.cart[action] === 'function'
+            ) {
+                window.athos.tracker.events.cart[action](payload);
+            }
+        },
+
+        areItemsEqual: function (previousSnapshotData, currentSnapshotData) {
+            var previousAggregated = this.aggregateItems(this.normalizeProducts(previousSnapshotData));
+            var currentAggregated = this.aggregateItems(this.normalizeProducts(currentSnapshotData));
+
+            return JSON.stringify(previousAggregated) === JSON.stringify(currentAggregated);
+        },
+
+        hasStoreChanged: function (magentoCartObservable) {
+            var cart;
+
+            if (!window.checkout || typeof magentoCartObservable !== 'function') {
+                return false;
+            }
+
+            cart = magentoCartObservable();
+
+            return (
+                cart.website_id !== undefined &&
+                window.checkout.websiteId !== undefined &&
+                String(cart.website_id) !== String(window.checkout.websiteId)
+            ) || (
+                cart.storeId !== undefined &&
+                window.checkout.storeId !== undefined &&
+                String(cart.storeId) !== String(window.checkout.storeId)
+            );
+        },
+
+        diffSnapshots: function (previousSnapshotData, currentSnapshotData) {
+            var previousIndex = this.aggregateItems(this.normalizeProducts(previousSnapshotData));
+            var currentIndex = this.aggregateItems(this.normalizeProducts(currentSnapshotData));
+            var currentCartItems = this.aggregatedItemsToArray(currentIndex);
+            var addedResults = [];
+            var removedResults = [];
+
+            Object.keys(currentIndex).forEach(function (key) {
+                var currentItem = currentIndex[key];
+                var previousItem = previousIndex[key];
+
+                if (!previousItem) {
+                    addedResults.push(currentItem);
+                    return;
+                }
+
+                if (currentItem.qty > previousItem.qty) {
+                    addedResults.push({
+                        key: currentItem.key,
+                        uid: currentItem.uid,
+                        parentId: currentItem.parentId,
+                        sku: currentItem.sku,
+                        qty: currentItem.qty - previousItem.qty,
+                        price: currentItem.price
+                    });
+                }
+            });
+
+            Object.keys(previousIndex).forEach(function (key) {
+                var previousItem = previousIndex[key];
+                var currentItem = currentIndex[key];
+
+                if (!currentItem) {
+                    removedResults.push(previousItem);
+                    return;
+                }
+
+                if (currentItem.qty < previousItem.qty) {
+                    removedResults.push({
+                        key: previousItem.key,
+                        uid: previousItem.uid,
+                        parentId: previousItem.parentId,
+                        sku: previousItem.sku,
+                        qty: previousItem.qty - currentItem.qty,
+                        price: previousItem.price
+                    });
+                }
+            });
+
+            if (addedResults.length > 0) {
+                this.dispatchEvent('add', this.buildPayload(addedResults, currentCartItems));
+            }
+
+            if (removedResults.length > 0) {
+                this.dispatchEvent('remove', this.buildPayload(removedResults, currentCartItems));
+            }
+        }
+    };
+}(window));
+";
+?>
+
+
+<?= /* @noEscape */
+$secureRenderer->renderTag(
+    'script',
+    [
+        'type' => 'text/javascript',
+        'id' => 'athoscommerce_tracking_cart_tracker_state'
+    ],
+    $scriptString,
+    false,
+) ?>
+

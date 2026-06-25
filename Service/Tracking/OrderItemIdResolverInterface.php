@@ -7,34 +7,26 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Service\Tracking;
 
-use Magento\Quote\Api\Data\CartItemInterface;
+use Magento\Sales\Api\Data\OrderItemInterface;
 
-/**
- * Class QuoteItemPrice
- *
- * This class gets price for quote item (cart page)
- *
- * @package AthosCommerce\Feed\Service
- */
-class QuoteItemPriceResolver implements QuoteItemPriceResolverInterface
+interface OrderItemIdResolverInterface
 {
     /**
-     * @param CartItemInterface $product
-     * @return float|null
+     * Resolve the public item identifier.
+     *
+     * @param OrderItemInterface $orderItem
+     * @return string|null
      */
-    public function getProductPrice(CartItemInterface $product): ?float
-    {
-        return (float)$product->getCalculationPrice();
-    }
+    public function resolve(OrderItemInterface $orderItem): ?string;
 }
