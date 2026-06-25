@@ -24,11 +24,14 @@ use Magento\Sales\Api\Data\OrderItemInterface;
 class ConfigurableSkuResolver implements SkuResolverInterface
 {
     /**
-     * @param OrderItemInterface $item
+     * @param $item
      * @return string|null
      */
-    public function getProductSku(OrderItemInterface $item): ?string
+    public function getProductSku($item): ?string
     {
+        if (!$item instanceof OrderItemInterface) {
+            return (string)$item->getSku();
+        }
         $childOrderItem = $this->getChildOrderItem($item);
         if ($childOrderItem) {
             return (string)$childOrderItem->getSku();
