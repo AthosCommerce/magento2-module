@@ -29,6 +29,8 @@ if (!$siteId || !$src || !$globalScriptViewModel->shouldRender()) {
 $scriptString = "
     window.athos = window.athos || {};
     window.athos.tracker = window.athos.tracker || {};
+    window.athos.tracker.config = window.athos.tracker.config || {};
+    window.athos.tracker.config.initiator = 'magento';
     window.athos.tracker.events = window.athos.tracker.events || {};
 ";
 ?>
