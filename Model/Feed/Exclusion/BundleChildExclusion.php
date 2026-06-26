@@ -11,11 +11,12 @@ use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface as FeedSpecification;
 class BundleChildExclusion implements FeedItemFilterInterface
 {
     private $logger;
+
     /**
      * @param AthosCommerceLogger $logger
      */
     public function __construct(
-        AthosCommerceLogger $logger,
+        AthosCommerceLogger $logger
     )
     {
         $this->logger = $logger;
@@ -174,7 +175,7 @@ class BundleChildExclusion implements FeedItemFilterInterface
             /**
              * @var Product $item
              */
-            if ($item && $item instanceof Product && $item->getVisibility() == \Magento\Catalog\Model\Product\Visibility::VISIBILITY_NOT_VISIBLE) {
+            if ($item instanceof Product && $item->getVisibility() == \Magento\Catalog\Model\Product\Visibility::VISIBILITY_NOT_VISIBLE) {
                 return $item->getId();
             }
             return null;

@@ -18,17 +18,17 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Model\Feed\DataProvider;
 
-use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\Constant;
-use Exception;
-use Magento\Catalog\Model\Category;
-use Magento\Framework\Exception\LocalizedException;
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Category\CollectionBuilder;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Category\GetCategoriesByProductIds;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\Constant;
 use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
+use Exception;
+use Magento\Catalog\Model\Category;
 use Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable as ConfigurableType;
+use Magento\Framework\Exception\LocalizedException;
 use Magento\GroupedProduct\Model\Product\Type\Grouped as GroupedType;
-use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 
 class CategoriesProvider implements DataProviderInterface
 {
@@ -93,7 +93,7 @@ class CategoriesProvider implements DataProviderInterface
     {
         $productIds = [];
         $rowCategorySourceMap = [];
-
+        $this->logger->info('[CategoriesProvider] started');
         foreach ($products as $index => $product) {
             if (!isset($product['entity_id'])) {
                 continue;
@@ -119,7 +119,6 @@ class CategoriesProvider implements DataProviderInterface
         $ignoredFields = $feedSpecification->getIgnoreFields();
         $productsCategories = $this->getCategoriesByProductIds->execute($productIds);
         $this->loadCategories($productsCategories, $feedSpecification);
-
 
         foreach ($products as $index => &$product) {
             $entityId = isset($product['entity_id']) ? (int)$product['entity_id'] : 0;
@@ -200,6 +199,7 @@ class CategoriesProvider implements DataProviderInterface
         }
         unset($product);
 
+        $this->logger->info('[CategoriesProvider] completed');
         return $products;
     }
 

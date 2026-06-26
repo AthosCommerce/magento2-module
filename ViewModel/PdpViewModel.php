@@ -54,6 +54,7 @@ class PdpViewModel implements ArgumentInterface
      */
     private $idProvider;
 
+
     /**
      * @param Config $config
      * @param Registry $registry

@@ -107,14 +107,24 @@ class GroupedDataProvider implements DataProviderInterface
         FeedSpecificationInterface $feedSpecification
     ): array
     {
+        $this->logger->info("[GroupedDataProvider] Started");
         $childTypeIds = $this->productTypeId->getChildTypeIdsList();
         $childEntityIds = $this->getChildIds($products, $childTypeIds);
         if (!$childEntityIds) {
+            $this->logger->debug(
+                '[GroupedDataProvider] No child entity ids found'
+            );
             return $products;
         }
 
         $relations = $this->relationsProvider->getGroupRelationIds($childEntityIds);
         if (!$relations) {
+            $this->logger->debug(
+                '[GroupedDataProvider] No relations found for child entity ids',
+                [
+                    'childEntityIds' => $childEntityIds,
+                ]
+            );
             return $products;
         }
 
@@ -160,8 +170,16 @@ class GroupedDataProvider implements DataProviderInterface
 
             $childLinkId = (int)$productModel->getData($linkField);
             $parentLinkIds = array_keys($childToParent[$childLinkId] ?? []);
-
             $isChildVisible = $this->isVisibleIndividually($productModel);
+
+            $this->logger->debug(
+                sprintf('[GroupedDataProvider] Processing child product(%s)', $childLinkId),
+                [
+                    'childLinkId' => $childLinkId,
+                    'parentLinkIds' => $parentLinkIds,
+                    'isChildVisible' => $isChildVisible,
+                ]
+            );
 
             $product = $this->enrichChildData(
                 $product,
@@ -172,6 +190,9 @@ class GroupedDataProvider implements DataProviderInterface
 
             if ($isChildVisible) {
                 $finalProducts[] = $this->buildStandaloneRow($product);
+                $this->logger->debug(
+                    sprintf('[GroupedDataProvider] Standalone row (%s) added for child product.', $childLinkId)
+                );
             }
 
             if (!$parentLinkIds) {
@@ -185,6 +206,9 @@ class GroupedDataProvider implements DataProviderInterface
                 $parent = $this->parentProductContextManager->getParentsDataByProductId((int)$parentId);
 
                 if (!$parent) {
+                    $this->logger->debug(
+                        sprintf('[GroupedDataProvider] parent data for (%s) not found in context.', $parentId)
+                    );
                     continue;
                 }
 
@@ -208,6 +232,7 @@ class GroupedDataProvider implements DataProviderInterface
                 $finalProducts[] = $childClone;
             }
         }
+        $this->logger->info("[GroupedDataProvider] Finished");
 
         return array_values($finalProducts);
     }
@@ -222,8 +247,7 @@ class GroupedDataProvider implements DataProviderInterface
         $childIds = [];
         foreach ($products as $product) {
             $productModel = $product['product_model'] ?? null;
-            if ($productModel
-                && in_array($productModel->getTypeId(), $childTypeIdsList, true)
+            if ($productModel && in_array($productModel->getTypeId(), $childTypeIdsList, true)
             ) {
                 $childIds[] = $productModel->getId();
             }
@@ -278,6 +302,13 @@ class GroupedDataProvider implements DataProviderInterface
     {
         $childClone = $product;
 
+        $this->logger->debug(
+            '[GroupedDataProvider] Parent Child record started.',
+            [
+                'typeId' => $productModel->getTypeId(),
+                'childTypeIds' => $childTypeIds,
+            ]
+        );
         if (!in_array($productModel->getTypeId(), $childTypeIds, true)) {
             return $childClone;
         }
@@ -299,32 +330,25 @@ class GroupedDataProvider implements DataProviderInterface
         if (
             !in_array('__parent_title', $ignoredFields, true)
             && !in_array('parent_title', $ignoredFields, true)
-            && method_exists($parent, 'getName')
-            && $parent->getName()
         ) {
-            $childClone['__parent_title'] = $parent->getName();
+            $childClone['__parent_title'] = $parent->getDataUsingMethod('name');
         }
 
         if (
             !in_array('__parent_sku', $ignoredFields, true)
             && !in_array('parent_sku', $ignoredFields, true)
-            && method_exists($parent, 'getSku')
         ) {
-            $childClone['__parent_sku'] = $parent->getSku();
+            $childClone['__parent_sku'] = $parent->getDataUsingMethod('sku');
         }
 
-        if (!in_array('parent_status', $ignoredFields, true)
-            && method_exists($parent, 'getStatus')
-        ) {
-            $childClone['parent_status'] = $parent->getStatus()
+        if (!in_array('parent_status', $ignoredFields, true)) {
+            $childClone['parent_status'] = $parent->getDataUsingMethod('status')
                 ? __('Enabled')->getText()
                 : __('Disabled')->getText();
         }
 
-        if (!in_array('parent_type_id', $ignoredFields, true)
-            && method_exists($parent, 'getTypeId')
-        ) {
-            $childClone['parent_type_id'] = $parent->getTypeId();
+        if (!in_array('parent_type_id', $ignoredFields, true)) {
+            $childClone['parent_type_id'] = $parent->getDataUsingMethod('type_id');
         }
 
         if (!in_array('parent_url', $ignoredFields, true)
@@ -348,6 +372,8 @@ class GroupedDataProvider implements DataProviderInterface
         ) {
             $childClone['__parent_image'] = $this->getParentImage($parent);
         }
+
+        $this->logger->debug('[GroupedDataProvider] Parent Child record completed.');
 
         return $childClone;
     }

@@ -50,8 +50,7 @@ class CollectionBuilder
         CollectionFactory   $collectionFactory,
         StoreContextManager $storeContextManager,
         AthosCommerceLogger $logger
-    )
-    {
+    ) {
         $this->collectionFactory = $collectionFactory;
         $this->storeContextManager = $storeContextManager;
         $this->logger = $logger;
@@ -66,14 +65,11 @@ class CollectionBuilder
     public function buildCollection(
         array                      $categoryIds,
         FeedSpecificationInterface $feedSpecification
-    ): Collection
-    {
+    ): Collection {
         $collection = $this->collectionFactory->create();
         $collection->setStore($feedSpecification->getStoreCode());
         $store = $this->storeContextManager->getStoreFromContext();
         $collection->setStoreId($store);
-
-        $storeId = $store->getId();
         $rootId = $store->getRootCategoryId();
 
         $selectAttributes = [
@@ -99,7 +95,8 @@ class CollectionBuilder
                 ]
             );
 
-        $this->logger->debug('CategoryCollectionBuilder',
+        $this->logger->debug(
+            'CategoryCollectionBuilder',
             [
                 'query' => $collection->getSelect()->__toString(),
                 'method' => __METHOD__

@@ -43,7 +43,7 @@ class GlobalScriptViewModel implements ArgumentInterface
      */
     public function getSiteId(): ?string
     {
-        return $this->config->getSiteId();
+        return (string)$this->config->getSiteId();
     }
 
     /**

@@ -49,12 +49,11 @@ class OrderLineItemResolver implements OrderLineItemResolverInterface
      * @param OrderItemParentIdResolverInterface $parentIdResolver
      */
     public function __construct(
-        OrderItemPriceResolverInterface    $priceResolver,
-        SkuResolverInterface               $skuResolver,
-        OrderItemIdResolverInterface       $itemIdResolver,
+        OrderItemPriceResolverInterface $priceResolver,
+        SkuResolverInterface $skuResolver,
+        OrderItemIdResolverInterface $itemIdResolver,
         OrderItemParentIdResolverInterface $parentIdResolver
-    )
-    {
+    ) {
         $this->priceResolver = $priceResolver;
         $this->skuResolver = $skuResolver;
         $this->itemIdResolver = $itemIdResolver;

@@ -76,6 +76,7 @@ class CompositeSkuResolver implements SkuResolverInterface
             $this->skuResolversPool[$productType] instanceof SkuResolverInterface
         ) {
             return (string)$this->skuResolversPool[$productType]->getProductSku($product);
+
         }
 
         if (

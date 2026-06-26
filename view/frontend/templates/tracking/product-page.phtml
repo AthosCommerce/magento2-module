@@ -11,6 +11,7 @@ use Magento\Framework\View\Helper\SecureHtmlRenderer;
 /** @var PdpViewModel $productPageViewModel */
 /** @var GlobalScriptViewModel $globalScriptViewModel */
 /** @var Escaper $escaperViewModel */
+/** @var SecureHtmlRenderer $secureRenderer */
 
 $productPageViewModel = $block->getProductPageViewModel();
 $globalScriptViewModel = $block->getGlobalScriptViewModel();
@@ -48,8 +49,7 @@ $scriptString = "
 ";
 ?>
 
-<?= /* @noEscape */
-$secureRenderer->renderTag(
+<?= /* @noEscape */ $secureRenderer->renderTag(
     'script',
     [
         'type' => 'text/javascript',

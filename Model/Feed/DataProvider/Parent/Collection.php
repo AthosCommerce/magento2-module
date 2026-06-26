@@ -10,6 +10,7 @@ use AthosCommerce\Feed\Service\LinkFieldResolver;
 use Magento\Catalog\Model\ResourceModel\Product\Collection as ProductCollection;
 use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory as ProductCollectionFactory;
 use Magento\CatalogRule\Model\ResourceModel\Product\CollectionProcessor;
+use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Store\Model\StoreManagerInterface;
 
 class Collection
@@ -41,6 +42,7 @@ class Collection
      * @param CollectionProcessor $collectionProcessor
      * @param ProductTypeIdInterface $productTypeId
      * @param LinkFieldResolver $linkFieldResolver
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
         ProductCollectionFactory $collectionFactory,
@@ -63,7 +65,8 @@ class Collection
      * @param array $parentEntityIds
      * @param FeedSpecificationInterface $feedSpecification
      *
-     * @return array
+     * @return null|ProductCollection
+     * @throws NoSuchEntityException
      */
     public function execute(
         array                      $parentEntityIds,
@@ -73,7 +76,7 @@ class Collection
         $store = $this->storeManager->getStore($feedSpecification->getStoreCode());
         $ignoredFields = $feedSpecification->getIgnoreFields();
         if (!$store) {
-            return [];
+            return null;
         }
         $storeId = (int)$store->getId();
         /** @var ProductCollection $productCollection */

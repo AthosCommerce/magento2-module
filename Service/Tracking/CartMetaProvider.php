@@ -64,9 +64,8 @@ class CartMetaProvider
         AthosCommerceLogger      $logger,
         CartItemIdentityResolver $trackingMetaResolver,
         RequestInterface         $request,
-        array                    $outputOnRoutes = null
-    )
-    {
+        ?array                   $outputOnRoutes = null
+    ) {
         $this->checkoutSession = $checkoutSession;
         $this->logger = $logger;
         $this->trackingMetaResolver = $trackingMetaResolver;
@@ -81,7 +80,7 @@ class CartMetaProvider
      */
     public function get(): array
     {
-        $return = array();
+        $return = [];
 
         if (!$this->shouldOutput()) {
             return $return;
@@ -95,11 +94,11 @@ class CartMetaProvider
         } catch (\Exception $exception) {
             $this->logger->error(
                 'Exception while getting quote:',
-                array(
+                [
                     'method' => __METHOD__,
                     'message' => $exception->getMessage(),
                     'exception' => $exception,
-                )
+                ]
             );
         }
 
@@ -118,11 +117,11 @@ class CartMetaProvider
         } catch (LocalizedException $exception) {
             $this->logger->error(
                 'Exception while getting quote:',
-                array(
+                [
                     'method' => __METHOD__,
                     'message' => $exception->getMessage(),
                     'exception' => $exception,
-                )
+                ]
             );
         }
 
@@ -137,9 +136,9 @@ class CartMetaProvider
     {
         $cartItems = method_exists($cart, 'getAllVisibleItems')
             ? $cart->getAllVisibleItems()
-            : array();
+            : [];
 
-        return array_filter(array_map(array($this, 'getMetaForCartItem'), $cartItems));
+        return array_filter(array_map([$this, 'getMetaForCartItem'], $cartItems));
     }
 
     /**
@@ -153,7 +152,7 @@ class CartMetaProvider
         $parentId = $parentId !== null && $parentId !== '' ? (string)$parentId : $uid;
         $sku = (string)$this->trackingMetaResolver->getSku($cartItem);
 
-        return array(
+        return [
             'key' => $this->buildItemKey($parentId, $uid),
             'uid' => $uid,
             'parentId' => $parentId,
@@ -161,7 +160,7 @@ class CartMetaProvider
             'qty' => (float)$cartItem->getDataUsingMethod('qty'),
             'price' => $this->getItemPrice($cartItem),
             'productType' => (string)$cartItem->getProductType(),
-        );
+        ];
     }
 
     /**
@@ -196,11 +195,11 @@ class CartMetaProvider
         $return = false;
         $currentRoute = implode(
             '_',
-            array(
+            [
                 $this->request->getModuleName(),
                 $this->request->getControllerName(),
                 $this->request->getActionName()
-            )
+            ]
         );
 
         foreach ($this->outputOnRoutes as $route) {

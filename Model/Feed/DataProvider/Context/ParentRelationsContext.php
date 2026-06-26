@@ -96,7 +96,7 @@ class ParentRelationsContext
 
         $parentData = null;
         foreach ($this->childToParentMap[$childId] as $parentId) {
-            $parentData = $this->parentDataContextManager->getParentsDataByProductId($parentId);
+            $parentData = $this->parentDataContextManager->getParentsDataByProductId((int)$parentId);
             if (!$parentData instanceof ProductInterface) {
                 continue;
             }
