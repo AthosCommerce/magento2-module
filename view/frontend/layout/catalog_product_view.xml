@@ -2,13 +2,24 @@
 <page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" layout="1column"
       xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
     <body>
-        <referenceContainer name="content">
-            <block class="Magento\Catalog\Block\Product\View" name="athoscommerce.tracking.product.info"
-                   template="AthosCommerce_Feed::product/view/product-view-tracking.phtml" after="product.info">
+        <referenceContainer name="head.additional">
+            <block class="Magento\Framework\View\Element\Template"
+                   name="athoscommerce.feed.tracking.global"
+                   template="AthosCommerce_Feed::tracking/global-script.phtml">
                 <arguments>
-                    <argument name="athoscommerce_pdp_view_model"
-                              xsi:type="object">AthosCommerce\Feed\ViewModel\PdpViewModel
-                    </argument>
+                    <argument name="global_script_view_model" xsi:type="object">AthosCommerce\Feed\ViewModel\GlobalScriptViewModel</argument>
+                    <argument name="escaper_view_model" xsi:type="object">AthosCommerce\Feed\ViewModel\Escaper</argument>
+                </arguments>
+            </block>
+        </referenceContainer>
+        <referenceContainer name="before.body.end">
+            <block class="Magento\Framework\View\Element\Template"
+                   name="athoscommerce.feed.tracking.product"
+                   template="AthosCommerce_Feed::tracking/product-page.phtml">
+                <arguments>
+                    <argument name="global_script_view_model" xsi:type="object">AthosCommerce\Feed\ViewModel\GlobalScriptViewModel</argument>
+                    <argument name="product_page_view_model" xsi:type="object">AthosCommerce\Feed\ViewModel\PdpViewModel</argument>
+                    <argument name="escaper_view_model" xsi:type="object">AthosCommerce\Feed\ViewModel\Escaper</argument>
                 </arguments>
             </block>
         </referenceContainer>

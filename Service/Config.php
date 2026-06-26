@@ -37,6 +37,7 @@ class Config implements ConfigInterface
      * @deprecated
      */
     public const ATHOSCOMMERCE_SITE_ID = 'athoscommerce/general/site_id';
+    public const ATHOSCOMMERCE_TRACKING_SCRIPT_SRC = 'athoscommerce/tracking/script_src';
 
     /**
      * @var ScopeConfigInterface
@@ -75,5 +76,21 @@ class Config implements ConfigInterface
             ScopeInterface::SCOPE_STORE,
             $storeId
         );
+    }
+
+    /**
+     * @return string
+     */
+    public function getTrackingScriptSrc(?int $storeId = null): string
+    {
+        $url = (string)$this->scopeConfig->getValue(
+            self::ATHOSCOMMERCE_TRACKING_SCRIPT_SRC,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+        if (empty($url)) {
+            $url = 'https://cdn.athoscommerce.net/analytics/beacon.js';
+        }
+        return $url;
     }
 }
