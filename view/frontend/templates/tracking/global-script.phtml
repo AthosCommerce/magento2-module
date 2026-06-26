@@ -36,11 +36,11 @@ $scriptString = "
 <script siteId="<?= /* @noEscape */ $block->escapeHtmlAttr($siteId) ?>" src="<?= /* @noEscape */ $block->escapeUrl($src) ?>"></script>
 
 <?= /* @noEscape */ $secureRenderer->renderTag(
-    tagName: 'script',
-    attributes: [
+     'script',
+    [
         'type' => 'text/javascript',
         'id' => 'athoscommerce_init',
     ],
-    content: $scriptString,
-    textContent: false,
+    $scriptString,
+    false,
 ) ?>

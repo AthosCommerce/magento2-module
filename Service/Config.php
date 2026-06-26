@@ -71,7 +71,7 @@ class Config implements ConfigInterface
      */
     public function getSiteId(?int $storeId = null): ?string
     {
-        return (string)$this->scopeConfig->getValue(
+        return $this->scopeConfig->getValue(
             self::ATHOSCOMMERCE_SITE_ID,
             ScopeInterface::SCOPE_STORE,
             $storeId
@@ -92,5 +92,13 @@ class Config implements ConfigInterface
             $url = 'https://cdn.athoscommerce.net/analytics/beacon.js';
         }
         return $url;
+    }
+
+    /**
+     * @return bool
+     */
+    public function shouldRender(): bool
+    {
+        return $this->getSiteId() && $this->getTrackingScriptSrc();
     }
 }

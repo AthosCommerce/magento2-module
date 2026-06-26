@@ -43,6 +43,9 @@ class GlobalScriptViewModelTest extends TestCase
         );
     }
 
+
+
+
     public function testReturnsEmptyStringWhenSiteIdIsNull(): void
     {
         $this->configMock
