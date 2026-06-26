@@ -51,8 +51,7 @@ class Collection
         ProductTypeIdInterface   $productTypeId,
         LinkFieldResolver        $linkFieldResolver,
         AthosCommerceLogger      $logger
-    )
-    {
+    ) {
         $this->collectionFactory = $collectionFactory;
         $this->storeManager = $storeManager;
         $this->collectionProcessor = $collectionProcessor;
@@ -65,14 +64,13 @@ class Collection
      * @param array $parentEntityIds
      * @param FeedSpecificationInterface $feedSpecification
      *
-     * @return null|ProductCollection
+     * @return array
      * @throws NoSuchEntityException
      */
     public function execute(
         array                      $parentEntityIds,
         FeedSpecificationInterface $feedSpecification
-    )
-    {
+    ) {
         $store = $this->storeManager->getStore($feedSpecification->getStoreCode());
         $ignoredFields = $feedSpecification->getIgnoreFields();
         if (!$store) {

@@ -37,8 +37,10 @@ class OrderItemParentIdResolver implements OrderItemParentIdResolverInterface
         }
 
         $childOrderItem = $this->getChildOrderItem($orderItem);
-        if ($childOrderItem) {
-            return (string)$childOrderItem->getProductId();
+
+        if ($childOrderItem && $orderItem->getProductId() !== null) {
+            return (string)$orderItem->getProductId();
+
         }
 
         $groupedParentId = $this->getGroupedParentIdFromOrderItem($orderItem);

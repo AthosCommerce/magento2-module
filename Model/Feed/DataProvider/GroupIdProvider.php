@@ -81,12 +81,14 @@ class GroupIdProvider implements DataProviderInterface
                 continue;
             }
 
-            if ($parentProduct->getTypeId() === 'grouped' && $product[Constant::IS_BELONG_TO_PARENT_KEY] === true) {
+
+            if ($parentProduct->getTypeId() === 'grouped' && ($product[Constant::IS_BELONG_TO_PARENT_KEY] ?? false) === true) {
                 $product['__group_id'] = (string)$parentProduct->getId();
                 continue;
             }
 
-            if ($parentProduct->getTypeId() === 'grouped' && $product[Constant::IS_BELONG_TO_PARENT_KEY] === false) {
+
+            if ($parentProduct->getTypeId() === 'grouped' && ($product[Constant::IS_BELONG_TO_PARENT_KEY] ?? false) === false) {
                 $product['__group_id'] = (string)$productModel->getId();
                 continue;
             }
