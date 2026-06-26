@@ -237,7 +237,7 @@ class ConfigurableDataProvider implements DataProviderInterface
         $standalone[Constant::IS_BELONG_TO_PARENT_KEY] = false;
 
         unset(
-            $standalone['__parent_id'],
+            //$standalone['__parent_id'],
             $standalone['__parent_title'],
             $standalone['parent_status'],
             $standalone['parent_type_id'],
