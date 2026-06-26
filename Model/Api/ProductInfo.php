@@ -18,12 +18,14 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Model\Api;
 
+use AthosCommerce\Feed\Api\MetadataInterface;
 use AthosCommerce\Feed\Api\ProductInfoInterface;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\CollectionProcessor;
 use AthosCommerce\Feed\Model\Feed\SpecificationBuilderInterface;
 use AthosCommerce\Feed\Model\ItemsGenerator;
 use AthosCommerce\Feed\Api\Data\ProductInfoResponseInterfaceFactory;
+use AthosCommerce\Feed\Model\Task\TaskPayloadProvider;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Serialize\SerializerInterface;
 use Magento\Store\Model\ScopeInterface;
@@ -58,6 +60,10 @@ class ProductInfo implements ProductInfoInterface
      * @var AthosCommerceLogger
      */
     private $logger;
+    /**
+     * @var TaskPayloadProvider
+     */
+    private $taskPayloadProvider;
 
     /**
      * @param CollectionProcessor $collectionProcessor
@@ -66,6 +72,8 @@ class ProductInfo implements ProductInfoInterface
      * @param ScopeConfigInterface $scopeConfig
      * @param SerializerInterface $serializer
      * @param ProductInfoResponseInterfaceFactory $responseFactory
+     * @param AthosCommerceLogger $logger
+     * @param TaskPayloadProvider $taskPayloadProvider
      */
     public function __construct(
         CollectionProcessor                 $collectionProcessor,
@@ -74,7 +82,8 @@ class ProductInfo implements ProductInfoInterface
         ScopeConfigInterface                $scopeConfig,
         SerializerInterface                 $serializer,
         ProductInfoResponseInterfaceFactory $responseFactory,
-        AthosCommerceLogger                 $logger
+        AthosCommerceLogger                 $logger,
+        TaskPayloadProvider                 $taskPayloadProvider
     )
     {
         $this->collectionProcessor = $collectionProcessor;
@@ -84,6 +93,7 @@ class ProductInfo implements ProductInfoInterface
         $this->serializer = $serializer;
         $this->responseFactory = $responseFactory;
         $this->logger = $logger;
+        $this->taskPayloadProvider = $taskPayloadProvider;
     }
 
     /**
@@ -109,6 +119,21 @@ class ProductInfo implements ProductInfoInterface
                 ScopeInterface::SCOPE_STORES,
                 $storeId
             );
+
+            if (!$payload) {
+                $this->logger->info(
+                    'ProductInfoAPI: Using last payload from task repository',
+                    [
+                        'product_ids' => $productIds,
+                        'store_id' => $storeId
+                    ]
+                );
+                $payload = $this->taskPayloadProvider->getLatestPayloadByType(
+                    MetadataInterface::FEED_GENERATION_TASK_CODE,
+                    true
+                );
+            }
+
 
             if (!$payload) {
                 return $response

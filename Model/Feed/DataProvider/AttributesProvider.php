@@ -187,6 +187,9 @@ class AttributesProvider implements DataProviderInterface
                 );
                 continue;
             }
+
+            //textarea few lines only
+            $fieldValue = $attribute->getFrontendInput() !== 'textarea' ? $fieldValue : substr($fieldValue, 0, 50) . '...';
             $this->logger->debug(
                 sprintf('Attribute (%s) processed: ', $attributeKey),
                 [

@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Service\Tracking;
 
-use Magento\Catalog\Model\Product\Type;
 use Magento\Sales\Api\Data\OrderItemInterface;
 
 class CompositeOrderLineItemResolver implements OrderLineItemResolverInterface

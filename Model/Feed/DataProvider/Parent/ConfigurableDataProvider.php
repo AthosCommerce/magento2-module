@@ -152,9 +152,13 @@ class ConfigurableDataProvider implements DataProviderInterface
     {
         $finalProducts = [];
         $ignoredFields = $feedSpecification->getIgnoreFields();
-        $parentIdIdentifier = $feedSpecification->getParentIdSourceFieldName() ?? $linkField;
 
-        foreach ($products as &$product) {
+        $parentIdIdentifier = $feedSpecification->getParentIdSourceFieldName();
+        if (empty($parentIdIdentifier)) {
+            $parentIdIdentifier = $linkField;
+        }
+
+        foreach ($products as $product) {
             $productModel = $product['product_model'] ?? null;
             if (!$productModel) {
                 continue;
@@ -164,6 +168,14 @@ class ConfigurableDataProvider implements DataProviderInterface
             $parentLinkIds = array_keys($childToParentMap[$childLinkId] ?? []);
 
             $isChildVisible = $this->isVisibleIndividually($productModel);
+            $this->logger->debug(
+                sprintf('[ConfigurableDataProvider] Processing child product(%s)', $childLinkId),
+                [
+                    'childLinkId' => $childLinkId,
+                    'parentLinkIds' => $parentLinkIds,
+                    'isChildVisible' => $isChildVisible,
+                ]
+            );
 
             $product = $this->enrichChildData($product, $productModel, $feedSpecification, $ignoredFields);
 
@@ -174,6 +186,9 @@ class ConfigurableDataProvider implements DataProviderInterface
             }
 
             if (!$parentLinkIds) {
+                if (!$isChildVisible) {
+                    $finalProducts[] = $product;
+                }
                 continue;
             }
 
@@ -219,6 +234,7 @@ class ConfigurableDataProvider implements DataProviderInterface
     {
         $standalone = $product;
         $standalone[Constant::IS_STANDALONE_PRODUCT_KEY] = true;
+        $standalone[Constant::IS_BELONG_TO_PARENT_KEY] = false;
 
         unset(
             $standalone['__parent_id'],
@@ -295,7 +311,10 @@ class ConfigurableDataProvider implements DataProviderInterface
 
         $childClone['__is_belong_to_parent'] = true;
 
-        if (!in_array(['__parent_id', 'parent_id'], $ignoredFields, true)) {
+        if (
+            !in_array('__parent_id', $ignoredFields, true)
+            && !in_array('parent_id', $ignoredFields, true)
+        ) {
             $parentIdentifierValue = $this->parentIdSourceFieldEvaluator->execute($parent, $parentIdIdentifier);
 
             if ($parentIdentifierValue !== null) {
@@ -303,30 +322,28 @@ class ConfigurableDataProvider implements DataProviderInterface
             }
         }
 
-        if (!in_array(['__parent_title', 'parent_title'], $ignoredFields, true)
-            && method_exists($parent, 'getName')
+        if (
+            !in_array('__parent_title', $ignoredFields, true)
+            && !in_array('parent_title', $ignoredFields, true)
         ) {
-            $childClone['__parent_title'] = $parent->getName();
+            $childClone['__parent_title'] = $parent->getDataUsingMethod('name');
         }
 
-        if (!in_array(['__parent_sku', 'parent_sku'], $ignoredFields, true)
-            && method_exists($parent, 'getSku')
+        if (
+            !in_array('__parent_sku', $ignoredFields, true)
+            && !in_array('parent_sku', $ignoredFields, true)
         ) {
-            $childClone['__parent_sku'] = $parent->getSku();
+            $childClone['__parent_sku'] = $parent->getDataUsingMethod('sku');
         }
 
-        if (!in_array('parent_status', $ignoredFields, true)
-            && method_exists($parent, 'getStatus')
-        ) {
-            $childClone['parent_status'] = $parent->getStatus()
+        if (!in_array('parent_status', $ignoredFields, true)) {
+            $childClone['parent_status'] = $parent->getDataUsingMethod('status')
                 ? __('Enabled')->getText()
                 : __('Disabled')->getText();
         }
 
-        if (!in_array('parent_type_id', $ignoredFields, true)
-            && method_exists($parent, 'getTypeId')
-        ) {
-            $childClone['parent_type_id'] = $parent->getTypeId();
+        if (!in_array('parent_type_id', $ignoredFields, true)) {
+            $childClone['parent_type_id'] = $parent->getDataUsingMethod('type_id');
         }
 
         if (!in_array('parent_url', $ignoredFields, true)

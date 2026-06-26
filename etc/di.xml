@@ -69,7 +69,8 @@
     <preference for="AthosCommerce\Feed\Api\Data\ProductCountItemInterface"
                 type="AthosCommerce\Feed\Model\Data\ProductCountItem"/>
 
-
+    <preference for="AthosCommerce\Feed\Service\Tracking\IdProviderInterface"
+                type="AthosCommerce\Feed\Service\Tracking\IdProvider"/>
 
     <preference for="AthosCommerce\Feed\Api\AppConfigInterface"
                 type="AthosCommerce\Feed\Model\AppConfig"/>
@@ -517,4 +518,13 @@
 
     <type name="AthosCommerce\Feed\Model\Metric\MetricProvider\TimerProvider" shared="false"/>
     <type name="AthosCommerce\Feed\Model\Metric\MetricProvider\FileSizeProvider" shared="false"/>
+
+    <virtualType name="AthosCommerce\Feed\Service\Tracking\CartMetaProvider\ForViewModel"
+                 type="AthosCommerce\Feed\Service\Tracking\CartMetaProvider">
+        <arguments>
+            <argument name="outputOnRoutes" xsi:type="array">
+                <item name="checkout_cart" xsi:type="string">checkout_cart_index</item>
+            </argument>
+        </arguments>
+    </virtualType>
 </config>

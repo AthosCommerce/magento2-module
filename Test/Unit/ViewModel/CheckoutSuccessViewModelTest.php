@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Test\Unit\ViewModel;
 
+
 use AthosCommerce\Feed\Service\Config;
 use AthosCommerce\Feed\Service\Tracking\CompositeOrderItemPriceResolver;
 use AthosCommerce\Feed\Service\Tracking\CompositeSkuResolver;
@@ -46,6 +47,16 @@ class CheckoutSuccessViewModelTest extends TestCase
     private $serializerMock;
 
     /**
+     * @var AthosCommerceLogger|MockObject
+     */
+    private $loggerMock;
+
+    /**
+     * @var OrderDataResolverInterface|MockObject
+     */
+    private $orderDataResolverMock;
+
+    /**
      * @var Order|MockObject
      */
     private $orderMock;
@@ -58,6 +69,26 @@ class CheckoutSuccessViewModelTest extends TestCase
     protected function setUp(): void
     {
         $this->configMock = $this->createMock(Config::class);
+        $this->checkoutSessionMock = $this->createMock(Session::class);
+        $this->serializerMock = $this->createMock(SerializerInterface::class);
+        $this->loggerMock = $this->createMock(AthosCommerceLogger::class);
+        $this->orderDataResolverMock = $this->createMock(OrderDataResolverInterface::class);
+        $this->orderMock = $this->createMock(Order::class);
+
+        $this->orderMock->method('getId')->willReturn(100001234);
+        $this->checkoutSessionMock->method('getLastRealOrder')->willReturn($this->orderMock);
+
+        $this->viewModel = new CheckoutSuccessViewModel(
+            $this->configMock,
+            $this->checkoutSessionMock,
+            $this->serializerMock,
+            $this->loggerMock,
+            $this->orderDataResolverMock
+        );
+    }
+
+    public function testReturnsSerializedEmptyArrayWhenRenderingIsDisabled(): void
+    {
         $this->priceResolverMock = $this->createMock(CompositeOrderItemPriceResolver::class);
         $this->checkoutSessionMock = $this->createMock(Session::class);
         $this->skuResolverMock = $this->createMock(CompositeSkuResolver::class);
@@ -78,6 +109,7 @@ class CheckoutSuccessViewModelTest extends TestCase
     }
 
     public function testGetSuccessPageConfigReturnsEmptyArrayWhenRenderingDisabled(): void
+
     {
         $this->configMock->expects($this->once())
             ->method('shouldRender')
@@ -88,6 +120,87 @@ class CheckoutSuccessViewModelTest extends TestCase
             ->with([])
             ->willReturn('[]');
 
+        $this->orderDataResolverMock->expects($this->never())
+            ->method('resolve');
+
+        $this->assertSame('[]', $this->viewModel->getSuccessPageConfig());
+    }
+
+    public function testReturnsSerializedEmptyArrayWhenOrderIsMissing(): void
+    {
+        $this->configMock->expects($this->once())
+            ->method('shouldRender')
+            ->willReturn(true);
+
+        $this->checkoutSessionMock->expects($this->once())
+            ->method('getLastRealOrder')
+            ->willReturn(null);
+
+        $this->serializerMock->expects($this->once())
+            ->method('serialize')
+            ->with([])
+            ->willReturn('[]');
+
+        $this->orderDataResolverMock->expects($this->once())
+            ->method('resolve');
+
+        $this->assertSame('[]', $this->viewModel->getSuccessPageConfig());
+    }
+
+    public function testReturnsSerializedEmptyArrayWhenOrderHasNoId(): void
+    {
+        $this->configMock->expects($this->once())
+            ->method('shouldRender')
+            ->willReturn(true);
+
+        $this->orderMock->expects($this->once())
+            ->method('getId')
+            ->willReturn(null);
+
+        $this->serializerMock->expects($this->once())
+            ->method('serialize')
+            ->with([])
+            ->willReturn('[]');
+
+        $this->orderDataResolverMock->expects($this->once())
+            ->method('resolve');
+
+        $this->assertSame('[]', $this->viewModel->getSuccessPageConfig());
+    }
+
+    public function testReturnsSerializedResolvedOrderData(): void
+    {
+        $expectedPayload = [
+            'orderId' => 'ORD#100001234',
+            'products' => [
+                ['uid' => '555', 'sku' => 'SUCCESS-SKU'],
+            ],
+        ];
+
+        $this->configMock->expects($this->once())
+            ->method('shouldRender')
+            ->willReturn(true);
+
+        $this->orderMock->expects($this->once())
+            ->method('getId')
+            ->willReturn(100001234);
+
+        $this->orderDataResolverMock->expects($this->once())
+            ->method('resolve')
+            ->with($this->orderMock)
+            ->willReturn($expectedPayload);
+
+        $this->serializerMock->expects($this->once())
+            ->method('serialize')
+            ->with($expectedPayload)
+            ->willReturn('serialized-json');
+
+        $this->assertSame('serialized-json', $this->viewModel->getSuccessPageConfig());
+    }
+
+    public function testReturnsSerializedEmptyArrayWhenResolverThrows(): void
+    {
+        $exception = new RuntimeException('resolver failed');
         $this->assertSame('[]', $this->viewModel->getSuccessPageConfig());
     }
 
@@ -269,27 +382,30 @@ class CheckoutSuccessViewModelTest extends TestCase
             ->method('shouldRender')
             ->willReturn(true);
 
-        $result = $viewModel->getSuccessPageConfig();
 
-        $this->assertSame(json_encode($expectedConfig), $result);
-    }
+        $this->orderMock->expects($this->once())
+            ->method('getId')
+            ->willReturn(100001234);
 
-    public function testGetSuccessPageConfigReturnsSerializedEmptyArrayWhenOrderIsMissing(): void
-    {
-        $checkoutSessionMock = $this->createMock(Session::class);
-        $configMock = $this->createMock(Config::class);
+        $this->orderDataResolverMock->expects($this->once())
+            ->method('resolve')
+            ->with($this->orderMock)
+            ->willThrowException($exception);
 
-        $checkoutSessionMock->method('getLastRealOrder')
-            ->willReturn(null);
-
-        $configMock->expects($this->once())
-            ->method('shouldRender')
-            ->willReturn(true);
+        $this->loggerMock->expects($this->once())
+            ->method('error')
+            ->with(
+                'Failed to resolve Athos Commerce checkout success payload',
+                $this->callback(static function (array $context) use ($exception): bool {
+                    return isset($context['exception']) && $context['exception'] === $exception;
+                })
+            );
 
         $this->serializerMock->expects($this->once())
             ->method('serialize')
             ->with([])
             ->willReturn('[]');
+
 
         $viewModel = new CheckoutSuccessViewModel(
             $configMock,
@@ -300,5 +416,6 @@ class CheckoutSuccessViewModelTest extends TestCase
         );
 
         $this->assertSame('[]', $viewModel->getSuccessPageConfig());
+
     }
 }

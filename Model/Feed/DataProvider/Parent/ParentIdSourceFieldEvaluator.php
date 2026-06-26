@@ -56,6 +56,11 @@ class ParentIdSourceFieldEvaluator
      */
     public function execute(Product $product, string $identifier): ?string
     {
+        // Handle default cases for common identifiers
+        if (in_array($identifier, ['row_id', 'entity_id', 'sku'])) {
+            return $product->getDataUsingMethod($identifier);
+        }
+
         if (!method_exists($product, 'getResource')) {
             return null;
         }

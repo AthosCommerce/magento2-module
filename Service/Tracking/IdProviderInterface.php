@@ -18,19 +18,27 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Service\Tracking;
 
-use Magento\Quote\Api\Data\CartItemInterface;
-use Magento\Sales\Api\Data\OrderItemInterface;
+use Magento\Catalog\Api\Data\ProductInterface;
 
-/**
- * Interface SkuResolverInterface
- *
- * @package AthosCommerce\Feed\Service
- */
-interface SkuResolverInterface
+interface IdProviderInterface
 {
     /**
-     * @param CartItemInterface|OrderItemInterface $product
-     * @return string|null
+     * @param ProductInterface $product
+     *
+     * @return string
      */
-    public function getProductSku($product): ?string;
+    public function getItemId(ProductInterface $product): string;
+
+    /**
+     * @param ProductInterface $product
+     *
+     * @return string
+     */
+    public function getItemParentId(ProductInterface $product): string;
+
+    /**
+     * @param ProductInterface $product
+     * @return string
+     */
+    public function getItemSku(ProductInterface $product): string;
 }

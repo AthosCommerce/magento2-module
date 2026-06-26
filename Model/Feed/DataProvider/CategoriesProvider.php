@@ -18,17 +18,17 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Model\Feed\DataProvider;
 
-use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\Constant;
-use Exception;
-use Magento\Catalog\Model\Category;
-use Magento\Catalog\Model\Product;
-use Magento\Framework\Exception\LocalizedException;
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Category\CollectionBuilder;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Category\GetCategoriesByProductIds;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\Constant;
 use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
+use Exception;
+use Magento\Catalog\Model\Category;
 use Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable as ConfigurableType;
-use AthosCommerce\Feed\Logger\AthosCommerceLogger;
+use Magento\Framework\Exception\LocalizedException;
+use Magento\GroupedProduct\Model\Product\Type\Grouped as GroupedType;
 
 class CategoriesProvider implements DataProviderInterface
 {
@@ -50,6 +50,8 @@ class CategoriesProvider implements DataProviderInterface
     private $getCategoriesByProductIds;
     /** @var ConfigurableType */
     private $configurableType;
+    /** @var GroupedType */
+    private $groupedType;
     /** @var AthosCommerceLogger */
     private $logger;
 
@@ -59,18 +61,21 @@ class CategoriesProvider implements DataProviderInterface
      * @param CollectionBuilder $collectionBuilder
      * @param GetCategoriesByProductIds $getCategoriesByProductIds
      * @param ConfigurableType $configurableType
+     * @param GroupedType $groupedType
      * @param AthosCommerceLogger $logger
      */
     public function __construct(
         CollectionBuilder         $collectionBuilder,
         GetCategoriesByProductIds $getCategoriesByProductIds,
         ConfigurableType          $configurableType,
+        GroupedType               $groupedType,
         AthosCommerceLogger       $logger
     )
     {
         $this->collectionBuilder = $collectionBuilder;
         $this->getCategoriesByProductIds = $getCategoriesByProductIds;
         $this->configurableType = $configurableType;
+        $this->groupedType = $groupedType;
         $this->logger = $logger;
     }
 
@@ -87,26 +92,25 @@ class CategoriesProvider implements DataProviderInterface
     ): array
     {
         $productIds = [];
-        $parentMap = []; // simpleId → parentId
-
-        foreach ($products as $product) {
+        $rowCategorySourceMap = [];
+        $this->logger->info('[CategoriesProvider] started');
+        foreach ($products as $index => $product) {
             if (!isset($product['entity_id'])) {
                 continue;
             }
 
-            $simpleId = (int)$product['entity_id'];
-            $productIds[] = $simpleId;
+            $entityId = (int)$product['entity_id'];
+            $productIds[] = $entityId;
 
-            $parentIds = $this->configurableType->getParentIdsByChild($simpleId);
+            $categorySourceId = $this->resolveCategorySourceId($product);
+            $rowCategorySourceMap[$index] = $categorySourceId;
 
-            if (!empty($parentIds)) {
-                $parentId = (int)$parentIds[0];
-                $parentMap[$simpleId] = $parentId;
-                $productIds[] = $parentId;
+            if ($categorySourceId && $categorySourceId !== $entityId) {
+                $productIds[] = $categorySourceId;
             }
         }
 
-        $productIds = array_unique($productIds);
+        $productIds = array_values(array_unique($productIds));
 
         if (empty($productIds)) {
             return $products;
@@ -115,109 +119,139 @@ class CategoriesProvider implements DataProviderInterface
         $ignoredFields = $feedSpecification->getIgnoreFields();
         $productsCategories = $this->getCategoriesByProductIds->execute($productIds);
         $this->loadCategories($productsCategories, $feedSpecification);
-        foreach ($products as &$product) {
-            $entityId = $product['entity_id'] ?? null;
-            if (!$entityId || !isset($productsCategories[$entityId])) {
+
+        foreach ($products as $index => &$product) {
+            $entityId = isset($product['entity_id']) ? (int)$product['entity_id'] : 0;
+            if ($entityId <= 0) {
                 continue;
             }
 
-            $categorySourceId = $parentMap[$entityId] ?? $entityId;
+            $categorySourceId = $rowCategorySourceMap[$index] ?? $entityId;
 
             if (!isset($productsCategories[$categorySourceId])) {
                 continue;
             }
 
-            $productCategories = $this->buildProductCategories($productsCategories[$entityId]);
-            $parentCategories = isset($parentMap[$entityId])
-                ? $this->buildProductCategories($productsCategories[$categorySourceId])
-                : null;
+            $resolvedCategories = $this->buildProductCategories(
+                $productsCategories[$categorySourceId]
+            );
 
-            $isProductBelongToParent = false;
-
-            if (array_key_exists(Constant::IS_BELONG_TO_PARENT_KEY, $product)
-                && (int)$product[Constant::IS_BELONG_TO_PARENT_KEY] === 1) {
-                $isProductBelongToParent = true;
-            }
-
-            if (!in_array('categories', $ignoredFields) && isset($productCategories['categories'])) {
-                if (!$isProductBelongToParent) {
-                    $product['categories'] = $productCategories['categories'];
-                } else {
-                    $product['categories'] = $parentCategories['categories'] ?? [];
-                }
-            }
-
-            if (!in_array('category_ids', $ignoredFields)
-                && isset($productCategories['category_ids'])
+            if (!in_array('categories', $ignoredFields, true)
+                && isset($resolvedCategories['categories'])
             ) {
-                if (!$isProductBelongToParent) {
-                    $product['category_ids'] = $productCategories['category_ids'];
-                } else {
-                    $product['category_ids'] = $parentCategories['category_ids'] ?? [];
-                }
+                $product['categories'] = $resolvedCategories['categories'];
             }
 
-            if (!in_array('category_hierarchy', $ignoredFields)
-                && isset($productCategories['category_hierarchy'])
+            if (!in_array('category_ids', $ignoredFields, true)
+                && isset($resolvedCategories['category_ids'])
             ) {
-                if (!$isProductBelongToParent) {
-                    $product['category_hierarchy'] = $productCategories['category_hierarchy'];
-                } else {
-                    $product['category_hierarchy'] = $parentCategories['category_hierarchy'] ?? [];
-                }
+                $product['category_ids'] = $resolvedCategories['category_ids'];
             }
 
-            if (!in_array('menu_hierarchy', $ignoredFields)
-                && isset($productCategories['menu_hierarchy'])
+            if (!in_array('category_hierarchy', $ignoredFields, true)
+                && isset($resolvedCategories['category_hierarchy'])
+            ) {
+                $product['category_hierarchy'] = $resolvedCategories['category_hierarchy'];
+            }
+
+            if (!in_array('menu_hierarchy', $ignoredFields, true)
+                && isset($resolvedCategories['menu_hierarchy'])
                 && $feedSpecification->getIncludeMenuCategories()
             ) {
-                if (!$isProductBelongToParent) {
-                    $product['menu_hierarchy'] = $productCategories['menu_hierarchy'];
-                } else {
-                    $product['menu_hierarchy'] = $parentCategories['menu_hierarchy'] ?? [];
-                }
+                $product['menu_hierarchy'] = $resolvedCategories['menu_hierarchy'];
             }
 
-            if (!in_array('url_hierarchy', $ignoredFields)
-                && isset($productCategories['url_hierarchy'])
+            if (!in_array('url_hierarchy', $ignoredFields, true)
+                && isset($resolvedCategories['url_hierarchy'])
                 && $feedSpecification->getIncludeUrlHierarchy()
             ) {
-                if (!$isProductBelongToParent) {
-                    $product['url_hierarchy'] = $productCategories['url_hierarchy'];
-                } else {
-                    $product['url_hierarchy'] = $parentCategories['url_hierarchy'] ?? [];
-                }
+                $product['url_hierarchy'] = $resolvedCategories['url_hierarchy'];
             }
 
-            if (!$parentCategories) {
+            if ($categorySourceId === $entityId) {
                 continue;
             }
 
-            if (!array_key_exists(Constant::IS_BELONG_TO_PARENT_KEY, $product)) {
+            if (!array_key_exists(Constant::IS_BELONG_TO_PARENT_KEY, $product)
+                || (int)$product[Constant::IS_BELONG_TO_PARENT_KEY] !== 1
+            ) {
                 continue;
             }
 
-            if (!in_array('parent_category_id', $ignoredFields)) {
+            if (!in_array('parent_category_id', $ignoredFields, true)) {
                 $product['parent_category_id'] = $categorySourceId;
             }
-            if (!in_array('parent_categories', $ignoredFields)) {
-                $product['parent_categories'] = $parentCategories['categories'] ?? [];
+            if (!in_array('parent_categories', $ignoredFields, true)) {
+                $product['parent_categories'] = $resolvedCategories['categories'] ?? [];
             }
-            if (!in_array('parent_category_ids', $ignoredFields)) {
-                $product['parent_category_ids'] = $parentCategories['category_ids'] ?? [];
+            if (!in_array('parent_category_ids', $ignoredFields, true)) {
+                $product['parent_category_ids'] = $resolvedCategories['category_ids'] ?? [];
             }
-            if (!in_array('parent_category_hierarchy', $ignoredFields)) {
-                $product['parent_category_hierarchy'] = $parentCategories['category_hierarchy'] ?? [];
+            if (!in_array('parent_category_hierarchy', $ignoredFields, true)) {
+                $product['parent_category_hierarchy'] = $resolvedCategories['category_hierarchy'] ?? [];
             }
-            if (!in_array('parent_menu_hierarchy', $ignoredFields)) {
-                $product['parent_menu_hierarchy'] = $parentCategories['menu_hierarchy'] ?? [];
+            if (!in_array('parent_menu_hierarchy', $ignoredFields, true)) {
+                $product['parent_menu_hierarchy'] = $resolvedCategories['menu_hierarchy'] ?? [];
             }
-            if (!in_array('parent_url_hierarchy', $ignoredFields)) {
-                $product['parent_url_hierarchy'] = $parentCategories['url_hierarchy'] ?? [];
+            if (!in_array('parent_url_hierarchy', $ignoredFields, true)) {
+                $product['parent_url_hierarchy'] = $resolvedCategories['url_hierarchy'] ?? [];
+            }
+        }
+        unset($product);
+
+        $this->logger->info('[CategoriesProvider] completed');
+        return $products;
+    }
+
+    /**
+     * @param array $product
+     * @return int
+     */
+    private function resolveCategorySourceId(array $product): int
+    {
+        $entityId = isset($product['entity_id']) ? (int)$product['entity_id'] : 0;
+        if ($entityId <= 0) {
+            return 0;
+        }
+
+        $isBelongToParent = array_key_exists(Constant::IS_BELONG_TO_PARENT_KEY, $product)
+            && (int)$product[Constant::IS_BELONG_TO_PARENT_KEY] === 1;
+
+        if (!$isBelongToParent) {
+            return $entityId;
+        }
+
+        $typeId = (string)($product['type_id'] ?? '');
+        $parentTypeId = (string)($product['parent_type_id'] ?? '');
+        $resolvedType = $parentTypeId ?: $typeId;
+
+        if ($resolvedType === 'configurable') {
+            $parentIds = $this->configurableType->getParentIdsByChild($entityId);
+            $this->logger->debug('[CategoriesProvider]Resolved configurable parent ids', [
+                'entity_id' => $entityId,
+                'type_id' => $typeId,
+                'parent_type_id' => $parentTypeId,
+                'parent_ids' => $parentIds,
+            ]);
+            if (!empty($parentIds)) {
+                return (int)$parentIds[0];
             }
         }
 
-        return $products;
+        if ($resolvedType === 'grouped') {
+            $parentIds = $this->groupedType->getParentIdsByChild($entityId);
+            $this->logger->debug('[CategoriesProvider]Resolved grouped parent ids', [
+                'entity_id' => $entityId,
+                'type_id' => $typeId,
+                'parent_type_id' => $parentTypeId,
+                'parent_ids' => $parentIds,
+            ]);
+            if (!empty($parentIds)) {
+                return (int)$parentIds[0];
+            }
+        }
+
+        return $entityId;
     }
 
     /**

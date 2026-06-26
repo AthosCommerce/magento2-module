@@ -19,19 +19,18 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Model\Feed\DataProvider;
 
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
-use AthosCommerce\Feed\Helper\Constants;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Configurable\DataProvider as ConfigurableDataProvider;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentDataContextManager;
 use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
 use AthosCommerce\Feed\Service\Provider\StoreProvider;
 use Magento\Catalog\Model\Product;
+use Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\Config\Storage\WriterInterface;
 use Magento\Framework\Exception\LocalizedException;
-use Throwable;
-use Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable;
 use Magento\Framework\Serialize\Serializer\Json;
+use Throwable;
 
 class StandardOptionsProvider implements DataProviderInterface
 {
@@ -110,8 +109,8 @@ class StandardOptionsProvider implements DataProviderInterface
         FeedSpecificationInterface $feedSpecification
     ): array
     {
+        $this->logger->info('[StandardOptionsProvider] started');
         foreach ($products as &$product) {
-
             /** @var Product $productModel */
             $productModel = $product['product_model'] ?? null;
             if (!$productModel) {
@@ -181,7 +180,7 @@ class StandardOptionsProvider implements DataProviderInterface
         if (!empty($this->optionNames)) {
             $this->saveOptionNames($feedSpecification);
         }
-
+        $this->logger->info('[StandardOptionsProvider] completed');
         return $products;
     }
 

@@ -20,7 +20,7 @@ namespace AthosCommerce\Feed\Service\Tracking;
 
 use Magento\Quote\Api\Data\CartItemInterface;
 use Magento\Sales\Api\Data\OrderItemInterface;
-use AthosCommerce\Feed\Api\LoggerInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 
 /**
  * Class SkuResolver
@@ -37,7 +37,7 @@ class CompositeSkuResolver implements SkuResolverInterface
     private $skuResolversPool;
 
     /**
-     * @var LoggerInterface
+     * @var AthosCommerceLogger
      */
     private $logger;
 
@@ -49,12 +49,12 @@ class CompositeSkuResolver implements SkuResolverInterface
     /**
      * SkuResolver constructor.
      *
-     * @param LoggerInterface $logger
+     * @param AthosCommerceLogger $logger
      * @param SkuResolverInterface $defaultSkuResolver
      * @param array $skuResolversPool
      */
     public function __construct(
-        LoggerInterface $logger,
+        AthosCommerceLogger $logger,
         SkuResolverInterface $defaultSkuResolver,
         array $skuResolversPool = []
     ) {
@@ -75,8 +75,8 @@ class CompositeSkuResolver implements SkuResolverInterface
             isset($this->skuResolversPool[$productType]) &&
             $this->skuResolversPool[$productType] instanceof SkuResolverInterface
         ) {
-            return (string)$this->skuResolversPool[$productType]
-                ->getProductSku($product);
+            return (string)$this->skuResolversPool[$productType]->getProductSku($product);
+
         }
 
         if (

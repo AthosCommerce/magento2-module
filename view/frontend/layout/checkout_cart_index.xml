@@ -1,26 +1,7 @@
-<?xml version="1.0"?>
-<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" layout="1column" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
     <body>
-        <referenceContainer name="head.additional">
-            <block class="Magento\Framework\View\Element\Template"
-                   name="athoscommerce.feed.tracking.global"
-                   template="AthosCommerce_Feed::tracking/global-script.phtml">
-                <arguments>
-                    <argument name="global_script_view_model" xsi:type="object">AthosCommerce\Feed\ViewModel\GlobalScriptViewModel</argument>
-                    <argument name="escaper_view_model" xsi:type="object">AthosCommerce\Feed\ViewModel\Escaper</argument>
-                </arguments>
-            </block>
-        </referenceContainer>
-        <referenceContainer name="before.body.end">
-            <block class="Magento\Framework\View\Element\Template"
-                   name="athoscommerce.feed.tracking.checkout.cart"
-                   template="AthosCommerce_Feed::tracking/cart-tracking.phtml">
-                <arguments>
-                    <argument name="global_script_view_model" xsi:type="object">AthosCommerce\Feed\ViewModel\GlobalScriptViewModel</argument>
-                    <argument name="cart_view_model" xsi:type="object">AthosCommerce\Feed\ViewModel\CartViewModel</argument>
-                    <argument name="escaper_view_model" xsi:type="object">AthosCommerce\Feed\ViewModel\Escaper</argument>
-                </arguments>
-            </block>
-        </referenceContainer>
+        <!-- Removing to prevent duplicate tracking due to cart page loading -->
+        <referenceBlock name="athoscommerce.customer.data.cart.tracker.listener" remove="true"/>
     </body>
 </page>

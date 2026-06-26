@@ -33,10 +33,12 @@ $scriptString = "
 ";
 ?>
 
-<script siteId="<?= /* @noEscape */ $block->escapeHtmlAttr($siteId) ?>" src="<?= /* @noEscape */ $block->escapeUrl($src) ?>"></script>
+<script siteId="<?= /* @noEscape */ $block->escapeHtmlAttr($siteId) ?>" src="<?= /* @noEscape */ $block->escapeUrl($src) ?>">
+    config = { initiator: "magento" };
+</script>
 
 <?= /* @noEscape */ $secureRenderer->renderTag(
-     'script',
+    'script',
     [
         'type' => 'text/javascript',
         'id' => 'athoscommerce_init',

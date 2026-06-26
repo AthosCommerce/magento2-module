@@ -77,6 +77,25 @@ class ProductExclusion implements ProductExclusionInterface
             return true;
         }
 
+        if (
+            $parent->getTypeId() === \Magento\GroupedProduct\Model\Product\Type\Grouped::TYPE_CODE
+            && (int)$parent->getVisibility() === \Magento\Catalog\Model\Product\Visibility::VISIBILITY_NOT_VISIBLE
+        ) {
+            $this->logger->debug(
+                'Product Exclusion - grouped parent is not visible individually',
+                [
+                    'product_id' => $productModel->getId(),
+                    'parent_id' => $parent->getId(),
+                    'product_type' => $productModel->getTypeId(),
+                    'parent_type' => $parent->getTypeId(),
+                    'visibility_product' => $productModel->getVisibility(),
+                    'visibility_parent' => $parent->getVisibility(),
+                    'status_parent' => $parent->getStatus()
+                ]
+            );
+            return true;
+        }
+
         return false;
     }
 }

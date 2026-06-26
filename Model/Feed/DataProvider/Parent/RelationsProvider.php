@@ -2,7 +2,7 @@
 
 namespace AthosCommerce\Feed\Model\Feed\DataProvider\Parent;
 
-use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\Constant as ParentConstant;
 use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Catalog\Model\ResourceModel\Product as ProductResourceModel;
@@ -12,7 +12,6 @@ use Magento\Eav\Model\Entity;
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\EntityManager\MetadataPool;
 use Magento\GroupedProduct\Model\ResourceModel\Product\Link as MagentoGroupedProductLink;
-use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 
 class RelationsProvider
 {
@@ -46,6 +45,7 @@ class RelationsProvider
      * @param OptionProvider $optionProvider
      * @param ResourceConnection $resourceConnection
      * @param ProductCollectionFactory $productCollectionFactory
+     * @param MetadataPool $metadataPool
      * @param AthosCommerceLogger $logger
      */
     public function __construct(
@@ -55,8 +55,7 @@ class RelationsProvider
         ProductCollectionFactory $productCollectionFactory,
         MetadataPool             $metadataPool,
         AthosCommerceLogger      $logger
-    )
-    {
+    ) {
         $this->productResourceModel = $productResourceModel;
         $this->optionProvider = $optionProvider;
         $this->resourceConnection = $resourceConnection;
@@ -105,6 +104,13 @@ class RelationsProvider
             ParentConstant::CATALOG_PRODUCT_SUPER_LINK_ALIAS . '.product_id',
             ParentConstant::CATALOG_PRODUCT_SUPER_LINK_ALIAS . '.parent_id',
         ]);
+        $this->logger->info(
+            '[ConfigRelations] QueryInfo',
+            [
+                'query' => $select->assemble(),
+                'childIds' => array_chunk($childIds, 500)
+            ]
+        );
         $relations = $connection->fetchAll($select);
         unset($connection, $select);
 
@@ -115,6 +121,7 @@ class RelationsProvider
      * @param array $childIds
      *
      * @return array
+     * @throws \Exception
      */
     public function getGroupRelationIds(array $childIds): array
     {
@@ -156,6 +163,14 @@ class RelationsProvider
             ParentConstant::CATALOG_PRODUCT_LINK . '.linked_product_id AS product_id',
             ParentConstant::CATALOG_PRODUCT_LINK . '.product_id AS parent_id',
         ]);
+
+        $this->logger->debug(
+            '[GroupedRelations] QueryInfo',
+            [
+                'query' => $select->assemble(),
+                'childIds' => array_chunk($childIds, 500)
+            ]
+        );
         $relations = $connection->fetchAll($select);
         unset($connection, $select);
 

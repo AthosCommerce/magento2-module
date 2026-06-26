@@ -36,7 +36,7 @@
                 <item name="simple" xsi:type="object">AthosCommerce\Feed\Service\Tracking\ProductSkuResolver</item>
                 <item name="bundle" xsi:type="object">AthosCommerce\Feed\Service\Tracking\ProductSkuResolver</item>
                 <item name="grouped" xsi:type="object">AthosCommerce\Feed\Service\Tracking\ProductSkuResolver</item>
-                <item name="configurable" xsi:type="object">AthosCommerce\Feed\Service\Tracking\ProductSkuResolver</item>
+                <item name="configurable" xsi:type="object">AthosCommerce\Feed\Service\Tracking\ConfigurableSkuResolver</item>
                 <item name="virtual" xsi:type="object">AthosCommerce\Feed\Service\Tracking\ProductSkuResolver</item>
                 <item name="downloadable" xsi:type="object">AthosCommerce\Feed\Service\Tracking\ProductSkuResolver</item>
                 <item name="giftcard" xsi:type="object">AthosCommerce\Feed\Service\Tracking\ProductSkuResolver</item>
@@ -64,6 +64,7 @@
         <arguments>
             <argument name="sectionSourceMap" xsi:type="array">
                 <item name="athoscommerce-tracking" xsi:type="string">AthosCommerce\Feed\CustomerData\Tracking</item>
+                <item name="athos_pagemeta_cart" xsi:type="string">AthosCommerce\Feed\CustomerData\PageMetaCart</item>
             </argument>
         </arguments>
     </type>

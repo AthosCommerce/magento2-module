@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Model;
 
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentRelationsContext;
 use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
 use AthosCommerce\Feed\Model\Feed\DataProviderPool;
@@ -27,7 +28,6 @@ use AthosCommerce\Feed\Model\Feed\ProductTypeIdInterface;
 use AthosCommerce\Feed\Model\Feed\Resolver\RowResolverPool;
 use AthosCommerce\Feed\Model\Feed\SystemFieldsList;
 use Magento\Catalog\Api\Data\ProductInterface;
-use Magento\Catalog\Model\Product;
 use Magento\Framework\EntityManager\MetadataPool;
 
 class ItemsGenerator
@@ -60,6 +60,10 @@ class ItemsGenerator
      * @var RowResolverPool
      */
     private $rowResolverPool;
+    /**
+     * @var AthosCommerceLogger
+     */
+    private $logger;
 
     /**
      * @param DataProviderPool $dataProviderPool
@@ -69,6 +73,7 @@ class ItemsGenerator
      * @param ProductTypeIdInterface $productTypeId
      * @param FeedItemFilterPool $feedItemFilterPool
      * @param RowResolverPool $rowResolverPool
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
         DataProviderPool       $dataProviderPool,
@@ -77,10 +82,9 @@ class ItemsGenerator
         ParentRelationsContext $parentRelationsContext,
         ProductTypeIdInterface $productTypeId,
         FeedItemFilterPool     $feedItemFilterPool,
-        RowResolverPool        $rowResolverPool
-
-    )
-    {
+        RowResolverPool        $rowResolverPool,
+        AthosCommerceLogger    $logger
+    ) {
         $this->dataProviderPool = $dataProviderPool;
         $this->systemFieldsList = $systemFieldsList;
         $this->metadataPool = $metadataPool;
@@ -88,6 +92,7 @@ class ItemsGenerator
         $this->productTypeId = $productTypeId;
         $this->feedItemFilterPool = $feedItemFilterPool;
         $this->rowResolverPool = $rowResolverPool;
+        $this->logger = $logger;
     }
 
     /**
@@ -99,13 +104,11 @@ class ItemsGenerator
     public function generate(
         array                      $items,
         FeedSpecificationInterface $feedSpecification
-    ): array
-    {
+    ): array {
         if (empty($items)) {
             return [];
         }
         $childIds = [];
-        $result = [];
         $childTypeIds = $this->productTypeId->getChildTypeIdsList();
         foreach ($items as $item) {
             if (in_array($item->getTypeId(), $childTypeIds, true)) {
@@ -113,7 +116,12 @@ class ItemsGenerator
             }
         }
         if (!empty($childIds)) {
+            $this->logger->info("Found " . count($childIds) . " items in child items");
             $this->parentRelationsContext->buildContext($childIds, $feedSpecification);
+            $this->logger->debug(
+                "[ItemsGenerator] ChildItems",
+                ['childIdsChunk' => array_chunk($childIds, 100, true)]
+            );
         }
 
         $items = $this->feedItemFilterPool->filterEntities(
@@ -123,7 +131,6 @@ class ItemsGenerator
 
         $data = [];
         foreach ($items as $index => $item) {
-
             if ($this->feedItemFilterPool->shouldExcludeEntity($item, $feedSpecification)) {
                 continue;
             }
@@ -182,8 +189,7 @@ class ItemsGenerator
      */
     public function resetDataProvidersAfterFetchItems(
         FeedSpecificationInterface $feedSpecification
-    ): void
-    {
+    ): void {
         $dataProviders = $this->getDataProviders($feedSpecification);
         foreach ($dataProviders as $dataProvider) {
             $dataProvider->resetAfterFetchItems();
@@ -195,8 +201,7 @@ class ItemsGenerator
      */
     public function resetDataProviders(
         FeedSpecificationInterface $feedSpecification
-    ): void
-    {
+    ): void {
         $dataProviders = $this->getDataProviders($feedSpecification);
         foreach ($dataProviders as $dataProvider) {
             $dataProvider->reset();
@@ -210,8 +215,7 @@ class ItemsGenerator
      */
     private function getDataProviders(
         FeedSpecificationInterface $feedSpecification
-    ): array
-    {
+    ): array {
         return $this->dataProviderPool->get(
             $feedSpecification->getIgnoreFields()
         );
