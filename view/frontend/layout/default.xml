@@ -21,8 +21,17 @@
                 </arguments>
             </block>
             <block class="Magento\Framework\View\Element\Template"
-                   name="athoscommerce.customer.data.cart.tracker"
-                   template="AthosCommerce_Feed::tracking/mini-cart-actions.phtml">
+                   name="athoscommerce.customer.data.cart.tracker.state"
+                   template="AthosCommerce_Feed::tracking/mini-cart-actions-state.phtml">
+                <arguments>
+                    <argument name="global_script_view_model" xsi:type="object">AthosCommerce\Feed\ViewModel\GlobalScriptViewModel</argument>
+                    <argument name="escaper_view_model" xsi:type="object">AthosCommerce\Feed\ViewModel\Escaper</argument>
+                </arguments>
+            </block>
+            <block class="Magento\Framework\View\Element\Template"
+                   name="athoscommerce.customer.data.cart.tracker.listener"
+                   template="AthosCommerce_Feed::tracking/mini-cart-actions-listener.phtml"
+                   after="athoscommerce.customer.data.cart.tracker.state">
                 <arguments>
                     <argument name="global_script_view_model" xsi:type="object">AthosCommerce\Feed\ViewModel\GlobalScriptViewModel</argument>
                     <argument name="escaper_view_model" xsi:type="object">AthosCommerce\Feed\ViewModel\Escaper</argument>

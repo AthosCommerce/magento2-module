@@ -309,7 +309,8 @@ class ConfigurableDataProvider implements DataProviderInterface
             return $childClone;
         }
 
-        $childClone['__is_belong_to_parent'] = true;
+        $childClone[Constant::IS_BELONG_TO_PARENT_KEY] = true;
+        $childClone[Constant::IS_STANDALONE_PRODUCT_KEY] = false;
 
         if (
             !in_array('__parent_id', $ignoredFields, true)

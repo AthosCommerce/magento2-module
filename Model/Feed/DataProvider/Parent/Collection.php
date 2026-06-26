@@ -76,7 +76,7 @@ class Collection
         $store = $this->storeManager->getStore($feedSpecification->getStoreCode());
         $ignoredFields = $feedSpecification->getIgnoreFields();
         if (!$store) {
-            return null;
+            return [];
         }
         $storeId = (int)$store->getId();
         /** @var ProductCollection $productCollection */
