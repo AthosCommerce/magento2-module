@@ -46,9 +46,10 @@ class ParentRelationsContext
      * @throws \Magento\Framework\Exception\NoSuchEntityException
      */
     public function buildContext(
-        array $childIds,
+        array                      $childIds,
         FeedSpecificationInterface $feedSpecification
-    ): void {
+    ): void
+    {
         $childIds = array_values(array_unique(array_map('intval', $childIds)));
         $this->loadRelations($childIds);
 
@@ -152,6 +153,99 @@ class ParentRelationsContext
             $this->childToParentMap[$childId] = array_values(array_unique(array_map('intval', $parentIds)));
         }
     }
+
+    /**
+     * Resolve exact parent by child + parentSku + productType.
+     *
+     * Matching order:
+     * 1. childId + parentSku + productType
+     * 2. childId + parentSku
+     * 3. childId + productType
+     * 4. first available parent
+     *
+     * @param int $childId
+     * @param string|null $parentSku
+     * @param string|null $productType
+     *
+     * @return ProductInterface|null
+     */
+    public function getParentByChildSkuAndType(
+        int     $childId,
+        ?string $parentSku,
+        ?string $productType
+    ): ?ProductInterface
+    {
+        if (empty($this->childToParentRelations[$childId])) {
+            return null;
+        }
+
+        $normalizedParentSku = $parentSku !== null ? trim($parentSku) : '';
+        $normalizedProductType = $productType !== null ? trim($productType) : '';
+
+        $relations = $this->childToParentRelations[$childId];
+
+        foreach ($relations as $relation) {
+            if ($normalizedParentSku === '' || $normalizedProductType === '') {
+                break;
+            }
+
+            if ((string)$relation['parent_sku'] !== $normalizedParentSku) {
+                continue;
+            }
+
+            if ((string)$relation['parent_type_id'] !== $normalizedProductType) {
+                continue;
+            }
+
+            $parent = $this->parentDataContextManager->getParentsDataByProductId((int)$relation['parent_id']);
+            if ($parent instanceof ProductInterface) {
+                return $parent;
+            }
+        }
+
+        foreach ($relations as $relation) {
+            if ($normalizedParentSku === '') {
+                break;
+            }
+
+            if ((string)$relation['parent_sku'] !== $normalizedParentSku) {
+                continue;
+            }
+
+            $parent = $this->parentDataContextManager->getParentsDataByProductId((int)$relation['parent_id']);
+            if ($parent instanceof ProductInterface) {
+                return $parent;
+            }
+        }
+
+        foreach ($relations as $relation) {
+            if ($normalizedProductType === '') {
+                break;
+            }
+
+            if ((string)$relation['parent_type_id'] !== $normalizedProductType) {
+                continue;
+            }
+
+            $parent = $this->parentDataContextManager->getParentsDataByProductId((int)$relation['parent_id']);
+            if ($parent instanceof ProductInterface) {
+                return $parent;
+            }
+        }
+
+        return $this->getParentsByChildId($childId);
+    }
+
+    /**
+     * @param int $childId
+     *
+     * @return array<int, array<string, int|string>>
+     */
+    public function getParentRelationsByChildId(int $childId): array
+    {
+        return $this->childToParentRelations[$childId] ?? [];
+    }
+
 
     /**
      * @return void

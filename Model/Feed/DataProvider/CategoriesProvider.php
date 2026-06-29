@@ -242,19 +242,16 @@ class CategoriesProvider implements DataProviderInterface
             return $resolvedParentId;
         }
 
-        $parentSku = $product[Constant::RESOLVED_PARENT_SKU_KEY]
-            ?? $product['__parent_sku']
-            ?? null;
+        $parentSku = is_string($parentSku) ? trim($parentSku) : null;
+        $parentType = is_string($parentType) ? trim($parentType) : null;
 
-        $parentType = $product[Constant::RESOLVED_PARENT_TYPE_KEY]
-            ?? $product['parent_type_id']
-            ?? $product['type_id']
-            ?? null;
+        $parentSku = $parentSku !== '' ? $parentSku : null;
+        $parentType = $parentType !== '' ? $parentType : null;
 
         $parentProduct = $this->parentRelationsContext->getParentByChildSkuAndType(
             $entityId,
-            $parentSku !== null ? (string)$parentSku : null,
-            $parentType !== null ? (string)$parentType : null
+            $parentSku,
+            $parentType
         );
 
         if ($parentProduct instanceof ProductInterface) {

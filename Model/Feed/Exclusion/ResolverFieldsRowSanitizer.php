@@ -5,6 +5,7 @@ namespace AthosCommerce\Feed\Model\Feed\Exclusion;
 
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface as FeedSpecification;
 use AthosCommerce\Feed\Model\Feed\Filter\FeedItemFilterInterface;
+use Magento\Catalog\Model\Product;
 
 class ResolverFieldsRowSanitizer implements FeedItemFilterInterface
 {
@@ -19,11 +20,11 @@ class ResolverFieldsRowSanitizer implements FeedItemFilterInterface
     }
 
     /**
-     * @param $product
+     * @param Product $product
      * @param FeedSpecification $feedSpecification
      * @return bool
      */
-    public function shouldExcludeEntity($product, FeedSpecification $feedSpecification): bool
+    public function shouldExcludeEntity(Product $product, FeedSpecification $feedSpecification): bool
     {
         return false;
     }
