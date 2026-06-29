@@ -18,52 +18,50 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Model\Feed\DataProvider\Price;
 
+use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\Constant;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\ParentVariantResolver;
+use AthosCommerce\Feed\Model\Feed\DataProvider\PricesProvider;
 use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Catalog\Model\Product;
-use Magento\Catalog\Model\Product\Type;
 use Magento\Catalog\Pricing\Price\FinalPrice;
 use Magento\Catalog\Pricing\Price\RegularPrice;
-use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentDataContextManager;
-use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentRelationsContext;
-use AthosCommerce\Feed\Model\Feed\DataProvider\PricesProvider;
 use Magento\ConfigurableProduct\Pricing\Price\ConfigurableOptionsProviderInterface;
-
 
 class SimplePriceProvider implements PriceProviderInterface
 {
     /**
-     * @var ParentDataContextManager
+     * @var ParentVariantResolver
      */
-    private $parentDataContextManager;
-    /**
-     * @var ParentRelationsContext
-     */
-    private $parentRelationsContext;
+    private $parentVariantResolver;
+
     /**
      * @var ConfigurableOptionsProviderInterface
      */
     private $configurableOptionsProvider;
+
     /**
-     * @param ParentDataContextManager $parentDataContextManager
+     * @param ParentVariantResolver $parentVariantResolver
+     * @param ConfigurableOptionsProviderInterface $configurableOptionsProvider
      */
     public function __construct(
-        ParentDataContextManager $parentDataContextManager,
-        ParentRelationsContext $parentRelationsContext,
+        ParentVariantResolver $parentVariantResolver,
         ConfigurableOptionsProviderInterface $configurableOptionsProvider
     ) {
-        $this->parentDataContextManager = $parentDataContextManager;
-        $this->parentRelationsContext = $parentRelationsContext;
+        $this->parentVariantResolver = $parentVariantResolver;
         $this->configurableOptionsProvider = $configurableOptionsProvider;
     }
 
     /**
      * @param ProductInterface $product
      * @param array $ignoredFields
-     *
+     * @param ProductInterface|null $resolvedParent
      * @return array
      */
-    public function getPrices(ProductInterface $product, array $ignoredFields): array
-    {
+    public function getPrices(
+        ProductInterface $product,
+        array $ignoredFields,
+        ?ProductInterface $resolvedParent = null
+    ): array {
         $result = [];
         $priceKeys = [
             PricesProvider::FINAL_PRICE_KEY,
@@ -71,12 +69,12 @@ class SimplePriceProvider implements PriceProviderInterface
             PricesProvider::MAX_PRICE_KEY,
         ];
 
-        //Return blank array if all keys are part of ignored fields
         if (empty(array_diff($priceKeys, $ignoredFields))) {
             return $result;
         }
 
-        $parent = $this->parentRelationsContext->getParentsByChildId((int)$product->getId());
+        $parent = $resolvedParent ?: $this->resolveFallbackParentProduct($product);
+
         if (!in_array(PricesProvider::FINAL_PRICE_KEY, $ignoredFields, true)) {
             $result[PricesProvider::FINAL_PRICE_KEY] = $this->getPriceValueByCode(
                 $product,
@@ -105,14 +103,51 @@ class SimplePriceProvider implements PriceProviderInterface
     }
 
     /**
-     * Returns price value for a given price code.
-     * If parent exists and has a valid price, it takes precedence.
+     * Backward-compatible fallback when row context is unavailable.
+     *
+     * Preference:
+     * 1. configurable parent
+     * 2. grouped parent
+     * 3. first available parent
+     *
+     * @param ProductInterface $product
+     * @return ProductInterface|null
+     */
+    private function resolveFallbackParentProduct(ProductInterface $product): ?ProductInterface
+    {
+        if (!$product instanceof Product) {
+            return null;
+        }
+
+        $parents = $this->parentVariantResolver->getParentProducts($product);
+
+        if (empty($parents)) {
+            return null;
+        }
+
+        foreach ($parents as $parent) {
+            if ($parent->getTypeId() === Constant::CONFIGURABLE_TYPE) {
+                return $parent;
+            }
+        }
+
+        foreach ($parents as $parent) {
+            if ($parent->getTypeId() === Constant::GROUPED_TYPE) {
+                return $parent;
+            }
+        }
+
+        return $parents[0];
+    }
+
+    /**
+     * Returns price value for a given price key.
+     * If resolved parent exists and has a valid price, it takes precedence.
      * Falls back to the product’s own price.
      *
      * @param ProductInterface $product
-     * @param string $priceCode
+     * @param string $priceKey
      * @param ProductInterface|null $parent
-     *
      * @return float
      */
     private function getPriceValueByCode(
@@ -128,50 +163,28 @@ class SimplePriceProvider implements PriceProviderInterface
                         ->getMinimalPrice()
                         ->getValue();
                 } else {
-                    $value = $product
-                        ->getPriceInfo()
+                    $value = $product->getPriceInfo()
                         ->getPrice(FinalPrice::PRICE_CODE)
                         ->getValue();
                 }
                 break;
+
             case PricesProvider::REGULAR_PRICE_KEY:
                 if ($parent && method_exists($parent, 'getPriceInfo')) {
                     $value = $parent->getPriceInfo()
                         ->getPrice(RegularPrice::PRICE_CODE)
                         ->getValue();
                 } else {
-                    $value = $product
-                        ->getPriceInfo()
+                    $value = $product->getPriceInfo()
                         ->getPrice(RegularPrice::PRICE_CODE)
                         ->getValue();
                 }
                 break;
+
             case PricesProvider::MAX_PRICE_KEY:
-                if ($parent) {
-                    $maximumAmount = $parent->hasMaxPrice()
-                        ? (float)$parent->getMaxPrice()
-                        : null;
-
-                    if (is_null($maximumAmount)) {
-                        $childProducts = $this->configurableOptionsProvider->getProducts($product);
-                        foreach ($childProducts as $variant) {
-                            $variantAmount = $variant->getPriceInfo()->getPrice(FinalPrice::PRICE_CODE)->getAmount();
-                            if (!$maximumAmount || ($variantAmount->getValue() > $maximumAmount)) {
-                                $maximumAmount = $variantAmount->getValue();
-                            }
-                        }
-                    }
-
-                    $value = $maximumAmount;
-                } else {
-                    $value = $product
-                        ->getPriceInfo()
-                        ->getPrice(FinalPrice::PRICE_CODE)
-                        ->getMaximalPrice()
-                        ->getValue();
-                }
-
+                $value = $this->resolveMaxPrice($product, $parent);
                 break;
+
             default:
                 $value = $product->getPriceInfo()
                     ->getPrice(FinalPrice::PRICE_CODE)
@@ -179,5 +192,65 @@ class SimplePriceProvider implements PriceProviderInterface
         }
 
         return (float)$value;
+    }
+
+    /**
+     * @param ProductInterface $product
+     * @param ProductInterface|null $parent
+     * @return float
+     */
+    private function resolveMaxPrice(
+        ProductInterface $product,
+        ?ProductInterface $parent = null
+    ): float {
+        if ($parent && method_exists($parent, 'getTypeId')) {
+            if ($parent->getTypeId() === Constant::CONFIGURABLE_TYPE) {
+                $maximumAmount = method_exists($parent, 'hasMaxPrice') && $parent->hasMaxPrice()
+                    ? (float)$parent->getMaxPrice()
+                    : null;
+
+                if ($maximumAmount === null) {
+                    $childProducts = $this->configurableOptionsProvider->getProducts($parent);
+
+                    foreach ($childProducts as $variant) {
+                        $variantAmount = $variant->getPriceInfo()
+                            ->getPrice(FinalPrice::PRICE_CODE)
+                            ->getAmount()
+                            ->getValue();
+
+                        if ($maximumAmount === null || $variantAmount > $maximumAmount) {
+                            $maximumAmount = $variantAmount;
+                        }
+                    }
+                }
+
+                return (float)$maximumAmount;
+            }
+
+            if ($parent->getTypeId() === Constant::GROUPED_TYPE) {
+                $maximumAmount = null;
+                $childProducts = $parent->getTypeInstance()->getAssociatedProducts($parent);
+
+                foreach ($childProducts as $variant) {
+                    $variantAmount = $variant->getPriceInfo()
+                        ->getPrice(FinalPrice::PRICE_CODE)
+                        ->getAmount()
+                        ->getValue();
+
+                    if ($maximumAmount === null || $variantAmount > $maximumAmount) {
+                        $maximumAmount = $variantAmount;
+                    }
+                }
+
+                if ($maximumAmount !== null) {
+                    return (float)$maximumAmount;
+                }
+            }
+        }
+
+        return (float)$product->getPriceInfo()
+            ->getPrice(FinalPrice::PRICE_CODE)
+            ->getMaximalPrice()
+            ->getValue();
     }
 }

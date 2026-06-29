@@ -42,9 +42,10 @@ class ConfigurablePriceProvider implements PriceProviderInterface
      * @param ConfigurableOptionsProviderInterface $configurableOptionsProvider
      */
     public function __construct(
-        DataProvider $provider,
+        DataProvider                         $provider,
         ConfigurableOptionsProviderInterface $configurableOptionsProvider
-    ) {
+    )
+    {
         $this->provider = $provider;
         $this->configurableOptionsProvider = $configurableOptionsProvider;
     }
@@ -52,9 +53,14 @@ class ConfigurablePriceProvider implements PriceProviderInterface
     /**
      * @param ProductInterface $product
      * @param array $ignoredFields
+     * @param ProductInterface|null $resolvedParent
      * @return array
      */
-    public function getPrices(ProductInterface $product, array $ignoredFields): array
+    public function getPrices(
+        ProductInterface  $product,
+        array             $ignoredFields,
+        ?ProductInterface $resolvedParent = null
+    ): array
     {
         $result = [];
         if (!in_array(PricesProvider::FINAL_PRICE_KEY, $ignoredFields)) {
@@ -73,7 +79,7 @@ class ConfigurablePriceProvider implements PriceProviderInterface
         }
 
         if (!in_array(PricesProvider::MAX_PRICE_KEY, $ignoredFields)) {
-            $maximumAmount = $product->hasMaxPrice() ? (float) $product->getMaxPrice() : null;
+            $maximumAmount = $product->hasMaxPrice() ? (float)$product->getMaxPrice() : null;
             if (is_null($maximumAmount)) {
                 $childProducts = $this->provider->getById((int)$product->getId())
                     ?? $this->configurableOptionsProvider->getProducts($product);

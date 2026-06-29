@@ -18,19 +18,20 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Model\Feed\DataProvider;
 
-use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentRelationsContext;
+use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Attribute\AttributesProviderInterface;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Attribute\ValueProcessor;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\Constant;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\ParentVariantResolver;
+use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
+use AthosCommerce\Feed\Model\Feed\SystemFieldsList;
 use Exception;
 use Magento\Catalog\Api\Data\ProductAttributeInterface;
 use Magento\Catalog\Model\Product;
+use Magento\Catalog\Model\Product\Visibility;
 use Magento\Catalog\Model\ResourceModel\Eav\Attribute;
 use Magento\Framework\Exception\LocalizedException;
-use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
-use AthosCommerce\Feed\Model\Feed\DataProvider\Attribute\AttributesProviderInterface;
-use AthosCommerce\Feed\Model\Feed\DataProvider\Attribute\ValueProcessor;
-use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
-use AthosCommerce\Feed\Model\Feed\SystemFieldsList;
 
 class AttributesProvider implements DataProviderInterface
 {
@@ -38,48 +39,50 @@ class AttributesProvider implements DataProviderInterface
      * @var ProductAttributeInterface[]|null
      */
     private $attributes = null;
+
     /**
      * @var SystemFieldsList
      */
     private $systemFieldsList;
+
     /**
      * @var ValueProcessor
      */
     private $valueProcessor;
+
     /**
      * @var AttributesProviderInterface
      */
     private $attributesProvider;
+
     /**
-     * @var ParentRelationsContext
+     * @var ParentVariantResolver
      */
-    private $parentRelationsContext;
+    private $parentVariantResolver;
+
     /**
      * @var AthosCommerceLogger
      */
     private $logger;
 
     /**
-     * AttributesProvider constructor.
-     *
      * @param SystemFieldsList $systemFieldsList
      * @param ValueProcessor $valueProcessor
      * @param AttributesProviderInterface $attributesProvider
-     * @param ParentRelationsContext $parentRelationsContext
+     * @param ParentVariantResolver $parentVariantResolver
      * @param AthosCommerceLogger $logger
      */
     public function __construct(
-        SystemFieldsList            $systemFieldsList,
-        ValueProcessor              $valueProcessor,
+        SystemFieldsList $systemFieldsList,
+        ValueProcessor $valueProcessor,
         AttributesProviderInterface $attributesProvider,
-        ParentRelationsContext      $parentRelationsContext,
-        AthosCommerceLogger         $logger
-    )
-    {
+        ParentVariantResolver $parentVariantResolver,
+        AthosCommerceLogger $logger
+    ) {
         $this->systemFieldsList = $systemFieldsList;
         $this->valueProcessor = $valueProcessor;
         $this->attributesProvider = $attributesProvider;
-        $this->parentRelationsContext = $parentRelationsContext;
+        $this->parentVariantResolver = $parentVariantResolver;
         $this->logger = $logger;
     }
 
@@ -92,78 +95,77 @@ class AttributesProvider implements DataProviderInterface
     public function getData(array $products, FeedSpecificationInterface $feedSpecification): array
     {
         $this->loadAttributes($feedSpecification);
+
         foreach ($products as &$product) {
             $productModel = $product['product_model'] ?? null;
-            if (!$productModel) {
+
+            if (!$productModel instanceof Product) {
                 continue;
             }
+
             $product = array_merge(
                 $product,
-                $this->getProductData($productModel, $feedSpecification)
+                $this->getProductData($product, $productModel, $feedSpecification)
             );
         }
+        unset($product);
 
         return $products;
     }
 
     /**
-     * @return string[]
-     */
-    private function getPriceRelatedAttributes(): array
-    {
-        return ['sku', 'price', 'final_price', 'tier_price', 'cost', 'special_price'];
-    }
-
-    /**
+     * @param array $row
      * @param Product $product
      * @param FeedSpecificationInterface $feedSpecification
-     *
      * @return array
      * @throws LocalizedException
      * @throws Exception
      */
-    private function getProductData(Product $product, FeedSpecificationInterface $feedSpecification): array
-    {
+    private function getProductData(
+        array $row,
+        Product $product,
+        FeedSpecificationInterface $feedSpecification
+    ): array {
         $productData = $product->getData();
         $productKeys = array_keys($productData);
         $productId = (int)$product->getData('entity_id');
+
         $this->logger->debug(
             sprintf('[Attributes][%s]Processing started', $productId),
             [
                 'productKeys' => $productKeys
             ]
         );
+
         $result = [];
+        $parentProduct = $this->parentVariantResolver->resolveParentProductForRow($row, $product);
+
         foreach ($productData as $attributeKey => $fieldValue) {
             /*
-            For some reason the system fields does not show up
-            in the attribute list resulting in missing data.
-            To avoid the issue, we will include these in the
-            result without any additional processing
-            */
+             * For some reason the system fields do not show up
+             * in the attribute list resulting in missing data.
+             * To avoid the issue, we will include these in the
+             * result without any additional processing.
+             */
             if (!isset($this->attributes[$attributeKey])) {
                 $result[$attributeKey] = $fieldValue;
                 continue;
             }
+
             /** @var Attribute $attribute */
             $attribute = $this->attributes[$attributeKey];
 
-            $parentProduct = $this->parentRelationsContext->getParentsByChildId($productId);
-
-            if ($parentProduct instanceof Product
-                && (int)$parentProduct->getVisibility() !== \Magento\Catalog\Model\Product\Visibility::VISIBILITY_NOT_VISIBLE
-                && (array_key_exists(Constant::IS_BELONG_TO_PARENT_KEY, $productData) && (int)$productData[Constant::IS_BELONG_TO_PARENT_KEY] === 1)
-            ) {
+            if ($this->shouldUseParentValue($row, $parentProduct)) {
                 $parentValue = $parentProduct->getData($attributeKey);
 
-                //TODO: check for true/false or 0/1
                 if ($parentValue !== null && $parentValue !== '') {
                     $fieldValue = $parentValue;
                 }
+
                 $this->logger->debug(
-                    sprintf('[%s]Fallback applied for attribute %s: %s', $productId, $attributeKey, $fieldValue),
+                    sprintf('[Attributes][%s]Fallback applied for attribute %s', $productId, $attributeKey),
                     [
-                        'parentProduct' => $parentProduct->getId(),
+                        'parentProduct' => (int)$parentProduct->getId(),
                     ]
                 );
             }
@@ -177,10 +179,8 @@ class AttributesProvider implements DataProviderInterface
                 );
             } catch (\Throwable $e) {
                 $this->logger->error(
-                    '[Attributes]Failed processing product attribute',
+                    sprintf('[Attributes][%s]Failed processing attribute: %s', $productId, $attributeKey),
                     [
-                        'product_id' => $productId,
-                        'attribute' => $attributeKey,
                         'value' => $fieldValue,
                         'exception' => $e->getTraceAsString()
                     ]
@@ -188,19 +188,20 @@ class AttributesProvider implements DataProviderInterface
                 continue;
             }
 
-            //textarea few lines only
             if ($attribute->getFrontendInput() === 'textarea') {
                 $fieldValue = (string)$fieldValue;
                 $fieldValue = strlen($fieldValue) > 50 ? substr($fieldValue, 0, 50) . '...' : $fieldValue;
             }
+
             $this->logger->debug(
-                sprintf('Attribute (%s) processed: ', $attributeKey),
+                sprintf('[Attributes][%s]Attribute processed: %s', $productId, $attributeKey),
                 [
                     'value' => $result[$attributeKey],
                     'fieldValue' => $fieldValue,
                 ]
             );
         }
+
         $this->logger->debug(
             sprintf('[Attributes][%s]Processing completed', $productId),
             [
@@ -212,24 +213,45 @@ class AttributesProvider implements DataProviderInterface
     }
 
     /**
+     * @param array $row
+     * @param Product|null $parentProduct
+     * @return bool
+     */
+    private function shouldUseParentValue(array $row, ?Product $parentProduct): bool
+    {
+        if (!$parentProduct instanceof Product) {
+            return false;
+        }
+
+        if ((int)$parentProduct->getVisibility() === Visibility::VISIBILITY_NOT_VISIBLE) {
+            return false;
+        }
+
+        if (!array_key_exists(Constant::IS_BELONG_TO_PARENT_KEY, $row)) {
+            return false;
+        }
+
+        return (int)$row[Constant::IS_BELONG_TO_PARENT_KEY] === 1;
+    }
+
+    /**
      * @param FeedSpecificationInterface $feedSpecification
+     * @return void
      */
     private function loadAttributes(FeedSpecificationInterface $feedSpecification): void
     {
-        if (is_null($this->attributes)) {
+        if ($this->attributes === null) {
             $attributes = $this->attributesProvider->getAttributes($feedSpecification);
             $systemAttributes = $this->systemFieldsList->get();
+
             foreach ($attributes as $attribute) {
-                if (!in_array($attribute->getAttributeCode(), $systemAttributes)) {
+                if (!in_array($attribute->getAttributeCode(), $systemAttributes, true)) {
                     $this->attributes[$attribute->getAttributeCode()] = $attribute;
                 }
             }
         }
     }
 
-    /**
-     *
-     */
     public function reset(): void
     {
         $this->attributes = null;
@@ -237,9 +259,6 @@ class AttributesProvider implements DataProviderInterface
         $this->attributesProvider->reset();
     }
 
-    /**
-     *
-     */
     public function resetAfterFetchItems(): void
     {
         // do nothing

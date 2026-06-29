@@ -322,6 +322,9 @@
                 <item name="bundle_child" xsi:type="object">
                     AthosCommerce\Feed\Model\Feed\Exclusion\BundleChildExclusion
                 </item>
+                <item name="resolved_fields" xsi:type="object">
+                    AthosCommerce\Feed\Model\Feed\Exclusion\ResolverFieldsRowSanitizer
+                </item>
 
             </argument>
         </arguments>

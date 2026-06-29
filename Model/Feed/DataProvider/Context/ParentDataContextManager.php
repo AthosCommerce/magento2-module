@@ -32,22 +32,27 @@ class ParentDataContextManager
      * @var array<int, array<int, ProductInterface>>
      */
     private $productData = [];
+
     /**
      * @var ParentProductCollection
      */
     private $parentProductCollection;
+
     /**
      * @var StoreContextManager
      */
     private $storeContextManager;
+
     /**
      * @var LinkFieldResolver
      */
     private $linkFieldResolver;
+
     /**
      * @var AthosCommerceLogger
      */
     private $logger;
+
     /**
      * @var array<int, array<int, bool>>
      */
@@ -64,7 +69,8 @@ class ParentDataContextManager
         StoreContextManager     $storeContextManager,
         LinkFieldResolver       $linkFieldResolver,
         AthosCommerceLogger     $logger
-    ) {
+    )
+    {
         $this->parentProductCollection = $parentProductCollection;
         $this->storeContextManager = $storeContextManager;
         $this->linkFieldResolver = $linkFieldResolver;
@@ -72,7 +78,7 @@ class ParentDataContextManager
     }
 
     /**
-     * @param array $allParentIds
+     * @param int[] $allParentIds
      * @param FeedSpecificationInterface $feedSpecification
      *
      * @return void
@@ -81,15 +87,19 @@ class ParentDataContextManager
     public function execute(
         array                      $allParentIds,
         FeedSpecificationInterface $feedSpecification
-    ): void {
+    ): void
+    {
         $storeId = $this->getCurrentStoreId();
-        $loaded = $this->loadedParentIds[$storeId] ?? [];
-        $loadParentIds = array_values(array_diff(array_unique($allParentIds), $loaded));
+        $allParentIds = array_values(array_unique(array_map('intval', $allParentIds)));
+        $loadedIds = array_keys($this->loadedParentIds[$storeId] ?? []);
+        $loadParentIds = array_values(array_diff($allParentIds, $loadedIds));
+
         if (!$loadParentIds) {
             $this->logger->debug(
                 '[ParentDataContextManager] All requested parent ids already loaded',
                 [
-                    'parentIds' => $allParentIds
+                    'storeId' => $storeId,
+                    'parentIds' => $allParentIds,
                 ]
             );
             return;
@@ -102,18 +112,23 @@ class ParentDataContextManager
         $idColumnName = $this->linkFieldResolver->getLinkField();
 
         $this->logger->debug(
-            '[ParentDataContextManager] Loaded parentIds via parent collection',
+            '[ParentDataContextManager] Loaded parent ids via parent collection',
             [
+                'storeId' => $storeId,
                 'columnName' => $idColumnName,
-                'parentIds' => $loadParentIds
+                'parentIds' => array_chunk($loadParentIds, 100, true),
             ]
         );
 
         /** @var ProductInterface $parentProduct */
         foreach ($parentCollection as $parentProduct) {
             $parentId = (int)$parentProduct->getData($idColumnName);
+            if ($parentId <= 0) {
+                continue;
+            }
+
             $this->productData[$storeId][$parentId] = $parentProduct;
-            $this->loadedParentIds[$storeId][] = $parentId;
+            $this->loadedParentIds[$storeId][$parentId] = true;
         }
     }
 
@@ -127,6 +142,32 @@ class ParentDataContextManager
         $storeId = $this->getCurrentStoreId();
 
         return $this->productData[$storeId][$parentId] ?? null;
+    }
+
+    /**
+     * @param int[] $parentIds
+     *
+     * @return array<int, ProductInterface>
+     */
+    public function getParentsDataByProductIds(array $parentIds): array
+    {
+        $storeId = $this->getCurrentStoreId();
+        $result = [];
+
+        foreach ($parentIds as $parentId) {
+            $parentId = (int)$parentId;
+            if ($parentId <= 0) {
+                continue;
+            }
+
+            if (!isset($this->productData[$storeId][$parentId])) {
+                continue;
+            }
+
+            $result[$parentId] = $this->productData[$storeId][$parentId];
+        }
+
+        return $result;
     }
 
     /**

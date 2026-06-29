@@ -22,7 +22,6 @@ use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentDataContextManager;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Option\Visibility;
-use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\Constant;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\ParentIdSourceFieldEvaluator;
 use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
 use AthosCommerce\Feed\Model\Feed\ProductExclusionInterface;
@@ -169,7 +168,7 @@ class ConfigurableDataProvider implements DataProviderInterface
 
             $isChildVisible = $this->isVisibleIndividually($productModel);
             $this->logger->debug(
-                sprintf('[ConfigurableDataProvider] Processing child product(%s)', $childLinkId),
+                sprintf('[ConfigurableDataProvider] Child(%s)', $childLinkId),
                 [
                     'childLinkId' => $childLinkId,
                     'parentLinkIds' => $parentLinkIds,
@@ -237,13 +236,14 @@ class ConfigurableDataProvider implements DataProviderInterface
         $standalone[Constant::IS_BELONG_TO_PARENT_KEY] = false;
 
         unset(
-            $standalone['__parent_id'],
-            $standalone['__parent_title'],
-            $standalone['parent_status'],
-            $standalone['parent_type_id'],
-            $standalone['parent_url'],
-            $standalone['parent_visibility'],
-            $standalone['__parent_image']
+            $standalone[Constant::PARENT_ID],
+            $standalone[Constant::PARENT_TITLE],
+            $standalone[Constant::PARENT_SKU],
+            $standalone[Constant::PARENT_IMAGE],
+            $standalone[Constant::PARENT_STATUS],
+            $standalone[Constant::PARENT_TYPE],
+            $standalone[Constant::PARENT_URL],
+            $standalone[Constant::PARENT_VISIBILITY]
         );
 
         return $standalone;
@@ -312,56 +312,51 @@ class ConfigurableDataProvider implements DataProviderInterface
         $childClone[Constant::IS_BELONG_TO_PARENT_KEY] = true;
         $childClone[Constant::IS_STANDALONE_PRODUCT_KEY] = false;
 
-        if (
-            !in_array('__parent_id', $ignoredFields, true)
-            && !in_array('parent_id', $ignoredFields, true)
-        ) {
+        if (!in_array(Constant::PARENT_ID, $ignoredFields, true)) {
             $parentIdentifierValue = $this->parentIdSourceFieldEvaluator->execute($parent, $parentIdIdentifier);
 
             if ($parentIdentifierValue !== null) {
-                $childClone['__parent_id'] = $parentIdentifierValue;
+                $childClone[Constant::PARENT_ID] = $parentIdentifierValue;
             }
         }
 
-        if (
-            !in_array('__parent_title', $ignoredFields, true)
-            && !in_array('parent_title', $ignoredFields, true)
-        ) {
-            $childClone['__parent_title'] = $parent->getDataUsingMethod('name');
+        if (!in_array(Constant::PARENT_TITLE, $ignoredFields, true)) {
+            $childClone[Constant::PARENT_TITLE] = $parent->getDataUsingMethod('name');
         }
 
-        if (
-            !in_array('__parent_sku', $ignoredFields, true)
-            && !in_array('parent_sku', $ignoredFields, true)
-        ) {
-            $childClone['__parent_sku'] = $parent->getDataUsingMethod('sku');
+        if (!in_array(Constant::PARENT_SKU, $ignoredFields, true)) {
+            $childClone[Constant::PARENT_SKU] = $parent->getDataUsingMethod('sku');
         }
 
-        if (!in_array('parent_status', $ignoredFields, true)) {
-            $childClone['parent_status'] = $parent->getDataUsingMethod('status')
+        if (!in_array(Constant::PARENT_STATUS, $ignoredFields, true)) {
+            $childClone[Constant::PARENT_STATUS] = $parent->getDataUsingMethod('status')
                 ? __('Enabled')->getText()
                 : __('Disabled')->getText();
         }
 
-        if (!in_array('parent_type_id', $ignoredFields, true)) {
-            $childClone['parent_type_id'] = $parent->getDataUsingMethod('type_id');
+        if (!in_array(Constant::PARENT_TYPE, $ignoredFields, true)) {
+            $childClone[Constant::PARENT_TYPE] = $parent->getDataUsingMethod('type_id');
         }
 
-        if (!in_array('parent_url', $ignoredFields, true)
+        if (!in_array(Constant::PARENT_URL, $ignoredFields, true)
             && method_exists($parent, 'getProductUrl')
         ) {
-            $childClone['parent_url'] = $parent->getProductUrl();
+            $childClone[Constant::PARENT_URL] = $parent->getProductUrl();
         }
 
-        if (!in_array('parent_visibility', $ignoredFields, true)
+        if (!in_array(Constant::PARENT_VISIBILITY, $ignoredFields, true)
             && method_exists($parent, 'getVisibility')
         ) {
-            $childClone['parent_visibility'] = $this->visibility->getVisibilityTextValue((int)$parent->getVisibility());
+            $childClone[Constant::PARENT_VISIBILITY] = $this->visibility->getVisibilityTextValue((int)$parent->getVisibility());
         }
 
-        if (!in_array(['parent_image', '__parent_image'], $ignoredFields, true)) {
-            $childClone['__parent_image'] = $this->getParentImage($parent);
+        if (!in_array(Constant::PARENT_IMAGE, $ignoredFields, true)) {
+            $childClone[Constant::PARENT_IMAGE] = $this->getParentImage($parent);
         }
+
+        $childClone[Constant::RESOLVED_PARENT_ID_KEY] = (int)$parent->getId();
+        $childClone[Constant::RESOLVED_PARENT_SKU_KEY] = (string)$parent->getSku();
+        $childClone[Constant::RESOLVED_PARENT_TYPE_KEY] = (string)$parent->getTypeId();
 
         return $childClone;
     }
