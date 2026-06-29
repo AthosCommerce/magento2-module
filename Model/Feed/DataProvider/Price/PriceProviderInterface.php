@@ -25,7 +25,12 @@ interface PriceProviderInterface
     /**
      * @param ProductInterface $product
      * @param array $ignoredFields
+     * @param ProductInterface|null $resolvedParent
      * @return array
      */
-    public function getPrices(ProductInterface $product, array $ignoredFields) : array;
+    public function getPrices(
+        ProductInterface  $product,
+        array             $ignoredFields,
+        ?ProductInterface $resolvedParent = null
+    ): array;
 }

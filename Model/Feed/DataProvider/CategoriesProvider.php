@@ -7,11 +7,11 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 declare(strict_types=1);
@@ -22,13 +22,13 @@ use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Category\CollectionBuilder;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Category\GetCategoriesByProductIds;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentRelationsContext;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\Constant;
 use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
 use Exception;
+use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Catalog\Model\Category;
-use Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable as ConfigurableType;
 use Magento\Framework\Exception\LocalizedException;
-use Magento\GroupedProduct\Model\Product\Type\Grouped as GroupedType;
 
 class CategoriesProvider implements DataProviderInterface
 {
@@ -36,46 +36,48 @@ class CategoriesProvider implements DataProviderInterface
      * @var Category[]
      */
     private $loadedCategories = [];
+
     /**
      * @var array
      */
     private $categoriesData = [];
+
     /**
      * @var CollectionBuilder
      */
     private $collectionBuilder;
+
     /**
      * @var GetCategoriesByProductIds
      */
     private $getCategoriesByProductIds;
-    /** @var ConfigurableType */
-    private $configurableType;
-    /** @var GroupedType */
-    private $groupedType;
-    /** @var AthosCommerceLogger */
+
+    /**
+     * @var ParentRelationsContext
+     */
+    private $parentRelationsContext;
+
+    /**
+     * @var AthosCommerceLogger
+     */
     private $logger;
 
     /**
-     * CategoriesProvider constructor.
-     *
      * @param CollectionBuilder $collectionBuilder
      * @param GetCategoriesByProductIds $getCategoriesByProductIds
-     * @param ConfigurableType $configurableType
-     * @param GroupedType $groupedType
+     * @param ParentRelationsContext $parentRelationsContext
      * @param AthosCommerceLogger $logger
      */
     public function __construct(
         CollectionBuilder         $collectionBuilder,
         GetCategoriesByProductIds $getCategoriesByProductIds,
-        ConfigurableType          $configurableType,
-        GroupedType               $groupedType,
+        ParentRelationsContext    $parentRelationsContext,
         AthosCommerceLogger       $logger
     )
     {
         $this->collectionBuilder = $collectionBuilder;
         $this->getCategoriesByProductIds = $getCategoriesByProductIds;
-        $this->configurableType = $configurableType;
-        $this->groupedType = $groupedType;
+        $this->parentRelationsContext = $parentRelationsContext;
         $this->logger = $logger;
     }
 
@@ -93,19 +95,23 @@ class CategoriesProvider implements DataProviderInterface
     {
         $productIds = [];
         $rowCategorySourceMap = [];
-        $this->logger->info('[CategoriesProvider] started');
+
         foreach ($products as $index => $product) {
             if (!isset($product['entity_id'])) {
                 continue;
             }
 
             $entityId = (int)$product['entity_id'];
+            if ($entityId <= 0) {
+                continue;
+            }
+
             $productIds[] = $entityId;
 
             $categorySourceId = $this->resolveCategorySourceId($product);
             $rowCategorySourceMap[$index] = $categorySourceId;
 
-            if ($categorySourceId && $categorySourceId !== $entityId) {
+            if ($categorySourceId > 0 && $categorySourceId !== $entityId) {
                 $productIds[] = $categorySourceId;
             }
         }
@@ -199,12 +205,19 @@ class CategoriesProvider implements DataProviderInterface
         }
         unset($product);
 
-        $this->logger->info('[CategoriesProvider] completed');
         return $products;
     }
 
     /**
+     * Resolve the product id whose category data should be used for the given row.
+     *
+     * Priority:
+     * 1. exact resolved parent id stamped by parent data providers
+     * 2. resolve by child id + parent sku + parent type from shared parent context
+     * 3. self entity id
+     *
      * @param array $product
+     *
      * @return int
      */
     private function resolveCategorySourceId(array $product): int
@@ -221,35 +234,38 @@ class CategoriesProvider implements DataProviderInterface
             return $entityId;
         }
 
-        $typeId = (string)($product['type_id'] ?? '');
-        $parentTypeId = (string)($product['parent_type_id'] ?? '');
-        $resolvedType = $parentTypeId ?: $typeId;
+        $resolvedParentId = isset($product[Constant::RESOLVED_PARENT_ID_KEY])
+            ? (int)$product[Constant::RESOLVED_PARENT_ID_KEY]
+            : 0;
 
-        if ($resolvedType === 'configurable') {
-            $parentIds = $this->configurableType->getParentIdsByChild($entityId);
-            $this->logger->debug('[CategoriesProvider]Resolved configurable parent ids', [
-                'entity_id' => $entityId,
-                'type_id' => $typeId,
-                'parent_type_id' => $parentTypeId,
-                'parent_ids' => $parentIds,
-            ]);
-            if (!empty($parentIds)) {
-                return (int)$parentIds[0];
-            }
+        if ($resolvedParentId > 0) {
+            return $resolvedParentId;
         }
 
-        if ($resolvedType === 'grouped') {
-            $parentIds = $this->groupedType->getParentIdsByChild($entityId);
-            $this->logger->debug('[CategoriesProvider]Resolved grouped parent ids', [
-                'entity_id' => $entityId,
-                'type_id' => $typeId,
-                'parent_type_id' => $parentTypeId,
-                'parent_ids' => $parentIds,
-            ]);
-            if (!empty($parentIds)) {
-                return (int)$parentIds[0];
-            }
+        $parentSku = is_string($parentSku) ? trim($parentSku) : null;
+        $parentType = is_string($parentType) ? trim($parentType) : null;
+
+        $parentSku = $parentSku !== '' ? $parentSku : null;
+        $parentType = $parentType !== '' ? $parentType : null;
+
+        $parentProduct = $this->parentRelationsContext->getParentByChildSkuAndType(
+            $entityId,
+            $parentSku,
+            $parentType
+        );
+
+        if ($parentProduct instanceof ProductInterface) {
+            return (int)$parentProduct->getId();
         }
+
+        $this->logger->debug(
+            '[CategoriesProvider] Falling back to child entity id for category source',
+            [
+                'entity_id' => $entityId,
+                'parent_sku' => $parentSku,
+                'parent_type' => $parentType,
+            ]
+        );
 
         return $entityId;
     }
@@ -266,6 +282,7 @@ class CategoriesProvider implements DataProviderInterface
         $urlHierarchy = [];
         $ids = [];
         $categoryNames = [];
+
         foreach ($productCategories as $productCategory) {
             $categoryId = $productCategory['category_id'] ?? null;
             if (!$categoryId) {
@@ -284,12 +301,14 @@ class CategoriesProvider implements DataProviderInterface
                 $categoryHierarchy,
                 $category['hierarchy'] ?? []
             );
+
             if (($category['include_menu'] ?? false)) {
                 $menuHierarchy = $this->mergeUniquePreserveOrder(
                     $menuHierarchy,
                     $category['hierarchy'] ?? []
                 );
             }
+
             if (isset($category['url_hierarchy'])) {
                 $urlHierarchy = $this->mergeUniquePreserveOrder(
                     $urlHierarchy,
@@ -336,6 +355,7 @@ class CategoriesProvider implements DataProviderInterface
     ): void
     {
         $productsCategoryIds = [];
+
         foreach ($productsCategories as $categoryList) {
             $productsCategoryIds = array_merge(
                 $productsCategoryIds,
@@ -346,6 +366,7 @@ class CategoriesProvider implements DataProviderInterface
         $productsCategoryIds = array_unique($productsCategoryIds);
         $loadedCategoryIds = array_keys($this->loadedCategories);
         $requiredCategoryIds = array_diff($productsCategoryIds, $loadedCategoryIds);
+
         if (empty($requiredCategoryIds)) {
             return;
         }
@@ -354,6 +375,7 @@ class CategoriesProvider implements DataProviderInterface
             $requiredCategoryIds,
             $feedSpecification
         );
+
         /** @var Category[] $categories */
         $categories = $collection->getItems();
 
@@ -366,7 +388,6 @@ class CategoriesProvider implements DataProviderInterface
         foreach ($categories as $category) {
             if ($category) {
                 $category->setStoreId($storeCode);
-
                 $this->loadedCategories[$category->getEntityId()] = $category;
             }
         }
@@ -391,7 +412,6 @@ class CategoriesProvider implements DataProviderInterface
     ): array
     {
         $pathIds = $category->getPathIds();
-        $hierarchySeparator = $feedSpecification->getHierarchySeparator();
         $includeUrlHierarchy = $feedSpecification->getIncludeUrlHierarchy();
 
         $result = [
@@ -399,18 +419,17 @@ class CategoriesProvider implements DataProviderInterface
             'include_menu' => $category->getIncludeInMenu(),
         ];
 
-        $includeUrlHierarchy = $feedSpecification->getIncludeUrlHierarchy();
         $categoryHierarchy = [];
         $urlHierarchy = [];
         $currentHierarchy = [];
         $hierarchySeparator = $feedSpecification->getHierarchySeparator();
+
         foreach ($pathIds as $pathId) {
             $pathCategory = $this->loadedCategories[$pathId] ?? null;
             if (!$pathCategory) {
                 continue;
             }
 
-            // Skip root categories
             if ($pathId <= 2) {
                 continue;
             }
@@ -430,6 +449,7 @@ class CategoriesProvider implements DataProviderInterface
         }
 
         $result['hierarchy'] = array_values(array_unique($categoryHierarchy));
+
         if ($includeUrlHierarchy) {
             $result['url'] = $category->getUrl();
             $result['url_hierarchy'] = array_values(array_unique($urlHierarchy));
@@ -446,14 +466,17 @@ class CategoriesProvider implements DataProviderInterface
     private function getCategoryIds(array $categoryList): array
     {
         $result = [];
+
         foreach ($categoryList as $item) {
             $categoryId = $item['category_id'] ?? null;
             $path = $item['path'] ?? null;
+
             if (!$categoryId) {
                 continue;
             }
 
             $result[] = (int)$categoryId;
+
             if ($path) {
                 $pathCategories = array_map('intval', explode('/', $path));
                 $result = array_merge($result, $pathCategories);
@@ -464,7 +487,7 @@ class CategoriesProvider implements DataProviderInterface
     }
 
     /**
-     *
+     * @return void
      */
     public function reset(): void
     {
@@ -473,7 +496,7 @@ class CategoriesProvider implements DataProviderInterface
     }
 
     /**
-     *
+     * @return void
      */
     public function resetAfterFetchItems(): void
     {

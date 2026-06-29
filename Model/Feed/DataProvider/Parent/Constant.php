@@ -30,4 +30,22 @@ class Constant
 
     public const CONFIGURABLE_TYPE = 'configurable';
     public const GROUPED_TYPE = 'grouped';
+
+    public const PARENT_ID = '__parent_id';
+    public const PARENT_SKU = '__parent_sku';
+    public const PARENT_TITLE = '__parent_title';
+    public const PARENT_IMAGE = '__parent_image';
+
+    public const PARENT_STATUS = 'parent_status';
+    public const PARENT_URL = 'parent_url';
+    public const PARENT_TYPE = 'parent_type_id';
+    public const PARENT_VISIBILITY = 'parent_visibility';
+
+    /**
+     * The following constants are used to store resolved parent information in the product data array.
+     * They are prefixed with '__' to avoid conflicts with existing product attributes.
+     */
+    public const RESOLVED_PARENT_ID_KEY = '__resolved_parent_id';
+    public const RESOLVED_PARENT_SKU_KEY = '__resolved_parent_sku';
+    public const RESOLVED_PARENT_TYPE_KEY = '__resolved_parent_type_id';
 }
