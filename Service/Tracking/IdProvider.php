@@ -108,7 +108,7 @@ class IdProvider implements IdProviderInterface
         $childProductId = $childProduct ? $childProduct->getId() : null;
 
         return $childProductId
-            ? (string)$childProductId
+            ? (string)$product->getId() .'_'.$childProductId
             : (string)$product->getId();
     }
 

@@ -392,6 +392,7 @@
                 <item name="__origin_timestamp" xsi:type="object">AthosCommerce\Feed\Model\Feed\DataProvider\TimeStamp</item>
                 <item name="__min_max_prices" xsi:type="object">AthosCommerce\Feed\Model\Feed\DataProvider\MinMaxPricesProvider</item>
                 <item name="__group_id_field" xsi:type="object">AthosCommerce\Feed\Model\Feed\DataProvider\GroupIdProvider</item>
+                <item name="__entity_id_field" xsi:type="object">AthosCommerce\Feed\Model\Feed\DataProvider\EntityIdProvider</item>
             </argument>
         </arguments>
     </type>

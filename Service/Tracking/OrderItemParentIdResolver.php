@@ -49,7 +49,10 @@ class OrderItemParentIdResolver implements OrderItemParentIdResolverInterface
         return $productId !== null ? (string)$productId : null;
     }
 
-
+    /**
+     * @param OrderItemInterface $orderItem
+     * @return array|\Magento\Sales\Model\Order\Item|null
+     */
     private function getChildOrderItem(OrderItemInterface $orderItem)
     {
         $order = $orderItem->getOrder();
