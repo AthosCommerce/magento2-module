@@ -7,11 +7,11 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 declare(strict_types=1);
@@ -19,28 +19,17 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Model\Feed\DataProvider;
 
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\Constant;
-use Magento\Catalog\Api\ProductRepositoryInterface;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\ParentVariantResolver;
+use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
 use Magento\Catalog\Model\Product;
-use Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable as ConfigurableResource;
 use Magento\ConfigurableProduct\Helper\Data as ConfigurableHelper;
 use Magento\ConfigurableProduct\Model\Product\Type\Configurable as ConfigurableType;
 use Magento\Framework\Exception\LocalizedException;
-use AthosCommerce\Feed\Logger\AthosCommerceLogger;
-use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
 
 class VariantPosition implements DataProviderInterface
 {
-    /**
-     * @var ProductRepositoryInterface
-     */
-    protected $productRepository;
-
-    /**
-     * @var ConfigurableResource
-     */
-    protected $configurableResource;
-
     /**
      * @var ConfigurableHelper
      */
@@ -52,29 +41,30 @@ class VariantPosition implements DataProviderInterface
     protected $configurableType;
 
     /**
+     * @var ParentVariantResolver
+     */
+    private $parentVariantResolver;
+
+    /**
      * @var AthosCommerceLogger
      */
     protected $logger;
 
     /**
-     * @param ProductRepositoryInterface $productRepository
-     * @param ConfigurableResource $configurableResource
      * @param ConfigurableHelper $configurableHelper
      * @param ConfigurableType $configurableType
+     * @param ParentVariantResolver $parentVariantResolver
      * @param AthosCommerceLogger $logger
      */
     public function __construct(
-        ProductRepositoryInterface $productRepository,
-        ConfigurableResource       $configurableResource,
-        ConfigurableHelper         $configurableHelper,
-        ConfigurableType           $configurableType,
-        AthosCommerceLogger        $logger
-    )
-    {
-        $this->productRepository = $productRepository;
-        $this->configurableResource = $configurableResource;
+        ConfigurableHelper $configurableHelper,
+        ConfigurableType $configurableType,
+        ParentVariantResolver $parentVariantResolver,
+        AthosCommerceLogger $logger
+    ) {
         $this->configurableHelper = $configurableHelper;
         $this->configurableType = $configurableType;
+        $this->parentVariantResolver = $parentVariantResolver;
         $this->logger = $logger;
     }
 
@@ -87,63 +77,61 @@ class VariantPosition implements DataProviderInterface
     public function getData(array $products, FeedSpecificationInterface $feedSpecification): array
     {
         $ignoredFields = $feedSpecification->getIgnoreFields();
-        if (in_array('__variant_position', $ignoredFields)) {
+        if (in_array('__variant_position', $ignoredFields, true)) {
             return $products;
         }
 
         foreach ($products as &$product) {
-            /** @var Product $simpleProduct */
+            /** @var Product|null $simpleProduct */
             $simpleProduct = $product['product_model'] ?? null;
 
-            if (!$simpleProduct) {
+            if (!$simpleProduct instanceof Product) {
                 continue;
             }
 
-            //If product is stand alone then lets pass 1
             $isStandaloneProduct = (bool)($product[Constant::IS_STANDALONE_PRODUCT_KEY] ?? false);
             if ($isStandaloneProduct) {
                 $product['__variant_position'] = 1;
                 continue;
             }
 
-            $simpleId = (int)$simpleProduct->getId();
-
-            /**
-             * Get Parent Configurable Product ID
-             */
-            $parentIds = $this->configurableResource->getParentIdsByChild($simpleId);
-
-            if (empty($parentIds)) {
-                $product['__variant_position'] = null;
-                continue;
-            }
-
-            $parentId = (int)$parentIds[0];
-
-            /**
-             * Load Parent Product
-             */
             try {
-                $parentProduct = $this->productRepository->getById($parentId);
-            } catch (\Exception $e) {
-                continue;
-            }
+                $parentProduct = $this->parentVariantResolver->resolveParentProductForRow($product, $simpleProduct);
 
-            /**
-             *  Generate __variant_position
-             */
-            try {
-                $allowedProducts = $this->configurableType->getUsedProducts($parentProduct);
-                $options = $this->configurableHelper->getOptions($parentProduct, $allowedProducts);
-                $product['__variant_position'] = $this->getPosition($options['index'], $simpleId);
+                if (!$parentProduct instanceof Product) {
+                    $product['__variant_position'] = null;
+                    continue;
+                }
+
+                if ($parentProduct->getTypeId() === Constant::CONFIGURABLE_TYPE) {
+                    $allowedProducts = $this->configurableType->getUsedProducts($parentProduct);
+                    $options = $this->configurableHelper->getOptions($parentProduct, $allowedProducts);
+                    $product['__variant_position'] = $this->getPositionFromConfigurableIndex(
+                        $options['index'] ?? [],
+                        (int)$simpleProduct->getId()
+                    );
+                    continue;
+                }
+
+                if ($parentProduct->getTypeId() === Constant::GROUPED_TYPE) {
+                    $children = $this->parentVariantResolver->getChildProducts($parentProduct);
+                    $product['__variant_position'] = $this->getPositionFromChildren(
+                        $children,
+                        (int)$simpleProduct->getId()
+                    );
+                    continue;
+                }
+
+                $product['__variant_position'] = '{}';
             } catch (\Exception $e) {
+                $this->logger->error($e->getMessage());
                 $product['__variant_position'] = '{}';
             }
         }
+        unset($product);
 
         return $products;
     }
-
 
     /**
      *
@@ -162,18 +150,43 @@ class VariantPosition implements DataProviderInterface
     }
 
     /**
-     * @param $index
-     * @param $simpleId
-     * @return int|string|void
+     * @param array $index
+     * @param int $simpleId
+     * @return int|null
      */
-    private function getPosition($index, $simpleId)
+    private function getPositionFromConfigurableIndex(array $index, int $simpleId): ?int
     {
-        if (!empty($index)) {
-            $keys = array_keys($index);
-            $pos = array_search($simpleId, $keys);
-            if ($pos !== false) {
-                return $pos + 1; // 1-based
+        if (empty($index)) {
+            return null;
+        }
+
+        $keys = array_map('intval', array_keys($index));
+        $pos = array_search($simpleId, $keys, true);
+
+        if ($pos !== false) {
+            return $pos + 1;
+        }
+
+        return null;
+    }
+
+    /**
+     * @param Product[] $children
+     * @param int $simpleId
+     * @return int|null
+     */
+    private function getPositionFromChildren(array $children, int $simpleId): ?int
+    {
+        foreach (array_values($children) as $index => $childProduct) {
+            if (!$childProduct instanceof Product) {
+                continue;
+            }
+
+            if ((int)$childProduct->getId() === $simpleId) {
+                return $index + 1;
             }
         }
+
+        return null;
     }
 }

@@ -7,17 +7,18 @@ use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Service\Config;
 use AthosCommerce\Feed\Service\Tracking\IdProviderInterface;
 use AthosCommerce\Feed\ViewModel\PdpViewModel;
-use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Catalog\Model\Product;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Registry;
 use Magento\Framework\Serialize\SerializerInterface;
 use Magento\Store\Model\Store;
 use Magento\Store\Model\StoreManagerInterface;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
-class PdpViewModelTest extends TestCase
+#[CoversClass(PdpViewModel::class)]
+final class PdpViewModelTest extends TestCase
 {
     /**
      * @var Config|MockObject
@@ -30,14 +31,14 @@ class PdpViewModelTest extends TestCase
     private $registryMock;
 
     /**
-     * @var IdProviderInterface|MockObject
+     * @var IdProviderInterface
      */
-    private $idProviderMock;
+    private $idProviderStub;
 
     /**
-     * @var StoreManagerInterface|MockObject
+     * @var StoreManagerInterface
      */
-    private $storeManagerMock;
+    private $storeManagerStub;
 
     /**
      * @var SerializerInterface|MockObject
@@ -45,9 +46,9 @@ class PdpViewModelTest extends TestCase
     private $serializerMock;
 
     /**
-     * @var AthosCommerceLogger|MockObject
+     * @var AthosCommerceLogger
      */
-    private $loggerMock;
+    private $loggerStub;
 
     /**
      * @var PdpViewModel
@@ -58,56 +59,62 @@ class PdpViewModelTest extends TestCase
     {
         $this->configMock = $this->createMock(Config::class);
         $this->registryMock = $this->createMock(Registry::class);
-        $this->idProviderMock = $this->createMock(IdProviderInterface::class);
-        $this->storeManagerMock = $this->createMock(StoreManagerInterface::class);
+        $this->idProviderStub = $this->createStub(IdProviderInterface::class);
+        $this->storeManagerStub = $this->createStub(StoreManagerInterface::class);
         $this->serializerMock = $this->createMock(SerializerInterface::class);
-        $this->loggerMock = $this->createMock(AthosCommerceLogger::class);
+        $this->loggerStub = $this->createStub(AthosCommerceLogger::class);
 
         $this->viewModel = new PdpViewModel(
             $this->configMock,
             $this->registryMock,
-            $this->idProviderMock,
-            $this->storeManagerMock,
+            $this->idProviderStub,
+            $this->storeManagerStub,
             $this->serializerMock,
-            $this->loggerMock
+            $this->loggerStub
         );
     }
 
     public function testReturnsEmptyStringWhenRenderingDisabled(): void
     {
-        $this->configMock
-            ->expects($this->once())
+        $this->configMock->expects($this->once())
             ->method('shouldRender')
             ->willReturn(false);
+
+        $this->registryMock->expects($this->never())
+            ->method('registry');
+
+        $this->serializerMock->expects($this->never())
+            ->method('serialize');
 
         $this->assertSame('', $this->viewModel->getProductPageData());
     }
 
     public function testReturnsEmptyStringWhenNoCurrentProduct(): void
     {
-        $this->configMock
+        $this->configMock->expects($this->once())
             ->method('shouldRender')
             ->willReturn(true);
 
-        $this->registryMock
-            ->expects($this->once())
+        $this->registryMock->expects($this->once())
             ->method('registry')
             ->with('current_product')
             ->willReturn(null);
+
+        $this->serializerMock->expects($this->never())
+            ->method('serialize');
 
         $this->assertSame('', $this->viewModel->getProductPageData());
     }
 
     public function testReturnsEmptyStringWhenCurrentProductHasNoId(): void
     {
-        $product = $this->createMock(ProductInterface::class);
+        $product = $this->createProductMock();
 
-        $this->configMock
+        $this->configMock->expects($this->once())
             ->method('shouldRender')
             ->willReturn(true);
 
-        $this->registryMock
-            ->expects($this->once())
+        $this->registryMock->expects($this->once())
             ->method('registry')
             ->with('current_product')
             ->willReturn($product);
@@ -116,51 +123,68 @@ class PdpViewModelTest extends TestCase
             ->method('getId')
             ->willReturn(null);
 
+        $this->serializerMock->expects($this->never())
+            ->method('serialize');
+
         $this->assertSame('', $this->viewModel->getProductPageData());
     }
 
     public function testReturnsSerializedProductData(): void
     {
         $product = $this->createProductMock();
-        $store = $this->getStoreMockup();
+        $store = $this->createStoreMock();
 
-        $this->configMock
+        $storeManagerMock = $this->createMock(StoreManagerInterface::class);
+        $idProviderMock = $this->createMock(IdProviderInterface::class);
+
+        $this->viewModel = new PdpViewModel(
+            $this->configMock,
+            $this->registryMock,
+            $idProviderMock,
+            $storeManagerMock,
+            $this->serializerMock,
+            $this->loggerStub
+        );
+
+        $this->configMock->expects($this->once())
             ->method('shouldRender')
             ->willReturn(true);
 
-        $this->registryMock
+        $this->registryMock->expects($this->once())
             ->method('registry')
             ->with('current_product')
             ->willReturn($product);
 
-        $product->method('getId')->willReturn(10);
-        $product->method('getFinalPrice')->willReturn(99.99);
+        $product->expects($this->once())
+            ->method('getId')
+            ->willReturn(10);
 
-        $this->idProviderMock
-            ->expects($this->once())
+        $product->expects($this->once())
+            ->method('getFinalPrice')
+            ->willReturn(99.99);
+
+        $idProviderMock->expects($this->once())
             ->method('getItemId')
             ->with($product)
             ->willReturn('10');
 
-        $this->idProviderMock
-            ->expects($this->once())
+        $idProviderMock->expects($this->once())
             ->method('getItemSku')
             ->with($product)
             ->willReturn('SKU-001');
 
-        $this->idProviderMock
-            ->expects($this->once())
+        $idProviderMock->expects($this->once())
             ->method('getItemParentId')
             ->with($product)
             ->willReturn('100');
 
-        $store->method('getCurrentCurrencyCode')
-            ->willReturn('USD');
-
-        $this->storeManagerMock
-            ->expects($this->once())
+        $storeManagerMock->expects($this->once())
             ->method('getStore')
             ->willReturn($store);
+
+        $store->expects($this->once())
+            ->method('getCurrentCurrencyCode')
+            ->willReturn('USD');
 
         $expectedData = [
             'uid' => '10',
@@ -170,8 +194,7 @@ class PdpViewModelTest extends TestCase
             'currency' => 'USD',
         ];
 
-        $this->serializerMock
-            ->expects($this->once())
+        $this->serializerMock->expects($this->once())
             ->method('serialize')
             ->with($expectedData)
             ->willReturn('serialized-json');
@@ -182,153 +205,196 @@ class PdpViewModelTest extends TestCase
     public function testUsesRegularPriceWhenFinalPriceIsZero(): void
     {
         $product = $this->createProductMock();
-        $store = $this->getStoreMockup();
+        $store = $this->createStoreMock();
 
-        $this->configMock->method('shouldRender')->willReturn(true);
-        $this->registryMock->method('registry')->willReturn($product);
+        $storeManagerMock = $this->createMock(StoreManagerInterface::class);
+        $idProviderStub = $this->createStub(IdProviderInterface::class);
 
-        $product->method('getId')->willReturn(10);
-        $product->method('getFinalPrice')->willReturn(0);
-        $product->method('getPrice')->willReturn(12349.95);
+        $idProviderStub->method('getItemId')->willReturn('10');
+        $idProviderStub->method('getItemSku')->willReturn('SKU');
+        $idProviderStub->method('getItemParentId')->willReturn('');
 
-        $this->idProviderMock->method('getItemId')->willReturn('10');
-        $this->idProviderMock->method('getItemSku')->willReturn('SKU');
-        $this->idProviderMock->method('getItemParentId')->willReturn('');
+        $this->viewModel = new PdpViewModel(
+            $this->configMock,
+            $this->registryMock,
+            $idProviderStub,
+            $storeManagerMock,
+            $this->serializerMock,
+            $this->loggerStub
+        );
 
-        $store->method('getCurrentCurrencyCode')->willReturn('USD');
-
-        $this->storeManagerMock
-            ->method('getStore')
-            ->willReturn($store);
-
-        $this->serializerMock
-            ->expects($this->once())
-            ->method('serialize')
-            ->with($this->callback(function (array $data) {
-                return $data['price'] === 12349.95;
-            }))
-            ->willReturn('serialized-json');
-
-        $this->viewModel->getProductPageData();
-    }
-
-    public function testPassesThroughEmptyParentIdWhenNoParentProductExists(): void
-    {
-        $product = $this->createProductMock();
-        $store = $this->getStoreMockup();
-
-        $this->configMock
+        $this->configMock->expects($this->once())
             ->method('shouldRender')
             ->willReturn(true);
 
-        $this->registryMock
+        $this->registryMock->expects($this->once())
             ->method('registry')
+            ->with('current_product')
             ->willReturn($product);
 
-        $product->method('getId')->willReturn(10);
-        $product->method('getFinalPrice')->willReturn(99.99);
+        $product->expects($this->once())
+            ->method('getId')
+            ->willReturn(10);
 
-        $this->idProviderMock->method('getItemId')->willReturn('10');
-        $this->idProviderMock->method('getItemSku')->willReturn('SKU-001');
-        $this->idProviderMock->method('getItemParentId')->willReturn('');
+        $product->expects($this->once())
+            ->method('getFinalPrice')
+            ->willReturn(0.0);
 
-        $store->method('getCurrentCurrencyCode')
-            ->willReturn('USD');
+        $product->expects($this->once())
+            ->method('getPrice')
+            ->willReturn(12349.95);
 
-        $this->storeManagerMock
+        $storeManagerMock->expects($this->once())
             ->method('getStore')
             ->willReturn($store);
 
-        $this->serializerMock
-            ->expects($this->once())
+        $store->expects($this->once())
+            ->method('getCurrentCurrencyCode')
+            ->willReturn('USD');
+
+        $this->serializerMock->expects($this->once())
             ->method('serialize')
-            ->with($this->callback(function (array $data) {
+            ->with($this->callback(static function (array $data): bool {
+                return $data === [
+                        'uid' => '10',
+                        'sku' => 'SKU',
+                        'parentId' => null,
+                        'price' => 12349.95,
+                        'currency' => 'USD',
+                    ];
+            }))
+            ->willReturn('serialized-json');
+
+        $this->assertSame('serialized-json', $this->viewModel->getProductPageData());
+    }
+
+    public function testConvertsEmptyParentIdToNull(): void
+    {
+        $product = $this->createProductMock();
+        $store = $this->createStoreMock();
+
+        $storeManagerMock = $this->createMock(StoreManagerInterface::class);
+        $idProviderStub = $this->createStub(IdProviderInterface::class);
+
+        $idProviderStub->method('getItemId')->willReturn('10');
+        $idProviderStub->method('getItemSku')->willReturn('SKU-001');
+        $idProviderStub->method('getItemParentId')->willReturn('');
+
+        $this->viewModel = new PdpViewModel(
+            $this->configMock,
+            $this->registryMock,
+            $idProviderStub,
+            $storeManagerMock,
+            $this->serializerMock,
+            $this->loggerStub
+        );
+
+        $this->configMock->expects($this->once())
+            ->method('shouldRender')
+            ->willReturn(true);
+
+        $this->registryMock->expects($this->once())
+            ->method('registry')
+            ->with('current_product')
+            ->willReturn($product);
+
+        $product->expects($this->once())
+            ->method('getId')
+            ->willReturn(10);
+
+        $product->expects($this->once())
+            ->method('getFinalPrice')
+            ->willReturn(99.99);
+
+        $storeManagerMock->expects($this->once())
+            ->method('getStore')
+            ->willReturn($store);
+
+        $store->expects($this->once())
+            ->method('getCurrentCurrencyCode')
+            ->willReturn('USD');
+
+        $this->serializerMock->expects($this->once())
+            ->method('serialize')
+            ->with($this->callback(static function (array $data): bool {
                 return $data['parentId'] === null;
             }))
             ->willReturn('serialized-json');
 
-        $this->viewModel->getProductPageData();
+        $this->assertSame('serialized-json', $this->viewModel->getProductPageData());
     }
 
     public function testReturnsNullCurrencyAndLogsErrorWhenStoreThrowsException(): void
     {
         $product = $this->createProductMock();
 
-        $this->configMock->method('shouldRender')->willReturn(true);
-        $this->registryMock->method('registry')->willReturn($product);
+        $storeManagerMock = $this->createMock(StoreManagerInterface::class);
+        $loggerMock = $this->createMock(AthosCommerceLogger::class);
+        $idProviderStub = $this->createStub(IdProviderInterface::class);
 
-        $product->method('getId')->willReturn(10);
-        $product->method('getFinalPrice')->willReturn(10.0);
+        $idProviderStub->method('getItemId')->willReturn('10');
+        $idProviderStub->method('getItemSku')->willReturn('SKU');
+        $idProviderStub->method('getItemParentId')->willReturn('');
 
-        $this->idProviderMock->method('getItemId')->willReturn('10');
-        $this->idProviderMock->method('getItemSku')->willReturn('SKU');
-        $this->idProviderMock->method('getItemParentId')->willReturn('');
+        $this->viewModel = new PdpViewModel(
+            $this->configMock,
+            $this->registryMock,
+            $idProviderStub,
+            $storeManagerMock,
+            $this->serializerMock,
+            $loggerMock
+        );
 
-        $this->storeManagerMock
-            ->expects($this->once())
+        $this->configMock->expects($this->once())
+            ->method('shouldRender')
+            ->willReturn(true);
+
+        $this->registryMock->expects($this->once())
+            ->method('registry')
+            ->with('current_product')
+            ->willReturn($product);
+
+        $product->expects($this->once())
+            ->method('getId')
+            ->willReturn(10);
+
+        $product->expects($this->once())
+            ->method('getFinalPrice')
+            ->willReturn(10.0);
+
+        $storeManagerMock->expects($this->once())
             ->method('getStore')
-            ->willThrowException(
-                new NoSuchEntityException(__('Store not found'))
-            );
+            ->willThrowException(new NoSuchEntityException(__('Store not found')));
 
-        $this->loggerMock
-            ->expects($this->once())
+        $loggerMock->expects($this->once())
             ->method('error')
             ->with('Store not found');
 
-        $this->serializerMock
-            ->expects($this->once())
+        $this->serializerMock->expects($this->once())
             ->method('serialize')
-            ->with($this->callback(function (array $data) {
+            ->with($this->callback(static function (array $data): bool {
                 return $data['currency'] === null;
             }))
             ->willReturn('serialized-json');
 
-        $this->viewModel->getProductPageData();
-    }
-
-    public function testReturnsEmptyStringWhenSerializerReturnsNonString(): void
-    {
-        $product = $this->createProductMock();
-        $store = $this->getStoreMockup();
-
-        $this->configMock->method('shouldRender')->willReturn(true);
-        $this->registryMock->method('registry')->willReturn($product);
-
-        $product->method('getId')->willReturn(10);
-        $product->method('getFinalPrice')->willReturn(50.00);
-
-        $this->idProviderMock->method('getItemId')->willReturn('10');
-        $this->idProviderMock->method('getItemSku')->willReturn('SKU');
-        $this->idProviderMock->method('getItemParentId')->willReturn('');
-
-        $store->method('getCurrentCurrencyCode')->willReturn('USD');
-
-        $this->storeManagerMock->method('getStore')->willReturn($store);
-
-        $this->serializerMock
-            ->expects($this->once())
-            ->method('serialize')
-            ->willReturn(null);
-
-        $this->assertSame('', $this->viewModel->getProductPageData());
+        $this->assertSame('serialized-json', $this->viewModel->getProductPageData());
     }
 
     /**
-     * @return Product
+     * @return Product|MockObject
      */
-    private function createProductMock(): Product
+    private function createProductMock()
     {
         return $this->getMockBuilder(Product::class)
             ->disableOriginalConstructor()
-            ->onlyMethods(array('getId', 'getFinalPrice', 'getPrice'))
+            ->onlyMethods(['getId', 'getFinalPrice', 'getPrice'])
             ->getMock();
     }
 
     /**
      * @return Store|MockObject
      */
-    private function getStoreMockup()
+    private function createStoreMock()
     {
         return $this->getMockBuilder(Store::class)
             ->disableOriginalConstructor()

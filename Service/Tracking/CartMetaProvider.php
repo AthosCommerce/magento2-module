@@ -150,10 +150,12 @@ class CartMetaProvider
     {
         $uid = (string)($this->trackingMetaResolver->getUid($cartItem) ?: '');
         $parentId = $this->trackingMetaResolver->getParentId($cartItem);
+        $parentId = $parentId !== null && $parentId !== ''
+            ? (string)$parentId
+            : $uid;
 
-        if ($parentId !== null && $parentId !== '' && $parentId !== $uid) {
+        if ($parentId !== $uid) {
             $uid = $parentId . '_' . $uid;
-            $parentId = (string)$parentId;
         }
         $sku = (string)$this->trackingMetaResolver->getSku($cartItem);
 

@@ -71,7 +71,7 @@ class EntityIdProvider implements DataProviderInterface
             if (!in_array($productModel->getTypeId(), ['simple', 'virtual'], true)) {
                 continue;
             }
-            
+
             $product['entity_id'] = $this->itemIdProvider->execute($product, $productModel);
 
         }
@@ -80,11 +80,11 @@ class EntityIdProvider implements DataProviderInterface
 
     public function reset(): void
     {
-        // TODO: Implement reset() method.
+        // do nothing
     }
 
     public function resetAfterFetchItems(): void
     {
-        // TODO: Implement resetAfterFetchItems() method.
+        // do nothing
     }
 }
