@@ -93,12 +93,19 @@ class PdpViewModel implements ArgumentInterface
         if (!$product || !(int)$product->getId()) {
             return '';
         }
-
+        $uid = $this->idProvider->getItemId($product);
         $parentId = $this->idProvider->getItemParentId($product);
-        $parentId = $parentId !== null && $parentId !== '' ? $parentId : null;
+
+        $parentId = $parentId !== null && $parentId !== ''
+            ? (string)$parentId
+            : $uid;
+
+        if ($parentId !== $uid) {
+            $uid = $parentId . '_' . $uid;
+        }
 
         $data = $this->serializer->serialize([
-            'uid' => $this->idProvider->getItemId($product),
+            'uid' => (string)$uid,
             'sku' => $this->idProvider->getItemSku($product),
             'parentId' => $parentId,
             'price' => $this->getProductPrice($product),

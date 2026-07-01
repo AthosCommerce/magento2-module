@@ -48,4 +48,5 @@ class Constant
     public const RESOLVED_PARENT_ID_KEY = '__resolved_parent_id';
     public const RESOLVED_PARENT_SKU_KEY = '__resolved_parent_sku';
     public const RESOLVED_PARENT_TYPE_KEY = '__resolved_parent_type_id';
+    public const RESOLVED_PARENT_ROW_SOURCE_KEY = '__resolved_parent_row_source';
 }

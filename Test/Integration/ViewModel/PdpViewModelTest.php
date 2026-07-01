@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Test\Integration\ViewModel;
 
 use AthosCommerce\Feed\ViewModel\PdpViewModel;
+use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Catalog\Api\ProductRepositoryInterface;
-use Magento\Catalog\Model\Product;
 use Magento\Framework\Registry;
 use Magento\Framework\Serialize\SerializerInterface;
 use Magento\TestFramework\Helper\Bootstrap;
@@ -42,14 +42,13 @@ class PdpViewModelTest extends TestCase
         $this->registry = $objectManager->get(Registry::class);
         $this->productRepository = $objectManager->get(ProductRepositoryInterface::class);
         $this->serializer = $objectManager->get(SerializerInterface::class);
+
+        parent::setUp();
     }
 
     protected function tearDown(): void
     {
-        if ($this->registry->registry('current_product')) {
-            $this->registry->unregister('current_product');
-        }
-
+        $this->unregisterCurrentProduct();
         parent::tearDown();
     }
 
@@ -58,6 +57,8 @@ class PdpViewModelTest extends TestCase
      */
     public function testReturnsEmptyStringWhenCurrentProductIsMissing(): void
     {
+        $this->unregisterCurrentProduct();
+
         $this->assertSame('', $this->viewModel->getProductPageData());
     }
 
@@ -69,26 +70,17 @@ class PdpViewModelTest extends TestCase
      */
     public function testReturnsSerializedProductPageDataForSimpleProduct(): void
     {
-        /** @var Product $product */
         $product = $this->productRepository->get('athoscommerce_simple_1');
 
-        if ($this->registry->registry('current_product')) {
-            $this->registry->unregister('current_product');
-        }
-        $this->registry->register('current_product', $product);
+        $this->registerCurrentProduct($product);
+        $data = $this->getDecodedProductPageData();
 
-        $result = $this->viewModel->getProductPageData();
-
-        $this->assertNotSame('', $result);
-
-        $data = $this->serializer->unserialize($result);
-
-        $this->assertSame((string)$product->getId(), $data['uid']);
-        $this->assertSame((string)$product->getSku(), $data['sku']);
+        $this->assertSame((string) $product->getId(), $data['uid']);
+        $this->assertSame((string) $product->getSku(), $data['sku']);
         $this->assertArrayHasKey('parentId', $data);
-        $this->assertNull($data['parentId']);
+        $this->assertSame((string) $product->getId(), $data['parentId']);
         $this->assertArrayHasKey('price', $data);
-        $this->assertEquals((float)$product->getFinalPrice(), (float)$data['price']);
+        $this->assertEquals((float) $product->getFinalPrice(), (float) $data['price']);
         $this->assertArrayHasKey('currency', $data);
         $this->assertIsString($data['currency']);
         $this->assertNotSame('', $data['currency']);
@@ -100,7 +92,6 @@ class PdpViewModelTest extends TestCase
      */
     public function testReturnsEmptyStringWhenRenderIsDisabled(): void
     {
-        /** @var Product $product */
         $product = $this->productRepository->get('athoscommerce_simple_1');
 
         $this->registerCurrentProduct($product);
@@ -115,14 +106,13 @@ class PdpViewModelTest extends TestCase
      */
     public function testReturnsDefaultTrackingScriptViaConfigAndStillRenders(): void
     {
-        /** @var Product $product */
         $product = $this->productRepository->get('athoscommerce_simple_1');
 
         $this->registerCurrentProduct($product);
-
         $data = $this->getDecodedProductPageData();
 
-        $this->assertSame((string)$product->getId(), $data['uid']);
+        $this->assertSame((string) $product->getId(), $data['uid']);
+        $this->assertSame((string) $product->getId(), $data['parentId']);
     }
 
     /**
@@ -141,21 +131,25 @@ class PdpViewModelTest extends TestCase
         $this->registerCurrentProduct($childProduct);
         $data = $this->getDecodedProductPageData();
 
-        $this->assertSame((string)$childProduct->getId(), $data['uid']);
+        $this->assertSame((string) $childProduct->getId(), $data['parentId'].'_'.$data['uid']);
         $this->assertSame($childSku, $data['sku']);
-        $this->assertSame((string)$parentProduct->getId(), $data['parentId']);
+        $this->assertSame((string) $parentProduct->getId(), $data['parentId']);
     }
 
     /**
-     * @param \Magento\Catalog\Api\Data\ProductInterface $product
+     * @param ProductInterface $product
      */
-    private function registerCurrentProduct($product): void
+    private function registerCurrentProduct(ProductInterface $product): void
+    {
+        $this->unregisterCurrentProduct();
+        $this->registry->register('current_product', $product);
+    }
+
+    private function unregisterCurrentProduct(): void
     {
         if ($this->registry->registry('current_product')) {
             $this->registry->unregister('current_product');
         }
-
-        $this->registry->register('current_product', $product);
     }
 
     /**

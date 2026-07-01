@@ -48,8 +48,7 @@ class OrderItemParentIdResolver implements OrderItemParentIdResolverInterface
         $productId = $orderItem->getProductId();
         return $productId !== null ? (string)$productId : null;
     }
-
-
+    
     private function getChildOrderItem(OrderItemInterface $orderItem)
     {
         $order = $orderItem->getOrder();

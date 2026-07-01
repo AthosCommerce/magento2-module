@@ -42,11 +42,7 @@ class GlobalScriptViewModelTest extends TestCase
             $this->viewModel->getSiteId()
         );
     }
-
-
-
-
-
+    
     public function testReturnsEmptyStringWhenSiteIdIsNull(): void
     {
         $this->configMock
