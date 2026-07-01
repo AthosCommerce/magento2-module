@@ -187,7 +187,7 @@ final class PdpViewModelTest extends TestCase
             ->willReturn('USD');
 
         $expectedData = [
-            'uid' => '10',
+            'uid' => '100_10',
             'sku' => 'SKU-001',
             'parentId' => '100',
             'price' => 99.99,
@@ -212,7 +212,7 @@ final class PdpViewModelTest extends TestCase
 
         $idProviderStub->method('getItemId')->willReturn('10');
         $idProviderStub->method('getItemSku')->willReturn('SKU');
-        $idProviderStub->method('getItemParentId')->willReturn('');
+        $idProviderStub->method('getItemParentId')->willReturn('10');
 
         $this->viewModel = new PdpViewModel(
             $this->configMock,
@@ -258,7 +258,7 @@ final class PdpViewModelTest extends TestCase
                 return $data === [
                         'uid' => '10',
                         'sku' => 'SKU',
-                        'parentId' => null,
+                        'parentId' => '10',
                         'price' => 12349.95,
                         'currency' => 'USD',
                     ];
@@ -317,7 +317,7 @@ final class PdpViewModelTest extends TestCase
         $this->serializerMock->expects($this->once())
             ->method('serialize')
             ->with($this->callback(static function (array $data): bool {
-                return $data['parentId'] === null;
+                return $data['parentId'] === '10';
             }))
             ->willReturn('serialized-json');
 

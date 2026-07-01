@@ -131,7 +131,7 @@ class PdpViewModelTest extends TestCase
         $this->registerCurrentProduct($childProduct);
         $data = $this->getDecodedProductPageData();
 
-        $this->assertSame((string) $childProduct->getId(), $data['uid']);
+        $this->assertSame((string) $childProduct->getId(), $data['parentId'].'_'.$data['uid']);
         $this->assertSame($childSku, $data['sku']);
         $this->assertSame((string) $parentProduct->getId(), $data['parentId']);
     }
