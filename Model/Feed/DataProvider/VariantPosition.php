@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Model\Feed\DataProvider;
 
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\Constant;
 use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Catalog\Model\Product;
 use Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable as ConfigurableResource;
@@ -86,8 +87,7 @@ class VariantPosition implements DataProviderInterface
     public function getData(array $products, FeedSpecificationInterface $feedSpecification): array
     {
         $ignoredFields = $feedSpecification->getIgnoreFields();
-        if (in_array('__variant_position', $ignoredFields)
-        ) {
+        if (in_array('__variant_position', $ignoredFields)) {
             return $products;
         }
 
@@ -96,6 +96,13 @@ class VariantPosition implements DataProviderInterface
             $simpleProduct = $product['product_model'] ?? null;
 
             if (!$simpleProduct) {
+                continue;
+            }
+
+            //If product is stand alone then lets pass 1
+            $isStandaloneProduct = (bool)($product[Constant::IS_STANDALONE_PRODUCT_KEY] ?? false);
+            if ($isStandaloneProduct) {
+                $product['__variant_position'] = 1;
                 continue;
             }
 

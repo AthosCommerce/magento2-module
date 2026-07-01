@@ -180,7 +180,6 @@ class ConfigurableDataProvider implements DataProviderInterface
 
             if ($isChildVisible) {
                 $standalone = $this->buildStandaloneRow($product);
-
                 $finalProducts[] = $standalone;
             }
 
@@ -357,6 +356,8 @@ class ConfigurableDataProvider implements DataProviderInterface
         $childClone[Constant::RESOLVED_PARENT_ID_KEY] = (int)$parent->getId();
         $childClone[Constant::RESOLVED_PARENT_SKU_KEY] = (string)$parent->getSku();
         $childClone[Constant::RESOLVED_PARENT_TYPE_KEY] = (string)$parent->getTypeId();
+
+        $childClone[Constant::RESOLVED_PARENT_ROW_SOURCE_KEY] = 'configurable';
 
         return $childClone;
     }

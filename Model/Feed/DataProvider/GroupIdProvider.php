@@ -43,8 +43,9 @@ class GroupIdProvider implements DataProviderInterface
      */
     public function __construct(
         ParentVariantResolver $parentVariantResolver,
-        AthosCommerceLogger $logger
-    ) {
+        AthosCommerceLogger   $logger
+    )
+    {
         $this->parentVariantResolver = $parentVariantResolver;
         $this->logger = $logger;
     }
@@ -55,9 +56,10 @@ class GroupIdProvider implements DataProviderInterface
      * @return array
      */
     public function getData(
-        array $products,
+        array                      $products,
         FeedSpecificationInterface $feedSpecification
-    ): array {
+    ): array
+    {
         $ignoredFields = $feedSpecification->getIgnoreFields();
         $groupBySourceFieldName = $feedSpecification->getGroupBySourceFieldName();
 
@@ -103,23 +105,32 @@ class GroupIdProvider implements DataProviderInterface
                 continue;
             }
 
-            $variantOptions = $this->parentVariantResolver->getVariantOptions($parentProduct, $productModel);
+            if ($parentProduct->getTypeId() === Constant::CONFIGURABLE_TYPE) {
 
-            $product['__group_id'] = $this->buildGroupId(
-                $parentProduct,
-                $variantOptions,
-                $groupBySourceFieldName
-            );
+                //To handle the child product having non NVI
+                if (!$isBelongToParent) {
+                    $product['__group_id'] = (string)$productModel->getId();
+                    continue;
+                }
 
-            $this->logger->debug(
-                sprintf(
-                    '[GroupId]Assigned groupID:[%s] to PID:[%d] based on ParentPID [%d] and groupByAttribute [%s].',
-                    $product['__group_id'],
-                    (int)$productModel->getId(),
-                    (int)$parentProduct->getId(),
-                    $groupBySourceFieldName !== null ? $groupBySourceFieldName : 'N/A'
-                )
-            );
+                $variantOptions = $this->parentVariantResolver->getVariantOptions($parentProduct, $productModel);
+
+                $product['__group_id'] = $this->buildGroupId(
+                    $parentProduct,
+                    $variantOptions,
+                    $groupBySourceFieldName
+                );
+
+                $this->logger->debug(
+                    sprintf(
+                        '[GroupId]Assigned groupID:[%s] to PID:[%d] based on ParentPID [%d] and groupByAttribute [%s].',
+                        $product['__group_id'],
+                        (int)$productModel->getId(),
+                        (int)$parentProduct->getId(),
+                        $groupBySourceFieldName !== null ? $groupBySourceFieldName : 'N/A'
+                    )
+                );
+            }
         }
         unset($product);
 
@@ -134,9 +145,10 @@ class GroupIdProvider implements DataProviderInterface
      */
     private function buildGroupId(
         Product $parentProduct,
-        array $variantOptions,
+        array   $variantOptions,
         ?string $groupByAttribute = null
-    ): string {
+    ): string
+    {
         $parentId = (string)$parentProduct->getId();
 
         if (!$groupByAttribute) {

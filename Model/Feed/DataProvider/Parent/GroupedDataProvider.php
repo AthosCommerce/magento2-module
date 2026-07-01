@@ -169,6 +169,11 @@ class GroupedDataProvider implements DataProviderInterface
                 continue;
             }
 
+            if (($product[Constant::RESOLVED_PARENT_ROW_SOURCE_KEY] ?? null) === 'configurable') {
+                $finalProducts[] = $product;
+                continue;
+            }
+
             $childLinkId = (int)$productModel->getData($linkField);
             $parentLinkIds = array_keys($childToParent[$childLinkId] ?? []);
             $isChildVisible = $this->isVisibleIndividually($productModel);
@@ -368,6 +373,7 @@ class GroupedDataProvider implements DataProviderInterface
         $childClone[Constant::RESOLVED_PARENT_ID_KEY] = (int)$parent->getId();
         $childClone[Constant::RESOLVED_PARENT_SKU_KEY] = (string)$parent->getSku();
         $childClone[Constant::RESOLVED_PARENT_TYPE_KEY] = (string)$parent->getTypeId();
+        $childClone[Constant::RESOLVED_PARENT_ROW_SOURCE_KEY] = 'grouped';
 
         $this->logger->debug('[GroupedDataProvider] Parent Child record completed.');
 
