@@ -108,7 +108,7 @@ class ValueProcessor implements ValueProcessorInterface
                     'method' => __METHOD__,
                     'entityId' => $product->getEntityId(),
                     'code' => $attributeCode,
-                    'type' => gettype($result),
+                    'type' => gettype($value),
                     'value' => $value,
                 ],
             );

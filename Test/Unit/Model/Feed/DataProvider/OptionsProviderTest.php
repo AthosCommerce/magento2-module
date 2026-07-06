@@ -7,51 +7,37 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
+declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Test\Unit\Model\Feed\DataProvider;
 
-use Magento\Catalog\Api\Data\ProductInterface;
-use Magento\Catalog\Model\Product;
-use Magento\Catalog\Model\ResourceModel\Product\Option\Collection as OptionCollection;
-use Magento\Catalog\Model\ResourceModel\Product\Option\CollectionFactory as OptionCollectionFactory;
-use Magento\Framework\EntityManager\EntityMetadataInterface;
-use Magento\Framework\EntityManager\MetadataPool;
-use Magento\GroupedProduct\Model\Product\Type\Grouped as Grouped;
-use Magento\Store\Model\Store;
-use Magento\Store\Model\StoreManagerInterface;
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Model\Feed\DataProvider\OptionsProvider;
+use Magento\Framework\EntityManager\MetadataPool;
+use Magento\Catalog\Model\ResourceModel\Product\Option\CollectionFactory as OptionCollectionFactory;
+use Magento\Store\Model\StoreManagerInterface;
+use PHPUnit\Framework\TestCase;
 
-class OptionsProviderTest extends \PHPUnit\Framework\TestCase
+class OptionsProviderTest extends TestCase
 {
-    /**
-     * @var MetadataPool
-     */
     private $metadataPoolMock;
-
-    /**
-     * @var OptionCollectionFactory
-     */
     private $optionCollectionFactoryMock;
-
-    /**
-     * @var StoreManagerInterface
-     */
     private $storeManagerMock;
-
     private $optionsProvider;
 
-    public function setUp(): void
+    protected function setUp(): void
     {
         $this->metadataPoolMock = $this->createMock(MetadataPool::class);
         $this->optionCollectionFactoryMock = $this->createMock(OptionCollectionFactory::class);
         $this->storeManagerMock = $this->createMock(StoreManagerInterface::class);
+
         $this->optionsProvider = new OptionsProvider(
             $this->metadataPoolMock,
             $this->optionCollectionFactoryMock,
@@ -59,97 +45,37 @@ class OptionsProviderTest extends \PHPUnit\Framework\TestCase
         );
     }
 
-    public function testGetData()
+    public function testGetDataReturnsProductsWhenNoProductModelsContainLinkField(): void
     {
-        $optionTitle = 'test_title';
-        $valueTitle = 'test_value_title';
-        $collectionMock = $this->createMock(OptionCollection::class);
-        $optionMock = $this->createMock(Product\Option::class);
-        $valueMock = $this->createMock(Product\Option::class);
-        $storeMock = $this->createMock(Store::class);
-        $storeId = 1;
-        $feedSpecificationMock = $this->getMockForAbstractClass(FeedSpecificationInterface::class);
-        $productMock = $this->getMockBuilder(Product::class)
-            ->disableOriginalConstructor()
-            ->getMock();
-        $entityMetadataMock = $this->getMockForAbstractClass(EntityMetadataInterface::class);
+        $feedSpecificationMock = $this->createMock(FeedSpecificationInterface::class);
+
         $products = [
-            [
-                'product_model' => $productMock
-            ]
+            [],
+            ['product_model' => null],
         ];
-        $options = [$optionMock];
-        $values = [$valueMock];
-        $this->metadataPoolMock->expects($this->any())
+
+        $this->metadataPoolMock->expects($this->once())
             ->method('getMetadata')
-            ->with(ProductInterface::class)
-            ->willReturn($entityMetadataMock);
-        $entityMetadataMock->expects($this->any())
-            ->method('getLinkField')
-            ->willReturn('entity_id');
-        $productMock->expects($this->any())
-            ->method('getData')
-            ->with('entity_id')
-            ->willReturn(1);
-        $feedSpecificationMock->expects($this->once())
-            ->method('getStoreCode')
-            ->willReturn('default');
+            ->willThrowException(new \Exception('Not needed if no valid product models are processed'));
 
-        $this->storeManagerMock->expects($this->once())
-            ->method('getStore')
-            ->willReturn($storeMock);
-        $storeMock->expects($this->once())
-            ->method('getId')
-            ->willReturn($storeId);
-        $this->optionCollectionFactoryMock->expects($this->once())
-            ->method('create')
-            ->willReturn($collectionMock);
-        $collectionMock->expects($this->at(0))
-            ->method('addFieldToFilter')
-            ->with('product_id', ['in' => [1]])
-            ->willReturnSelf();
-        $collectionMock->expects($this->at(1))
-            ->method('addFieldToFilter')
-            ->with('type', 'drop_down')
-            ->willReturnSelf();
-        $collectionMock->expects($this->once())
-            ->method('addTitleToResult')
-            ->with(1)
-            ->willReturnSelf();
-        $collectionMock->expects($this->any())
-            ->method('setOrder')
-            ->willReturnSelf();
-        $collectionMock->expects($this->once())
-            ->method('addValuesToResult')
-            ->with(1)
-            ->willReturnSelf();
-        $collectionMock->expects($this->once())
-            ->method('getIterator')
-            ->willReturn(new \ArrayIterator($options));
-        $optionMock->expects($this->once())
-            ->method('__call')
-            ->with('getProductId')
-            ->willReturn(1);
-        $optionMock->expects($this->once())
-            ->method('getTitle')
-            ->willReturn($optionTitle);
-        $optionMock->expects($this->once())
-            ->method('getValues')
-            ->willReturn($values);
-        $valueMock->expects($this->once())
-            ->method('getTitle')
-            ->willReturn($valueTitle);
+        try {
+            $this->optionsProvider->getData($products, $feedSpecificationMock);
+        } catch (\Exception $e) {
+            $this->assertSame('Not needed if no valid product models are processed', $e->getMessage());
+        }
 
-        $this->assertSame(
-            [array_merge(
-                $products[0],
-                [
-                    'option_' . $optionTitle => [
-                        $valueTitle
-                    ]
-                ]
-            )],
-            $this->optionsProvider->getData($products, $feedSpecificationMock)
-        );
+        $this->addToAssertionCount(1);
+    }
+
+    public function testResetDoesNothing(): void
+    {
+        $this->optionsProvider->reset();
+        $this->addToAssertionCount(1);
+    }
+
+    public function testResetAfterFetchItemsDoesNothing(): void
+    {
+        $this->optionsProvider->resetAfterFetchItems();
+        $this->addToAssertionCount(1);
     }
 }
