@@ -7,76 +7,111 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
+declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Test\Unit\Model\Feed\DataProvider\Category;
 
+use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
+use AthosCommerce\Feed\Model\Feed\Context\StoreContextManager;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Category\CollectionBuilder;
 use Magento\Catalog\Model\ResourceModel\Category\Collection;
 use Magento\Catalog\Model\ResourceModel\Category\CollectionFactory;
-use Magento\Framework\Exception\LocalizedException;
-use AthosCommerce\Feed\Model\Feed\DataProvider\Category\CollectionBuilder;
-use AthosCommerce\Feed\Model\Feed\Specification\Feed;
+use Magento\Store\Model\Store;
+use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\TestCase;
 
-class CollectionBuilderTest extends \PHPUnit\Framework\TestCase
+class CollectionBuilderTest extends TestCase
 {
+    /**
+     * @var CollectionFactory|MockObject
+     */
     private $collectionFactoryMock;
 
+    /**
+     * @var StoreContextManager|MockObject
+     */
+    private $storeContextManagerMock;
+
+    /**
+     * @var AthosCommerceLogger|MockObject
+     */
+    private $loggerMock;
+
+    /**
+     * @var CollectionBuilder
+     */
     private $collectionBuilder;
 
-    /**
-     * @return void
-     */
-    public function setUp(): void
+    protected function setUp(): void
     {
         $this->collectionFactoryMock = $this->createMock(CollectionFactory::class);
-        $this->collectionBuilder = new CollectionBuilder($this->collectionFactoryMock);
+        $this->storeContextManagerMock = $this->createMock(StoreContextManager::class);
+        $this->loggerMock = $this->createMock(AthosCommerceLogger::class);
+
+        $this->collectionBuilder = new CollectionBuilder(
+            $this->collectionFactoryMock,
+            $this->storeContextManagerMock,
+            $this->loggerMock
+        );
     }
 
-    /**
-     * @return void
-     * @throws LocalizedException
-     */
-    public function testBuildCollection()
+    public function testBuildCollection(): void
     {
-        $storeCode = 'default';
+        $collectionMock = $this->createMock(Collection::class);
+        $storeMock = $this->createMock(Store::class);
+        $selectMock = $this->getMockBuilder(\stdClass::class)
+            ->addMethods(['__toString'])
+            ->getMock();
+        $feedSpecificationMock = $this->createMock(FeedSpecificationInterface::class);
 
-        $feedSpecificationMock = $this->getMockBuilder(Feed::class)
-            ->disableOriginalConstructor()
-            ->getMock();
-        $collectionMock = $this->getMockBuilder(Collection::class)
-            ->disableOriginalConstructor()
-            ->getMock();
         $this->collectionFactoryMock->expects($this->once())
             ->method('create')
             ->willReturn($collectionMock);
+
         $feedSpecificationMock->expects($this->once())
             ->method('getStoreCode')
-            ->willReturn($storeCode);
-        $collectionMock->expects($this->once())
-            ->method('setStore')
-            ->with($storeCode);
+            ->willReturn('default');
+
         $feedSpecificationMock->expects($this->once())
             ->method('getIncludeMenuCategories')
-            ->willReturn(false);
+            ->willReturn(true);
+
         $feedSpecificationMock->expects($this->once())
             ->method('getIncludeUrlHierarchy')
-            ->willReturn(false);
-        $collectionMock->expects($this->once())
-            ->method('addAttributeToSelect')
-            ->withAnyParameters();
-        $collectionMock->expects($this->any())
-            ->method('addAttributeToFilter')
-            ->withAnyParameters()
-            ->willReturnSelf();
+            ->willReturn(true);
 
-        $this->assertSame(
-            $collectionMock,
-            $this->collectionBuilder->buildCollection([], $feedSpecificationMock)
-        );
+        $this->storeContextManagerMock->expects($this->once())
+            ->method('getStoreFromContext')
+            ->willReturn($storeMock);
+
+        $storeMock->expects($this->once())
+            ->method('getRootCategoryId')
+            ->willReturn(2);
+
+        $collectionMock->expects($this->once())->method('setStore')->with('default')->willReturnSelf();
+        $collectionMock->expects($this->once())->method('setStoreId')->with($storeMock)->willReturnSelf();
+        $collectionMock->expects($this->once())->method('addUrlRewriteToResult')->willReturnSelf();
+        $collectionMock->expects($this->once())->method('addAttributeToSelect')->willReturnSelf();
+        $collectionMock->expects($this->exactly(3))->method('addAttributeToFilter')->willReturnSelf();
+        $collectionMock->expects($this->once())->method('getSelect')->willReturn($selectMock);
+
+        $selectMock->expects($this->once())
+            ->method('__toString')
+            ->willReturn('SELECT ...');
+
+        $this->loggerMock->expects($this->once())
+            ->method('debug');
+
+        $result = $this->collectionBuilder->buildCollection([1, 2, 3], $feedSpecificationMock);
+
+        $this->assertSame($collectionMock, $result);
     }
 }

@@ -46,7 +46,8 @@ class SaleableProviderTest extends \PHPUnit\Framework\TestCase
             [
                 [
                     'product_model' => $productMock,
-                    'saleable' => true
+                    'saleable' => true,
+                    'is_available' => null
                 ]
             ],
             $this->saleableProvider->getData($products, $feedSpecificationMock)

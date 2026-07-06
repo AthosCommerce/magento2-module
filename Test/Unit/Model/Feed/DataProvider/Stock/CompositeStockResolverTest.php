@@ -7,62 +7,86 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+
+declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Test\Unit\Model\Feed\DataProvider\Stock;
 
-use AthosCommerce\Feed\Exception\NoSuchEntityException;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Stock\CompositeStockResolver;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Stock\StockProviderInterface;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Stock\StockResolverInterface;
+use Magento\Framework\Exception\NoSuchEntityException;
+use PHPUnit\Framework\TestCase;
 
-class CompositeStockResolverTest extends \PHPUnit\Framework\TestCase
+class CompositeStockResolverTest extends TestCase
 {
     private $msiStockResolver;
-
     private $legacyStockResolver;
-
+    private $loggerMock;
     private $compositeStockResolver;
 
-    public function setUp(): void
+    protected function setUp(): void
     {
         $this->msiStockResolver = $this->createMock(StockResolverInterface::class);
         $this->legacyStockResolver = $this->createMock(StockResolverInterface::class);
+        $this->loggerMock = $this->createMock(AthosCommerceLogger::class);
+
         $resolvers = [
             'msi' => [
                 'sortOrder' => 100,
-                'objectInstance' => $this->msiStockResolver
+                'objectInstance' => $this->msiStockResolver,
             ],
             'legacy' => [
                 'sortOrder' => 1000,
-                'objectInstance' => $this->legacyStockResolver
-            ]
+                'objectInstance' => $this->legacyStockResolver,
+            ],
         ];
-        $this->compositeStockResolver = new CompositeStockResolver($resolvers);
+
+        $this->compositeStockResolver = new CompositeStockResolver(
+            $this->loggerMock,
+            $resolvers
+        );
     }
 
-    public function testResolve()
+    public function testResolve(): void
     {
-        $stockProviderInterfaceMock = $this->getMockForAbstractClass(StockProviderInterface::class);
-        $this->msiStockResolver->expects($this->any())
-            ->method('resolve')
-            ->willReturn($stockProviderInterfaceMock);
+        $stockProviderMock = $this->createMock(StockProviderInterface::class);
 
-        $this->assertSame($stockProviderInterfaceMock, $this->compositeStockResolver->resolve());
+        $this->msiStockResolver->expects($this->once())
+            ->method('resolve')
+            ->with(true)
+            ->willReturn($stockProviderMock);
+
+        $this->legacyStockResolver->expects($this->never())
+            ->method('resolve');
+
+        $this->assertSame($stockProviderMock, $this->compositeStockResolver->resolve(true));
     }
 
-    public function testResolveExceptionCase()
+    public function testResolveExceptionCase(): void
     {
-        $this->msiStockResolver->expects($this->any())
+        $this->msiStockResolver->expects($this->once())
             ->method('resolve')
-            ->willThrowException(new NoSuchEntityException());
+            ->with(true)
+            ->willThrowException(new NoSuchEntityException(__('No MSI provider')));
+
+        $this->legacyStockResolver->expects($this->once())
+            ->method('resolve')
+            ->with(true)
+            ->willThrowException(new NoSuchEntityException(__('No legacy provider')));
+
+        $this->loggerMock->expects($this->exactly(2))
+            ->method('error');
+
         $this->expectException(NoSuchEntityException::class);
 
-        $this->compositeStockResolver->resolve();
+        $this->compositeStockResolver->resolve(true);
     }
 }
