@@ -36,7 +36,7 @@ $productRepository = Bootstrap::getObjectManager()
 $searchCriteriaBuilder = $objectManager->get(SearchCriteriaBuilder::class);
 $searchCriteria = $searchCriteriaBuilder->addFilter(
     'sku',
-    'athoscommerce_grouped_shared_%',
+    'athoscommerce_grouped_shared_nvi_%',
     'like')
     ->create();
 
