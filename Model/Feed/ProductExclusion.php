@@ -22,6 +22,8 @@ use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Feed\ProductExclusionInterface;
 use Magento\Catalog\Api\Data\ProductInterface;
+use Magento\Catalog\Model\Product\Attribute\Source\Status;
+use Magento\GroupedProduct\Model\Product\Type\Grouped;
 
 class ProductExclusion implements ProductExclusionInterface
 {
@@ -77,12 +79,32 @@ class ProductExclusion implements ProductExclusionInterface
             return true;
         }
 
+
         if (
             $parent->getTypeId() === \Magento\GroupedProduct\Model\Product\Type\Grouped::TYPE_CODE
             && (int)$parent->getVisibility() === \Magento\Catalog\Model\Product\Visibility::VISIBILITY_NOT_VISIBLE
         ) {
             $this->logger->debug(
                 'Product Exclusion - grouped parent is not visible individually',
+                [
+                    'product_id' => $productModel->getId(),
+                    'parent_id' => $parent->getId(),
+                    'product_type' => $productModel->getTypeId(),
+                    'parent_type' => $parent->getTypeId(),
+                    'visibility_product' => $productModel->getVisibility(),
+                    'visibility_parent' => $parent->getVisibility(),
+                    'status_parent' => $parent->getStatus()
+                ]
+            );
+            return true;
+        }
+
+        if (
+            $parent->getTypeId() === Grouped::TYPE_CODE
+            && (int)$parent->getStatus() === Status::STATUS_DISABLED
+        ) {
+            $this->logger->debug(
+                'Product Exclusion - grouped parent is disabled',
                 [
                     'product_id' => $productModel->getId(),
                     'parent_id' => $parent->getId(),
