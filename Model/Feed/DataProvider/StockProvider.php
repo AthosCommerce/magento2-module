@@ -20,9 +20,10 @@ namespace AthosCommerce\Feed\Model\Feed\DataProvider;
 
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Model\Feed\Context\StoreContextManager;
-use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\RelationsProvider;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\ParentVariantResolver;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Stock\StockResolverInterface;
 use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
+use Magento\Catalog\Model\Product;
 
 class StockProvider implements DataProviderInterface
 {
@@ -35,36 +36,31 @@ class StockProvider implements DataProviderInterface
      */
     private $storeContextManager;
     /**
-     * @var RelationsProvider
+     * @var ParentVariantResolver
      */
-    private $relationsProvider;
+    private $parentVariantResolver;
 
     /**
      * @param StockResolverInterface $stockResolver
-     * @param StoreManagerInterface $storeManager
-     * @param RelationsProvider $relationsProvider
+     * @param StoreContextManager $storeContextManager
+     * @param ParentVariantResolver $parentVariantResolver
      */
     public function __construct(
         StockResolverInterface $stockResolver,
-        StoreContextManager $storeContextManager,
-        RelationsProvider $relationsProvider
-    ) {
+        StoreContextManager    $storeContextManager,
+        ParentVariantResolver  $parentVariantResolver
+    )
+    {
         $this->stockResolver = $stockResolver;
         $this->storeContextManager = $storeContextManager;
-        $this->relationsProvider = $relationsProvider;
+        $this->parentVariantResolver = $parentVariantResolver;
     }
 
-    /**
-     * @param array $products
-     * @param FeedSpecificationInterface $feedSpecification
-     *
-     * @return array
-     * @throws NoSuchEntityException
-     */
     public function getData(
-        array $products,
+        array                      $products,
         FeedSpecificationInterface $feedSpecification
-    ): array {
+    ): array
+    {
         $ignoreFields = $feedSpecification->getIgnoreFields();
         $stockKeys = ['__in_stock', 'in_stock', 'stock_qty', 'is_stock_managed'];
 
@@ -72,93 +68,89 @@ class StockProvider implements DataProviderInterface
             return $products;
         }
 
-        $childIds = [];
-        foreach ($products as $productRow) {
-            if (isset($productRow['entity_id'])) {
-                $childIds[] = (int)$productRow['entity_id'];
+        $productIds = [];
+        $parentIds = [];
+
+        foreach ($products as $row) {
+            $productId = isset($row['entity_id']) ? (int)$row['entity_id'] : 0;
+            if ($productId > 0) {
+                $productIds[$productId] = $productId;
+            }
+
+            $productModel = $row['product_model'] ?? null;
+            if (!$productModel instanceof Product) {
+                continue;
+            }
+
+            $parentProduct = $this->parentVariantResolver->resolveParentProductForRow($row, $productModel);
+            if ($parentProduct instanceof Product) {
+                $parentIds[(int)$parentProduct->getId()] = (int)$parentProduct->getId();
             }
         }
 
-        if (!$childIds) {
+        if (!$productIds) {
             return $products;
         }
 
         $stockProvider = $this->stockResolver->resolve($feedSpecification->getIsMsiEnabled());
         $storeId = (int)$this->storeContextManager->getStoreFromContext()->getId();
 
-        $childStockData = $stockProvider->getStock($childIds);
-
-        $childToParentMap = $this->relationsProvider->getConfigurableRelationIds($childIds);
-
-        $parentIds = [];
-        foreach ($childToParentMap as $childId => $parents) {
-            foreach ($parents as $parentId) {
-                $parentIds[$parentId] = $parentId;
-            }
-        }
-
-        $parentStockData = [];
-        if ($parentIds) {
-            $parentStockData = $stockProvider->getStock(array_values($parentIds), $storeId);
-        }
+        $childStockData = $stockProvider->getStock(array_values($productIds));
+        $parentStockData = !empty($parentIds)
+            ? $stockProvider->getStock(array_values($parentIds), $storeId)
+            : [];
 
         foreach ($products as &$product) {
-            $childId = $product['entity_id'] ?? null;
-            if (!$childId) {
-                continue;
-            }
+            $productId = isset($product['entity_id']) ? (int)$product['entity_id'] : 0;
+            if ($productId > 0 && isset($childStockData[$productId])) {
+                $stockItem = $childStockData[$productId];
 
-            if (isset($childStockData[$childId])) {
-                $stockItem = $childStockData[$childId];
-                if (!in_array('__in_stock', $ignoreFields) && isset($stockItem['in_stock'])) {
+                if (!in_array('__in_stock', $ignoreFields, true) && isset($stockItem['in_stock'])) {
                     $product['__in_stock'] = (bool)$stockItem['in_stock'];
                 }
-                if (!in_array('in_stock', $ignoreFields) && isset($stockItem['in_stock'])) {
+                if (!in_array('in_stock', $ignoreFields, true) && isset($stockItem['in_stock'])) {
                     $product['in_stock'] = (int)$stockItem['in_stock'];
                 }
-
-                if (!in_array('stock_qty', $ignoreFields) && isset($stockItem['qty'])) {
+                if (!in_array('stock_qty', $ignoreFields, true) && isset($stockItem['qty'])) {
                     $product['stock_qty'] = (float)$stockItem['qty'];
                 }
-
-                if (!in_array('is_stock_managed', $ignoreFields) && isset($stockItem['is_stock_managed'])) {
+                if (!in_array('is_stock_managed', $ignoreFields, true) && isset($stockItem['is_stock_managed'])) {
                     $product['is_stock_managed'] = (int)$stockItem['is_stock_managed'];
                 }
             }
 
-            if (!isset($childToParentMap[$childId])) {
+            $productModel = $product['product_model'] ?? null;
+            if (!$productModel instanceof Product) {
                 continue;
             }
 
-            foreach ($childToParentMap[$childId] as $parentId) {
-                if (!isset($parentStockData[$parentId])) {
-                    continue;
-                }
-
-                $pStock = $parentStockData[$parentId];
-
-                $product["parent_in_stock"] = (int)($pStock['in_stock'] ?? 0);
-                $product["parent_stock_qty"] = (float)($pStock['qty'] ?? 0);
-                $product["parent_is_stock_managed"] = (int)($pStock['is_stock_managed'] ?? 0);
+            $parentProduct = $this->parentVariantResolver->resolveParentProductForRow($product, $productModel);
+            if (!$parentProduct instanceof Product) {
+                continue;
             }
+
+            $parentId = (int)$parentProduct->getId();
+            if (!isset($parentStockData[$parentId])) {
+                continue;
+            }
+
+            $pStock = $parentStockData[$parentId];
+            $product['parent_in_stock'] = (int)($pStock['in_stock'] ?? 0);
+            $product['parent_stock_qty'] = (float)($pStock['qty'] ?? 0);
+            $product['parent_is_stock_managed'] = (int)($pStock['is_stock_managed'] ?? 0);
         }
+        unset($product);
 
         return $products;
     }
 
-    /**
-     * @return void
-     */
     public function reset(): void
     {
-        //do nothing
+        // do nothing
     }
 
-    /**
-     * @return void
-     */
     public function resetAfterFetchItems(): void
     {
-        //do nothing
+        // do nothing
     }
 }

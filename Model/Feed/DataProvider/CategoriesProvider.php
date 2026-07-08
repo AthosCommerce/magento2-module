@@ -242,6 +242,14 @@ class CategoriesProvider implements DataProviderInterface
             return $resolvedParentId;
         }
 
+        $parentSku = $product[Constant::RESOLVED_PARENT_SKU_KEY]
+            ?? $product[Constant::PARENT_SKU]
+            ?? null;
+
+        $parentType = $product[Constant::RESOLVED_PARENT_TYPE_KEY]
+            ?? $product[Constant::PARENT_TYPE]
+            ?? null;
+
         $parentSku = is_string($parentSku) ? trim($parentSku) : null;
         $parentType = is_string($parentType) ? trim($parentType) : null;
 

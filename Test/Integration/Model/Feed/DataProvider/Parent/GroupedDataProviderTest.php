@@ -694,6 +694,175 @@ class GroupedDataProviderTest extends TestCase
      *
      * @throws \Exception
      */
+    public function testGroupedParentRowsContainParentStockFields(): void
+    {
+        $specification = $this->specificationBuilder->build([]);
+        $this->contextManager->setContextFromSpecification($specification);
+
+        $items = $this->getProducts->getCollectionItems($specification);
+        $data = $this->itemsGenerator->generate($items, $specification);
+
+        $foundGroupedParentRow = false;
+
+        foreach ($data as $row) {
+            if (empty($row[Constant::IS_BELONG_TO_PARENT_KEY])) {
+                continue;
+            }
+
+            if (($row['parent_type_id'] ?? null) !== Constant::GROUPED_TYPE) {
+                continue;
+            }
+
+            $this->assertArrayHasKey('parent_in_stock', $row);
+            $this->assertArrayHasKey('parent_stock_qty', $row);
+            $this->assertArrayHasKey('parent_is_stock_managed', $row);
+            $foundGroupedParentRow = true;
+        }
+
+        $this->assertTrue($foundGroupedParentRow, 'Expected at least one grouped parent-context row.');
+
+        $this->contextManager->resetContext();
+        $this->groupedDataProvider->reset();
+    }
+
+    /**
+     * @magentoAppIsolation enabled
+     * @magentoDbIsolation disabled
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/grouped/grouped_products_shared_child_stock.php
+     *
+     * @throws \Exception
+     */
+    public function testSharedChildParentRowsUseParentSpecificStockValues(): void
+    {
+        $specification = $this->specificationBuilder->build([]);
+        $this->contextManager->setContextFromSpecification($specification);
+
+        $items = $this->getProducts->getCollectionItems($specification);
+        $data = $this->itemsGenerator->generate($items, $specification);
+
+        $sharedChildSku = 'athoscommerce_grouped_shared_stock_child_1';
+        $parentSku1 = 'athoscommerce_grouped_shared_stock_parent_1';
+        $parentSku2 = 'athoscommerce_grouped_shared_stock_parent_2';
+
+        $matchingRows = [];
+        foreach ($data as $row) {
+            $sku = (string)($row['sku'] ?? '');
+            $childSku = (string)($row['child_sku'] ?? '');
+
+            if ($sku === $sharedChildSku || $childSku === $sharedChildSku) {
+                $matchingRows[] = $row;
+            }
+        }
+
+        $this->assertCount(3, $matchingRows, 'Expected 1 standalone row and 2 grouped parent rows.');
+
+        $parentRows = [];
+        foreach ($matchingRows as $row) {
+            $sku = (string)($row['sku'] ?? '');
+            if (in_array($sku, [$parentSku1, $parentSku2], true)) {
+                $parentRows[$sku] = $row;
+            }
+        }
+
+        $this->assertCount(2, $parentRows, 'Expected exactly 2 grouped parent rows.');
+
+        $this->assertSame(11.0, (float)$parentRows[$parentSku1]['parent_stock_qty']);
+        $this->assertSame(29.0, (float)$parentRows[$parentSku2]['parent_stock_qty']);
+
+        $this->assertSame(1, (int)$parentRows[$parentSku1]['parent_in_stock']);
+        $this->assertSame(1, (int)$parentRows[$parentSku2]['parent_in_stock']);
+
+        $this->assertSame(
+            'athoscommerce_grouped_shared_stock_child_1',
+            (string)$parentRows[$parentSku1]['child_sku']
+        );
+        $this->assertSame(
+            'athoscommerce_grouped_shared_stock_child_1',
+            (string)$parentRows[$parentSku2]['child_sku']
+        );
+
+        $this->contextManager->resetContext();
+        $this->groupedDataProvider->reset();
+    }
+
+    /**
+     * @magentoAppIsolation enabled
+     * @magentoDbIsolation disabled
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/grouped/grouped_products_shared_child_stock_legacy.php
+     *
+     * @throws \Exception
+     */
+    public function testSharedChildParentRowsUseParentSpecificStockValuesLegacy(): void
+    {
+        $specification = $this->specificationBuilder->build([
+            'isMsiEnabled' => false,
+        ]);
+        $this->contextManager->setContextFromSpecification($specification);
+
+        $items = $this->getProducts->getCollectionItems($specification);
+        $data = $this->itemsGenerator->generate($items, $specification);
+
+        $sharedChildSku = 'athoscommerce_grouped_shared_stock_child_legacy_1';
+        $parentSku1 = 'athoscommerce_grouped_shared_stock_parent_legacy_1';
+        $parentSku2 = 'athoscommerce_grouped_shared_stock_parent_legacy_2';
+
+        $matchingRows = [];
+        foreach ($data as $row) {
+            $sku = (string)($row['sku'] ?? '');
+            $childSku = (string)($row['child_sku'] ?? '');
+
+            if ($sku === $sharedChildSku || $childSku === $sharedChildSku) {
+                $matchingRows[] = $row;
+            }
+        }
+
+        $this->assertCount(3, $matchingRows, 'Expected 1 standalone row and 2 grouped parent rows.');
+
+        $parentRows = [];
+        foreach ($matchingRows as $row) {
+            $sku = (string)($row['sku'] ?? '');
+            if (in_array($sku, [$parentSku1, $parentSku2], true)) {
+                $parentRows[$sku] = $row;
+            }
+        }
+
+        $this->assertCount(2, $parentRows, 'Expected exactly 2 grouped parent rows.');
+
+        foreach ([$parentSku1, $parentSku2] as $parentSku) {
+            $this->assertArrayHasKey($parentSku, $parentRows);
+            $this->assertArrayHasKey('parent_in_stock', $parentRows[$parentSku]);
+            $this->assertArrayHasKey('parent_stock_qty', $parentRows[$parentSku]);
+            $this->assertArrayHasKey('parent_is_stock_managed', $parentRows[$parentSku]);
+            $this->assertSame($sharedChildSku, (string)$parentRows[$parentSku]['child_sku']);
+        }
+
+        $this->assertSame(11.0, (float)$parentRows[$parentSku1]['parent_stock_qty']);
+        $this->assertSame(29.0, (float)$parentRows[$parentSku2]['parent_stock_qty']);
+
+        $this->assertSame(1, (int)$parentRows[$parentSku1]['parent_in_stock']);
+        $this->assertSame(1, (int)$parentRows[$parentSku2]['parent_in_stock']);
+
+        $this->assertSame(1, (int)$parentRows[$parentSku1]['parent_is_stock_managed']);
+        $this->assertSame(1, (int)$parentRows[$parentSku2]['parent_is_stock_managed']);
+
+        $this->assertNotSame(
+            (float)$parentRows[$parentSku1]['parent_stock_qty'],
+            (float)$parentRows[$parentSku2]['parent_stock_qty'],
+            'Expected parent stock qty to be resolved per parent row, not overwritten by another parent.'
+        );
+
+        $this->contextManager->resetContext();
+        $this->groupedDataProvider->reset();
+    }
+
+    /**
+     * @magentoAppIsolation enabled
+     * @magentoDbIsolation disabled
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/01_simple_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/grouped/grouped_products.php
+     *
+     * @throws \Exception
+     */
     public function testReset(): void
     {
         $specification = $this->specificationBuilder->build([]);
