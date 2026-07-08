@@ -18,7 +18,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(PdpViewModel::class)]
-final class PdpViewModelTest extends TestCase
+class PdpViewModelTest extends TestCase
 {
     /**
      * @var Config|MockObject
