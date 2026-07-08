@@ -97,7 +97,7 @@ class StockProvider implements DataProviderInterface
 
         $childStockData = $stockProvider->getStock(array_values($productIds));
         $parentStockData = !empty($parentIds)
-            ? $stockProvider->getStock(array_values($parentIds), $storeId)
+            ? $stockProvider->getStock(array_values($parentIds))
             : [];
 
         foreach ($products as &$product) {
