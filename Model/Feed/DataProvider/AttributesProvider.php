@@ -223,15 +223,26 @@ class AttributesProvider implements DataProviderInterface
             return false;
         }
 
+        if (
+            !array_key_exists(Constant::IS_BELONG_TO_PARENT_KEY, $row)
+            || (int)$row[Constant::IS_BELONG_TO_PARENT_KEY] !== 1
+        ) {
+            return false;
+        }
+
         if ((int)$parentProduct->getVisibility() === Visibility::VISIBILITY_NOT_VISIBLE) {
             return false;
         }
 
-        if (!array_key_exists(Constant::IS_BELONG_TO_PARENT_KEY, $row)) {
+        $resolvedParentId = isset($row[Constant::RESOLVED_PARENT_ID_KEY])
+            ? (int)$row[Constant::RESOLVED_PARENT_ID_KEY]
+            : 0;
+
+        if ($resolvedParentId > 0 && $resolvedParentId !== (int)$parentProduct->getId()) {
             return false;
         }
 
-        return (int)$row[Constant::IS_BELONG_TO_PARENT_KEY] === 1;
+        return true;
     }
 
     /**
