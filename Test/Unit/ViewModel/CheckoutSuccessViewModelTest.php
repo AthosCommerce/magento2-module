@@ -15,7 +15,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(CheckoutSuccessViewModel::class)]
-final class CheckoutSuccessViewModelTest extends TestCase
+class CheckoutSuccessViewModelTest extends TestCase
 {
     /**
      * @var Config|MockObject
