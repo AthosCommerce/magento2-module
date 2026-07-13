@@ -1,0 +1,94 @@
+<?php
+declare(strict_types=1);
+
+use AthosCommerce\Feed\ViewModel\Escaper;
+use AthosCommerce\Feed\ViewModel\GlobalScriptViewModel;
+use Magento\Framework\View\Element\Template;
+use Magento\Framework\View\Helper\SecureHtmlRenderer;
+
+/** @var Template $block */
+/** @var GlobalScriptViewModel $globalScriptViewModel */
+/** @var SecureHtmlRenderer $secureRenderer */
+/** @var Escaper $escaperViewModel */
+
+$globalScriptViewModel = $block->getGlobalScriptViewModel();
+$escaperViewModel = $block->getEscaperViewModel();
+$escaper = $escaperViewModel->getEscaper();
+
+if (!$globalScriptViewModel || !$globalScriptViewModel->shouldRender()) {
+    return;
+}
+
+$scriptString = <<<JS
+(function (window) {
+    'use strict';
+
+    var state = window.athosMagentoCartTrackerState;
+    var previousSnapshot = null;
+
+    if (!state) {
+        return;
+    }
+
+    function readStorage() {
+        try {
+            return JSON.parse(localStorage.getItem('mage-cache-storage') || '{}');
+        } catch (e) {
+            return {};
+        }
+    }
+
+    function readAthosSnapshot(storage) {
+        return storage['athos_pagemeta_cart'] || storage['athos-pagemeta-cart'] || {};
+    }
+
+    function processSnapshot() {
+        var storage = readStorage();
+        var currentSnapshot = state.clone(readAthosSnapshot(storage));
+
+        if (previousSnapshot === null) {
+            previousSnapshot = currentSnapshot;
+            return;
+        }
+
+        if (state.areItemsEqual(previousSnapshot, currentSnapshot)) {
+            previousSnapshot = currentSnapshot;
+            return;
+        }
+
+        state.diffSnapshots(previousSnapshot, currentSnapshot);
+        previousSnapshot = currentSnapshot;
+    }
+
+    function scheduleProcess(delay) {
+        window.setTimeout(processSnapshot, delay || 0);
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        scheduleProcess(300);
+    });
+
+    window.addEventListener('private-content-loaded', function () {
+        scheduleProcess(50);
+    });
+
+    window.addEventListener('reload-customer-section-data', function () {
+        scheduleProcess(300);
+    });
+
+    window.addEventListener('athos:hyva:cart:refresh', function () {
+        scheduleProcess(50);
+    });
+}(window));
+JS;
+?>
+
+<?= /* @noEscape */ $secureRenderer->renderTag(
+    'script',
+    [
+        'type' => 'text/javascript',
+        'id' => 'athoscommerce_hyva_tracking_cart_listener',
+    ],
+    $scriptString,
+    false
+) ?>

@@ -7,19 +7,19 @@ use Magento\Framework\View\Element\Template;
 use Magento\Framework\View\Helper\SecureHtmlRenderer;
 
 /** @var Template $block */
-/** @var CheckoutSuccessViewModel $checkoutSucessViewModel */
+/** @var CheckoutSuccessViewModel $checkoutSuccessViewModel */
 /** @var SecureHtmlRenderer $secureRenderer */
 /** @var Escaper $escaperViewModel */
 
-$checkoutSucessViewModel = $block->getCheckoutSuccessViewModel();
+$checkoutSuccessViewModel = $block->getCheckoutSuccessViewModel();
 $escaperViewModel = $block->getEscaperViewModel();
 $escaper = $escaperViewModel->getEscaper();
 
-if (!$checkoutSucessViewModel) {
+if (!$checkoutSuccessViewModel) {
     return;
 }
 
-$orderSuccessPageData = $checkoutSucessViewModel->getSuccessPageConfig();
+$orderSuccessPageData = $checkoutSuccessViewModel->getSuccessPageConfig();
 if (empty($orderSuccessPageData) || $orderSuccessPageData === '[]') {
     return;
 }
@@ -31,7 +31,14 @@ $scriptString = "
         try {
             orderData = JSON.parse('{$escaper->escapeJs($orderSuccessPageData)}') || {};
 
-            if (window.athos.tracker.events.order && typeof window.athos.tracker.events.order.transaction === 'function') {
+            if (
+                window.athos &&
+                window.athos.tracker &&
+                window.athos.tracker.events &&
+                window.athos.tracker.events.order &&
+                typeof window.athos.tracker.events.order.transaction === 'function'
+            ) {
+
                 window.athos.tracker.events.order.transaction({
                     data: {
                         orderId: orderData.orderId,
