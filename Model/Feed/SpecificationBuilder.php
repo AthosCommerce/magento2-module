@@ -59,10 +59,11 @@ class SpecificationBuilder implements SpecificationBuilderInterface
         'preSignedUrl' => FeedSpecificationInterface::PRE_SIGNED_URL,
         'isMsiEnabled' => FeedSpecificationInterface::MSI_STATUS,
         'swatchOptionSourceFieldNames' => FeedSpecificationInterface::SETTING_NAME_SWATCH_OPTION_FIELD_NAMES,
-        'allVariantsAdditionalFields'  => FeedSpecificationInterface::SETTING_NAME_VARIANT_ADDITIONAL_FIELDS,
         'excludedProductIds' => FeedSpecificationInterface::EXCLUDE_PRODUCT_IDS,
         'includeAllVariants' => FeedSpecificationInterface::INCLUDE_ALL_VARIANTS,
         'parentIdSourceFieldName' => FeedSpecificationInterface::PARENT_ID_SOURCE_FIELD,
+        'variantSummaryAdditionalFields'  => FeedSpecificationInterface::VARIANT_ADDITIONAL_FIELDS,
+        'variantAdditionalDataLimit' => FeedSpecificationInterface::VARIANT_ADDITIONAL_DATA_LIMIT,
     ];
     /**
      * @var array
@@ -84,10 +85,11 @@ class SpecificationBuilder implements SpecificationBuilderInterface
             FeedSpecificationInterface::FORMAT => MetadataInterface::FORMAT_JSON,
             FeedSpecificationInterface::MSI_STATUS => false,
             FeedSpecificationInterface::SETTING_NAME_SWATCH_OPTION_FIELD_NAMES => ['color'],
-            FeedSpecificationInterface::SETTING_NAME_VARIANT_ADDITIONAL_FIELDS => [],
             FeedSpecificationInterface::EXCLUDE_PRODUCT_IDS => [],
             FeedSpecificationInterface::INCLUDE_ALL_VARIANTS => false,
             FeedSpecificationInterface::PARENT_ID_SOURCE_FIELD => null,
+            FeedSpecificationInterface::VARIANT_ADDITIONAL_FIELDS => [],
+            FeedSpecificationInterface::VARIANT_ADDITIONAL_DATA_LIMIT => 200,
         ],
         'media_gallery' => [
             MediaGallerySpecificationInterface::THUMB_WIDTH => 250,
