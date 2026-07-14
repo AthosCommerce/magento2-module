@@ -62,7 +62,7 @@ class SpecificationBuilder implements SpecificationBuilderInterface
         'excludedProductIds' => FeedSpecificationInterface::EXCLUDE_PRODUCT_IDS,
         'includeAllVariants' => FeedSpecificationInterface::INCLUDE_ALL_VARIANTS,
         'parentIdSourceFieldName' => FeedSpecificationInterface::PARENT_ID_SOURCE_FIELD,
-        'variantSummaryAdditionalFields'  => FeedSpecificationInterface::VARIANT_ADDITIONAL_FIELDS,
+        'variantAdditionalFields'  => FeedSpecificationInterface::VARIANT_ADDITIONAL_FIELDS,
         'variantAdditionalDataLimit' => FeedSpecificationInterface::VARIANT_ADDITIONAL_DATA_LIMIT,
     ];
     /**
