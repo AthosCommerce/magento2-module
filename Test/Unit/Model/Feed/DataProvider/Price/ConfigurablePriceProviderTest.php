@@ -62,7 +62,8 @@ class ConfigurablePriceProviderTest extends TestCase
 
         $productMock = $this->getMockBuilder(Product::class)
             ->disableOriginalConstructor()
-            ->onlyMethods(['getPriceInfo', 'hasMaxPrice', 'getId'])
+            ->addMethods(['hasMaxPrice'])
+            ->onlyMethods(['getPriceInfo', 'getId'])
             ->getMock();
 
         $productMock->expects($this->exactly(2))
@@ -116,7 +117,7 @@ class ConfigurablePriceProviderTest extends TestCase
             ->method('getAmount')
             ->willReturn($amountMockChildOne);
 
-        $amountMockChildOne->expects($this->exactly(2))
+        $amountMockChildOne->expects($this->once(2))
             ->method('getValue')
             ->willReturn(2.0);
 

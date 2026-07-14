@@ -16,6 +16,7 @@
 
 namespace AthosCommerce\Feed\Test\Unit\Model;
 
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use Magento\Framework\Api\ExtensionAttribute\JoinProcessorInterface;
 use Magento\Framework\Api\SearchCriteria\CollectionProcessorInterface;
 use Magento\Framework\Api\SearchCriteriaBuilder;
@@ -76,6 +77,7 @@ class TaskRepositoryTest extends TestCase
      * @var TaskRepository
      */
     private $taskRepository;
+    private $loggerMock;
 
     /**
      * @return void
@@ -89,6 +91,7 @@ class TaskRepositoryTest extends TestCase
         $this->searchResultsFactoryMock = $this->createMock(TaskSearchResultsInterfaceFactory::class);
         $this->collectionProcessorMock = $this->createMock(CollectionProcessorInterface::class);
         $this->joinProcessorMock = $this->createMock(JoinProcessorInterface::class);
+        $this->loggerMock = $this->createMock(AthosCommerceLogger::class);
         $this->taskRepository = new TaskRepository(
             $this->taskFactoryMock,
             $this->taskResourceMock,
@@ -96,7 +99,8 @@ class TaskRepositoryTest extends TestCase
             $this->searchCriteriaBuilderMock,
             $this->searchResultsFactoryMock,
             $this->collectionProcessorMock,
-            $this->joinProcessorMock
+            $this->joinProcessorMock,
+            $this->loggerMock
         );
     }
 
@@ -211,6 +215,7 @@ class TaskRepositoryTest extends TestCase
 
         $this->assertSame($taskMock, $this->taskRepository->get($taskId));
     }
+
     /**
      * @return void
      * @throws \Magento\Framework\Exception\NoSuchEntityException
@@ -245,24 +250,29 @@ class TaskRepositoryTest extends TestCase
             ->disableOriginalConstructor()
             ->getMock();
 
-        $this->collectionFactoryMock->expects($this->once())
-            ->method('create')
-            ->willReturn($taskCollectionMock);
+        $selectMock = $this->getMockBuilder(\Magento\Framework\DB\Select::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
         $searchCriteriaMock = $this->getMockForAbstractClass(SearchCriteriaInterface::class);
         $searchResultMock = $this->getMockForAbstractClass(TaskSearchResultsInterface::class);
 
         $this->collectionFactoryMock->expects($this->once())
             ->method('create')
             ->willReturn($taskCollectionMock);
+
         $this->joinProcessorMock->expects($this->once())
             ->method('process')
             ->with($taskCollectionMock, TaskInterface::class);
+
         $this->collectionProcessorMock->expects($this->once())
             ->method('process')
             ->with($searchCriteriaMock, $taskCollectionMock);
+
         $this->searchResultsFactoryMock->expects($this->once())
             ->method('create')
             ->willReturn($searchResultMock);
+
         $searchResultMock->expects($this->once())
             ->method('setSearchCriteria')
             ->with($searchCriteriaMock);
@@ -270,6 +280,7 @@ class TaskRepositoryTest extends TestCase
         $taskCollectionMock->expects($this->once())
             ->method('getItems')
             ->willReturn($collectionItems);
+
         $searchResultMock->expects($this->once())
             ->method('setItems')
             ->with($collectionItems)
@@ -278,9 +289,28 @@ class TaskRepositoryTest extends TestCase
         $taskCollectionMock->expects($this->once())
             ->method('getSize')
             ->willReturn($collectionSize);
+
         $searchResultMock->expects($this->once())
             ->method('setTotalCount')
             ->with($collectionSize);
+
+        $taskCollectionMock->expects($this->once())
+            ->method('getSelect')
+            ->willReturn($selectMock);
+
+        $selectMock->expects($this->once())
+            ->method('__toString')
+            ->willReturn('SELECT * FROM athoscommerce_feed_task');
+
+        $this->loggerMock->expects($this->once())
+            ->method('info')
+            ->with(
+                'TaskRepository collection',
+                [
+                    'method' => TaskRepository::class . '::getList',
+                    'query' => 'SELECT * FROM athoscommerce_feed_task',
+                ]
+            );
 
         $this->assertSame($searchResultMock, $this->taskRepository->getList($searchCriteriaMock));
     }

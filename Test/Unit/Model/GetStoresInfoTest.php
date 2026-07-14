@@ -16,6 +16,8 @@
 
 namespace AthosCommerce\Feed\Test\Unit\Model;
 
+use AthosCommerce\Feed\Model\Api\GetStoresInfo;
+use Magento\Framework\App\Area;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Config\View;
 use Magento\Framework\View\ConfigInterface;
@@ -25,9 +27,9 @@ use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\Store;
 use Magento\Store\Model\StoreManagerInterface;
 use PHPUnit\Framework\MockObject\MockObject;
-use AthosCommerce\Feed\Model\Api\GetStoresInfo;
+use PHPUnit\Framework\TestCase;
 
-class GetStoresInfoTest extends \PHPUnit\Framework\TestCase
+class GetStoresInfoTest extends TestCase
 {
     /**
      * @var StoreManagerInterface&MockObject
@@ -49,17 +51,18 @@ class GetStoresInfoTest extends \PHPUnit\Framework\TestCase
      */
     private $scopeConfigMock;
 
+    /**
+     * @var GetStoresInfo
+     */
     private $getStoresInfoModel;
 
-    /**
-     * @return void
-     */
     public function setUp(): void
     {
         $this->storeManagerMock = $this->createMock(StoreManagerInterface::class);
         $this->viewConfigMock = $this->createMock(ConfigInterface::class);
         $this->emulationMock = $this->createMock(Emulation::class);
         $this->scopeConfigMock = $this->createMock(ScopeConfigInterface::class);
+
         $this->getStoresInfoModel = new GetStoresInfo(
             $this->storeManagerMock,
             $this->viewConfigMock,
@@ -68,104 +71,127 @@ class GetStoresInfoTest extends \PHPUnit\Framework\TestCase
         );
     }
 
-    public function testGetAsHtml()
+    public function testGetAsHtml(): void
     {
         $viewMock = $this->createMock(View::class);
         $storeMock = $this->createMock(Store::class);
         $storeMockSecond = $this->createMock(Store::class);
-        $result = '<h1>Stores</h1><ul><li>default - default</li><h2>Store Images</h2><ul><li>image_test_1<ul><li>width = 100</li><li>height = 200</li></ul></li><li>image_test_2<ul><li>width = 300</li><li>height = 400</li></ul></li><li>image_test_3<ul><li>width = 500</li><li>height = 600</li></ul></li></ul><li>second - second</li><h2>Store Images</h2><ul><li>image_test_1_second<ul><li>width = 110</li><li>height = 210</li></ul></li><li>image_test_2_second<ul><li>width = 310</li><li>height = 410</li></ul></li><li>image_test_3_second<ul><li>width = 510</li><li>height = 610</li></ul></li></ul></ul>';
+
+        $firstStoreImages = [
+            'image_test_1' => [
+                'width' => 100,
+                'height' => 200,
+            ],
+            'image_test_2' => [
+                'width' => 300,
+                'height' => 400,
+            ],
+            'image_test_3' => [
+                'width' => 500,
+                'height' => 600,
+            ],
+        ];
+
+        $secondStoreImages = [
+            'image_test_1_second' => [
+                'width' => 110,
+                'height' => 210,
+            ],
+            'image_test_2_second' => [
+                'width' => 310,
+                'height' => 410,
+            ],
+            'image_test_3_second' => [
+                'width' => 510,
+                'height' => 610,
+            ],
+        ];
+
+        $expectedResult = '<h1>Stores</h1><ul>'
+            . '<li>1 . default - default</li>'
+            . '<h2>Store Images</h2><ul>'
+            . '<li>image_test_1<ul><li>width = 100</li><li>height = 200</li></ul></li>'
+            . '<li>image_test_2<ul><li>width = 300</li><li>height = 400</li></ul></li>'
+            . '<li>image_test_3<ul><li>width = 500</li><li>height = 600</li></ul></li>'
+            . '</ul>'
+            . '<li>2 . second - second</li>'
+            . '<h2>Store Images</h2><ul>'
+            . '<li>image_test_1_second<ul><li>width = 110</li><li>height = 210</li></ul></li>'
+            . '<li>image_test_2_second<ul><li>width = 310</li><li>height = 410</li></ul></li>'
+            . '<li>image_test_3_second<ul><li>width = 510</li><li>height = 610</li></ul></li>'
+            . '</ul>'
+            . '</ul>';
+
         $this->storeManagerMock->expects($this->once())
             ->method('getStores')
             ->willReturn([$storeMock, $storeMockSecond]);
 
-        $storeMock->expects($this->once())
-            ->method('getName')
-            ->willReturn('default');
-        $storeMock->expects($this->once())
-            ->method('getCode')
-            ->willReturn('default');
         $storeMock->expects($this->any())
             ->method('getId')
             ->willReturn(1);
 
-        $this->emulationMock->expects($this->any())
-            ->method('startEnvironmentEmulation')
-            ->withAnyParameters();
-        $this->viewConfigMock->expects($this->any())
-            ->method('getViewConfig')
-            ->willReturn($viewMock);
-        $viewMock->expects($this->at(0))
-            ->method('read')
-            ->willReturn(
-                [
-                    'media' => [
-                        'Magento_Catalog' => [
-                            'images' => [
-                                'image_test_1' => [
-                                    'width' => 100,
-                                    'height' => 200,
-                                ],
-                                'image_test_2' => [
-                                    'width' => 300,
-                                    'height' => 400,
-                                ],
-                                'image_test_3' => [
-                                    'width' => 500,
-                                    'height' => 600,
-                                ],
-                            ]
-                        ]
-                    ]
-                ]
-            );
+        $storeMock->expects($this->once())
+            ->method('getName')
+            ->willReturn('default');
+
+        $storeMock->expects($this->once())
+            ->method('getCode')
+            ->willReturn('default');
+
+        $storeMockSecond->expects($this->any())
+            ->method('getId')
+            ->willReturn(2);
 
         $storeMockSecond->expects($this->once())
             ->method('getName')
             ->willReturn('second');
+
         $storeMockSecond->expects($this->once())
             ->method('getCode')
             ->willReturn('second');
-        $storeMockSecond->expects($this->any())
-            ->method('getId')
-            ->willReturn(2);
-        $viewMock->expects($this->at(1))
+
+        $emulatedStoreIds = [];
+        $this->emulationMock->expects($this->exactly(2))
+            ->method('startEnvironmentEmulation')
+            ->willReturnCallback(function ($storeId, $area, $force) use (&$emulatedStoreIds) {
+                $emulatedStoreIds[] = $storeId;
+                $this->assertSame(Area::AREA_FRONTEND, $area);
+                $this->assertTrue($force);
+            });
+
+        $this->emulationMock->expects($this->exactly(2))
+            ->method('stopEnvironmentEmulation');
+
+        $this->viewConfigMock->expects($this->exactly(2))
+            ->method('getViewConfig')
+            ->willReturn($viewMock);
+
+        $readCalls = 0;
+        $viewMock->expects($this->exactly(2))
             ->method('read')
-            ->willReturn(
-                [
+            ->willReturnCallback(function () use (&$readCalls, $firstStoreImages, $secondStoreImages) {
+                $readCalls++;
+
+                return [
                     'media' => [
                         'Magento_Catalog' => [
-                            'images' => [
-                                'image_test_1_second' => [
-                                    'width' => 110,
-                                    'height' => 210,
-                                ],
-                                'image_test_2_second' => [
-                                    'width' => 310,
-                                    'height' => 410,
-                                ],
-                                'image_test_3_second' => [
-                                    'width' => 510,
-                                    'height' => 610,
-                                ],
-                            ]
-                        ]
-                    ]
-                ]
-            );
+                            'images' => $readCalls === 1 ? $firstStoreImages : $secondStoreImages,
+                        ],
+                    ],
+                ];
+            });
 
-        $this->assertSame($result, $this->getStoresInfoModel->getAsHtml());
+        $this->assertSame($expectedResult, $this->getStoresInfoModel->getAsHtml());
+        $this->assertSame([1, 2], $emulatedStoreIds);
     }
 
-    public function testGetAsJson()
+    public function testGetAsJson(): void
     {
         $viewMock = $this->createMock(View::class);
         $storeMock = $this->createMock(Store::class);
         $storeMockSecond = $this->createMock(Store::class);
-        $this->storeManagerMock->expects($this->once())
-            ->method('getStores')
-            ->willReturn([$storeMock, $storeMockSecond]);
 
-        $imagesStore = [
+        $firstStoreImages = [
             [
                 'image_test_1' => [
                     'width' => 100,
@@ -179,9 +205,10 @@ class GetStoresInfoTest extends \PHPUnit\Framework\TestCase
                     'width' => 500,
                     'height' => 600,
                 ],
-            ]
+            ],
         ];
-        $imagesSecondStore = [
+
+        $secondStoreImages = [
             [
                 'image_test_1_second' => [
                     'width' => 110,
@@ -195,81 +222,113 @@ class GetStoresInfoTest extends \PHPUnit\Framework\TestCase
                     'width' => 510,
                     'height' => 610,
                 ],
-            ]
+            ],
         ];
 
-        $storeMock->expects($this->once())
-            ->method('getName')
-            ->willReturn('default');
-        $storeMock->expects($this->once())
-            ->method('getCode')
-            ->willReturn('default');
+        $this->storeManagerMock->expects($this->once())
+            ->method('getStores')
+            ->willReturn([$storeMock, $storeMockSecond]);
+
         $storeMock->expects($this->any())
             ->method('getId')
             ->willReturn(1);
-        $this->scopeConfigMock->expects($this->at(0))
-            ->method('getValue')
-            ->with(DesignInterface::XML_PATH_THEME_ID, ScopeInterface::SCOPE_STORE, 1)
-            ->willReturn(3);
-        $this->emulationMock->expects($this->any())
-            ->method('startEnvironmentEmulation')
-            ->withAnyParameters();
-        $this->viewConfigMock->expects($this->any())
-            ->method('getViewConfig')
-            ->willReturn($viewMock);
-        $viewMock->expects($this->at(0))
-            ->method('read')
-            ->willReturn(
-                [
-                    'media' => [
-                        'Magento_Catalog' => [
-                            'images' => $imagesStore
-                        ]
-                    ]
-                ]
-            );
+
+        $storeMock->expects($this->once())
+            ->method('getName')
+            ->willReturn('default');
+
+        $storeMock->expects($this->once())
+            ->method('getCode')
+            ->willReturn('default');
+
+        $storeMockSecond->expects($this->any())
+            ->method('getId')
+            ->willReturn(2);
 
         $storeMockSecond->expects($this->once())
             ->method('getName')
             ->willReturn('second');
+
         $storeMockSecond->expects($this->once())
             ->method('getCode')
             ->willReturn('second');
-        $storeMockSecond->expects($this->any())
-            ->method('getId')
-            ->willReturn(2);
-        $this->scopeConfigMock->expects($this->at(1))
+
+        $themeConfigCalls = [];
+        $this->scopeConfigMock->expects($this->exactly(2))
             ->method('getValue')
-            ->with(DesignInterface::XML_PATH_THEME_ID, ScopeInterface::SCOPE_STORE, 2)
-            ->willReturn(6);
-        $viewMock->expects($this->at(1))
+            ->willReturnCallback(function ($path, $scopeType, $scopeCode) use (&$themeConfigCalls) {
+                $themeConfigCalls[] = [$path, $scopeType, $scopeCode];
+
+                if ($scopeCode === 1) {
+                    return 3;
+                }
+
+                if ($scopeCode === 2) {
+                    return 6;
+                }
+
+                return null;
+            });
+
+        $emulatedStoreIds = [];
+        $this->emulationMock->expects($this->exactly(2))
+            ->method('startEnvironmentEmulation')
+            ->willReturnCallback(function ($storeId, $area, $force) use (&$emulatedStoreIds) {
+                $emulatedStoreIds[] = $storeId;
+                $this->assertSame(Area::AREA_FRONTEND, $area);
+                $this->assertTrue($force);
+            });
+
+        $this->emulationMock->expects($this->exactly(2))
+            ->method('stopEnvironmentEmulation');
+
+        $this->viewConfigMock->expects($this->exactly(2))
+            ->method('getViewConfig')
+            ->willReturn($viewMock);
+
+        $readCalls = 0;
+        $viewMock->expects($this->exactly(2))
             ->method('read')
-            ->willReturn(
-                [
+            ->willReturnCallback(function () use (&$readCalls, $firstStoreImages, $secondStoreImages) {
+                $readCalls++;
+
+                return [
                     'media' => [
                         'Magento_Catalog' => [
-                            'images' => $imagesSecondStore
-                        ]
-                    ]
-                ]
-            );
-
+                            'images' => $readCalls === 1 ? $firstStoreImages : $secondStoreImages,
+                        ],
+                    ],
+                ];
+            });
 
         $this->assertSame(
             [
                 [
+                    'store_id' => 1,
                     'name' => 'default',
                     'code' => 'default',
                     'theme_id' => 3,
-                    'images' => $imagesStore
+                    'images' => $firstStoreImages,
                 ],
                 [
+                    'store_id' => 2,
                     'name' => 'second',
                     'code' => 'second',
                     'theme_id' => 6,
-                    'images' => $imagesSecondStore
+                    'images' => $secondStoreImages,
                 ],
             ],
-            $this->getStoresInfoModel->getAsJson());
+            $this->getStoresInfoModel->getAsJson()
+        );
+
+        $this->assertSame(
+            [
+                [DesignInterface::XML_PATH_THEME_ID, ScopeInterface::SCOPE_STORE, 1],
+                [DesignInterface::XML_PATH_THEME_ID, ScopeInterface::SCOPE_STORE, 2],
+            ],
+            $themeConfigCalls
+        );
+
+        $this->assertSame([1, 2], $emulatedStoreIds);
     }
 }

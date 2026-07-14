@@ -32,6 +32,7 @@ class VariantAdditionalDataProvider implements DataProviderInterface
 {
     public const FIELD_KEY = '__variant_additional_data';
     private const MAX_ADDITIONAL_FIELDS = 5;
+    private const DEFAULT_VARIANT_LIMIT = 200;
 
     /**
      * @var ParentVariantResolver
@@ -71,21 +72,21 @@ class VariantAdditionalDataProvider implements DataProviderInterface
      */
     public function getData(array $products, FeedSpecificationInterface $feedSpecification): array
     {
-        $ignoredFields = $feedSpecification->getIgnoreFields();
-        if (in_array(self::FIELD_KEY, $ignoredFields, true)) {
+        if ($this->shouldSkip($feedSpecification)) {
             return $products;
         }
 
         $linkField = $this->metadataPool->getMetadata(ProductInterface::class)->getLinkField();
         $additionalFields = $this->getAdditionalFields($feedSpecification);
+        $variantLimit = $this->getVariantLimit($feedSpecification);
 
         $this->logger->info(
             '[VariantAdditionalDataProvider] Started',
             [
                 'method' => __METHOD__,
-                'field' => self::FIELD_KEY,
                 'linkField' => $linkField,
                 'additionalFields' => $additionalFields,
+                'variantLimit' => $variantLimit,
             ]
         );
 
@@ -96,39 +97,14 @@ class VariantAdditionalDataProvider implements DataProviderInterface
                 continue;
             }
 
-            try {
-                $parentProduct = $this->resolveParentProduct($product, $productModel);
-
-                if (!$parentProduct instanceof Product) {
-                    $product[self::FIELD_KEY] = [];
-                    continue;
-                }
-
-                if (!$this->isSupportedParentType($parentProduct)) {
-                    $product[self::FIELD_KEY] = [];
-                    continue;
-                }
-
-                $product[self::FIELD_KEY] = $this->buildVariantAdditionalData(
-                    $parentProduct,
-                    $additionalFields,
-                    $linkField,
-                    $feedSpecification
-                );
-            } catch (\Throwable $exception) {
-                $this->logger->error(
-                    '[VariantAdditionalDataProvider] Failed to build variant additional data',
-                    [
-                        'method' => __METHOD__,
-                        'message' => $exception->getMessage(),
-                        'trace' => $exception->getTraceAsString(),
-                        'productId' => (int)$productModel->getId(),
-                        'sku' => (string)$productModel->getSku(),
-                    ]
-                );
-
-                $product[self::FIELD_KEY] = [];
-            }
+            $product[self::FIELD_KEY] = $this->buildProductVariantAdditionalData(
+                $product,
+                $productModel,
+                $feedSpecification,
+                $linkField,
+                $additionalFields,
+                $variantLimit
+            );
         }
         unset($product);
 
@@ -136,11 +112,69 @@ class VariantAdditionalDataProvider implements DataProviderInterface
             '[VariantAdditionalDataProvider] Completed',
             [
                 'method' => __METHOD__,
-                'field' => self::FIELD_KEY,
             ]
         );
 
         return $products;
+    }
+
+    /**
+     * @param FeedSpecificationInterface $feedSpecification
+     * @return bool
+     */
+    private function shouldSkip(FeedSpecificationInterface $feedSpecification): bool
+    {
+        return in_array(self::FIELD_KEY, $feedSpecification->getIgnoreFields(), true);
+    }
+
+    /**
+     * @param array $row
+     * @param Product $productModel
+     * @param FeedSpecificationInterface $feedSpecification
+     * @param string $linkField
+     * @param array $additionalFields
+     * @param int $variantLimit
+     * @return array
+     */
+    private function buildProductVariantAdditionalData(
+        array $row,
+        Product $productModel,
+        FeedSpecificationInterface $feedSpecification,
+        string $linkField,
+        array $additionalFields,
+        int $variantLimit
+    ): array {
+        try {
+            $parentProduct = $this->resolveParentProduct($row, $productModel);
+
+            if (!$parentProduct instanceof Product) {
+                return [];
+            }
+
+            if (!$this->isSupportedParentType($parentProduct)) {
+                return [];
+            }
+
+            return $this->buildVariantRows(
+                $parentProduct,
+                $linkField,
+                $additionalFields,
+                $variantLimit
+            );
+        } catch (\Throwable $exception) {
+            $this->logger->error(
+                '[VariantAdditionalDataProvider] Failed to build variant additional data',
+                [
+                    'method' => __METHOD__,
+                    'message' => $exception->getMessage(),
+                    'trace' => $exception->getTraceAsString(),
+                    'productId' => (int)$productModel->getId(),
+                    'sku' => (string)$productModel->getSku(),
+                ]
+            );
+
+            return [];
+        }
     }
 
     /**
@@ -172,19 +206,20 @@ class VariantAdditionalDataProvider implements DataProviderInterface
 
     /**
      * @param Product $parentProduct
-     * @param array $additionalFields
      * @param string $linkField
+     * @param array $additionalFields
+     * @param int $variantLimit
      * @return array
      */
-    private function buildVariantAdditionalData(
+    private function buildVariantRows(
         Product $parentProduct,
-        array $additionalFields,
         string $linkField,
-        FeedSpecificationInterface $feedSpecification
+        array $additionalFields,
+        int $variantLimit
     ): array {
         $result = [];
         $childProducts = $this->parentVariantResolver->getChildProducts($parentProduct);
-        $childProducts = array_slice($childProducts, 0, $this->getVariantLimit($feedSpecification));
+        $childProducts = array_slice($childProducts, 0, $variantLimit);
 
         foreach ($childProducts as $childProduct) {
             if (!$childProduct instanceof Product) {
@@ -194,9 +229,8 @@ class VariantAdditionalDataProvider implements DataProviderInterface
             $result[] = $this->buildChildRow(
                 $childProduct,
                 $parentProduct,
-                $additionalFields,
                 $linkField,
-                $feedSpecification
+                $additionalFields
             );
         }
 
@@ -206,16 +240,15 @@ class VariantAdditionalDataProvider implements DataProviderInterface
     /**
      * @param Product $childProduct
      * @param Product $parentProduct
-     * @param array $additionalFields
      * @param string $linkField
+     * @param array $additionalFields
      * @return array
      */
     private function buildChildRow(
         Product $childProduct,
         Product $parentProduct,
-        array $additionalFields,
         string $linkField,
-        FeedSpecificationInterface $feedSpecification
+        array $additionalFields
     ): array {
         $row = [
             'variant_id' => $this->getVariantId($childProduct, $linkField),
@@ -314,6 +347,21 @@ class VariantAdditionalDataProvider implements DataProviderInterface
     }
 
     /**
+     * @param FeedSpecificationInterface $feedSpecification
+     * @return int
+     */
+    private function getVariantLimit(FeedSpecificationInterface $feedSpecification): int
+    {
+        $limit = $feedSpecification->getVariantAdditionalDataLimit();
+
+        if ($limit === null || $limit <= 0) {
+            return self::DEFAULT_VARIANT_LIMIT;
+        }
+
+        return $limit;
+    }
+
+    /**
      * @param Product $childProduct
      * @param string $field
      * @return mixed
@@ -331,21 +379,6 @@ class VariantAdditionalDataProvider implements DataProviderInterface
         }
 
         return null;
-    }
-
-    /**
-     * @param FeedSpecificationInterface $feedSpecification
-     * @return int
-     */
-    private function getVariantLimit(FeedSpecificationInterface $feedSpecification): int
-    {
-        $limit = $feedSpecification->getVariantAdditionalDataLimit();
-
-        if ($limit === null || $limit <= 0) {
-            return 200;
-        }
-
-        return $limit;
     }
 
     /**

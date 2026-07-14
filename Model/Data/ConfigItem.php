@@ -581,7 +581,7 @@ class ConfigItem extends AbstractExtensibleObject implements ConfigItemInterface
             'excludedProductIds' => $this->getExcludedProductIds(),
             'includeAllVariants' => $this->getIncludeAllVariants(),
             'parentIdSourceFieldName' => $this->getParentIdSourceFieldName(),
-            'variantAdditionalFields' => $this->getVariantAdditionalFields(),
+            'variantSummaryAdditionalFields' => $this->getVariantAdditionalFields(),
             'variantAdditionalDataLimit' => $this->getVariantAdditionalDataLimit(),
         ];
     }

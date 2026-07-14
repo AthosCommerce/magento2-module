@@ -25,7 +25,7 @@ use AthosCommerce\Feed\Api\MetadataInterface;
 use AthosCommerce\Feed\Api\TaskRepositoryInterface;
 use AthosCommerce\Feed\Exception\GenericException;
 use AthosCommerce\Feed\Model\ExecuteTask;
-use AthosCommerce\Feed\Model\Task;
+use AthosCommerce\Feed\Model\Task\ExecutorInterface;
 use AthosCommerce\Feed\Model\Task\ExecutorPool;
 
 class ExecuteTaskTest extends \PHPUnit\Framework\TestCase
@@ -77,20 +77,20 @@ class ExecuteTaskTest extends \PHPUnit\Framework\TestCase
     {
         $type = 'type';
         $time = '10-10-1990 12:40';
+        $statusCalls = [];
 
-        $taskMock = $this->getMockBuilder(Task::class)
-            ->disableOriginalConstructor()
-            ->getMock();
-        $executorMock = $this->getMockBuilder(Task\GenerateFeed\Executor::class)
-            ->disableOriginalConstructor()
-            ->getMock();
+        $taskMock = $this->createMock(TaskInterface::class);
+        $executorMock = $this->createMock(ExecutorInterface::class);
+
         $taskMock->expects($this->once())
             ->method('getType')
             ->willReturn($type);
+
         $this->executorPoolMock->expects($this->once())
             ->method('get')
             ->with($type)
             ->willReturn($executorMock);
+
         $this->dateTimeMock->expects($this->exactly(2))
             ->method('gmtDate')
             ->willReturn($time);
@@ -100,43 +100,60 @@ class ExecuteTaskTest extends \PHPUnit\Framework\TestCase
             ->with($time)
             ->willReturnSelf();
 
-        $taskMock->expects($this->any())
+        $taskMock->expects($this->exactly(2))
             ->method('setStatus')
-            ->withAnyParameters()
-            ->willReturnSelf();
+            ->willReturnCallback(function ($status) use (&$statusCalls, $taskMock) {
+                $statusCalls[] = $status;
+                return $taskMock;
+            });
 
         $this->taskRepositoryMock->expects($this->exactly(2))
             ->method('save')
+            ->with($taskMock)
             ->willReturn($taskMock);
+
         $executorMock->expects($this->once())
             ->method('execute')
-            ->with($taskMock)
-            ->willReturn(true);
+            ->with($taskMock);
+
         $taskMock->expects($this->once())
             ->method('setEndedAt')
             ->with($time)
             ->willReturnSelf();
 
-        $this->assertTrue($this->executeTask->execute($taskMock));
+        $this->assertSame(
+            MetadataInterface::TASK_STATUS_SUCCESS,
+            $this->executeTask->execute($taskMock)
+        );
+
+        $this->assertSame(
+            [
+                MetadataInterface::TASK_STATUS_PROCESSING,
+                MetadataInterface::TASK_STATUS_SUCCESS,
+            ],
+            $statusCalls
+        );
     }
 
     public function testExecuteExceptionCase()
     {
         $type = 'type';
         $time = '10-10-1990 12:40';
+        $statusCalls = [];
 
         $taskErrorMock = $this->createMock(TaskErrorInterface::class);
         $taskMock = $this->createMock(TaskInterface::class);
-        $executorMock = $this->getMockBuilder(Task\GenerateFeed\Executor::class)
-            ->disableOriginalConstructor()
-            ->getMock();
+        $executorMock = $this->createMock(ExecutorInterface::class);
+
         $taskMock->expects($this->once())
             ->method('getType')
             ->willReturn($type);
+
         $this->executorPoolMock->expects($this->once())
             ->method('get')
             ->with($type)
             ->willReturn($executorMock);
+
         $this->dateTimeMock->expects($this->exactly(2))
             ->method('gmtDate')
             ->willReturn($time);
@@ -146,48 +163,310 @@ class ExecuteTaskTest extends \PHPUnit\Framework\TestCase
             ->with($time)
             ->willReturnSelf();
 
-        $taskMock->expects($this->at(2))
+        $taskMock->expects($this->exactly(2))
             ->method('setStatus')
-            ->with(MetadataInterface::TASK_STATUS_PROCESSING)
-            ->willReturnSelf();
+            ->willReturnCallback(function ($status) use (&$statusCalls, $taskMock) {
+                $statusCalls[] = $status;
+                return $taskMock;
+            });
 
         $this->taskRepositoryMock->expects($this->exactly(2))
             ->method('save')
+            ->with($taskMock)
             ->willReturn($taskMock);
+
         $executorMock->expects($this->once())
             ->method('execute')
             ->with($taskMock)
             ->willThrowException(new \Exception('exception message'));
+
         $this->taskErrorFactoryMock->expects($this->once())
             ->method('create')
-            ->wilLReturn($taskErrorMock);
+            ->willReturn($taskErrorMock);
+
         $this->loggerMock->expects($this->once())
             ->method('error')
-            ->withAnyParameters()
-            ->willReturnCallback(function () {
-                // Do nothing (void method)
-            });
+            ->withAnyParameters();
+
         $taskErrorMock->expects($this->once())
             ->method('setMessage')
             ->with('exception message')
             ->willReturnSelf();
+
         $taskErrorMock->expects($this->once())
             ->method('setCode')
             ->with(GenericException::CODE)
             ->willReturnSelf();
-        $taskMock->expects($this->at(3))
-            ->method('setStatus')
-            ->with(MetadataInterface::TASK_STATUS_ERROR)
-            ->willReturnSelf();
+
         $taskMock->expects($this->once())
             ->method('setError')
             ->with($taskErrorMock)
             ->willReturnSelf();
+
         $taskMock->expects($this->once())
             ->method('setEndedAt')
             ->with($time)
             ->willReturnSelf();
 
-        $this->assertSame(null, $this->executeTask->execute($taskMock));
+        $this->assertSame(
+            MetadataInterface::TASK_STATUS_ERROR,
+            $this->executeTask->execute($taskMock)
+        );
+
+        $this->assertSame(
+            [
+                MetadataInterface::TASK_STATUS_PROCESSING,
+                MetadataInterface::TASK_STATUS_ERROR,
+            ],
+            $statusCalls
+        );
+    }
+
+    public function testExecuteReturnsSuccessAndDoesNotCreateError()
+    {
+        $type = 'type';
+        $time = '10-10-1990 12:40';
+        $statusCalls = [];
+
+        $taskMock = $this->createMock(TaskInterface::class);
+        $executorMock = $this->createMock(ExecutorInterface::class);
+
+        $taskMock->expects($this->once())
+            ->method('getType')
+            ->willReturn($type);
+
+        $this->executorPoolMock->expects($this->once())
+            ->method('get')
+            ->with($type)
+            ->willReturn($executorMock);
+
+        $this->dateTimeMock->expects($this->exactly(2))
+            ->method('gmtDate')
+            ->willReturn($time);
+
+        $taskMock->expects($this->once())
+            ->method('setStartedAt')
+            ->with($time)
+            ->willReturnSelf();
+
+        $taskMock->expects($this->exactly(2))
+            ->method('setStatus')
+            ->willReturnCallback(function ($status) use (&$statusCalls, $taskMock) {
+                $statusCalls[] = $status;
+                return $taskMock;
+            });
+
+        $this->taskRepositoryMock->expects($this->exactly(2))
+            ->method('save')
+            ->with($taskMock)
+            ->willReturn($taskMock);
+
+        $executorMock->expects($this->once())
+            ->method('execute')
+            ->with($taskMock);
+
+        $this->taskErrorFactoryMock->expects($this->never())
+            ->method('create');
+
+        $taskMock->expects($this->never())
+            ->method('setError');
+
+        $taskMock->expects($this->once())
+            ->method('setEndedAt')
+            ->with($time)
+            ->willReturnSelf();
+
+        $this->assertSame(
+            MetadataInterface::TASK_STATUS_SUCCESS,
+            $this->executeTask->execute($taskMock)
+        );
+
+        $this->assertSame(
+            [
+                MetadataInterface::TASK_STATUS_PROCESSING,
+                MetadataInterface::TASK_STATUS_SUCCESS,
+            ],
+            $statusCalls
+        );
+    }
+
+    public function testExecuteUsesFallbackErrorCodeForNonGenericException()
+    {
+        $type = 'type';
+        $time = '10-10-1990 12:40';
+
+        $taskErrorMock = $this->createMock(TaskErrorInterface::class);
+        $taskMock = $this->createMock(TaskInterface::class);
+        $executorMock = $this->createMock(ExecutorInterface::class);
+
+        $taskMock->expects($this->once())
+            ->method('getType')
+            ->willReturn($type);
+
+        $this->executorPoolMock->expects($this->once())
+            ->method('get')
+            ->with($type)
+            ->willReturn($executorMock);
+
+        $this->dateTimeMock->expects($this->exactly(2))
+            ->method('gmtDate')
+            ->willReturn($time);
+
+        $taskMock->expects($this->once())
+            ->method('setStartedAt')
+            ->with($time)
+            ->willReturnSelf();
+
+        $taskMock->expects($this->exactly(2))
+            ->method('setStatus')
+            ->willReturnCallback(function ($status) use (&$statusCalls, $taskMock) {
+                $statusCalls[] = $status;
+                return $taskMock;
+            });
+
+        $this->taskRepositoryMock->expects($this->exactly(2))
+            ->method('save')
+            ->with($taskMock)
+            ->willReturn($taskMock);
+
+        $executorMock->expects($this->once())
+            ->method('execute')
+            ->with($taskMock)
+            ->willThrowException(new \Exception('exception message'));
+
+        $this->taskErrorFactoryMock->expects($this->once())
+            ->method('create')
+            ->willReturn($taskErrorMock);
+
+        $taskErrorMock->expects($this->once())
+            ->method('setMessage')
+            ->with('exception message')
+            ->willReturnSelf();
+
+        $taskErrorMock->expects($this->once())
+            ->method('setCode')
+            ->with(GenericException::CODE)
+            ->willReturnSelf();
+
+        $taskMock->expects($this->once())
+            ->method('setError')
+            ->with($taskErrorMock)
+            ->willReturnSelf();
+
+        $taskMock->expects($this->once())
+            ->method('setEndedAt')
+            ->with($time)
+            ->willReturnSelf();
+
+        $this->assertSame(
+            MetadataInterface::TASK_STATUS_ERROR,
+            $this->executeTask->execute($taskMock)
+        );
+    }
+
+    public function testExecuteUsesGenericExceptionCode()
+    {
+        $type = 'type';
+        $time = '10-10-1990 12:40';
+        $exceptionCode = 12345;
+
+        $taskErrorMock = $this->createMock(TaskErrorInterface::class);
+        $taskMock = $this->createMock(TaskInterface::class);
+        $executorMock = $this->createMock(ExecutorInterface::class);
+
+        $taskMock->expects($this->once())
+            ->method('getType')
+            ->willReturn($type);
+
+        $this->executorPoolMock->expects($this->once())
+            ->method('get')
+            ->with($type)
+            ->willReturn($executorMock);
+
+        $this->dateTimeMock->expects($this->exactly(2))
+            ->method('gmtDate')
+            ->willReturn($time);
+
+        $taskMock->expects($this->once())
+            ->method('setStartedAt')
+            ->with($time)
+            ->willReturnSelf();
+
+        $statusCalls = [];
+        $taskMock->expects($this->exactly(2))
+            ->method('setStatus')
+            ->willReturnCallback(function ($status) use (&$statusCalls, $taskMock) {
+                $statusCalls[] = $status;
+                return $taskMock;
+            });
+
+        $this->taskRepositoryMock->expects($this->exactly(2))
+            ->method('save')
+            ->with($taskMock)
+            ->willReturn($taskMock);
+
+        $executorMock->expects($this->once())
+            ->method('execute')
+            ->with($taskMock)
+            ->willThrowException(new GenericException('generic exception message', $exceptionCode));
+
+        $this->taskErrorFactoryMock->expects($this->once())
+            ->method('create')
+            ->willReturn($taskErrorMock);
+
+        $taskErrorMock->expects($this->once())
+            ->method('setMessage')
+            ->with('generic exception message')
+            ->willReturnSelf();
+
+        $taskErrorMock->expects($this->once())
+            ->method('setCode')
+            ->with($exceptionCode)
+            ->willReturnSelf();
+
+        $taskMock->expects($this->once())
+            ->method('setError')
+            ->with($taskErrorMock)
+            ->willReturnSelf();
+
+        $taskMock->expects($this->once())
+            ->method('setEndedAt')
+            ->with($time)
+            ->willReturnSelf();
+
+        $this->assertSame(
+            MetadataInterface::TASK_STATUS_ERROR,
+            $this->executeTask->execute($taskMock)
+        );
+    }
+
+    public function testExecuteDoesNotCatchExecutorPoolException()
+    {
+        $type = 'unknown_type';
+
+        $taskMock = $this->createMock(TaskInterface::class);
+
+        $taskMock->expects($this->once())
+            ->method('getType')
+            ->willReturn($type);
+
+        $this->executorPoolMock->expects($this->once())
+            ->method('get')
+            ->with($type)
+            ->willThrowException(new \Exception('No task executor for type unknown_type'));
+
+        $this->dateTimeMock->expects($this->never())
+            ->method('gmtDate');
+
+        $this->taskRepositoryMock->expects($this->never())
+            ->method('save');
+
+        $this->taskErrorFactoryMock->expects($this->never())
+            ->method('create');
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('No task executor for type unknown_type');
+
+        $this->executeTask->execute($taskMock);
     }
 }

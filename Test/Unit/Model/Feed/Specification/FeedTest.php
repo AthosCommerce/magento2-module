@@ -671,4 +671,37 @@ class FeedTest extends \PHPUnit\Framework\TestCase
         $this->assertInstanceOf(FeedSpecificationInterface::class, $result);
         $this->assertSame('group_id', $specification->getGroupBySourceFieldName());
     }
+
+    public function testGetVariantAdditionalDataLimitReturnsDefaultWhenNull()
+    {
+        $specification = $this->createSpecification();
+        $this->assertNull($specification->getVariantAdditionalDataLimit());
+
+    }
+
+    public function testGetVariantAdditionalDataLimitReturnsDefaultWhenEmptyString()
+    {
+        $specification = $this->createSpecification(['variantAdditionalDataLimit' => '']);
+        $this->assertSame(200, $specification->getVariantAdditionalDataLimit());
+    }
+
+    public function testGetVariantAdditionalDataLimitReturnsDefaultWhenZero()
+    {
+        $specification = $this->createSpecification(['variantAdditionalDataLimit' => '0']);
+        $this->assertSame(200, $specification->getVariantAdditionalDataLimit());
+    }
+
+    public function testGetVariantAdditionalDataLimitReturnsDefaultWhenNegative()
+    {
+        $specification = $this->createSpecification(['variantAdditionalDataLimit' => '-9']);
+        $this->assertSame(200, $specification->getVariantAdditionalDataLimit());
+    }
+
+    public function testGetVariantAdditionalDataLimitReturnsConfiguredValue()
+    {
+        $specification = $this->createSpecification(['variantAdditionalDataLimit' => 4000]);
+        $value = $specification->getVariantAdditionalDataLimit();
+        $this->assertSame(4000, $value);
+    }
+
 }
