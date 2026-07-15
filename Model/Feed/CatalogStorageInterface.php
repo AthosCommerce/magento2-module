@@ -18,7 +18,6 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Model\Feed;
 
-use Exception;
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 
 interface CatalogStorageInterface

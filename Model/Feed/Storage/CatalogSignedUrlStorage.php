@@ -165,11 +165,7 @@ class CatalogSignedUrlStorage implements CatalogStorageInterface
         if (!$this->isSupportedFormat($format)) {
             throw new Exception((string)__('%1 is not supported format', $format));
         }
-        file_put_contents(
-            '/var/www/html/magento2/var/log/nilesh.txt',
-            'from new persisatnt '.json_encode('csv') . PHP_EOL,
-            FILE_APPEND
-        );
+
         $formatter = $this->formatterPool->get($format);
         $data = $formatter->format($data, $specification);
         $file->appendData($data);

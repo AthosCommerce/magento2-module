@@ -27,7 +27,7 @@ use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 class Csv extends FileAbstract
 {
     /**
-     * Json constructor.
+     * Csv constructor.
      * @param Filesystem $filesystem
      * @param Random $random
      * @param string $fileExtension

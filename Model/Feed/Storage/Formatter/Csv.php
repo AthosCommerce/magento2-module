@@ -18,7 +18,6 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Model\Feed\Storage\Formatter;
 
-use Magento\Framework\Serialize\Serializer\Json as JsonSerializer;
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Model\Feed\Storage\FormatterInterface;
 
