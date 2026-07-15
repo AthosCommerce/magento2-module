@@ -351,23 +351,6 @@ class ConfigItem extends AbstractExtensibleObject implements ConfigItemInterface
     /**
      * @return string[]
      */
-    public function getVariantAdditionalFields()
-    {
-        return $this->_get(FeedSpecificationInterface::SETTING_NAME_VARIANT_ADDITIONAL_FIELDS) ?? [];
-    }
-
-    /**
-     * @param $fields
-     * @return ConfigItemInterface
-     */
-    public function setVariantAdditionalFields($fields): ConfigItemInterface
-    {
-        return $this->setData(FeedSpecificationInterface::SETTING_NAME_VARIANT_ADDITIONAL_FIELDS, $fields);
-    }
-
-    /**
-     * @return string[]
-     */
     public function getExcludedProductIds()
     {
         return $this->_get(FeedSpecificationInterface::EXCLUDE_PRODUCT_IDS) ?? [];
@@ -529,6 +512,41 @@ class ConfigItem extends AbstractExtensibleObject implements ConfigItemInterface
     }
 
     /**
+     * @return string[]
+     */
+    public function getVariantAdditionalFields()
+    {
+        return $this->_get(FeedSpecificationInterface::VARIANT_ADDITIONAL_FIELDS) ?? [];
+    }
+
+    /**
+     * @param $fields
+     * @return ConfigItemInterface
+     */
+    public function setVariantAdditionalFields($fields): ConfigItemInterface
+    {
+        return $this->setData(FeedSpecificationInterface::VARIANT_ADDITIONAL_FIELDS, $fields);
+    }
+
+    /**
+     * @return int|null
+     */
+    public function getVariantAdditionalDataLimit(): ?int
+    {
+        $value = $this->_get(FeedSpecificationInterface::VARIANT_ADDITIONAL_DATA_LIMIT);
+        return $value !== null ? (int)$value : null;
+    }
+
+    /**
+     * @param int|null $limit
+     * @return ConfigItemInterface
+     */
+    public function setVariantAdditionalDataLimit(?int $limit): ConfigItemInterface
+    {
+        return $this->setData(FeedSpecificationInterface::VARIANT_ADDITIONAL_DATA_LIMIT, $limit);
+    }
+
+    /**
      * @return array
      */
     public function toArray(array $keys = []): array
@@ -561,9 +579,10 @@ class ConfigItem extends AbstractExtensibleObject implements ConfigItemInterface
             'ignoreFields' => $this->getIgnoreFields(),
             'swatchOptionSourceFieldNames' => $this->getSwatchOptionSourceFieldNames(),
             'excludedProductIds' => $this->getExcludedProductIds(),
-            'variantAdditionalFields' => $this->getVariantAdditionalFields(),
             'includeAllVariants' => $this->getIncludeAllVariants(),
             'parentIdSourceFieldName' => $this->getParentIdSourceFieldName(),
+            'variantAdditionalFields' => $this->getVariantAdditionalFields(),
+            'variantAdditionalDataLimit' => $this->getVariantAdditionalDataLimit(),
         ];
     }
 }

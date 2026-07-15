@@ -35,8 +35,14 @@ class SpecificationBuilderTest extends \PHPUnit\Framework\TestCase
      */
     private $mediaGallerySpecificationFactoryMock;
 
+    /**
+     * @var SpecificationBuilder
+     */
     private $specificationBuilder;
 
+    /**
+     * @var array
+     */
     /**
      * @var array
      */
@@ -55,6 +61,13 @@ class SpecificationBuilderTest extends \PHPUnit\Framework\TestCase
             FeedSpecificationInterface::INCLUDE_OUT_OF_STOCK => false,
             FeedSpecificationInterface::IGNORE_FIELDS => [],
             FeedSpecificationInterface::FORMAT => MetadataInterface::FORMAT_JSON,
+            FeedSpecificationInterface::MSI_STATUS => false,
+            FeedSpecificationInterface::SETTING_NAME_SWATCH_OPTION_FIELD_NAMES => ['color'],
+            FeedSpecificationInterface::VARIANT_ADDITIONAL_FIELDS => [],
+            FeedSpecificationInterface::EXCLUDE_PRODUCT_IDS => [],
+            FeedSpecificationInterface::INCLUDE_ALL_VARIANTS => false,
+            FeedSpecificationInterface::PARENT_ID_SOURCE_FIELD => null,
+            FeedSpecificationInterface::VARIANT_ADDITIONAL_DATA_LIMIT => 200,
         ],
         'media_gallery' => [
             MediaGallerySpecificationInterface::THUMB_WIDTH => 250,
@@ -81,14 +94,17 @@ class SpecificationBuilderTest extends \PHPUnit\Framework\TestCase
     {
         $mediaGallerySpecificationMock = $this->getMockForAbstractClass(MediaGallerySpecificationInterface::class);
         $feedSpecificationMock = $this->getMockForAbstractClass(FeedSpecificationInterface::class);
+
         $this->feedSpecificationFactoryMock->expects($this->once())
             ->method('create')
             ->with(['data' => $this->defaultValues['feed']])
             ->willReturn($feedSpecificationMock);
+
         $this->mediaGallerySpecificationFactoryMock->expects($this->once())
             ->method('create')
             ->with(['data' => $this->defaultValues['media_gallery']])
             ->willReturn($mediaGallerySpecificationMock);
+
         $feedSpecificationMock->expects($this->once())
             ->method('setMediaGallerySpecification')
             ->with($mediaGallerySpecificationMock)
