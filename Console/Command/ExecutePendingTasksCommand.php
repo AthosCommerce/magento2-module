@@ -20,6 +20,7 @@ namespace AthosCommerce\Feed\Console\Command;
 
 use Magento\Framework\App\Area;
 use Magento\Framework\App\State;
+use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Stdlib\DateTime\DateTimeFactory;
 use AthosCommerce\Feed\Api\ExecutePendingTasksInterfaceFactory;
 use AthosCommerce\Feed\Model\Metric\CollectorInterface;

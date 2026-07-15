@@ -16,19 +16,21 @@
 
 declare(strict_types=1);
 
-namespace AthosCommerce\Feed\Api;
+namespace AthosCommerce\Feed\Model\Feed\Storage\Formatter;
 
-interface MetadataInterface
+use Magento\Framework\Serialize\Serializer\Json as JsonSerializer;
+use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
+use AthosCommerce\Feed\Model\Feed\Storage\FormatterInterface;
+
+class Csv implements FormatterInterface
 {
-    public const TASK_STATUS_PENDING = 'pending';
-    public const TASK_STATUS_PROCESSING = 'processing';
-    public const TASK_STATUS_SUCCESS = 'success';
-    public const TASK_STATUS_ERROR = 'error';
-    public const FEED_GENERATION_TASK_CODE = 'feed_generation';
-
-    public const FORMAT_JSON = 'json';
-    public const FORMAT_GZ = 'gz';
-    public const FORMAT_JSON_GZ = 'json.gz';
-    public const FORMAT_TXT_GZ = 'txt.gz';
-    public const FORMAT_CSV = 'csv';
+    /**
+     * @param array $data
+     * @param FeedSpecificationInterface $feedSpecification
+     * @return array
+     */
+    public function format(array $data, FeedSpecificationInterface $feedSpecification): array
+    {
+        return $data;
+    }
 }

@@ -87,6 +87,7 @@ interface FeedSpecificationInterface extends ExtensibleDataInterface
      *
      */
     public const PRE_SIGNED_URL = 'presigned_url';
+    public const CATALOG_PRE_SIGNED_URL = 'catalog_presigned_url';
     /**
      *
      */
@@ -291,6 +292,17 @@ interface FeedSpecificationInterface extends ExtensibleDataInterface
      * @return FeedSpecificationInterface
      */
     public function setPreSignedUrl(string $url) : self;
+
+    /**
+     * @return string|null
+     */
+    public function getCatalogPreSignedUrl() : ?string;
+
+    /**
+     * @param string $url
+     * @return FeedSpecificationInterface
+     */
+    public function setCatalogPreSignedUrl(string $url) : self;
 
     /**
      * @return \AthosCommerce\Feed\Api\Data\FeedSpecificationExtensionInterface|null

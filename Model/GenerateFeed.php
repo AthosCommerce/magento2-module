@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Model;
 
+use AthosCommerce\Feed\Model\Feed\CatalogStorageInterface;
 use Exception;
 use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\ResourceModel\Product\Collection;
@@ -49,6 +50,11 @@ class GenerateFeed implements GenerateFeedInterface
      * @var StorageInterface
      */
     private $storage;
+
+    /**
+     * @var CatalogStorageInterface
+     */
+    private $catalogStorage;
     /**
      * @var ContextManagerInterface
      */
@@ -90,6 +96,7 @@ class GenerateFeed implements GenerateFeedInterface
      * @param ItemsGenerator $itemsGenerator
      * @param CollectionConfigInterface $collectionConfig
      * @param StorageInterface $storage
+     * @param CatalogStorageInterface $catalogStorage
      * @param ContextManagerInterface $contextManager
      * @param CollectorInterface $metricCollector
      * @param AppConfigInterface $appConfig
@@ -101,6 +108,7 @@ class GenerateFeed implements GenerateFeedInterface
         ItemsGenerator $itemsGenerator,
         CollectionConfigInterface $collectionConfig,
         StorageInterface $storage,
+        CatalogStorageInterface $catalogStorage,
         ContextManagerInterface $contextManager,
         CollectorInterface $metricCollector,
         AppConfigInterface $appConfig,
@@ -116,6 +124,7 @@ class GenerateFeed implements GenerateFeedInterface
         $this->appConfig = $appConfig;
         $this->taskRepository = $taskRepository;
         $this->logger = $logger;
+        $this->catalogStorage = $catalogStorage;
     }
 
     /**
@@ -204,6 +213,9 @@ class GenerateFeed implements GenerateFeedInterface
                 }
 
                 $this->storage->addData($itemsData, $id);
+                if(!empty($feedSpecification->getCatalogPreSignedUrl())) {
+                    $this->catalogStorage->addData($itemsData, $id);
+                }
                 $itemsData = [];
                 $currentPageNumber++;
                 $this->itemsGenerator->resetDataProvidersAfterFetchItems($feedSpecification);
@@ -265,6 +277,7 @@ class GenerateFeed implements GenerateFeedInterface
         $this->itemsGenerator->resetDataProviders($feedSpecification);
         $this->contextManager->setContextFromSpecification($feedSpecification);
         $this->storage->initiate($feedSpecification);
+        $this->catalogStorage->initiate($feedSpecification);
     }
 
     /**

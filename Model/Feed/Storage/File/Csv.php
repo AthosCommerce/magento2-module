@@ -22,33 +22,24 @@ use Magento\Framework\Exception\FileSystemException;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Filesystem;
 use Magento\Framework\Math\Random;
-use Magento\Framework\Serialize\Serializer\Json as JsonSerializer;
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 
-class Json extends FileAbstract
+class Csv extends FileAbstract
 {
-    /**
-     * @var JsonSerializer
-     */
-    private $jsonSerializer;
-
     /**
      * Json constructor.
      * @param Filesystem $filesystem
      * @param Random $random
-     * @param JsonSerializer $jsonSerializer
      * @param string $fileExtension
      * @param string $subDirectory
      */
     public function __construct(
         Filesystem $filesystem,
         Random $random,
-        JsonSerializer $jsonSerializer,
-        string $fileExtension = 'json',
+        string $fileExtension = 'txt',
         string $subDirectory = 'athoscommerce'
     ) {
         parent::__construct($filesystem, $random, $fileExtension, $subDirectory);
-        $this->jsonSerializer = $jsonSerializer;
     }
 
     /**
@@ -77,19 +68,61 @@ class Json extends FileAbstract
         $this->openFile();
         $file = $this->getFile();
 
-        // Loop through each item and write each item on a new line
+        $catalogRows = [];
+
+        // Header
+        $file->writeCsv([
+            'uid',
+            'sku',
+            'parent_uid',
+            'name',
+            'price',
+            'url',
+            'imageUrl',
+            'thumbnailImageUrl',
+            'recordHash'
+        ], "\t");
+
+        // Collect unique catalog rows
         foreach ($data as $item) {
-            if (!empty($item['__catalog']) && is_array($item['__catalog'])) {
-                $catalogData[] = $item['__catalog'];
+            if (empty($item['__catalog']) || !is_array($item['__catalog'])) {
+                continue;
             }
 
-            // Remove catalog data from default feed
-            unset($item['__catalog']);
-            // Serialize each object individually and add a newline after it
-            $serializedItem = $this->jsonSerializer->serialize($item) . PHP_EOL;
-            $file->write($serializedItem);
-            $serializedItem = [];
+            foreach ($item['__catalog'] as $row) {
+                $recordHash = $row['recordHash'] ?? '';
+
+                if (isset($catalogRows[$recordHash])) {
+                    continue;
+                }
+
+                $catalogRows[$recordHash] = [
+                    'uid' => $row['uid'] ?? '',
+                    'sku' => $row['sku'] ?? '',
+                    'parent_uid' => $row['parent_uid'] ?? '',
+                    'name' => $row['name'] ?? '',
+                    'price' => $row['price'] ?? '',
+                    'url' => $row['url'] ?? '',
+                    'imageUrl' => $row['imageUrl'] ?? '',
+                    'thumbnailImageUrl' => $row['thumbnailImageUrl'] ?? '',
+                    'recordHash' => $recordHash,
+                ];
+            }
         }
 
+        // Write unique rows
+        foreach ($catalogRows as $row) {
+            $file->writeCsv([
+                $row['uid'],
+                $row['sku'],
+                $row['parent_uid'],
+                $row['name'],
+                $row['price'],
+                $row['url'],
+                $row['imageUrl'],
+                $row['thumbnailImageUrl'],
+                $row['recordHash']
+            ], "\t");
+        }
     }
 }

@@ -63,6 +63,7 @@ class SpecificationBuilder implements SpecificationBuilderInterface
         'excludedProductIds' => FeedSpecificationInterface::EXCLUDE_PRODUCT_IDS,
         'includeAllVariants' => FeedSpecificationInterface::INCLUDE_ALL_VARIANTS,
         'parentIdSourceFieldName' => FeedSpecificationInterface::PARENT_ID_SOURCE_FIELD,
+        'catalogPreSignedUrl' => FeedSpecificationInterface::CATALOG_PRE_SIGNED_URL,
     ];
     /**
      * @var array
