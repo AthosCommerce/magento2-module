@@ -9,7 +9,9 @@
             "started_at": true,
             "ended_at": true,
             "product_count": true,
-            "file_size": true
+            "file_size": true,
+            "pc_product_count": true,
+            "pc_file_size": true
         },
         "constraint": {
             "PRIMARY": true
