@@ -179,6 +179,7 @@ class GenerateFeed implements GenerateFeedInterface
         $metrics = 0;
         $this->collectMetrics('Before Start Items Generation');
         $productCount = 0;
+        $catalogRowCount = 0;
         $this->logger->info('Product collection details', [
             'method' => __METHOD__,
             'pageSize' => $pageSize,
@@ -215,6 +216,7 @@ class GenerateFeed implements GenerateFeedInterface
                 $this->storage->addData($itemsData, $id);
                 if(!empty($feedSpecification->getCatalogPreSignedUrl())) {
                     $this->catalogStorage->addData($itemsData, $id);
+                    $catalogRowCount = $this->catalogStorage->getCatalogRowCount();
                 }
                 $itemsData = [];
                 $currentPageNumber++;
@@ -257,6 +259,7 @@ class GenerateFeed implements GenerateFeedInterface
 
         $task = $this->taskRepository->get($id);
         $task->setProductCount($productCount);
+        $task->setCatalogCount($catalogRowCount);
         $this->taskRepository->save($task);
         $this->reset($feedSpecification, $id);
 
@@ -296,6 +299,14 @@ class GenerateFeed implements GenerateFeedInterface
             'format' => $feedSpecification->getFormat(),
         ]);
         try {
+            if (!empty($feedSpecification->getCatalogPreSignedUrl())) {
+                $this->logger->info('Persistent catalog storage in s3 started', [
+                    'method' => __METHOD__,
+                    'entityId' => $id,
+                    'format' => $feedSpecification->getCatalogPreSignedUrl(),
+                ]);
+                $this->catalogStorage->commit($id);
+            }
             $this->storage->commit($id);
         } finally {
             $this->collectMetrics('After Send File');
@@ -309,6 +320,14 @@ class GenerateFeed implements GenerateFeedInterface
             'entityId' => $id,
             'format' => $feedSpecification->getFormat(),
         ]);
+
+        if(!empty($feedSpecification->getCatalogPreSignedUrl())) {
+            $this->logger->info('Persistent catalog storage in s3 completed', [
+                'method' => __METHOD__,
+                'entityId' => $id,
+                'format' => $feedSpecification->getCatalogPreSignedUrl(),
+            ]);
+        }
         $this->metricCollector->reset(CollectorInterface::CODE_PRODUCT_FEED);
         $this->contextManager->resetContext();
         if (!$this->gcStatus) {

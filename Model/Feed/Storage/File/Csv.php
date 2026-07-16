@@ -26,6 +26,8 @@ use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 
 class Csv extends FileAbstract
 {
+    private int $catalogRowCount = 0;
+    private bool $headerWritten = false;
     /**
      * Csv constructor.
      * @param Filesystem $filesystem
@@ -71,17 +73,21 @@ class Csv extends FileAbstract
         $catalogRows = [];
 
         // Header
-        $file->writeCsv([
-            'uid',
-            'sku',
-            'parent_uid',
-            'name',
-            'price',
-            'url',
-            'imageUrl',
-            'thumbnailImageUrl',
-            'recordHash'
-        ], "\t");
+        if (!$this->headerWritten) {
+            $file->writeCsv([
+                'uid',
+                'sku',
+                'parent_uid',
+                'name',
+                'price',
+                'url',
+                'imageUrl',
+                'thumbnailImageUrl',
+                'recordHash'
+            ], "\t");
+
+            $this->headerWritten = true;
+        }
 
         // Collect unique catalog rows
         foreach ($data as $item) {
@@ -124,5 +130,15 @@ class Csv extends FileAbstract
                 $row['recordHash']
             ], "\t");
         }
+
+        $this->catalogRowCount += count($catalogRows);
+    }
+
+    /**
+     * @return int
+     */
+    public function getCatalogRowCount(): int
+    {
+        return $this->catalogRowCount;
     }
 }

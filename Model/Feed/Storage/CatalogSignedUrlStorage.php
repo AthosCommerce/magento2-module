@@ -198,7 +198,7 @@ class CatalogSignedUrlStorage implements CatalogStorageInterface
         $fileSize = filesize($filePath);
 
         $task = $this->taskRepository->get($id);
-        $task->setFileSize($fileSize);
+        $task->setCatalogFileSize($fileSize);
         $this->taskRepository->save($task);
 
         $data = [
@@ -299,5 +299,10 @@ class CatalogSignedUrlStorage implements CatalogStorageInterface
         }
 
         return $this->specification;
+    }
+
+    public function getCatalogRowCount(): int
+    {
+        return $this->getFile()->getCatalogRowCount();
     }
 }
