@@ -198,7 +198,7 @@ class CatalogSignedUrlStorage implements CatalogStorageInterface
         $fileSize = filesize($filePath);
 
         $task = $this->taskRepository->get($id);
-        $task->setCatalogFileSize($fileSize);
+        $task->setPcFileSize($fileSize);
         $this->taskRepository->save($task);
 
         $data = [

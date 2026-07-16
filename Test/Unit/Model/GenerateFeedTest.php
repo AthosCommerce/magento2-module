@@ -188,7 +188,7 @@ class GenerateFeedTest extends TestCase
         $this->catalogStorageMock->expects($this->once())->method('getCatalogRowCount')->willReturn(7);
 
         $taskMock->expects($this->once())->method('setProductCount')->with(2)->willReturnSelf();
-        $taskMock->expects($this->once())->method('setCatalogCount')->with(7)->willReturnSelf();
+        $taskMock->expects($this->once())->method('setPcProductCount')->with(7)->willReturnSelf();
         $this->taskRepositoryMock->expects($this->once())->method('get')->with(11)->willReturn($taskMock);
         $this->taskRepositoryMock->expects($this->once())->method('save')->with($taskMock)->willReturn($taskMock);
 
@@ -242,7 +242,7 @@ class GenerateFeedTest extends TestCase
         $this->catalogStorageMock->expects($this->never())->method('commit');
 
         $taskMock->expects($this->once())->method('setProductCount')->with(0)->willReturnSelf();
-        $taskMock->expects($this->once())->method('setCatalogCount')->with(0)->willReturnSelf();
+        $taskMock->expects($this->once())->method('setPcProductCount')->with(0)->willReturnSelf();
         $this->taskRepositoryMock->expects($this->once())->method('get')->with(12)->willReturn($taskMock);
         $this->taskRepositoryMock->expects($this->once())->method('save')->with($taskMock);
 

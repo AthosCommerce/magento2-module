@@ -259,7 +259,7 @@ class GenerateFeed implements GenerateFeedInterface
 
         $task = $this->taskRepository->get($id);
         $task->setProductCount($productCount);
-        $task->setCatalogCount($catalogRowCount);
+        $task->setPcProductCount($catalogRowCount);
         $this->taskRepository->save($task);
         $this->reset($feedSpecification, $id);
 

@@ -333,7 +333,7 @@ class Task extends AbstractExtensibleModel implements TaskInterface
     /**
      * @return int|null
      */
-    public function getCatalogCount(): ?int
+    public function getPcProductCount(): ?int
     {
         return (int)$this->getData(self::PC_PRODUCT_COUNT);
     }
@@ -342,7 +342,7 @@ class Task extends AbstractExtensibleModel implements TaskInterface
      * @param int $value
      * @return TaskInterface
      */
-    public function setCatalogCount(int $value): TaskInterface
+    public function setPcProductCount(int $value): TaskInterface
     {
         return $this->setData(self::PC_PRODUCT_COUNT, $value);
     }
@@ -351,7 +351,7 @@ class Task extends AbstractExtensibleModel implements TaskInterface
      * Get the catalog file size.
      * @return int
      */
-    public function getCatalogFileSize(): int
+    public function getPcFileSize(): int
     {
 
         $fileSize = $this->getData(self::PC_FILE_SIZE);
@@ -367,7 +367,7 @@ class Task extends AbstractExtensibleModel implements TaskInterface
      * @param int $value
      * @return TaskInterface
      */
-    public function setCatalogFileSize(int $value): TaskInterface
+    public function setPcFileSize(int $value): TaskInterface
     {
         return $this->setData(self::PC_FILE_SIZE, $value); // Set the data
     }

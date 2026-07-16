@@ -193,22 +193,22 @@ interface TaskInterface extends ExtensibleDataInterface
     /**
      * @return int|null
      */
-    public function getCatalogCount(): ?int;
+    public function getPcProductCount(): ?int;
 
     /**
      * @return int
      */
-    public function getCatalogFileSize(): int;
+    public function getPcFileSize(): int;
 
     /**
      * @param int $value
      * @return TaskInterface
      */
-    public function setCatalogCount(int $value): self;
+    public function setPcProductCount(int $value): self;
 
     /**
      * @param int $value
      * @return TaskInterface
      */
-    public function setCatalogFileSize(int $value): self;
+    public function setPcFileSize(int $value): self;
 }
