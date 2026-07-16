@@ -16,19 +16,27 @@
 
 namespace AthosCommerce\Feed\Test\Unit\Model\Feed\DataProvider\Product;
 
-use Magento\Catalog\Model\ResourceModel\Eav\Attribute;
-use Magento\Catalog\Model\Product;
-use Magento\Catalog\Pricing\Price\FinalPrice;
-use Magento\Framework\Pricing\Price\PriceInterface;
-use Magento\Framework\Pricing\PriceInfoInterface;
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Attribute\ValueProcessor;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Product\GetChildProductsData;
+use Magento\Catalog\Model\Product;
+use Magento\Catalog\Model\ResourceModel\Eav\Attribute;
+use Magento\Catalog\Pricing\Price\FinalPrice;
+use Magento\Framework\Pricing\Price\PriceInterface;
+use Magento\Framework\Pricing\PriceInfoInterface;
+use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\TestCase;
 
-class GetChildProductsDataTest extends \PHPUnit\Framework\TestCase
+class GetChildProductsDataTest extends TestCase
 {
+    /**
+     * @var ValueProcessor&MockObject
+     */
     private $valueProcessorMock;
 
+    /**
+     * @var GetChildProductsData
+     */
     private $getChildProductsData;
 
     public function setUp(): void
@@ -37,123 +45,153 @@ class GetChildProductsDataTest extends \PHPUnit\Framework\TestCase
         $this->getChildProductsData = new GetChildProductsData($this->valueProcessorMock);
     }
 
-    public function testGetProductData()
+    public function testGetProductData(): void
     {
         $priceInterfaceMock = $this->createMock(PriceInterface::class);
         $finalPriceMock = $this->createMock(FinalPrice::class);
-        $priceInfoInterfaceMock = $this->getMockForAbstractClass(PriceInfoInterface::class);
+        $priceInfoInterfaceMock = $this->createMock(PriceInfoInterface::class);
         $childAttributeMock = $this->createMock(Attribute::class);
         $childAttributeMockSecond = $this->createMock(Attribute::class);
-        $feedSpecificationMock = $this->getMockForAbstractClass(FeedSpecificationInterface::class);
+        $feedSpecificationMock = $this->createMock(FeedSpecificationInterface::class);
+        $childProductMock = $this->createMock(Product::class);
+        $childProductMockSecond = $this->createMock(Product::class);
+
+        $childAttributeCode = 'child_code_1';
+        $childSecondAttributeCode = 'child_code_2';
+
+        $childProducts = [
+            $childProductMock,
+            $childProductMockSecond,
+        ];
+
         $feedSpecificationMock->expects($this->once())
             ->method('getIgnoreFields')
             ->willReturn([]);
-        $childProductMock = $this->createMock(Product::class);
-        $childProductMockSecond = $this->createMock(Product::class);
-        $childProducts = [
-            $childProductMock,
-            $childProductMockSecond
-        ];
-        $childAttributeCode = 'child_code_1';
-        $childSecondAttributeCode = 'child_code_2';
+
+        $feedSpecificationMock->expects($this->exactly(2))
+            ->method('getIncludeChildPrices')
+            ->willReturn(true);
+
         $childAttributeMock->expects($this->any())
             ->method('getAttributeCode')
             ->willReturn($childAttributeCode);
-        $childProductMock->expects($this->at(0))
-            ->method('getData')
-            ->with($childAttributeCode)
-            ->willReturn('test_value_1');
-        $this->valueProcessorMock->expects($this->at(0))
-            ->method('getValue')
-            ->with($childAttributeMock, 'test_value_1')
-            ->willReturn('test_value_1');
-        $childProductMock->expects($this->at(1))
-            ->method('getData')
-            ->with($childSecondAttributeCode)
-            ->willReturn('test_value_2');
-        $this->valueProcessorMock->expects($this->at(1))
-            ->method('getValue')
-            ->with($childAttributeMock, 'test_value_2')
-            ->willReturn('test_value_2');
-        $childProductMock->expects($this->any())
-            ->method('getSku')
-            ->willReturn('child_sku_1');
-        $childProductMock->expects($this->any())
-            ->method('getName')
-            ->willReturn('child_name_1');
-        $feedSpecificationMock->expects($this->any())
-            ->method('getIncludeChildPrices')
-            ->willReturn(true);
-        $childProductMock->expects($this->once())
-            ->method('getPriceInfo')
-            ->willReturn($priceInfoInterfaceMock);
-        $priceInfoInterfaceMock->expects($this->any())
-            ->method('getPrice')
-            ->with(FinalPrice::PRICE_CODE)
-            ->willReturn($finalPriceMock);
-        $finalPriceMock->expects($this->any())
-            ->method('getMinimalPrice')
-            ->willReturn($priceInterfaceMock);
-        $priceInterfaceMock->expects($this->at(0))
-            ->method('getValue')
-            ->willReturn(3.0);
 
         $childAttributeMockSecond->expects($this->any())
             ->method('getAttributeCode')
             ->willReturn($childSecondAttributeCode);
-        $childProductMockSecond->expects($this->at(0))
+
+        $firstChildGetDataCalls = [];
+        $childProductMock->expects($this->exactly(2))
             ->method('getData')
-            ->with($childAttributeCode)
-            ->willReturn('test_value_3');
-        $this->valueProcessorMock->expects($this->at(2))
-            ->method('getValue')
-            ->with($childAttributeMock, 'test_value_3')
-            ->willReturn('test_value_3');
-        $childProductMockSecond->expects($this->at(1))
+            ->willReturnCallback(function ($code) use (&$firstChildGetDataCalls, $childAttributeCode, $childSecondAttributeCode) {
+                $firstChildGetDataCalls[] = $code;
+
+                if ($code === $childAttributeCode) {
+                    return 'test_value_1';
+                }
+
+                if ($code === $childSecondAttributeCode) {
+                    return 'test_value_2';
+                }
+
+                return null;
+            });
+
+        $secondChildGetDataCalls = [];
+        $childProductMockSecond->expects($this->exactly(2))
             ->method('getData')
-            ->with($childSecondAttributeCode)
-            ->willReturn('test_value_4');
-        $this->valueProcessorMock->expects($this->at(3))
+            ->willReturnCallback(function ($code) use (&$secondChildGetDataCalls, $childAttributeCode, $childSecondAttributeCode) {
+                $secondChildGetDataCalls[] = $code;
+
+                if ($code === $childAttributeCode) {
+                    return 'test_value_3';
+                }
+
+                if ($code === $childSecondAttributeCode) {
+                    return 'test_value_4';
+                }
+
+                return null;
+            });
+
+        $valueProcessorCalls = [];
+        $this->valueProcessorMock->expects($this->exactly(4))
             ->method('getValue')
-            ->with($childAttributeMockSecond, 'test_value_4')
-            ->willReturn('test_value_4');
+            ->willReturnCallback(function ($attribute, $value, $childProduct, $feedSpecification) use (
+                &$valueProcessorCalls,
+                $feedSpecificationMock
+            ) {
+                $valueProcessorCalls[] = [$attribute, $value, $childProduct, $feedSpecification];
+
+                $this->assertSame($feedSpecificationMock, $feedSpecification);
+
+                return $value;
+            });
+
+        $childProductMock->expects($this->any())
+            ->method('getSku')
+            ->willReturn('child_sku_1');
+
+        $childProductMock->expects($this->any())
+            ->method('getName')
+            ->willReturn('child_name_1');
+
         $childProductMockSecond->expects($this->any())
             ->method('getSku')
             ->willReturn('child_sku_2');
+
         $childProductMockSecond->expects($this->any())
             ->method('getName')
             ->willReturn('child_name_2');
+
+        $childProductMock->expects($this->once())
+            ->method('getPriceInfo')
+            ->willReturn($priceInfoInterfaceMock);
+
         $childProductMockSecond->expects($this->once())
             ->method('getPriceInfo')
             ->willReturn($priceInfoInterfaceMock);
-        $priceInterfaceMock->expects($this->at(1))
+
+        $priceInfoInterfaceMock->expects($this->exactly(2))
+            ->method('getPrice')
+            ->with(FinalPrice::PRICE_CODE)
+            ->willReturn($finalPriceMock);
+
+        $finalPriceMock->expects($this->exactly(2))
+            ->method('getMinimalPrice')
+            ->willReturn($priceInterfaceMock);
+
+        $priceValues = [3.0, 3.33];
+        $priceInterfaceMock->expects($this->exactly(2))
             ->method('getValue')
-            ->willReturn(3.33);
+            ->willReturnCallback(function () use (&$priceValues) {
+                return array_shift($priceValues);
+            });
 
         $this->assertSame(
             [
                 'child_code_1' => [
                     0 => 'test_value',
                     1 => 'test_value_1',
-                    2 => 'test_value_3'
+                    2 => 'test_value_3',
                 ],
                 'child_code_2' => [
                     0 => 'test_value_1',
                     1 => 'test_value_2',
-                    2 => 'test_value_4'
+                    2 => 'test_value_4',
                 ],
                 'child_sku' => [
                     0 => 'child_sku_1',
-                    1 => 'child_sku_2'
+                    1 => 'child_sku_2',
                 ],
                 'child_name' => [
                     0 => 'child_name_1',
-                    1 => 'child_name_2'
+                    1 => 'child_name_2',
                 ],
                 'child_final_price' => [
                     0 => 3.0,
-                    1 => 3.33
-                ]
+                    1 => 3.33,
+                ],
             ],
             $this->getChildProductsData->getProductData(
                 [
@@ -167,6 +205,32 @@ class GetChildProductsDataTest extends \PHPUnit\Framework\TestCase
                 ],
                 $feedSpecificationMock
             )
+        );
+
+        $this->assertSame(
+            [
+                $childAttributeCode,
+                $childSecondAttributeCode,
+            ],
+            $firstChildGetDataCalls
+        );
+
+        $this->assertSame(
+            [
+                $childAttributeCode,
+                $childSecondAttributeCode,
+            ],
+            $secondChildGetDataCalls
+        );
+
+        $this->assertSame(
+            [
+                [$childAttributeMock, 'test_value_1', $childProductMock, $feedSpecificationMock],
+                [$childAttributeMockSecond, 'test_value_2', $childProductMock, $feedSpecificationMock],
+                [$childAttributeMock, 'test_value_3', $childProductMockSecond, $feedSpecificationMock],
+                [$childAttributeMockSecond, 'test_value_4', $childProductMockSecond, $feedSpecificationMock],
+            ],
+            $valueProcessorCalls
         );
     }
 }

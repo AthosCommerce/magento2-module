@@ -249,7 +249,7 @@ class CartItemIdentityResolver
     private function getGroupedParentIdFromQuoteItem(CartItemInterface $cartItem): ?string
     {
         $buyRequest = null;
-        $buyRequestArray = array();
+        $buyRequestArray = [];
         $productConfig = null;
 
         if (!method_exists($cartItem, 'getOptionByCode')) {

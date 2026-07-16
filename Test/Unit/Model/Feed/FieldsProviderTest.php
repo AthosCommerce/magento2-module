@@ -54,7 +54,9 @@ class FieldsProviderTest extends \PHPUnit\Framework\TestCase
         'rating',
         'rating_count',
         'child_sku',
-        'child_name'
+        'child_name',
+        'parent_id',
+        'parent_type_id'
     ];
 
     /**

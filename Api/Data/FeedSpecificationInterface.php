@@ -96,10 +96,6 @@ interface FeedSpecificationInterface extends ExtensibleDataInterface
      *
      */
     public const SETTING_NAME_SWATCH_OPTION_FIELD_NAMES = 'swatch_option_Fields';
-    /**
-     *
-     */
-    public const SETTING_NAME_VARIANT_ADDITIONAL_FIELDS = 'variant_additional_fields';
 
     public const INDEXING_MODE_KEY = 'indexing_mode';
     public const BULK_MODE = 'bulk';
@@ -113,6 +109,9 @@ interface FeedSpecificationInterface extends ExtensibleDataInterface
 
     public const PARENT_ID_SOURCE_FIELD = 'parentIdSourceFieldName';
     public const GROUP_ID_SOURCE_FIELD = 'groupBySourceFieldName';
+
+    public const VARIANT_ADDITIONAL_FIELDS = 'variant_additional_fields';
+    public const VARIANT_ADDITIONAL_DATA_LIMIT = 'variantAdditionalDataLimit';
 
 
     /**
@@ -408,4 +407,14 @@ interface FeedSpecificationInterface extends ExtensibleDataInterface
      * @return string|null
      */
     public function getGroupBySourceFieldName() : ?string;
+    /**
+     * @return int|null
+     */
+    public function getVariantAdditionalDataLimit(): ?int;
+
+    /**
+     * @param int $limit
+     * @return FeedSpecificationInterface
+     */
+    public function setVariantAdditionalDataLimit(int $limit): self;
 }

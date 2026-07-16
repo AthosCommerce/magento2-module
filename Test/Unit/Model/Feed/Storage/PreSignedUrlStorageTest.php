@@ -272,38 +272,67 @@ class PreSignedUrlStorageTest extends \PHPUnit\Framework\TestCase
     public function testCommit()
     {
         $fileMock = $this->createMock(FileInterface::class);
+        $taskMock = $this->createMock(TaskInterface::class);
         $entityId = 1;
         $feedSpecificationMock = $this->createMock(FeedSpecificationInterface::class);
-        $absolutePath = 'abs/olute/path/to/file.exe';
+        $absolutePath = tempnam(sys_get_temp_dir(), 'athos_presigned_storage_test_');
+
+        file_put_contents($absolutePath, 'test file content');
 
         $preSignedUrlStorage = new \ReflectionClass(PreSignedUrlStorage::class);
+
         $file = $preSignedUrlStorage->getProperty('file');
         $file->setAccessible(true);
-
-        // Configure the feedSpecificationMock to return a valid URL
-        $feedSpecificationMock->expects($this->once())
-            ->method('getPreSignedUrl')
-            ->willReturn('sites/24b0z6/ssfeed-2621.txt.gz'); // Return a valid URL
-
         $file->setValue($this->preSignedUrlStorage, $fileMock);
-        $fileMock->expects($this->once())
-            ->method('commit');
-        $fileMock->expects($this->once())
-            ->method('getAbsolutePath')
-            ->willReturn($absolutePath);
+
         $specification = $preSignedUrlStorage->getProperty('specification');
         $specification->setAccessible(true);
         $specification->setValue($this->preSignedUrlStorage, $feedSpecificationMock);
+
+        $feedSpecificationMock->expects($this->once())
+            ->method('getPreSignedUrl')
+            ->willReturn('sites/24b0z6/ssfeed-2621.txt.gz');
+
+        $fileMock->expects($this->once())
+            ->method('getAbsolutePath')
+            ->willReturn($absolutePath);
+
+        $fileMock->expects($this->once())
+            ->method('commit');
+
+        $this->taskRepositoryMock->expects($this->once())
+            ->method('get')
+            ->with($entityId)
+            ->willReturn($taskMock);
+
+        $taskMock->expects($this->once())
+            ->method('setFileSize')
+            ->with(filesize($absolutePath))
+            ->willReturnSelf();
+
+        $this->taskRepositoryMock->expects($this->once())
+            ->method('save')
+            ->with($taskMock)
+            ->willReturn($taskMock);
+
         $this->preSignedUrlMock->expects($this->once())
             ->method('save')
             ->with($feedSpecificationMock, ['type' => 'stream', 'file' => $absolutePath]);
+
         $this->appConfigMock->expects($this->once())
             ->method('isDebug')
             ->willReturn(false);
+
         $fileMock->expects($this->once())
             ->method('delete');
 
-        $this->preSignedUrlStorage->commit( $entityId );
+        try {
+            $this->preSignedUrlStorage->commit($entityId);
+        } finally {
+            if (is_file($absolutePath)) {
+                unlink($absolutePath);
+            }
+        }
     }
 
     public function testRollback()

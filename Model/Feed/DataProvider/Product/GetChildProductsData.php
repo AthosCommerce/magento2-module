@@ -65,7 +65,7 @@ class GetChildProductsData
                     continue;
                 }
 
-                $value = $this->valueProcessor->getValue($childAttribute, $child->getData($code), $child);
+                $value = $this->valueProcessor->getValue($childAttribute, $child->getData($code), $child, $feedSpecification);
                 if ($value != '' && !empty($value)) {
                     $result[$code][] = $value;
                 }

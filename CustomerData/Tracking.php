@@ -40,7 +40,7 @@ class Tracking implements SectionSourceInterface
     }
 
     /**
-     * @return array|void
+     * @return array
      */
     public function getSectionData(): array
     {

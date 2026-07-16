@@ -17,7 +17,8 @@
 namespace AthosCommerce\Feed\Test\Unit\Cron;
 
 use AthosCommerce\Feed\Api\ExecutePendingTasksInterface;
-use AthosCommerce\Feed\Cron\ExecuteTasks;
+use AthosCommerce\Feed\Cron\ExecuteTasksCron;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 
 class ExecuteTasksTest extends \PHPUnit\Framework\TestCase
 {
@@ -28,10 +29,13 @@ class ExecuteTasksTest extends \PHPUnit\Framework\TestCase
 
     private $executeTasks;
 
+    private $loggerMock;
+
     public function setUp(): void
     {
         $this->executePendingTaskInterfaceMock = $this->createMock(ExecutePendingTasksInterface::class);
-        $this->executeTasks = new ExecuteTasks($this->executePendingTaskInterfaceMock);
+        $this->loggerMock = $this->createMock(AthosCommerceLogger::class);
+        $this->executeTasks = new ExecuteTasksCron($this->executePendingTaskInterfaceMock, $this->loggerMock);
     }
 
     public function testExecute()

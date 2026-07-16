@@ -37,10 +37,14 @@ $scriptString = "
          } catch (e) {
              productPageData = {};
         }
-        window.athos.tracker.events.product = window.athos.tracker.events.product || {};
-        window.athos.tracker.events.productData = productPageData;
 
-        if (typeof window.athos.tracker.events.product.pageView === 'function') {
+        if (
+            window.athos &&
+            window.athos.tracker &&
+            window.athos.tracker.events &&
+            window.athos.tracker.events.product &&
+            typeof window.athos.tracker.events.product.pageView === 'function'
+        ) {
             window.athos.tracker.events.product.pageView({
                 data: { result: productPageData }
             });

@@ -387,7 +387,7 @@ class Feed extends AbstractExtensibleObject implements FeedSpecificationInterfac
      */
     public function getVariantAdditionalFields(): array
     {
-        return $this->_get(self::SETTING_NAME_VARIANT_ADDITIONAL_FIELDS) ?? [];
+        return $this->_get(self::VARIANT_ADDITIONAL_FIELDS) ?? [];
     }
 
     /**
@@ -396,7 +396,7 @@ class Feed extends AbstractExtensibleObject implements FeedSpecificationInterfac
      */
     public function setVariantAdditionalFields(array $fields): FeedSpecificationInterface
     {
-        return $this->setData(self::SETTING_NAME_VARIANT_ADDITIONAL_FIELDS, $fields);
+        return $this->setData(self::VARIANT_ADDITIONAL_FIELDS, $fields);
     }
 
     /**
@@ -505,5 +505,32 @@ class Feed extends AbstractExtensibleObject implements FeedSpecificationInterfac
     public function setGroupBySourceFieldName(string $value): FeedSpecificationInterface
     {
         return $this->setData(self::GROUP_ID_SOURCE_FIELD, $value);
+    }
+
+    /**
+     * @return int|null
+     */
+    public function getVariantAdditionalDataLimit(): ?int
+    {
+        $value = $this->_get(self::VARIANT_ADDITIONAL_DATA_LIMIT);
+        if ($value === null || $value === '') {
+            return 200;
+        }
+
+        $value = (int)$value;
+        if ($value <= 0) {
+            return 200;
+        }
+
+        return $value;
+    }
+
+    /**
+     * @param int $limit
+     * @return FeedSpecificationInterface
+     */
+    public function setVariantAdditionalDataLimit(int $limit): FeedSpecificationInterface
+    {
+        return $this->setData(self::VARIANT_ADDITIONAL_DATA_LIMIT, $limit);
     }
 }
