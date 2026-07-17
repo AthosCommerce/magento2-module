@@ -107,7 +107,7 @@ class VariantAdditionalDataProviderTest extends TestCase
 
         $result = $this->provider->getData($products, $specificationMock);
 
-        $this->assertSame([], $result[0][VariantAdditionalDataProvider::FIELD_KEY]);
+        $this->assertArrayNotHasKey(VariantAdditionalDataProvider::FIELD_KEY, $result[0]);
     }
 
     public function testGetDataBuildsVariantAdditionalDataForConfigurableParent(): void
@@ -196,7 +196,7 @@ class VariantAdditionalDataProviderTest extends TestCase
 
         $this->assertCount(1, $rows);
         $this->assertSame('3031', $rows[0]['variant_id']);
-        $this->assertSame([], $rows[0]['options']);
+        $this->assertSame('{}', $rows[0]['options']);
         $this->assertTrue($rows[0]['available']);
     }
 
@@ -353,7 +353,7 @@ class VariantAdditionalDataProviderTest extends TestCase
 
         $result = $this->provider->getData($products, $specificationMock);
 
-        $this->assertSame([], $result[0][VariantAdditionalDataProvider::FIELD_KEY]);
+        $this->assertArrayNotHasKey(VariantAdditionalDataProvider::FIELD_KEY, $result[0]);
     }
 
     /**
