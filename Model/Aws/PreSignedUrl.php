@@ -106,12 +106,21 @@ class PreSignedUrl
             );
             return;
         }
-        $url = $feedSpecification->getPreSignedUrl();
-        if (!$url) {
-            throw new \Exception();
+
+        $Url = $feedSpecification->getPreSignedUrl();
+        $persistentUrl = $feedSpecification->getCatalogPreSignedUrl();
+
+        if (empty($Url)) {
+            throw new \Exception('Missing catalog presigned URL.');
         }
 
-        $this->doRequest($url, [], $content);
+        // Upload catalog
+        $this->doRequest($Url, [], $content);
+
+        // Upload persistent catalog only if available
+        if (!empty($persistentUrl)) {
+            $this->doRequest($persistentUrl, [], $content);
+        }
     }
 
     /**
