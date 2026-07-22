@@ -107,20 +107,42 @@ class PreSignedUrl
             return;
         }
 
-        $Url = $feedSpecification->getPreSignedUrl();
-        $persistentUrl = $feedSpecification->getCatalogPreSignedUrl();
+        $url = $feedSpecification->getPreSignedUrl();
+        if (empty($url)) {
+            throw new \Exception('Missing product presigned URL.');
+        }
 
-        if (empty($Url)) {
+        $this->doRequest($url, [], $content);
+    }
+
+    /**
+     * @param FeedSpecificationInterface $feedSpecification
+     * @param array $content
+     * @throws \Exception
+     */
+    public function catalogSave(FeedSpecificationInterface $feedSpecification, array $content): void
+    {
+        if ($this->appConfig->isDebug()
+            && (bool)$this->appConfig->getValue('product_api_mock')
+        ) {
+            $this->logger->info(
+                'Data feed mocked as per configuration:',
+                [
+                    'store' => $feedSpecification->getStoreCode(),
+                    'feed_spec' => method_exists($feedSpecification, '__toArray')
+                        ? $feedSpecification->__toArray()
+                        : [],
+                ]
+            );
+            return;
+        }
+
+        $url = $feedSpecification->getCatalogPreSignedUrl();
+        if (empty($url)) {
             throw new \Exception('Missing catalog presigned URL.');
         }
 
-        // Upload catalog
-        $this->doRequest($Url, [], $content);
-
-        // Upload persistent catalog only if available
-        if (!empty($persistentUrl)) {
-            $this->doRequest($persistentUrl, [], $content);
-        }
+        $this->doRequest($url, [], $content);
     }
 
     /**

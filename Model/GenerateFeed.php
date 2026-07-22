@@ -280,7 +280,9 @@ class GenerateFeed implements GenerateFeedInterface
         $this->itemsGenerator->resetDataProviders($feedSpecification);
         $this->contextManager->setContextFromSpecification($feedSpecification);
         $this->storage->initiate($feedSpecification);
-        $this->catalogStorage->initiate($feedSpecification);
+        if (!empty($feedSpecification->getCatalogPreSignedUrl())) {
+            $this->catalogStorage->initiate($feedSpecification);
+        }
     }
 
     /**

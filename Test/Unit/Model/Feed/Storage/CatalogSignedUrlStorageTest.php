@@ -280,7 +280,7 @@ class CatalogSignedUrlStorageTest extends \PHPUnit\Framework\TestCase
             ->method('getAbsolutePath')
             ->willReturn($filePath);
         $this->preSignedUrlMock->expects($this->once())
-            ->method('save')
+            ->method('catalogSave')
             ->with($feedSpecificationMock, ['type' => 'stream', 'file' => $filePath]);
         $this->appConfigMock->expects($this->once())
             ->method('isDebug')
@@ -292,7 +292,7 @@ class CatalogSignedUrlStorageTest extends \PHPUnit\Framework\TestCase
 
         $taskMock = $this->createMock(TaskInterface::class);
         $taskMock->expects($this->once())
-            ->method('setFileSize')
+            ->method('setPcFileSize')
             ->with(filesize($filePath))
             ->willReturnSelf();
         $this->taskRepositoryMock->expects($this->once())
@@ -327,10 +327,10 @@ class CatalogSignedUrlStorageTest extends \PHPUnit\Framework\TestCase
         $fileMock->expects($this->never())->method('delete');
 
         $taskMock = $this->createMock(TaskInterface::class);
-        $taskMock->method('setFileSize')->willReturnSelf();
+        $taskMock->method('setPcFileSize')->willReturnSelf();
         $this->taskRepositoryMock->method('get')->willReturn($taskMock);
         $this->taskRepositoryMock->method('save')->willReturn($taskMock);
-        $this->preSignedUrlMock->expects($this->once())->method('save');
+        $this->preSignedUrlMock->expects($this->once())->method('catalogSave');
         $this->appConfigMock->method('isDebug')->willReturn(false);
 
         $this->preSignedUrlStorage->commit(1, false);

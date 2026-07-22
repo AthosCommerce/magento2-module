@@ -207,7 +207,7 @@ class CatalogSignedUrlStorage implements CatalogStorageInterface
         ];
 
         try {
-            $this->preSignedUrl->save($this->specification, $data);
+            $this->preSignedUrl->catalogSave($this->specification, $data);
         } finally {
             if ((!$this->appConfig->isDebug() || $this->appConfig->getValue('product_delete_file'))
                 && $deleteFile
