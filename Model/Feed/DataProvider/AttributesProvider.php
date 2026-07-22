@@ -73,12 +73,13 @@ class AttributesProvider implements DataProviderInterface
      * @param AthosCommerceLogger $logger
      */
     public function __construct(
-        SystemFieldsList $systemFieldsList,
-        ValueProcessor $valueProcessor,
+        SystemFieldsList            $systemFieldsList,
+        ValueProcessor              $valueProcessor,
         AttributesProviderInterface $attributesProvider,
-        ParentVariantResolver $parentVariantResolver,
-        AthosCommerceLogger $logger
-    ) {
+        ParentVariantResolver       $parentVariantResolver,
+        AthosCommerceLogger         $logger
+    )
+    {
         $this->systemFieldsList = $systemFieldsList;
         $this->valueProcessor = $valueProcessor;
         $this->attributesProvider = $attributesProvider;
@@ -122,10 +123,11 @@ class AttributesProvider implements DataProviderInterface
      * @throws Exception
      */
     private function getProductData(
-        array $row,
-        Product $product,
+        array                      $row,
+        Product                    $product,
         FeedSpecificationInterface $feedSpecification
-    ): array {
+    ): array
+    {
         $productData = $product->getData();
         $productKeys = array_keys($productData);
         $productId = (int)$product->getData('entity_id');
@@ -155,7 +157,7 @@ class AttributesProvider implements DataProviderInterface
             /** @var Attribute $attribute */
             $attribute = $this->attributes[$attributeKey];
 
-            if ($this->shouldUseParentValue($row, $parentProduct)) {
+            if ($this->shouldUseParentValue($row, $parentProduct, (string)$attributeKey)) {
                 $parentValue = $parentProduct->getData($attributeKey);
 
                 if ($parentValue !== null && $parentValue !== '') {
@@ -215,9 +217,14 @@ class AttributesProvider implements DataProviderInterface
     /**
      * @param array $row
      * @param Product|null $parentProduct
+     * @param string $attributeKey
      * @return bool
      */
-    private function shouldUseParentValue(array $row, ?Product $parentProduct): bool
+    private function shouldUseParentValue(
+        array    $row,
+        ?Product $parentProduct,
+        string   $attributeKey
+    ): bool
     {
         if (!$parentProduct instanceof Product) {
             return false;
@@ -239,6 +246,11 @@ class AttributesProvider implements DataProviderInterface
             : 0;
 
         if ($resolvedParentId > 0 && $resolvedParentId !== (int)$parentProduct->getId()) {
+            return false;
+        }
+
+        //Let the ParentOverrideResolver to handle this
+        if (in_array($attributeKey, ['sku', 'url', 'name', 'visibility'], true)) {
             return false;
         }
 
