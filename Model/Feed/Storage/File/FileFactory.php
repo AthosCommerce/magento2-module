@@ -57,7 +57,7 @@ class FileFactory
             throw new Exception('fileClass is null');
         }
 
-        return $file;
+        return clone $file;
     }
 
     /**
