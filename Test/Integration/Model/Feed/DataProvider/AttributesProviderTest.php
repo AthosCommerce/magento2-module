@@ -22,8 +22,10 @@ use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\ResourceModel\Product\Collection;
 use Magento\TestFramework\Helper\Bootstrap;
 use PHPUnit\Framework\TestCase;
+use AthosCommerce\Feed\Model\Feed\ContextManagerInterface;
 use AthosCommerce\Feed\Model\Feed\DataProvider\AttributesProvider;
 use AthosCommerce\Feed\Model\Feed\SpecificationBuilderInterface;
+use AthosCommerce\Feed\Model\ItemsGenerator;
 
 /**
  *
@@ -48,6 +50,14 @@ class AttributesProviderTest extends TestCase
      * @var GetProducts
      */
     private $getProducts;
+    /**
+     * @var ItemsGenerator
+     */
+    private $itemsGenerator;
+    /**
+     * @var ContextManagerInterface
+     */
+    private $contextManager;
 
     protected function setUp(): void
     {
@@ -55,6 +65,8 @@ class AttributesProviderTest extends TestCase
         $this->attributesProvider = $this->objectManager->get(AttributesProvider::class);
         $this->specificationBuilder = $this->objectManager->get(SpecificationBuilderInterface::class);
         $this->getProducts = $this->objectManager->get(GetProducts::class);
+        $this->itemsGenerator = $this->objectManager->get(ItemsGenerator::class);
+        $this->contextManager = $this->objectManager->get(ContextManagerInterface::class);
         parent::setUp();
     }
 
@@ -375,5 +387,51 @@ class AttributesProviderTest extends TestCase
         $this->attributesProvider->getData($products, $specification);
         $this->attributesProvider->reset();
         $this->assertTrue(true);
+    }
+
+    /**
+     * Variant (parent-context) rows must keep the child's own SKU.
+     *
+     * @magentoAppIsolation enabled
+     * @magentoDbIsolation disabled
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable/configurable_products_visibility_any_child_visibility_any.php
+     */
+    public function testVariantRowsKeepChildSku(): void
+    {
+        $parentSku = 'athos_config_test_configurable_catalog_visibility';
+        $childSkuPrefix = 'athos_config_test_simple_';
+
+        $specification = $this->specificationBuilder->build([]);
+        $this->contextManager->setContextFromSpecification($specification);
+
+        $items = $this->getProducts->getCollectionItems($specification);
+        $data = $this->itemsGenerator->generate($items, $specification);
+
+        $variantRows = array_values(array_filter($data, static function (array $row): bool {
+            return !empty($row['__parent_id']);
+        }));
+
+        $this->assertNotEmpty($variantRows, 'Expected at least one variant (parent-context) row.');
+
+        foreach ($variantRows as $row) {
+            $sku = (string)($row['sku'] ?? '');
+            $this->assertStringStartsWith(
+                $childSkuPrefix,
+                $sku,
+                sprintf(
+                    'Variant row SKU should be child SKU (prefix "%s"), got "%s".',
+                    $childSkuPrefix,
+                    $sku
+                )
+            );
+            $this->assertNotSame(
+                $parentSku,
+                $sku,
+                'Variant row SKU must not match parent SKU.'
+            );
+        }
+
+        $this->contextManager->resetContext();
+        $this->itemsGenerator->resetDataProviders($specification);
     }
 }
