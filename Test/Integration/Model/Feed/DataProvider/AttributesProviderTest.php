@@ -63,6 +63,7 @@ class AttributesProviderTest extends TestCase
     {
         $this->objectManager = Bootstrap::getObjectManager();
         $this->attributesProvider = $this->objectManager->get(AttributesProvider::class);
+        $this->attributesProvider->reset();
         $this->specificationBuilder = $this->objectManager->get(SpecificationBuilderInterface::class);
         $this->getProducts = $this->objectManager->get(GetProducts::class);
         $this->itemsGenerator = $this->objectManager->get(ItemsGenerator::class);
@@ -407,8 +408,9 @@ class AttributesProviderTest extends TestCase
         $items = $this->getProducts->getCollectionItems($specification);
         $data = $this->itemsGenerator->generate($items, $specification);
 
-        $variantRows = array_values(array_filter($data, static function (array $row): bool {
-            return !empty($row['__parent_id']);
+        $variantRows = array_values(array_filter($data, static function (array $row) use ($parentSku): bool {
+            return !empty($row['__parent_id'])
+                && (string)($row['__parent_sku'] ?? '') === $parentSku;
         }));
 
         $this->assertNotEmpty($variantRows, 'Expected at least one variant (parent-context) row.');
