@@ -195,10 +195,23 @@ class GroupedDataProvider implements DataProviderInterface
             );
 
             if ($isChildVisible) {
-                $finalProducts[] = $this->buildStandaloneRow($product);
+                $standalone = $this->buildStandaloneRow($product);
+
+                if (!in_array(Constant::PARENT_ID, $ignoredFields, true)) {
+                    $parentIdentifierValue = $this->parentIdSourceFieldEvaluator->execute($productModel, $parentIdIdentifier);
+                    if ($parentIdentifierValue !== null) {
+                        $standalone[Constant::PARENT_ID] = $parentIdentifierValue;
+                    }
+                }
+
+                if (!in_array(Constant::PARENT_SKU, $ignoredFields, true)) {
+                    $standalone[Constant::PARENT_SKU] = $productModel->getSku();
+                }
+
                 $this->logger->debug(
                     sprintf('[GroupedDataProvider] Standalone row (%s) added for child product.', $childLinkId)
                 );
+                $finalProducts[] = $standalone;
             }
 
             if (!$parentLinkIds) {
@@ -415,10 +428,9 @@ class GroupedDataProvider implements DataProviderInterface
         $standalone[Constant::IS_STANDALONE_PRODUCT_KEY] = true;
         $standalone[Constant::IS_BELONG_TO_PARENT_KEY] = false;
 
+
         unset(
-            $standalone[Constant::PARENT_ID],
             $standalone[Constant::PARENT_TITLE],
-            $standalone[Constant::PARENT_SKU],
             $standalone[Constant::PARENT_IMAGE],
             $standalone[Constant::PARENT_STATUS],
             $standalone[Constant::PARENT_TYPE],

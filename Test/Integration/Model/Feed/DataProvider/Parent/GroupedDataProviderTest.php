@@ -871,4 +871,180 @@ class GroupedDataProviderTest extends TestCase
         $this->groupedDataProvider->reset();
         $this->assertTrue(true);
     }
+
+    /**
+     * Test that __parent_id and __parent_sku are correctly set for standalone products in grouped context.
+     *
+     * For standalone products (visible individually, not belonging to parent):
+     * - __parent_id should be based on parentIdSourceFieldName configuration (defaults to entity_id)
+     * - __parent_sku should equal the product's sku
+     *
+     * @magentoAppIsolation enabled
+     * @magentoDbIsolation disabled
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/01_simple_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/grouped/grouped_products.php
+     *
+     * @throws \Exception
+     */
+    public function testStandaloneProductsParentIdAndSku(): void
+    {
+        $specification = $this->specificationBuilder->build([]);
+        $this->contextManager->setContextFromSpecification($specification);
+
+        $items = $this->getProducts->getCollectionItems($specification);
+        $data = $this->itemsGenerator->generate($items, $specification);
+
+        $this->assertNotEmpty($data, 'Data should not be empty');
+
+        foreach ($data as $product) {
+            if (isset($product['___standalone_product']) && $product['___standalone_product'] === true) {
+                // This is a standalone simple product
+                $entityId = (string)($product['entity_id'] ?? '');
+                $sku = (string)($product['sku'] ?? '');
+                $parentId = (string)($product[Constant::PARENT_ID] ?? '');
+                $parentSku = (string)($product[Constant::PARENT_SKU] ?? '');
+
+                $this->assertNotEmpty($entityId, 'entity_id should not be empty for standalone product');
+                $this->assertNotEmpty($sku, 'sku should not be empty for standalone product');
+
+                // Parent ID should be populated (by default uses entity_id based on parentIdSourceFieldName)
+                $this->assertNotEmpty(
+                    $parentId,
+                    sprintf(
+                        'Standalone product %s: __parent_id should not be empty',
+                        $sku
+                    )
+                );
+
+                // __parent_sku should equal the product's sku
+                $this->assertEquals(
+                    $sku,
+                    $parentSku,
+                    sprintf(
+                        'Standalone product %s: __parent_sku should equal sku. Got %s, expected %s',
+                        $sku,
+                        $parentSku,
+                        $sku
+                    )
+                );
+            }
+        }
+
+        $this->contextManager->resetContext();
+        $this->groupedDataProvider->reset();
+    }
+
+    /**
+     * Test that __parent_id and __parent_sku are correctly set for child products in grouped context.
+     *
+     * For child products (belonging to grouped parent):
+     * - __parent_id should equal the parent's entity_id (NOT the child's entity_id)
+     * - __parent_sku should equal the parent's sku (NOT the child's sku)
+     *
+     * @magentoAppIsolation enabled
+     * @magentoDbIsolation disabled
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/01_simple_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/grouped/grouped_products.php
+     *
+     * @throws \Exception
+     */
+    public function testChildProductsParentIdAndSku(): void
+    {
+        $specification = $this->specificationBuilder->build([]);
+        $this->contextManager->setContextFromSpecification($specification);
+
+        $items = $this->getProducts->getCollectionItems($specification);
+        $data = $this->itemsGenerator->generate($items, $specification);
+
+        $this->assertNotEmpty($data, 'Data should not be empty');
+
+        foreach ($data as $product) {
+            if (isset($product[Constant::IS_BELONG_TO_PARENT_KEY]) && $product[Constant::IS_BELONG_TO_PARENT_KEY] === true) {
+                // This is a child product belonging to a grouped parent
+                $entityId = (string)($product['entity_id'] ?? '');
+                $sku = (string)($product['sku'] ?? '');
+                $childSku = (string)($product['child_sku'] ?? '');
+                $parentId = (string)($product[Constant::PARENT_ID] ?? '');
+                $parentSku = (string)($product[Constant::PARENT_SKU] ?? '');
+                $parentTitle = (string)($product[Constant::PARENT_TITLE] ?? '');
+
+                $this->assertNotEmpty($entityId, 'entity_id should not be empty for child product');
+                $this->assertNotEmpty($sku, 'sku should not be empty for child product');
+                $this->assertNotEmpty($parentId, Constant::PARENT_ID . ' should not be empty for child product');
+                $this->assertNotEmpty($parentSku, Constant::PARENT_SKU . ' should not be empty for child product');
+                $this->assertNotEmpty($parentTitle, Constant::PARENT_TITLE . ' should not be empty for child product');
+
+                // Parent ID should be different from child entity_id
+                $this->assertNotEquals(
+                    $entityId,
+                    $parentId,
+                    sprintf(
+                        'Child product %s: %s should be parent\'s entity_id, not child\'s entity_id (%s)',
+                        $sku,
+                        Constant::PARENT_ID,
+                        $entityId
+                    )
+                );
+
+                // Parent SKU should be different from child sku
+                $this->assertNotEquals(
+                    $sku,
+                    $parentSku,
+                    sprintf(
+                        'Child product %s: %s should be parent\'s sku, not child\'s sku',
+                        $sku,
+                        Constant::PARENT_SKU
+                    )
+                );
+
+                // Verify that parent_id is numeric (valid entity_id)
+                $this->assertTrue(
+                    is_numeric($parentId) || ctype_digit((string)$parentId),
+                    sprintf(
+                        'Child product %s: %s should be numeric. Got %s',
+                        $sku,
+                        Constant::PARENT_ID,
+                        $parentId
+                    )
+                );
+
+                // Verify the resolved parent information is also set
+                $this->assertArrayHasKey(
+                    Constant::RESOLVED_PARENT_ID_KEY,
+                    $product,
+                    sprintf(
+                        'Child product %s should have resolved parent ID key',
+                        $sku
+                    )
+                );
+                $this->assertArrayHasKey(
+                    Constant::RESOLVED_PARENT_SKU_KEY,
+                    $product,
+                    sprintf(
+                        'Child product %s should have resolved parent SKU key',
+                        $sku
+                    )
+                );
+                $this->assertArrayHasKey(
+                    Constant::RESOLVED_PARENT_ROW_SOURCE_KEY,
+                    $product,
+                    sprintf(
+                        'Child product %s should have resolved parent row source key',
+                        $sku
+                    )
+                );
+                $this->assertEquals(
+                    'grouped',
+                    $product[Constant::RESOLVED_PARENT_ROW_SOURCE_KEY],
+                    sprintf(
+                        'Child product %s: resolved parent row source should be "grouped" for grouped products',
+                        $sku
+                    )
+                );
+            }
+        }
+
+        $this->contextManager->resetContext();
+        $this->groupedDataProvider->reset();
+    }
 }

@@ -448,4 +448,143 @@ class ConfigurableDataProviderTest extends TestCase
         $this->assertTrue(true);
     }
 
+    /**
+     * Test that __parent_id and __parent_sku are correctly set for standalone products.
+     *
+     * For standalone products (visible individually, not belonging to parent):
+     * - __parent_id should be based on parentIdSourceFieldName configuration (defaults to entity_id)
+     * - __parent_sku should equal the product's sku
+     *
+     * @magentoAppIsolation enabled
+     * @magentoDbIsolation disabled
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/01_simple_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable/configurable_products.php
+     *
+     * @throws \Exception
+     */
+    public function testStandaloneProductsParentIdAndSku(): void
+    {
+        $specification = $this->specificationBuilder->build([]);
+        $this->contextManager->setContextFromSpecification($specification);
+
+        $items = $this->getProducts->getCollectionItems($specification);
+        $data = $this->itemsGenerator->generate($items, $specification);
+
+        $this->assertNotEmpty($data, 'Data should not be empty');
+
+        foreach ($data as $product) {
+            if (isset($product['___standalone_product']) && $product['___standalone_product'] === true) {
+                // This is a standalone simple product
+                $entityId = (string)($product['entity_id'] ?? '');
+                $sku = (string)($product['sku'] ?? '');
+                $parentId = (string)($product['__parent_id'] ?? '');
+                $parentSku = (string)($product['__parent_sku'] ?? '');
+
+                $this->assertNotEmpty($entityId, 'entity_id should not be empty for standalone product');
+                $this->assertNotEmpty($sku, 'sku should not be empty for standalone product');
+
+                // Parent ID should be populated (by default uses entity_id)
+                $this->assertNotEmpty(
+                    $parentId,
+                    sprintf(
+                        'Standalone product %s: __parent_id should not be empty',
+                        $sku
+                    )
+                );
+
+                // __parent_sku should equal the product's sku
+                $this->assertEquals(
+                    $sku,
+                    $parentSku,
+                    sprintf(
+                        'Standalone product %s: __parent_sku should equal sku. Got %s, expected %s',
+                        $sku,
+                        $parentSku,
+                        $sku
+                    )
+                );
+            }
+        }
+
+        $this->contextManager->resetContext();
+        $this->configurableDataProvider->reset();
+    }
+
+    /**
+     * Test that __parent_id and __parent_sku are correctly set for child products.
+     *
+     * For child products (belonging to configurable parent):
+     * - __parent_id should equal the parent's entity_id (NOT the child's entity_id)
+     * - __parent_sku should equal the parent's sku (NOT the child's sku)
+     *
+     * @magentoAppIsolation enabled
+     * @magentoDbIsolation disabled
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/01_simple_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable/configurable_products.php
+     *
+     * @throws \Exception
+     */
+    public function testChildProductsParentIdAndSku(): void
+    {
+        $specification = $this->specificationBuilder->build([]);
+        $this->contextManager->setContextFromSpecification($specification);
+
+        $items = $this->getProducts->getCollectionItems($specification);
+        $data = $this->itemsGenerator->generate($items, $specification);
+
+        $this->assertNotEmpty($data, 'Data should not be empty');
+
+        foreach ($data as $product) {
+            if (isset($product['__is_belong_to_parent']) && $product['__is_belong_to_parent'] === true) {
+                // This is a child product belonging to a parent
+                $entityId = (string)($product['entity_id'] ?? '');
+                $sku = (string)($product['sku'] ?? '');
+                $childSku = (string)($product['child_sku'] ?? '');
+                $parentId = (string)($product['__parent_id'] ?? '');
+                $parentSku = (string)($product['__parent_sku'] ?? '');
+                $parentTitle = (string)($product['__parent_title'] ?? '');
+
+                $this->assertNotEmpty($entityId, 'entity_id should not be empty for child product');
+                $this->assertNotEmpty($sku, 'sku should not be empty for child product');
+                $this->assertNotEmpty($parentId, '__parent_id should not be empty for child product');
+                $this->assertNotEmpty($parentSku, '__parent_sku should not be empty for child product');
+                $this->assertNotEmpty($parentTitle, '__parent_title should not be empty for child product');
+
+                // Parent ID should be different from child entity_id
+                $this->assertNotEquals(
+                    $entityId,
+                    $parentId,
+                    sprintf(
+                        'Child product %s: __parent_id should be parent\'s entity_id, not child\'s entity_id (%s)',
+                        $sku,
+                        $entityId
+                    )
+                );
+
+                // Parent SKU should be different from child sku
+                $this->assertNotEquals(
+                    $sku,
+                    $parentSku,
+                    sprintf(
+                        'Child product %s: __parent_sku should be parent\'s sku, not child\'s sku',
+                        $sku
+                    )
+                );
+
+                // Verify that parent_id is numeric (valid entity_id)
+                $this->assertTrue(
+                    is_numeric($parentId) || ctype_digit((string)$parentId),
+                    sprintf(
+                        'Child product %s: __parent_id should be numeric. Got %s',
+                        $sku,
+                        $parentId
+                    )
+                );
+            }
+        }
+
+        $this->contextManager->resetContext();
+        $this->configurableDataProvider->reset();
+    }
+
 }
