@@ -33,12 +33,15 @@ class FileFactory
      * FileFactory constructor.
      *
      * @param FileInterface $jsonFile
+     * @param FileInterface $csvFile
      */
     public function __construct(
-        FileInterface $jsonFile
+        FileInterface $jsonFile,
+        FileInterface $csvFile
     ) {
         $this->fileClassPool = [
             'json' => $jsonFile,
+            'csv' => $csvFile,
         ];
     }
 
@@ -54,7 +57,7 @@ class FileFactory
             throw new Exception('fileClass is null');
         }
 
-        return $file;
+        return clone $file;
     }
 
     /**

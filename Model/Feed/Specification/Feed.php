@@ -331,6 +331,23 @@ class Feed extends AbstractExtensibleObject implements FeedSpecificationInterfac
     }
 
     /**
+     * @return string|null
+     */
+    public function getCatalogPreSignedUrl(): ?string
+    {
+        return $this->_get(self::CATALOG_PRE_SIGNED_URL);
+    }
+
+    /**
+     * @param string $url
+     * @return FeedSpecificationInterface
+     */
+    public function setCatalogPreSignedUrl(string $url): FeedSpecificationInterface
+    {
+        return $this->setData(self::CATALOG_PRE_SIGNED_URL, $url);
+    }
+
+    /**
      * @return bool
      */
     public function getIsMsiEnabled(): bool

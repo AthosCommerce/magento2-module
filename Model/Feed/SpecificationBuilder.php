@@ -64,6 +64,7 @@ class SpecificationBuilder implements SpecificationBuilderInterface
         'parentIdSourceFieldName' => FeedSpecificationInterface::PARENT_ID_SOURCE_FIELD,
         'variantAdditionalFields'  => FeedSpecificationInterface::VARIANT_ADDITIONAL_FIELDS,
         'variantAdditionalDataLimit' => FeedSpecificationInterface::VARIANT_ADDITIONAL_DATA_LIMIT,
+        'catalogPreSignedUrl' => FeedSpecificationInterface::CATALOG_PRE_SIGNED_URL,
     ];
     /**
      * @var array
