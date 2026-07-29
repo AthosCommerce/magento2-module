@@ -147,7 +147,7 @@ class PersistentCatalogProviderTest extends TestCase
             'imageUrl' => 'https://media.example/catalog/product/s/i/simple.jpg',
             'thumbnailImageUrl' => '',
         ];
-        $expectedRow['recordHash'] = md5(json_encode($expectedRow));
+        $expectedRow['recordHash'] = hash('sha256',json_encode($expectedRow));
 
         $this->assertSame($expectedRow, $result[0]['__catalog'][0]);
     }

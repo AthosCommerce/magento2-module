@@ -191,7 +191,7 @@ class PersistentCatalogProvider implements DataProviderInterface
      */
     private function generateRecordHash(array $row): string
     {
-        return md5(json_encode($row));
+        return hash('sha256',json_encode($row));
     }
 
     /**
