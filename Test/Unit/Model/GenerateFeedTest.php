@@ -37,40 +37,6 @@ use Magento\Catalog\Model\ResourceModel\Product\Collection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
-class CatalogStorageWithCountDouble implements CatalogStorageInterface
-{
-    public function initiate(FeedSpecificationInterface $feedSpecification): void
-    {
-    }
-
-    public function addData(array $data, int $id): void
-    {
-    }
-
-    public function commit(int $id, bool $deleteFile = true): void
-    {
-    }
-
-    public function rollback(): void
-    {
-    }
-
-    public function getAdditionalData(): array
-    {
-        return [];
-    }
-
-    public function isSupportedFormat(string $format): bool
-    {
-        return true;
-    }
-
-    public function getCatalogRowCount(): int
-    {
-        return 0;
-    }
-}
-
 class GenerateFeedTest extends TestCase
 {
     /** @var CollectionProcessor|MockObject */
@@ -112,8 +78,12 @@ class GenerateFeedTest extends TestCase
         $this->itemsGeneratorMock = $this->createMock(ItemsGenerator::class);
         $this->collectionConfigMock = $this->createMock(CollectionConfigInterface::class);
         $this->storageMock = $this->createMock(StorageInterface::class);
-        $this->catalogStorageMock = $this->getMockBuilder(CatalogStorageWithCountDouble::class)
-            ->getMock();
+
+        // REFACTORED: Mock the interface directly. Add getCatalogRowCount dynamically if it's missing from the interface.
+        $this->catalogStorageMock = $this->getMockBuilder(CatalogStorageInterface::class)
+            ->addMethods(['getCatalogRowCount'])
+            ->getMockForAbstractClass();
+
         $this->contextManagerMock = $this->createMock(ContextManagerInterface::class);
         $this->metricCollectorMock = $this->createMock(CollectorInterface::class);
         $this->appConfigMock = $this->createMock(AppConfigInterface::class);
@@ -329,7 +299,7 @@ class GenerateFeedTest extends TestCase
         $this->generateFeed->execute($feedSpecificationMock, 15);
     }
 
-    private function createCollectionMock(): Collection&MockObject
+    private function createCollectionMock()
     {
         $collectionMock = $this->getMockBuilder(Collection::class)
             ->disableOriginalConstructor()
