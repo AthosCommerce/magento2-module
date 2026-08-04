@@ -361,11 +361,20 @@
             <argument name="filesystem" xsi:type="object">Magento\Framework\Filesystem\Driver\File</argument>
         </arguments>
     </type>
+
+    <virtualType name="AthosCommerceFeedSafeLogHandler" type="Monolog\Handler\WhatFailureGroupHandler">
+        <arguments>
+            <argument name="handlers" xsi:type="array">
+                <item name="system" xsi:type="object">AthosCommerce\Feed\Logger\Handler</item>
+            </argument>
+        </arguments>
+    </virtualType>
+
     <type name="AthosCommerce\Feed\Logger\AthosCommerceLogger">
         <arguments>
             <argument name="name" xsi:type="string">athos</argument>
             <argument name="handlers" xsi:type="array">
-                <item name="system" xsi:type="object">AthosCommerce\Feed\Logger\Handler</item>
+                <item name="system" xsi:type="object">AthosCommerceFeedSafeLogHandler</item>
             </argument>
         </arguments>
     </type>
