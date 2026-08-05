@@ -8,13 +8,13 @@ use Magento\Framework\Logger\Handler\Base;
 use Monolog\Logger;
 use AthosCommerce\Feed\Model\Config as ConfigModel;
 
-class Handler extends Base
+class ErrorHandler extends Base
 {
     /**
      * File name
      * @var string
      */
-    protected $fileName = '/var/log/athoscommerce_feed.log';
+    protected $fileName = '/var/log/athoscommerce_feed_error.log';
 
     /**
      * @var ConfigModel
@@ -35,20 +35,10 @@ class Handler extends Base
     )
     {
         $this->configModel = $configModel;
-
-        $this->loggerType = $this->isDebug()
-            ? Logger::DEBUG
-            : Logger::INFO;
+        // Set to NOTICE (250) to allow NOTICE, WARNING, ERROR and above
+        $this->loggerType = Logger::NOTICE;
 
         parent::__construct($filesystem, $filePath, $fileName);
-    }
-
-    /**
-     * @return bool
-     */
-    private function isDebug(): bool
-    {
-        return (bool)$this->configModel->isDebugLogEnabled();
     }
 
     /**
@@ -63,7 +53,8 @@ class Handler extends Base
             $levelValue = $record->level->value ?? $record->level;
         }
 
-        if ($levelValue !== Logger::INFO) {
+        // Accept NOTICE (250) and above: NOTICE, WARNING, ERROR, CRITICAL, ALERT, EMERGENCY
+        if ($levelValue < Logger::NOTICE) {
             return false;
         }
 

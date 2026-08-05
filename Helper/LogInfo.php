@@ -18,7 +18,6 @@ use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 
 class LogInfo extends AbstractHelper
 {
-
     /**
      * @var DirectoryList
      */
@@ -28,25 +27,49 @@ class LogInfo extends AbstractHelper
      * @var File
      */
     protected $fileDriver;
+
     /**
      * @var AthosCommerceLogger
      */
-    protected  $logger;
+    protected $logger;
 
     public const LOG = [
         'athoscommerce' => 'athoscommerce_feed.log',
+        'athoscommerceError' => 'athoscommerce_feed_error.log',
+        'athoscommerceDebug' => 'athoscommerce_feed_debug.log',
         'exception' => 'exception.log',
-        'group_cron' => 'magento.cron.athoscommerce_task.log',
+        'groupCron' => 'magento.cron.athoscommerce_task.log',
+
+        // Delete Log Constants
         'deleteExtensionLogFileInfo' => 'File athoscommerce feed log will be removed from the path',
         'deleteExtensionLogFileRemove' => 'File athoscommerce feed log removed successfully',
         'deleteExtensionLogFileError' => 'File athoscommerce feed log not present at the location',
-        'getExtensionLogFileInfo' => 'File athoscommerce feed log will be retrieved from the path',
-        'getExtensionLogFileError' => 'File athoscommerce feed log  not present at the location:',
+
+        'deleteExtensionErrorLogFileInfo' => 'File athoscommerce feed error log will be removed from the path',
+        'deleteExtensionErrorLogFileRemove' => 'File athoscommerce feed error log removed successfully',
+        'deleteExtensionErrorLogFileError' => 'File athoscommerce feed error log not present at the location',
+
+        'deleteExtensionDebugLogFileInfo' => 'File athoscommerce feed debug log will be removed from the path',
+        'deleteExtensionDebugLogFileRemove' => 'File athoscommerce feed debug log removed successfully',
+        'deleteExtensionDebugLogFileError' => 'File athoscommerce feed debug log not present at the location',
+
         'deleteExceptionLogFileInfo' => 'File exception log will be removed from the path',
         'deleteExceptionLogFileRemove' => 'File exception log removed successfully from the path',
         'deleteExceptionLogFileError' => 'File exception log not present at the location',
-        'getExceptionLogFileInfo' => 'File exception log will be removed from the path',
+
+        // Get Log Constants
+        'getExtensionLogFileInfo' => 'File athoscommerce feed log will be retrieved from the path',
+        'getExtensionLogFileError' => 'File athoscommerce feed log not present at the location:',
+
+        'getExtensionErrorLogInfo' => 'File athoscommerce feed error log will be retrieved from the path',
+        'getExtensionErrorLogFileError' => 'File athoscommerce feed error log not present at the location:',
+
+        'getExtensionDebugLogInfo' => 'File athoscommerce feed debug log will be retrieved from the path',
+        'getExtensionDebugLogFileError' => 'File athoscommerce feed debug log not present at the location:',
+
+        'getExceptionLogFileInfo' => 'File exception log will be retrieved from the path',
         'getExceptionLogFileError' => 'File exception log not present at the location',
+
         'getCronLogFileInfo' => 'File group cron log file will be retrieved from the path',
         'getCronLogFileError' => 'File group cron log file not present at the location',
     ];
@@ -58,130 +81,238 @@ class LogInfo extends AbstractHelper
      * @param File $fileDriver
      * @param AthosCommerceLogger $logger
      */
-    public function __construct( DirectoryList $directoryList, File $fileDriver, AthosCommerceLogger $logger)
+    public function __construct(
+        DirectoryList       $directoryList,
+        File                $fileDriver,
+        AthosCommerceLogger $logger
+    )
     {
         $this->directoryList = $directoryList;
         $this->fileDriver = $fileDriver;
         $this->logger = $logger;
     }
 
-    public function deleteExtensionLogFile() : bool
+    /**
+     * Delete Main Extension Log File
+     *
+     * @return bool
+     */
+    public function deleteExtensionLogFile(): bool
     {
-        $logPath = $this->directoryList->getPath(DirectoryList::LOG);
-        $logFile = $logPath . '/'. self::LOG['athoscommerce'];
-
-        if ($this->fileDriver->isExists($logFile)) {
-            $this->logger->info(self::LOG['deleteExtensionLogFileInfo']. $logPath);
-            unlink($logFile);
-            $this->logger->info(self::LOG['deleteExtensionLogFileRemove'] . $logPath . '/'. self::LOG['athoscommerce']);
-        }
-        $this->logger->error(self::LOG['deleteExtensionLogFileError'] . $logFile);
-
-        return true;
+        return $this->deleteLogFile(
+            self::LOG['athoscommerce'],
+            self::LOG['deleteExtensionLogFileInfo'],
+            self::LOG['deleteExtensionLogFileRemove'],
+            self::LOG['deleteExtensionLogFileError']
+        );
     }
 
-    public function getExtensionLogFile(bool $compressOutput = false) : string
+    /**
+     * Get Main Extension Log File
+     *
+     * @param bool $compressOutput
+     * @return string
+     */
+    public function getExtensionLogFile(bool $compressOutput = false): string
     {
-        $result = '';
-
-        $logPath = $this->directoryList->getPath(DirectoryList::LOG);
-        $logFile = $logPath . '/'. self::LOG['athoscommerce'];
-
-        if ($this->fileDriver->isExists($logFile)) {
-            $this->logger->info(self::LOG['getExtensionLogFileInfo']. $logPath);
-            $result = $this->fileDriver->fileGetContents($logFile);
-
-            if (strlen($result) > 0 and $compressOutput){
-                $result = rtrim(strtr(base64_encode(gzdeflate($result, 9)), '+/', '-_'), '=');
-            }
-        }
-        $this->logger->error(self::LOG['getExtensionLogFileError'] . $logPath);
-
-        return $result;
+        return $this->getLogFile(
+            self::LOG['athoscommerce'],
+            self::LOG['getExtensionLogFileInfo'],
+            self::LOG['getExtensionLogFileError'],
+            $compressOutput
+        );
     }
 
-    public function deleteExceptionLogFile() : bool
+    /**
+     * Delete Extension Error Log File
+     *
+     * @return bool
+     */
+    public function deleteExtensionErrorLogFile(): bool
     {
-        $logPath = $this->directoryList->getPath(DirectoryList::LOG);
-        $logFile = $logPath . '/'. self::LOG['exception'];
-
-        if ($this->fileDriver->isExists($logFile)) {
-            $this->logger->info(self::LOG['deleteExceptionLogFileInfo'] . $logPath);
-            unlink($logFile);
-            $this->logger->info(self::LOG['deleteExceptionLogFileRemove'] . $logPath);
-        }
-        $this->logger->error(self::LOG['deleteExceptionLogFileError'] . $logPath);
-
-        return true;
+        return $this->deleteLogFile(
+            self::LOG['athoscommerceError'],
+            self::LOG['deleteExtensionErrorLogFileInfo'],
+            self::LOG['deleteExtensionErrorLogFileRemove'],
+            self::LOG['deleteExtensionErrorLogFileError']
+        );
     }
 
-    public function getExceptionLogFile(bool $compressOutput = false) : string
+    /**
+     * Get Extension Error Log File
+     *
+     * @param bool $compressOutput
+     * @return string
+     */
+    public function getExtensionErrorLogFile(bool $compressOutput = false): string
     {
-        $result = '';
+        return $this->getLogFile(
+            self::LOG['athoscommerceError'],
+            self::LOG['getExtensionErrorLogInfo'],
+            self::LOG['getExtensionErrorLogFileError'],
+            $compressOutput
+        );
+    }
 
-        $logPath = $this->directoryList->getPath(DirectoryList::LOG);
-        $logFile = $logPath . '/'. self::LOG['exception'];
+    /**
+     * Delete Extension Debug Log File
+     *
+     * @return bool
+     */
+    public function deleteExtensionDebugLogFile(): bool
+    {
+        return $this->deleteLogFile(
+            self::LOG['athoscommerceDebug'],
+            self::LOG['deleteExtensionDebugLogFileInfo'],
+            self::LOG['deleteExtensionDebugLogFileRemove'],
+            self::LOG['deleteExtensionDebugLogFileError']
+        );
+    }
 
-        if ($this->fileDriver->isExists($logFile)) {
-            $this->logger->info(self::LOG['getExceptionLogFileInfo'] . $logPath);
-            $result = $this->fileDriver->fileGetContents($logFile);
+    /**
+     * Get Extension Debug Log File
+     *
+     * @param bool $compressOutput
+     * @return string
+     */
+    public function getExtensionDebugLogFile(bool $compressOutput = false): string
+    {
+        return $this->getLogFile(
+            self::LOG['athoscommerceDebug'],
+            self::LOG['getExtensionDebugLogInfo'],
+            self::LOG['getExtensionDebugLogFileError'],
+            $compressOutput
+        );
+    }
 
-            if (strlen($result) > 0 and $compressOutput){
-                $result = rtrim(strtr(base64_encode(gzdeflate($result, 9)), '+/', '-_'), '=');
-            }
-        }
-        $this->logger->error(self::LOG['getExceptionLogFileError'] . $logPath);
+    /**
+     * Delete Exception Log File
+     *
+     * @return bool
+     */
+    public function deleteExceptionLogFile(): bool
+    {
+        return $this->deleteLogFile(
+            self::LOG['exception'],
+            self::LOG['deleteExceptionLogFileInfo'],
+            self::LOG['deleteExceptionLogFileRemove'],
+            self::LOG['deleteExceptionLogFileError']
+        );
+    }
 
-        return $result;
+    /**
+     * Get Exception Log File
+     *
+     * @param bool $compressOutput
+     * @return string
+     */
+    public function getExceptionLogFile(bool $compressOutput = false): string
+    {
+        return $this->getLogFile(
+            self::LOG['exception'],
+            self::LOG['getExceptionLogFileInfo'],
+            self::LOG['getExceptionLogFileError'],
+            $compressOutput
+        );
     }
 
     /**
      * @param bool $compressOutput
-     *
      * @return string
-     * @throws FileSystemException
      */
     public function getCronLogFile(bool $compressOutput = false): string
     {
-        $result = '';
-
-        $logPath = $this->directoryList->getPath(DirectoryList::LOG);
-        $logFile = $logPath . '/' . self::LOG['group_cron'];
-
-        try {
-            if (!$this->fileDriver->isExists($logFile)) {
-                $this->logger->info(
-                    'File is not exists.',
-                    [
-                        'logFile' => $logFile,
-                    ]
-                );
-
-                return $result;
-            }
-            $this->logger->info(self::LOG['getCronLogFileInfo'] . $logPath);
-            $result = $this->fileDriver->fileGetContents($logFile);
-
-            if ($result && strlen($result) > 0 && $compressOutput) {
-                $result = $this->compressString($result);
-            }
-        } catch (FileSystemException $e) {
-            $this->logger->error(self::LOG['getCronLogFileError'] . $logPath);
-        }
-
-        return $result;
+        return $this->getLogFile(
+            self::LOG['groupCron'],
+            self::LOG['getCronLogFileInfo'],
+            self::LOG['getCronLogFileError'],
+            $compressOutput
+        );
     }
 
     /**
-     * @param string $content
+     * Generic helper method to delete log files safely.
      *
+     * @param string $fileName
+     * @param string $infoMsg
+     * @param string $successMsg
+     * @param string $errorMsg
+     * @return bool
+     */
+    private function deleteLogFile(string $fileName, string $infoMsg, string $successMsg, string $errorMsg): bool
+    {
+        try {
+            $logPath = $this->directoryList->getPath(DirectoryList::LOG);
+            $logFile = $logPath . '/' . $fileName;
+
+            if ($this->fileDriver->isExists($logFile)) {
+                $this->logger->info($infoMsg . ' ' . $logPath);
+                $this->fileDriver->deleteFile($logFile);
+                $this->logger->info($successMsg . ' ' . $logFile);
+                return true;
+            }
+
+            $this->logger->error($errorMsg . ' ' . $logFile);
+        } catch (FileSystemException $e) {
+            $this->logger->error('Error deleting log file: ' . $e->getMessage());
+        }
+
+        return false;
+    }
+
+    /**
+     * Generic helper method to retrieve log file content.
+     *
+     * @param string $fileName
+     * @param string $infoMsg
+     * @param string $errorMsg
+     * @param bool $compressOutput
+     * @return string
+     */
+    private function getLogFile(
+        string $fileName,
+        string $infoMsg,
+        string $errorMsg,
+        bool   $compressOutput = false
+    ): string
+    {
+        try {
+            $logPath = $this->directoryList->getPath(DirectoryList::LOG);
+            $logFile = $logPath . '/' . $fileName;
+
+            if ($this->fileDriver->isExists($logFile)) {
+                $this->logger->info($infoMsg . ' ' . $logPath);
+                $result = $this->fileDriver->fileGetContents($logFile);
+
+                if ($result !== '' && $compressOutput) {
+                    $result = $this->compressString($result);
+                }
+
+                return $result;
+            }
+
+            $this->logger->error($errorMsg . ' ' . $logPath);
+        } catch (FileSystemException $e) {
+            $this->logger->error('Error fetching log file: ' . $e->getMessage());
+        }
+
+        return '';
+    }
+
+    /**
+     * Compresses string using gzdeflate and base64 encoding.
+     *
+     * @param string $content
      * @return string
      */
     private function compressString(string $content): string
     {
         $compressed = gzdeflate($content, 9);
-        $encoded = base64_encode($compressed);
+        if ($compressed === false) {
+            return '';
+        }
 
+        $encoded = base64_encode($compressed);
         return rtrim(strtr($encoded, '+/', '-_'), '=');
     }
 }
