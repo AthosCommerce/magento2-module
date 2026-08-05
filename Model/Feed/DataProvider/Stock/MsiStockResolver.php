@@ -18,7 +18,6 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Model\Feed\DataProvider\Stock;
 
-use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Module\Manager;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 
@@ -61,12 +60,13 @@ class MsiStockResolver implements StockResolverInterface
      * @param array $moduleList
      */
     public function __construct(
-        Manager $moduleManager,
-        MsiStockProvider $msiStockProvider,
+        Manager             $moduleManager,
+        MsiStockProvider    $msiStockProvider,
         LegacyStockProvider $legacyStockProvider,
         AthosCommerceLogger $logger,
-        array $moduleList = []
-    ) {
+        array               $moduleList = []
+    )
+    {
         $this->moduleManager = $moduleManager;
         $this->msiStockProvider = $msiStockProvider;
         $this->legacyStockProvider = $legacyStockProvider;
@@ -82,8 +82,8 @@ class MsiStockResolver implements StockResolverInterface
      */
     public function resolve(bool $isMsiEnabled): StockProviderInterface
     {
-        $isMsiModuleEnabled = !empty($isMsiEnabled) ? $this->isMsiEnabled() : false;
-        if (!empty($isMsiEnabled) && $isMsiModuleEnabled) {
+        $isMsiModuleEnabled = $isMsiEnabled ? $this->isMsiEnabled() : null;
+        if ($isMsiEnabled && $isMsiModuleEnabled === true) {
             $this->logger->info(
                 'MSI Check',
                 [
@@ -95,19 +95,19 @@ class MsiStockResolver implements StockResolverInterface
             );
 
             return $this->msiStockProvider;
-        } else {
-            $this->logger->info(
-                'MSI Check',
-                [
-                    'method' => __METHOD__,
-                    'isMsiEnabledViaPayload' => $isMsiEnabled,
-                    'isMsiModuleEnabled' => $isMsiModuleEnabled,
-                    'message' => 'MSI is disabled via task or MSI modules are not installed. Using LegacyStockProvider for stock resolution.',
-                ]
-            );
-
-            return $this->legacyStockProvider;
         }
+
+        $this->logger->info(
+            'MSI Check',
+            [
+                'method' => __METHOD__,
+                'isMsiEnabledViaPayload' => $isMsiEnabled,
+                'isMsiModuleEnabled' => $isMsiModuleEnabled,
+                'message' => 'MSI is disabled via payload or MSI modules are not installed. Using LegacyStockProvider for stock resolution.',
+            ]
+        );
+
+        return $this->legacyStockProvider;
     }
 
     /**
