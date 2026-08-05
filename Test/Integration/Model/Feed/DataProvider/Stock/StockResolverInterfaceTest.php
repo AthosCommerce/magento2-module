@@ -32,6 +32,12 @@ use AthosCommerce\Feed\Model\Feed\DataProvider\Stock\StockResolverInterface;
  */
 class StockResolverInterfaceTest extends TestCase
 {
+    private const MSI_REQUIRED_MODULES = [
+        'Magento_InventoryReservationsApi',
+        'Magento_InventorySalesApi',
+        'Magento_InventoryCatalogApi',
+    ];
+
     /**
      * @var \Magento\Framework\ObjectManagerInterface
      */
@@ -68,7 +74,7 @@ class StockResolverInterfaceTest extends TestCase
             $this->markTestSkipped('MSI is disabled');
         }
 
-        $this->assertInstanceOf(MsiStockProvider::class, $this->resolver->resolve());
+        $this->assertInstanceOf(MsiStockProvider::class, $this->resolver->resolve(true));
     }
 
     /**
@@ -79,11 +85,7 @@ class StockResolverInterfaceTest extends TestCase
      */
     public function testResolveLegacy() : void
     {
-        if ($this->isMsiEnabled()) {
-            $this->markTestSkipped('MSI is enabled');
-        }
-
-        $this->assertInstanceOf(LegacyStockProvider::class, $this->resolver->resolve());
+        $this->assertInstanceOf(LegacyStockProvider::class, $this->resolver->resolve(false));
     }
 
     /**
@@ -91,6 +93,12 @@ class StockResolverInterfaceTest extends TestCase
      */
     private function isMsiEnabled() : bool
     {
-        return $this->moduleManager->isEnabled('Magento_Inventory');
+        foreach (self::MSI_REQUIRED_MODULES as $moduleName) {
+            if (!$this->moduleManager->isEnabled($moduleName)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

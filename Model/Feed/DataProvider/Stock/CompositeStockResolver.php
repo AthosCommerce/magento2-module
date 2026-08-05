@@ -24,30 +24,31 @@ use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 class CompositeStockResolver implements StockResolverInterface
 {
     /**
-     * @var array
-     */
-    private $resolvers;
-
-    /**
      * @var AthosCommerceLogger
      */
     private $logger;
 
     /**
-     * CompositeStockResolver constructor.
-     *
-     * @param array $resolvers
+     * @var array
+     */
+    private $resolvers;
+
+    /**
      * @param AthosCommerceLogger $logger
+     * @param array $resolvers
      */
     public function __construct(
         AthosCommerceLogger $logger,
-        array $resolvers = []
+        array               $resolvers = []
     ) {
-        $this->resolvers = $resolvers;
         $this->logger = $logger;
+        $this->resolvers = $resolvers;
     }
 
     /**
+     * Composite resolver
+     *
+     * @param bool $isMsiEnabled
      * @return StockProviderInterface
      * @throws NoSuchEntityException
      */

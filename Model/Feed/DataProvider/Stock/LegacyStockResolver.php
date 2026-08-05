@@ -38,6 +38,9 @@ class LegacyStockResolver implements StockResolverInterface
     }
 
     /**
+     * Resolved legacy stock
+     *
+     * @param bool $isMsiEnabled
      * @return StockProviderInterface
      */
     public function resolve(bool $isMsiEnabled): StockProviderInterface
