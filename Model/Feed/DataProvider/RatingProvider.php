@@ -18,16 +18,17 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Model\Feed\DataProvider;
 
+use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
-use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentRelationsContext;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\ParentVariantResolver;
+use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
+use Magento\Catalog\Model\Product;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Review\Model\ResourceModel\Review\Summary\Collection;
 use Magento\Review\Model\Review;
 use Magento\Review\Model\Review\Summary;
-use Magento\Store\Model\StoreManagerInterface;
-use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
-use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
 use Magento\Review\Model\ResourceModel\Review\Summary\CollectionFactory as SummaryCollectionFactory;
+use Magento\Store\Model\StoreManagerInterface;
 
 class RatingProvider implements DataProviderInterface
 {
@@ -35,80 +36,91 @@ class RatingProvider implements DataProviderInterface
      * @var SummaryCollectionFactory
      */
     private $collectionFactory;
+
     /**
      * @var StoreManagerInterface
      */
     private $storeManager;
+
     /**
-     * @var ParentRelationsContext
+     * @var ParentVariantResolver
      */
-    private $parentRelationsContext;
+    private $parentVariantResolver;
+
     /**
      * @var AthosCommerceLogger
      */
     private $logger;
 
     /**
-     * RatingProvider constructor.
+     * Runtime cache
      *
+     * @var array<int, Summary>
+     */
+    private $ratingsCache = [];
+
+    /**
      * @param SummaryCollectionFactory $collectionFactory
      * @param StoreManagerInterface $storeManager
-     * @param ParentRelationsContext $parentRelationsContext
+     * @param ParentVariantResolver $parentVariantResolver
      * @param AthosCommerceLogger $logger
      */
     public function __construct(
         SummaryCollectionFactory $collectionFactory,
-        StoreManagerInterface    $storeManager,
-        ParentRelationsContext   $parentRelationsContext,
-        AthosCommerceLogger      $logger
-    )
-    {
+        StoreManagerInterface $storeManager,
+        ParentVariantResolver $parentVariantResolver,
+        AthosCommerceLogger $logger
+    ) {
         $this->collectionFactory = $collectionFactory;
         $this->storeManager = $storeManager;
-        $this->parentRelationsContext = $parentRelationsContext;
+        $this->parentVariantResolver = $parentVariantResolver;
         $this->logger = $logger;
     }
 
     /**
      * @param array $products
      * @param FeedSpecificationInterface $feedSpecification
-     *
      * @return array
      * @throws NoSuchEntityException
      */
     public function getData(
-        array                      $products,
+        array $products,
         FeedSpecificationInterface $feedSpecification
-    ): array
-    {
-
+    ): array {
         $ignoredFields = $feedSpecification->getIgnoreFields();
-        if (in_array('rating', $ignoredFields, true)
+
+        if (
+            in_array('rating', $ignoredFields, true)
             && in_array('rating_count', $ignoredFields, true)
         ) {
             return $products;
         }
 
-        $productIds = array_map(function ($product) {
-            return (int)$product['entity_id'] ?? -1;
-        }, $products);
+        $productIds = [];
+        foreach ($products as $product) {
+            $productId = isset($product['entity_id']) ? (int)$product['entity_id'] : 0;
+            if ($productId > 0) {
+                $productIds[] = $productId;
+            }
+        }
 
         $productIds = array_values(array_unique($productIds));
+        $this->ratingsCache = $this->getRatings($productIds, $feedSpecification);
 
-        $ratings = $this->getRatings($productIds, $feedSpecification);
-
-        $resolvedRatings = $this->getRatingSummaryWithParents(
-            $productIds,
-            $ratings,
-            $feedSpecification
-        );
         foreach ($products as &$product) {
-            $productId = $product['entity_id'] ?? null;
-            if (!$productId || empty($resolvedRatings[$productId])) {
+            /** @var Product|null $productModel */
+            $productModel = isset($product['product_model']) ? $product['product_model'] : null;
+            $productId = isset($product['entity_id']) ? (int)$product['entity_id'] : 0;
+
+            if ($productId <= 0) {
                 continue;
             }
 
-            $summary = $resolvedRatings[$productId];
+            $summary = $this->resolveSummaryForRow($product, $productModel, $productId, $feedSpecification);
+
+            if (!$summary instanceof Summary) {
+                continue;
+            }
 
             if (!in_array('rating', $ignoredFields, true)) {
                 $product['rating'] = $this->convertRatingSum($summary);
@@ -118,13 +130,13 @@ class RatingProvider implements DataProviderInterface
                 $product['rating_count'] = (int)$summary->getReviewsCount();
             }
         }
+        unset($product);
 
         return $products;
     }
 
     /**
      * @param Summary $summary
-     *
      * @return float
      */
     private function convertRatingSum(Summary $summary): float
@@ -135,18 +147,21 @@ class RatingProvider implements DataProviderInterface
     /**
      * @param array $productIds
      * @param FeedSpecificationInterface $feedSpecification
-     *
      * @return array
      * @throws NoSuchEntityException
      */
     private function getRatings(
-        array                      $productIds,
+        array $productIds,
         FeedSpecificationInterface $feedSpecification
-    ): array
-    {
+    ): array {
+        if (empty($productIds)) {
+            return [];
+        }
+
         /** @var Collection $summaryCollection */
         $summaryCollection = $this->collectionFactory->create();
         $storeId = (int)$this->storeManager->getStore($feedSpecification->getStoreCode())->getId();
+
         $summaryCollection->addStoreFilter($storeId);
         $summaryCollection->getSelect()
             ->joinLeft(
@@ -156,78 +171,79 @@ class RatingProvider implements DataProviderInterface
             )
             ->where('entity_pk_value IN (?)', $productIds)
             ->where('entity_code = ?', Review::ENTITY_PRODUCT_CODE);
+
         $summaryItems = $summaryCollection->getItems();
         $result = [];
+
         foreach ($summaryItems as $item) {
-            $result[$item->getEntityPkValue()] = $item;
+            $result[(int)$item->getEntityPkValue()] = $item;
         }
 
         return $result;
     }
 
     /**
-     * @param array $productIds
-     * @param array $ratingsResult
+     * Resolve rating summary for the current row.
+     *
+     * Priority:
+     * 1. current product rating
+     * 2. correctly resolved parent product rating for the current row
+     *
+     * @param array $row
+     * @param Product|null $productModel
+     * @param int $productId
      * @param FeedSpecificationInterface $feedSpecification
-     * @return array
+     * @return Summary|null
      * @throws NoSuchEntityException
      */
-    private function getRatingSummaryWithParents(
-        array                      $productIds,
-        array                      $ratingsResult,
+    private function resolveSummaryForRow(
+        array $row,
+        ?Product $productModel,
+        int $productId,
         FeedSpecificationInterface $feedSpecification
-    ): array
-    {
-
-        $ratingSummary = $ratingsResult;
-        $missingIds = array_diff($productIds, array_keys($ratingsResult));
-
-        if (!$missingIds) {
-            return $ratingSummary;
+    ): ?Summary {
+        if (isset($this->ratingsCache[$productId]) && $this->ratingsCache[$productId] instanceof Summary) {
+            return $this->ratingsCache[$productId];
         }
 
-        $childToParentMap = [];
-        $parentIds = [];
-
-        foreach ($missingIds as $childId) {
-            $parent = $this->parentRelationsContext->getParentsByChildId($childId);
-            if (!$parent) {
-                continue;
-            }
-
-            $parentId = (int)$parent->getId();
-            $childToParentMap[$childId] = $parentId;
-            $parentIds[] = $parentId;
+        if (!$productModel instanceof Product) {
+            return null;
         }
 
-        if (!$parentIds) {
-            return $ratingSummary;
+        $parentProduct = $this->parentVariantResolver->resolveParentProductForRow($row, $productModel);
+        if (!$parentProduct instanceof Product) {
+            return null;
         }
 
-        $parentIds = array_values(array_unique($parentIds));
+        $parentId = (int)$parentProduct->getId();
 
-        $parentRatings = $this->getRatings($parentIds, $feedSpecification);
-
-        foreach ($childToParentMap as $childId => $parentId) {
-            if (!empty($parentRatings[$parentId])) {
-                $ratingSummary[$childId] = $parentRatings[$parentId];
+        if (!isset($this->ratingsCache[$parentId])) {
+            $parentRatings = $this->getRatings([$parentId], $feedSpecification);
+            if (isset($parentRatings[$parentId]) && $parentRatings[$parentId] instanceof Summary) {
+                $this->ratingsCache[$parentId] = $parentRatings[$parentId];
             }
         }
 
-        return $ratingSummary;
+        if (isset($this->ratingsCache[$parentId]) && $this->ratingsCache[$parentId] instanceof Summary) {
+            $this->logger->debug(
+                'RatingProvider: Resolved parent rating for child row',
+                [
+                    'childId' => $productId,
+                    'parentId' => $parentId,
+                ]
+            );
+
+            return $this->ratingsCache[$parentId];
+        }
+
+        return null;
     }
 
-    /**
-     *
-     */
     public function reset(): void
     {
-        // do nothing
+        $this->ratingsCache = [];
     }
 
-    /**
-     *
-     */
     public function resetAfterFetchItems(): void
     {
         // do nothing

@@ -79,6 +79,12 @@ class Json extends FileAbstract
 
         // Loop through each item and write each item on a new line
         foreach ($data as $item) {
+            if (!empty($item['__catalog']) && is_array($item['__catalog'])) {
+                $catalogData[] = $item['__catalog'];
+            }
+
+            // Remove catalog data from default feed
+            unset($item['__catalog']);
             // Serialize each object individually and add a newline after it
             $serializedItem = $this->jsonSerializer->serialize($item) . PHP_EOL;
             $file->write($serializedItem);

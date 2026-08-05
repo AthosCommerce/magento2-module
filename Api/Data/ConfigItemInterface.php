@@ -328,14 +328,37 @@ interface ConfigItemInterface
      * @return ConfigItemInterface
      */
     public function setIncludeAllVariants(?bool $value): ConfigItemInterface;
+
     /**
      * @param string|null $value
      * @return ConfigItemInterface
      */
-    public function setParentIdSourceFieldName(?string $value) : ConfigItemInterface;
+    public function setParentIdSourceFieldName(?string $value): ConfigItemInterface;
 
     /**
      * @return string|null
      */
-    public function getParentIdSourceFieldName() : ?string;
+    public function getParentIdSourceFieldName(): ?string;
+
+    /**
+     * @return string[]
+     */
+    public function getVariantAdditionalFields();
+
+    /**
+     * @param $fields
+     * @return ConfigItemInterface
+     */
+    public function setVariantAdditionalFields($fields): ConfigItemInterface;
+    
+    /**
+     * @return int|null
+     */
+    public function getVariantAdditionalDataLimit(): ?int;
+
+    /**
+     * @param int|null $limit
+     * @return ConfigItemInterface
+     */
+    public function setVariantAdditionalDataLimit(?int $limit): ConfigItemInterface;
 }

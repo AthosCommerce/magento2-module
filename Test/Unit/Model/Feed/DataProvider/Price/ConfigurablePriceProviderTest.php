@@ -14,8 +14,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+declare(strict_types=1);
+
 namespace AthosCommerce\Feed\Test\Unit\Model\Feed\DataProvider\Price;
 
+use AthosCommerce\Feed\Model\Feed\DataProvider\Configurable\DataProvider;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Price\ConfigurablePriceProvider;
+use AthosCommerce\Feed\Model\Feed\DataProvider\PricesProvider;
 use Magento\Catalog\Model\Product;
 use Magento\Catalog\Pricing\Price\FinalPrice;
 use Magento\Catalog\Pricing\Price\RegularPrice;
@@ -23,103 +28,116 @@ use Magento\ConfigurableProduct\Pricing\Price\ConfigurableOptionsProviderInterfa
 use Magento\Framework\Pricing\Amount\AmountInterface;
 use Magento\Framework\Pricing\Price\PriceInterface;
 use Magento\Framework\Pricing\PriceInfoInterface;
-use AthosCommerce\Feed\Model\Feed\DataProvider\Configurable\DataProvider;
-use AthosCommerce\Feed\Model\Feed\DataProvider\Price\ConfigurablePriceProvider;
-use AthosCommerce\Feed\Model\Feed\DataProvider\PricesProvider;
+use PHPUnit\Framework\TestCase;
 
-class ConfigurablePriceProviderTest extends \PHPUnit\Framework\TestCase
+class ConfigurablePriceProviderTest extends TestCase
 {
     private $dataProviderMock;
-
     private $configurableOptionsProviderMock;
-
     private $configurablePriceProvider;
 
-    public function setUp(): void
+    protected function setUp(): void
     {
         $this->dataProviderMock = $this->createMock(DataProvider::class);
-        $this->configurableOptionsProviderMock =
-            $this->createMock(ConfigurableOptionsProviderInterface::class);
+        $this->configurableOptionsProviderMock = $this->createMock(ConfigurableOptionsProviderInterface::class);
+
         $this->configurablePriceProvider = new ConfigurablePriceProvider(
             $this->dataProviderMock,
             $this->configurableOptionsProviderMock
         );
     }
 
-    public function testGetPrices()
+    public function testGetPrices(): void
     {
-        $amountInterfaceMock = $this->createMock(AmountInterface::class);
-        $priceInterfaceMock = $this->getMockForAbstractClass(PriceInterface::class);
+        $minimalPriceMock = $this->createMock(PriceInterface::class);
         $regularPriceMock = $this->createMock(RegularPrice::class);
         $finalPriceMock = $this->createMock(FinalPrice::class);
-        $priceInfoInterfaceMock = $this->getMockForAbstractClass(PriceInfoInterface::class);
+        $priceInfoMock = $this->createMock(PriceInfoInterface::class);
+
+        $amountMockChildOne = $this->createMock(AmountInterface::class);
+        $amountMockChildTwo = $this->createMock(AmountInterface::class);
+
         $childMock = $this->createMock(Product::class);
         $childMockSecond = $this->createMock(Product::class);
-        $childProducts = [
-            $childMock,
-            $childMockSecond
-        ];
+
         $productMock = $this->getMockBuilder(Product::class)
             ->disableOriginalConstructor()
+            ->addMethods(['hasMaxPrice'])
+            ->onlyMethods(['getPriceInfo', 'getId'])
             ->getMock();
-        $productMock->expects($this->any())
+
+        $productMock->expects($this->exactly(2))
             ->method('getPriceInfo')
-            ->willReturn($priceInfoInterfaceMock);
-        $priceInfoInterfaceMock->expects($this->at(0))
-            ->method('getPrice')
-            ->with(FinalPrice::PRICE_CODE)
-            ->willReturn($finalPriceMock);
-        $priceInfoInterfaceMock->expects($this->at(1))
-            ->method('getPrice')
-            ->with(RegularPrice::PRICE_CODE)
-            ->willReturn($regularPriceMock);
+            ->willReturn($priceInfoMock);
+
+        $priceInfoMock->method('getPrice')
+            ->willReturnMap([
+                [FinalPrice::PRICE_CODE, $finalPriceMock],
+                [RegularPrice::PRICE_CODE, $regularPriceMock],
+            ]);
+
         $finalPriceMock->expects($this->once())
             ->method('getMinimalPrice')
-            ->willReturn($priceInterfaceMock);
+            ->willReturn($minimalPriceMock);
+
+        $minimalPriceMock->expects($this->once())
+            ->method('getValue')
+            ->willReturn(1.0);
 
         $regularPriceMock->expects($this->once())
             ->method('getValue')
             ->willReturn(0.5);
-        $priceInterfaceMock->expects($this->any())
-            ->method('getValue')
-            ->willReturn(1.0);
 
         $productMock->expects($this->once())
-            ->method('__call')
-            ->with('hasMaxPrice')
-            ->willReturn(null);
+            ->method('hasMaxPrice')
+            ->willReturn(false);
 
         $productMock->expects($this->once())
             ->method('getId')
             ->willReturn(1);
+
         $this->dataProviderMock->expects($this->once())
             ->method('getById')
             ->with(1)
-            ->willReturn($childProducts);
-        $childMock->expects($this->any())
+            ->willReturn([$childMock, $childMockSecond]);
+
+        $childPriceInfoOne = $this->createMock(PriceInfoInterface::class);
+        $childFinalPriceOne = $this->createMock(FinalPrice::class);
+
+        $childMock->expects($this->once())
             ->method('getPriceInfo')
-            ->willReturn($priceInfoInterfaceMock);
-        $childMockSecond->expects($this->any())
-            ->method('getPriceInfo')
-            ->willReturn($priceInfoInterfaceMock);
-        $priceInfoInterfaceMock->expects($this->at(2))
+            ->willReturn($childPriceInfoOne);
+
+        $childPriceInfoOne->expects($this->once())
             ->method('getPrice')
             ->with(FinalPrice::PRICE_CODE)
-            ->willReturn($finalPriceMock);
-        $priceInfoInterfaceMock->expects($this->at(3))
-            ->method('getPrice')
-            ->with(FinalPrice::PRICE_CODE)
-            ->willReturn($finalPriceMock);
-        $finalPriceMock->expects($this->any())
+            ->willReturn($childFinalPriceOne);
+
+        $childFinalPriceOne->expects($this->once())
             ->method('getAmount')
-            ->willReturn($amountInterfaceMock);
-        $amountInterfaceMock->expects($this->at(0))
+            ->willReturn($amountMockChildOne);
+
+        $amountMockChildOne->expects($this->once(2))
             ->method('getValue')
             ->willReturn(2.0);
-        $amountInterfaceMock->expects($this->at(1))
-            ->method('getValue')
-            ->willReturn(2.5);
-        $amountInterfaceMock->expects($this->at(2))
+
+        $childPriceInfoTwo = $this->createMock(PriceInfoInterface::class);
+        $childFinalPriceTwo = $this->createMock(FinalPrice::class);
+
+        $childMockSecond->expects($this->once())
+            ->method('getPriceInfo')
+            ->willReturn($childPriceInfoTwo);
+
+        $childPriceInfoTwo->expects($this->once())
+            ->method('getPrice')
+            ->with(FinalPrice::PRICE_CODE)
+            ->willReturn($childFinalPriceTwo);
+
+        $childFinalPriceTwo->expects($this->once())
+            ->method('getAmount')
+            ->willReturn($amountMockChildTwo);
+
+        $amountMockChildTwo->expects($this->exactly(2))
             ->method('getValue')
             ->willReturn(2.5);
 
@@ -127,7 +145,7 @@ class ConfigurablePriceProviderTest extends \PHPUnit\Framework\TestCase
             [
                 FinalPrice::PRICE_CODE => 1.0,
                 RegularPrice::PRICE_CODE => 0.5,
-                PricesProvider::MAX_PRICE_KEY => 2.5
+                PricesProvider::MAX_PRICE_KEY => 2.5,
             ],
             $this->configurablePriceProvider->getPrices($productMock, [])
         );

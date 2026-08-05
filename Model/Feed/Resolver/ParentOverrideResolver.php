@@ -33,15 +33,7 @@ class ParentOverrideResolver implements RowResolverInterface
                 $row['type_id'] = $row['parent_type_id'];
             }
 
-            if (!in_array('ignore_parent_sku_override', $ignoredFields, true) && !empty($row['__parent_sku'])) {
-                $row['sku'] = $row['__parent_sku'];
-            }
-
-            if (
-                isset($row['ignore_parent_product_type_override']) &&
-                !in_array('product_type', $ignoredFields, true) &&
-                !empty($row['parent_type_id'])
-            ) {
+            if (!in_array('ignore_parent_product_type_override', $ignoredFields, true) && !empty($row['parent_type_id'])) {
                 $row['product_type'] = $row['parent_type_id'];
             }
 

@@ -22,7 +22,6 @@ use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Model\Feed\CollectionProvider;
 use AthosCommerce\Feed\Model\Feed\Collection\StatusModifier;
 use AthosCommerce\Feed\Model\Feed\Collection\StoreModifier;
-use AthosCommerce\Feed\Model\Feed\Collection\VisibilityModifier;
 use AthosCommerce\Feed\Model\Feed\Collection\AttributesModifier;
 use AthosCommerce\Feed\Model\Feed\Collection\PricesModifier;
 use AthosCommerce\Feed\Model\Feed\Collection\StockModifier;
@@ -32,8 +31,6 @@ class CollectionProviderTest extends \PHPUnit\Framework\TestCase
     private $storeModifierMock;
 
     private $statusModifierMock;
-
-    private $visibilityModifierMock;
 
     private $stockModifierMock;
 
@@ -49,7 +46,6 @@ class CollectionProviderTest extends \PHPUnit\Framework\TestCase
     {
         $this->storeModifierMock = $this->createMock(StoreModifier::class);
         $this->statusModifierMock = $this->createMock(StatusModifier::class);
-        $this->visibilityModifierMock = $this->createMock(VisibilityModifier::class);
         $this->stockModifierMock = $this->createMock(StockModifier::class);
         $this->attributesModifierMock = $this->createMock(AttributesModifier::class);
         $this->pricesModifierMock = $this->createMock(PricesModifier::class);
@@ -62,10 +58,6 @@ class CollectionProviderTest extends \PHPUnit\Framework\TestCase
             'status' => [
                 'objectInstance' => $this->statusModifierMock,
                 'sortOrder' => 200
-            ],
-            'visibility' => [
-                'objectInstance' => $this->visibilityModifierMock,
-                'sortOrder' => 300
             ],
             'stock' => [
                 'objectInstance' => $this->stockModifierMock,
@@ -99,10 +91,6 @@ class CollectionProviderTest extends \PHPUnit\Framework\TestCase
             ->with($collectionMock, $feedSpecificationMock)
             ->willReturn($collectionMock);
         $this->statusModifierMock->expects($this->once())
-            ->method('modify')
-            ->with($collectionMock, $feedSpecificationMock)
-            ->willReturn($collectionMock);
-        $this->visibilityModifierMock->expects($this->once())
             ->method('modify')
             ->with($collectionMock, $feedSpecificationMock)
             ->willReturn($collectionMock);

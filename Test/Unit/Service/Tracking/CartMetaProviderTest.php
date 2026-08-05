@@ -243,7 +243,11 @@ class CartMetaProviderTest extends TestCase
         $this->assertSame(array(), $provider->get());
     }
 
-    private function createProvider(array $outputOnRoutes = null): CartMetaProvider
+    /**
+     * @param array|null $outputOnRoutes
+     * @return CartMetaProvider
+     */
+    private function createProvider(?array $outputOnRoutes = null): CartMetaProvider
     {
         if ($outputOnRoutes === null) {
             $this->requestMock->method('getModuleName')->willReturn('checkout');

@@ -331,6 +331,23 @@ class Feed extends AbstractExtensibleObject implements FeedSpecificationInterfac
     }
 
     /**
+     * @return string|null
+     */
+    public function getCatalogPreSignedUrl(): ?string
+    {
+        return $this->_get(self::CATALOG_PRE_SIGNED_URL);
+    }
+
+    /**
+     * @param string $url
+     * @return FeedSpecificationInterface
+     */
+    public function setCatalogPreSignedUrl(string $url): FeedSpecificationInterface
+    {
+        return $this->setData(self::CATALOG_PRE_SIGNED_URL, $url);
+    }
+
+    /**
      * @return bool
      */
     public function getIsMsiEnabled(): bool
@@ -370,7 +387,7 @@ class Feed extends AbstractExtensibleObject implements FeedSpecificationInterfac
      */
     public function getVariantAdditionalFields(): array
     {
-        return $this->_get(self::SETTING_NAME_VARIANT_ADDITIONAL_FIELDS) ?? [];
+        return $this->_get(self::VARIANT_ADDITIONAL_FIELDS) ?? [];
     }
 
     /**
@@ -379,7 +396,7 @@ class Feed extends AbstractExtensibleObject implements FeedSpecificationInterfac
      */
     public function setVariantAdditionalFields(array $fields): FeedSpecificationInterface
     {
-        return $this->setData(self::SETTING_NAME_VARIANT_ADDITIONAL_FIELDS, $fields);
+        return $this->setData(self::VARIANT_ADDITIONAL_FIELDS, $fields);
     }
 
     /**
@@ -449,7 +466,13 @@ class Feed extends AbstractExtensibleObject implements FeedSpecificationInterfac
      */
     public function getParentIdSourceFieldName(): ?string
     {
-        return trim((string)$this->_get(self::PARENT_ID_SOURCE_FIELD));
+        $value = $this->_get(self::PARENT_ID_SOURCE_FIELD);
+        if ($value === null) {
+            return null;
+        }
+
+        $value = trim((string)$value);
+        return $value === '' ? null : $value;
     }
 
     /**
@@ -458,7 +481,7 @@ class Feed extends AbstractExtensibleObject implements FeedSpecificationInterfac
      */
     public function setParentIdSourceFieldName(string $value): FeedSpecificationInterface
     {
-        return (string)$this->setData(self::PARENT_ID_SOURCE_FIELD, $value);
+        return $this->setData(self::PARENT_ID_SOURCE_FIELD, $value);
     }
 
     /**
@@ -466,7 +489,13 @@ class Feed extends AbstractExtensibleObject implements FeedSpecificationInterfac
      */
     public function getGroupBySourceFieldName(): ?string
     {
-        return trim((string)$this->_get(self::GROUP_ID_SOURCE_FIELD));
+        $value = $this->_get(self::GROUP_ID_SOURCE_FIELD);
+        if ($value === null) {
+            return null;
+        }
+
+        $value = trim((string)$value);
+        return $value === '' ? null : $value;
     }
 
     /**
@@ -475,6 +504,33 @@ class Feed extends AbstractExtensibleObject implements FeedSpecificationInterfac
      */
     public function setGroupBySourceFieldName(string $value): FeedSpecificationInterface
     {
-        return (string)$this->setData(self::GROUP_ID_SOURCE_FIELD, $value);
+        return $this->setData(self::GROUP_ID_SOURCE_FIELD, $value);
+    }
+
+    /**
+     * @return int|null
+     */
+    public function getVariantAdditionalDataLimit(): ?int
+    {
+        $value = $this->_get(self::VARIANT_ADDITIONAL_DATA_LIMIT);
+        if ($value === null || $value === '') {
+            return 200;
+        }
+
+        $value = (int)$value;
+        if ($value <= 0) {
+            return 200;
+        }
+
+        return $value;
+    }
+
+    /**
+     * @param int $limit
+     * @return FeedSpecificationInterface
+     */
+    public function setVariantAdditionalDataLimit(int $limit): FeedSpecificationInterface
+    {
+        return $this->setData(self::VARIANT_ADDITIONAL_DATA_LIMIT, $limit);
     }
 }

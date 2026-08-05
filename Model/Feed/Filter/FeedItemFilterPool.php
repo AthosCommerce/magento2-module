@@ -11,7 +11,7 @@ class FeedItemFilterPool
     /**
      * @var FeedItemFilterInterface[]
      */
-    private array $filters;
+    private $filters;
 
     /**
      * @param array $filters

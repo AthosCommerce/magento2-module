@@ -86,7 +86,8 @@ class StandardOptionsProvider implements DataProviderInterface
         WriterInterface          $configWriter,
         StoreProvider            $storeProvider,
         Json                     $json
-    ) {
+    )
+    {
         $this->provider = $provider;
         $this->logger = $logger;
         $this->parentProductContextManager = $parentProductContextManager;
@@ -106,7 +107,8 @@ class StandardOptionsProvider implements DataProviderInterface
     public function getData(
         array                      $products,
         FeedSpecificationInterface $feedSpecification
-    ): array {
+    ): array
+    {
         $this->logger->info('[StandardOptionsProvider] started');
         foreach ($products as &$product) {
             /** @var Product $productModel */

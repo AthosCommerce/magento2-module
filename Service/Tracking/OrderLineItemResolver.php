@@ -67,15 +67,20 @@ class OrderLineItemResolver implements OrderLineItemResolverInterface
     public function resolve(OrderItemInterface $orderItem): ?array
     {
         $uid = $this->itemIdResolver->resolve($orderItem);
+        $parentId = $this->parentIdResolver->resolve($orderItem);
 
         if ($uid === null) {
             return null;
+        }
+        if ($parentId !== null && $parentId !== '' && $parentId !== $uid) {
+            $uid = $parentId . '_' . $uid;
+            $parentId = (string)$parentId;
         }
 
         return [
             'uid' => $uid,
             'sku' => $this->skuResolver->getProductSku($orderItem),
-            'parentId' => $this->parentIdResolver->resolve($orderItem),
+            'parentId' => $parentId,
             'qty' => (int)$orderItem->getQtyOrdered(),
             'price' => (float)$this->priceResolver->getProductPrice($orderItem),
         ];

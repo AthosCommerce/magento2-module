@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Model\Feed\DataProvider;
 
+use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\ParentVariantResolver;
 use Magento\Catalog\Model\Product;
 use Magento\Catalog\Pricing\Price\FinalPrice;
 use Magento\Catalog\Pricing\Price\RegularPrice;
@@ -40,19 +41,26 @@ class PricesProvider implements DataProviderInterface
      * @var ProviderResolverInterface
      */
     private $priceProviderResolver;
+    /**
+     * @var ParentVariantResolver
+     */
+    private $parentVariantResolver;
 
     /**
      * PricesProvider constructor.
      *
      * @param Json $json
      * @param ProviderResolverInterface $priceProviderResolver
+     * @param ParentVariantResolver $parentVariantResolver
      */
     public function __construct(
         Json $json,
-        ProviderResolverInterface $priceProviderResolver
+        ProviderResolverInterface $priceProviderResolver,
+        ParentVariantResolver $parentVariantResolver
     ) {
         $this->json = $json;
         $this->priceProviderResolver = $priceProviderResolver;
+        $this->parentVariantResolver = $parentVariantResolver;
     }
 
     /**
@@ -72,7 +80,11 @@ class PricesProvider implements DataProviderInterface
             }
 
             $priceProvider = $this->priceProviderResolver->resolve($productModel);
-            $product = array_merge($product, $priceProvider->getPrices($productModel, $ignoredFields));
+            $resolvedParent = $this->parentVariantResolver->resolveParentProductForRow($product, $productModel);
+            $product = array_merge(
+                $product,
+                $priceProvider->getPrices($productModel, $ignoredFields, $resolvedParent)
+            );
 
             if ($feedSpecification->getIncludeTierPricing() && !in_array('tier_pricing', $ignoredFields)) {
                 $product['tier_pricing'] = $this->json->serialize($productModel->getTierPrice());

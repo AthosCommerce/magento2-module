@@ -29,4 +29,6 @@ interface MetadataInterface
     public const FORMAT_JSON = 'json';
     public const FORMAT_GZ = 'gz';
     public const FORMAT_JSON_GZ = 'json.gz';
+    public const FORMAT_TXT_GZ = 'txt.gz';
+    public const FORMAT_CSV = 'csv';
 }

@@ -44,7 +44,13 @@ $scriptString = "
                     return;
                 }
 
-                window.athos.tracker.setShopperId(shopperId);
+                if (
+                    window.athos &&
+                    window.athos.tracker &&
+                    typeof window.athos.tracker.setShopperId === 'function'
+                ) {
+                    window.athos.tracker.setShopperId(shopperId);
+                }
                 localStorage.setItem('athosMagentoShopperLastTime', now);
                 localStorage.setItem('athosMagentoShopperLastId', shopperId);
             }
@@ -85,7 +91,7 @@ $secureRenderer->renderTag(
     'script',
     [
         'type' => 'text/javascript',
-        'id' => 'athoscommerce_shopperId',
+        'id' => 'athoscommerce_shopper_id',
     ],
     $scriptString,
     false,

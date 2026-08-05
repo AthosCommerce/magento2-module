@@ -27,7 +27,7 @@ class ChildVisibilityExclusion implements FeedItemFilterInterface
      */
     public function __construct(
         ParentRelationsContext $parentRelationsContext,
-        AthosCommerceLogger    $logger,
+        AthosCommerceLogger    $logger
     )
     {
         $this->parentRelationsContext = $parentRelationsContext;
@@ -62,7 +62,7 @@ class ChildVisibilityExclusion implements FeedItemFilterInterface
 
             $this->logger->debug(
                 sprintf(
-                    'Excluding product ID %s because it is not visible individually, has type %s and is an orphan',
+                    'Excluding PID %s because it is not visible individually, has type %s and is an orphan',
                     $product->getId(),
                     $product->getTypeId()
                 )
@@ -109,9 +109,17 @@ class ChildVisibilityExclusion implements FeedItemFilterInterface
      */
     private function isProductOrphan(int $productId): bool
     {
-        if ($this->parentRelationsContext->getParentsByChildId($productId) === null) {
-            return true;
+        try {
+            return !$this->parentRelationsContext->hasParentRelation($productId);
+        } catch (\Exception $e) {
+            $this->logger->error(
+                sprintf(
+                    'Error checking parent relation for product ID %s: %s',
+                    $productId,
+                    $e->getMessage()
+                )
+            );
+            return false;
         }
-        return false;
     }
 }

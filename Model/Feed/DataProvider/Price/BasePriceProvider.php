@@ -47,7 +47,11 @@ class BasePriceProvider implements PriceProviderInterface
      * @param array $ignoredFields
      * @return array
      */
-    public function getPrices(ProductInterface $product, array $ignoredFields): array
+    public function getPrices(
+        ProductInterface $product,
+        array $ignoredFields,
+        ?ProductInterface $resolvedParent = null
+    ): array
     {
         $result = [];
         if (!in_array(PricesProvider::FINAL_PRICE_KEY, $ignoredFields)) {

@@ -87,6 +87,7 @@ interface FeedSpecificationInterface extends ExtensibleDataInterface
      *
      */
     public const PRE_SIGNED_URL = 'presigned_url';
+    public const CATALOG_PRE_SIGNED_URL = 'catalog_presigned_url';
     /**
      *
      */
@@ -95,10 +96,6 @@ interface FeedSpecificationInterface extends ExtensibleDataInterface
      *
      */
     public const SETTING_NAME_SWATCH_OPTION_FIELD_NAMES = 'swatch_option_Fields';
-    /**
-     *
-     */
-    public const SETTING_NAME_VARIANT_ADDITIONAL_FIELDS = 'variant_additional_fields';
 
     public const INDEXING_MODE_KEY = 'indexing_mode';
     public const BULK_MODE = 'bulk';
@@ -112,6 +109,9 @@ interface FeedSpecificationInterface extends ExtensibleDataInterface
 
     public const PARENT_ID_SOURCE_FIELD = 'parentIdSourceFieldName';
     public const GROUP_ID_SOURCE_FIELD = 'groupBySourceFieldName';
+
+    public const VARIANT_ADDITIONAL_FIELDS = 'variant_additional_fields';
+    public const VARIANT_ADDITIONAL_DATA_LIMIT = 'variantAdditionalDataLimit';
 
 
     /**
@@ -293,6 +293,17 @@ interface FeedSpecificationInterface extends ExtensibleDataInterface
     public function setPreSignedUrl(string $url) : self;
 
     /**
+     * @return string|null
+     */
+    public function getCatalogPreSignedUrl() : ?string;
+
+    /**
+     * @param string $url
+     * @return FeedSpecificationInterface
+     */
+    public function setCatalogPreSignedUrl(string $url) : self;
+
+    /**
      * @return \AthosCommerce\Feed\Api\Data\FeedSpecificationExtensionInterface|null
      */
     public function getExtensionAttributes(): ?\AthosCommerce\Feed\Api\Data\FeedSpecificationExtensionInterface;
@@ -396,4 +407,14 @@ interface FeedSpecificationInterface extends ExtensibleDataInterface
      * @return string|null
      */
     public function getGroupBySourceFieldName() : ?string;
+    /**
+     * @return int|null
+     */
+    public function getVariantAdditionalDataLimit(): ?int;
+
+    /**
+     * @param int $limit
+     * @return FeedSpecificationInterface
+     */
+    public function setVariantAdditionalDataLimit(int $limit): self;
 }

@@ -51,14 +51,28 @@ class ParentIdSourceFieldEvaluator
 
     /**
      * @param Product $product
-     * @param string $identifier
+     * @param string|null $identifier
      * @return string|null
      */
-    public function execute(Product $product, string $identifier): ?string
+    public function execute(Product $product, ?string $identifier): ?string
     {
-        // Handle default cases for common identifiers
-        if (in_array($identifier, ['row_id', 'entity_id', 'sku'])) {
-            return $product->getDataUsingMethod($identifier);
+        $identifier = trim((string)$identifier);
+
+        // If config is blank, fall back to entity_id first, then row_id
+        if ($identifier === '') {
+            $value = $product->getDataUsingMethod('entity_id');
+
+            if ($value === null || $value === '') {
+                $value = $product->getDataUsingMethod('row_id');
+            }
+
+            return ($value === null || $value === '') ? null : (string)$value;
+        }
+
+        // Handle direct product fields
+        if (in_array($identifier, ['row_id', 'entity_id', 'sku'], true)) {
+            $value = $product->getDataUsingMethod($identifier);
+            return ($value === null || $value === '') ? null : (string)$value;
         }
 
         if (!method_exists($product, 'getResource')) {
@@ -85,7 +99,7 @@ class ParentIdSourceFieldEvaluator
                 ),
                 [
                     'supported types' => $this->supportedInputTypes,
-                    'sku' => $product->getSku()
+                    'sku' => $product->getSku(),
                 ]
             );
             return null;
@@ -108,14 +122,25 @@ class ParentIdSourceFieldEvaluator
 
         if (is_array($value)) {
             $firstValue = reset($value);
-            return $firstValue !== false ? (string)$firstValue : null;
+
+            if ($firstValue === false || $firstValue === null || $firstValue === '') {
+                return null;
+            }
+
+            return trim((string)$firstValue);
         }
 
-        if (is_string($value) && strpos($value, ',') !== false) {
+        $value = trim((string)$value);
+
+        if ($value === '') {
+            return null;
+        }
+
+        if (strpos($value, ',') !== false) {
             $exploded = explode(',', $value);
             return trim($exploded[0]);
         }
 
-        return (string)$value;
+        return $value;
     }
 }

@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceBlock name="athoscommerce.customer.data.cart.tracker.listener" remove="true"/>
+
+        <referenceContainer name="before.body.end">
+            <block class="Magento\Framework\View\Element\Template"
+                   name="athoscommerce.hyva.tracking.cart.listener"
+                   template="AthosCommerce_Feed::hyva/tracking/cart-listener.phtml"
+                   after="athoscommerce.customer.data.cart.tracker.state">
+                <arguments>
+                    <argument name="global_script_view_model" xsi:type="object">AthosCommerce\Feed\ViewModel\GlobalScriptViewModel</argument>
+                    <argument name="escaper_view_model" xsi:type="object">AthosCommerce\Feed\ViewModel\Escaper</argument>
+                </arguments>
+            </block>
+        </referenceContainer>
+    </body>
+</page>

@@ -104,7 +104,7 @@ class RelationsProvider
             ParentConstant::CATALOG_PRODUCT_SUPER_LINK_ALIAS . '.product_id',
             ParentConstant::CATALOG_PRODUCT_SUPER_LINK_ALIAS . '.parent_id',
         ]);
-        $this->logger->debug(
+        $this->logger->info(
             '[ConfigRelations] QueryInfo',
             [
                 'query' => $select->assemble(),

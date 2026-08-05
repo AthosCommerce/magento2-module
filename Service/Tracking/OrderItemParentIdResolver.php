@@ -37,8 +37,8 @@ class OrderItemParentIdResolver implements OrderItemParentIdResolverInterface
         }
 
         $childOrderItem = $this->getChildOrderItem($orderItem);
-        if ($childOrderItem && $orderItem->getProductId() !== null) {
-            return (string)$orderItem->getProductId();
+        if ($childOrderItem) {
+            return (string)$childOrderItem->getProductId();
         }
 
         $groupedParentId = $this->getGroupedParentIdFromOrderItem($orderItem);
@@ -48,8 +48,7 @@ class OrderItemParentIdResolver implements OrderItemParentIdResolverInterface
         $productId = $orderItem->getProductId();
         return $productId !== null ? (string)$productId : null;
     }
-
-
+    
     private function getChildOrderItem(OrderItemInterface $orderItem)
     {
         $order = $orderItem->getOrder();

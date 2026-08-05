@@ -16,6 +16,7 @@
 
 namespace AthosCommerce\Feed\Test\Unit\Model;
 
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use Magento\Framework\Exception\CouldNotSaveException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Module\Manager;
@@ -64,6 +65,8 @@ class CreateTaskTest extends \PHPUnit\Framework\TestCase
      * @var Manager
      */
     private $moduleManagerPoolMock;
+    private $loggerMock;
+    private $eventManagerMock;
 
     public function setUp(): void
     {
@@ -73,13 +76,18 @@ class CreateTaskTest extends \PHPUnit\Framework\TestCase
         $this->typeListMock = $this->createMock(TypeList::class);
         $this->uniqueCheckerPoolMock = $this->createMock(UniqueCheckerPool::class);
         $this->moduleManagerPoolMock = $this->createMock(Manager::class);
+        $this->loggerMock = $this->createMock(AthosCommerceLogger::class);
+        $this->eventManagerMock = $this->createMock(\Magento\Framework\Event\ManagerInterface::class);
+
         $this->createTask = new CreateTask(
             $this->taskRepositoryMock,
             $this->taskFactoryMock,
             $this->validatorPoolMock,
             $this->typeListMock,
             $this->uniqueCheckerPoolMock,
-            $this->moduleManagerPoolMock
+            $this->moduleManagerPoolMock,
+            $this->loggerMock,
+            $this->eventManagerMock
         );
     }
 

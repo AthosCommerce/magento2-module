@@ -65,7 +65,8 @@ class CartMetaProvider
         CartItemIdentityResolver $trackingMetaResolver,
         RequestInterface         $request,
         ?array                   $outputOnRoutes = null
-    ) {
+    )
+    {
         $this->checkoutSession = $checkoutSession;
         $this->logger = $logger;
         $this->trackingMetaResolver = $trackingMetaResolver;
@@ -149,13 +150,19 @@ class CartMetaProvider
     {
         $uid = (string)($this->trackingMetaResolver->getUid($cartItem) ?: '');
         $parentId = $this->trackingMetaResolver->getParentId($cartItem);
-        $parentId = $parentId !== null && $parentId !== '' ? (string)$parentId : $uid;
+        $parentId = $parentId !== null && $parentId !== ''
+            ? (string)$parentId
+            : $uid;
+
+        if ($parentId !== $uid) {
+            $uid = $parentId . '_' . $uid;
+        }
         $sku = (string)$this->trackingMetaResolver->getSku($cartItem);
 
         return [
             'key' => $this->buildItemKey($parentId, $uid),
-            'uid' => $uid,
-            'parentId' => $parentId,
+            'uid' => (string)$uid,
+            'parentId' => (string)$parentId,
             'sku' => $sku,
             'qty' => (float)$cartItem->getDataUsingMethod('qty'),
             'price' => $this->getItemPrice($cartItem),

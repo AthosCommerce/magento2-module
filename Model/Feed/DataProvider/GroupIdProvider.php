@@ -31,6 +31,7 @@ class GroupIdProvider implements DataProviderInterface
      * @var ParentVariantResolver
      */
     private $parentVariantResolver;
+
     /**
      * @var AthosCommerceLogger
      */
@@ -70,45 +71,68 @@ class GroupIdProvider implements DataProviderInterface
             /** @var Product|null $productModel */
             $productModel = $product['product_model'] ?? null;
 
-            if (!$productModel || !in_array($productModel->getTypeId(), ['simple', 'virtual'], true)) {
+            if (!$productModel instanceof Product) {
                 continue;
             }
 
-            $parentProduct = $this->parentVariantResolver->getParentProduct($productModel);
+            if (!in_array($productModel->getTypeId(), ['simple', 'virtual'], true)) {
+                continue;
+            }
 
-            if (!$parentProduct) {
+            $isBelongToParent = (bool)($product[Constant::IS_BELONG_TO_PARENT_KEY] ?? false);
+            $parentProduct = $this->parentVariantResolver->resolveParentProductForRow($product, $productModel);
+
+            if (!$parentProduct instanceof Product) {
                 $product['__group_id'] = (string)$productModel->getId();
                 continue;
             }
 
-            if ($parentProduct->getTypeId() === 'grouped' && ($product[Constant::IS_BELONG_TO_PARENT_KEY] ?? false) === true) {
-                $product['__group_id'] = (string)$parentProduct->getId();
+            if ($parentProduct->getTypeId() === Constant::GROUPED_TYPE) {
+                $product['__group_id'] = $isBelongToParent
+                    ? (string)$parentProduct->getId()
+                    : (string)$productModel->getId();
+
+                $this->logger->debug(
+                    sprintf(
+                        '[GroupId]Assigned groupID:[%s] to PID:[%d] using parent PID:[%d] (isBelongToParent=%s).',
+                        $product['__group_id'],
+                        (int)$productModel->getId(),
+                        (int)$parentProduct->getId(),
+                        $isBelongToParent ? 'true' : 'false'
+                    )
+                );
+
                 continue;
             }
 
-            if ($parentProduct->getTypeId() === 'grouped' && ($product[Constant::IS_BELONG_TO_PARENT_KEY] ?? false) === false) {
-                $product['__group_id'] = (string)$productModel->getId();
-                continue;
+            if ($parentProduct->getTypeId() === Constant::CONFIGURABLE_TYPE) {
+
+                //To handle the child product having non NVI
+                if (!$isBelongToParent) {
+                    $product['__group_id'] = (string)$productModel->getId();
+                    continue;
+                }
+
+                $variantOptions = $this->parentVariantResolver->getVariantOptions($parentProduct, $productModel);
+
+                $product['__group_id'] = $this->buildGroupId(
+                    $parentProduct,
+                    $variantOptions,
+                    $groupBySourceFieldName
+                );
+
+                $this->logger->debug(
+                    sprintf(
+                        '[GroupId]Assigned groupID:[%s] to PID:[%d] based on ParentPID [%d] and groupByAttribute [%s].',
+                        $product['__group_id'],
+                        (int)$productModel->getId(),
+                        (int)$parentProduct->getId(),
+                        $groupBySourceFieldName !== null ? $groupBySourceFieldName : 'N/A'
+                    )
+                );
             }
-
-            $variantOptions = $this->parentVariantResolver->getVariantOptions($parentProduct, $productModel);
-
-            $product['__group_id'] = $this->buildGroupId(
-                $parentProduct,
-                $variantOptions,
-                $groupBySourceFieldName
-            );
-
-            $this->logger->debug(
-                sprintf(
-                    'Assigned group ID "%s" to product ID %d based on parent product ID %d and group by attribute "%s".',
-                    $product['__group_id'],
-                    $productModel->getId(),
-                    $parentProduct->getId(),
-                    $groupBySourceFieldName ?? 'N/A'
-                )
-            );
         }
+        unset($product);
 
         return $products;
     }
@@ -137,7 +161,7 @@ class GroupIdProvider implements DataProviderInterface
             return $parentId;
         }
 
-        return "{$parentId}::{$groupIdValue}";
+        return $parentId . '::' . $groupIdValue;
     }
 
     public function reset(): void

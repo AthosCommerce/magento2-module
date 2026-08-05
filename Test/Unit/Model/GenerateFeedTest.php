@@ -14,414 +14,315 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+declare(strict_types=1);
+
 namespace AthosCommerce\Feed\Test\Unit\Model;
 
-use Magento\Catalog\Model\Product;
 use AthosCommerce\Feed\Api\AppConfigInterface;
-use AthosCommerce\Feed\Model\Feed\Collection\ProcessCollectionInterface;
-use AthosCommerce\Feed\Model\Feed\Collection\ProcessorPool;
+use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
+use AthosCommerce\Feed\Api\Data\TaskInterface;
+use AthosCommerce\Feed\Api\TaskRepositoryInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
+use AthosCommerce\Feed\Model\CollectionProcessor;
+use AthosCommerce\Feed\Model\Feed\CatalogStorageInterface;
 use AthosCommerce\Feed\Model\Feed\CollectionConfigInterface;
-use AthosCommerce\Feed\Model\Feed\CollectionProviderInterface;
 use AthosCommerce\Feed\Model\Feed\ContextManagerInterface;
-use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
-use AthosCommerce\Feed\Model\Feed\DataProviderPool;
-use AthosCommerce\Feed\Model\Feed\Specification\Feed;
 use AthosCommerce\Feed\Model\Feed\StorageInterface;
-use AthosCommerce\Feed\Model\Feed\SystemFieldsList;
-use Magento\Catalog\Model\ResourceModel\Product\Collection;
+use AthosCommerce\Feed\Model\GenerateFeed;
+use AthosCommerce\Feed\Model\ItemsGenerator;
 use AthosCommerce\Feed\Model\Metric\CollectorInterface;
+use Exception;
+use Magento\Catalog\Model\Product;
+use Magento\Catalog\Model\ResourceModel\Product\Collection;
+use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\TestCase;
 
-class GenerateFeedTest extends \PHPUnit\Framework\TestCase
+class GenerateFeedTest extends TestCase
 {
-    /**
-     * @var CollectionProviderInterface
-     */
-    private $collectionProviderMock;
+    /** @var CollectionProcessor|MockObject */
+    private $collectionProcessorMock;
 
-    /**
-     * @var DataProviderPool
-     */
-    private $dataProviderPoolMock;
+    /** @var ItemsGenerator|MockObject */
+    private $itemsGeneratorMock;
 
-    /**
-     * @var CollectionConfigInterface
-     */
+    /** @var CollectionConfigInterface|MockObject */
     private $collectionConfigMock;
 
-    /**
-     * @var StorageInterface
-     */
+    /** @var StorageInterface|MockObject */
     private $storageMock;
 
-    /**
-     * @var SystemFieldsList
-     */
-    private $systemFieldsListMock;
+    /** @var CatalogStorageInterface|MockObject */
+    private $catalogStorageMock;
 
-    /**
-     *
-     * @var ContextManagerInterface
-     */
+    /** @var ContextManagerInterface|MockObject */
     private $contextManagerMock;
 
-    /**
-     * @var ProcessorPool
-     */
-    private $afterLoadProcessorPoolMock;
-
-    private $appConfigMock;
-
-    private $generateFeed;
+    /** @var CollectorInterface|MockObject */
     private $metricCollectorMock;
 
-    /**
-     * @return void
-     */
-    public function setUp(): void
+    /** @var AppConfigInterface|MockObject */
+    private $appConfigMock;
+
+    /** @var TaskRepositoryInterface|MockObject */
+    private $taskRepositoryMock;
+
+    /** @var AthosCommerceLogger|MockObject */
+    private $loggerMock;
+
+    /** @var GenerateFeed */
+    private $generateFeed;
+
+    protected function setUp(): void
     {
-        $this->collectionProviderMock = $this->createMock(CollectionProviderInterface::class);
-        $this->dataProviderPoolMock = $this->createMock(DataProviderPool::class);
+        $this->collectionProcessorMock = $this->createMock(CollectionProcessor::class);
+        $this->itemsGeneratorMock = $this->createMock(ItemsGenerator::class);
         $this->collectionConfigMock = $this->createMock(CollectionConfigInterface::class);
         $this->storageMock = $this->createMock(StorageInterface::class);
-        $this->systemFieldsListMock = $this->createMock(SystemFieldsList::class);
+
+        // REFACTORED: Mock the interface directly. Add getCatalogRowCount dynamically if it's missing from the interface.
+        $this->catalogStorageMock = $this->getMockBuilder(CatalogStorageInterface::class)
+            ->addMethods(['getCatalogRowCount'])
+            ->getMockForAbstractClass();
+
         $this->contextManagerMock = $this->createMock(ContextManagerInterface::class);
-        $this->afterLoadProcessorPoolMock = $this->createMock(ProcessorPool::class);
         $this->metricCollectorMock = $this->createMock(CollectorInterface::class);
         $this->appConfigMock = $this->createMock(AppConfigInterface::class);
-        $this->generateFeed = new \AthosCommerce\Feed\Model\GenerateFeed(
-            $this->collectionProviderMock,
-            $this->dataProviderPoolMock,
+        $this->taskRepositoryMock = $this->createMock(TaskRepositoryInterface::class);
+        $this->loggerMock = $this->createMock(AthosCommerceLogger::class);
+
+        $this->generateFeed = new GenerateFeed(
+            $this->collectionProcessorMock,
+            $this->itemsGeneratorMock,
             $this->collectionConfigMock,
             $this->storageMock,
-            $this->systemFieldsListMock,
+            $this->catalogStorageMock,
             $this->contextManagerMock,
-            $this->afterLoadProcessorPoolMock,
             $this->metricCollectorMock,
-            $this->appConfigMock
+            $this->appConfigMock,
+            $this->taskRepositoryMock,
+            $this->loggerMock
         );
+
+        $this->storageMock->method('getAdditionalData')->willReturn([]);
+        $this->metricCollectorMock->method('collect');
+        $this->metricCollectorMock->method('print');
+        $this->loggerMock->method('info');
+        $this->loggerMock->method('debug');
+        $this->loggerMock->method('error');
     }
 
-    public function testExecute()
+    public function testExecuteStoresProductAndCatalogCountsAndCommitsBothStoragesWhenCatalogUrlExists(): void
     {
-        $pageSize = 10;
-        $format = 'format';
-
-        $dataProviderMock = $this->createMock(DataProviderInterface::class);
-        $dataProviderMockSecond = $this->createMock(DataProviderInterface::class);
-        $processCollectionInterfaceMock = $this->createMock(ProcessCollectionInterface::class);
-        $processCollectionInterfaceMockSecond = $this->createMock(ProcessCollectionInterface::class);
-        $collectionMock = $this->getMockBuilder(Collection::class)->disableOriginalConstructor()->getMock();
-        $feedSpecificationMock = $this->getMockBuilder(Feed::class)->disableOriginalConstructor()->getMock();
+        $feedSpecificationMock = $this->createMock(FeedSpecificationInterface::class);
+        $collectionMock = $this->createCollectionMock();
         $productMock = $this->createMock(Product::class);
-        $productMockSecond = $this->createMock(Product::class);
-        $dataProviders = [
-            $dataProviderMock,
-            $dataProviderMockSecond,
-        ];
-        // Configure the feedSpecificationMock to return a valid URL
+        $taskMock = $this->createMock(TaskInterface::class);
+        $itemsData = [['entity_id' => 1], ['entity_id' => 2]];
+
+        $feedSpecificationMock->method('getFormat')->willReturn('json');
         $feedSpecificationMock->expects($this->once())
             ->method('getPreSignedUrl')
-            ->willReturn('https://example.com/path/to/file.json.gz'); // Return a valid URL
-
+            ->willReturn('https://example.com/feed.json.gz');
         $feedSpecificationMock->expects($this->once())
-            ->method('getFormat')
-            ->willReturn($format);
-        $this->storageMock->expects($this->once())
-            ->method('isSupportedFormat')
-            ->with($format)
-            ->willReturn(true);
-        $this->storageMock->expects($this->any())
-            ->method('getAdditionalData')
-            ->willReturn(
-                [
-                    'name' => 'test',
-                    'size' => 333
-                ]
-            );
-        $this->metricCollectorMock->expects($this->any())
-            ->method('collect')
-            ->withAnyParameters();
-        $this->metricCollectorMock->expects($this->any())
-            ->method('print')
-            ->withAnyParameters();
-        $dataProviderMock->expects($this->exactly(2))
-            ->method('reset');
-        $dataProviderMockSecond->expects($this->exactly(2))
-            ->method('reset');
-        $this->contextManagerMock->expects($this->once())
-            ->method('setContextFromSpecification')
-            ->with($feedSpecificationMock);
-        $this->storageMock->expects($this->once())
-            ->method('initiate')
-            ->with($feedSpecificationMock);
-        $this->collectionProviderMock->expects($this->once())
-            ->method('getCollection')
-            ->willReturn($collectionMock);
-        $this->collectionConfigMock->expects($this->once())
-            ->method('getPageSize')
-            ->willReturn($pageSize);
-        $collectionMock->expects($this->once())
-            ->method('setPageSize')
-            ->with($pageSize);
-        $collectionMock->expects($this->once())
-            ->method('getLastPageNumber')
-            ->willReturn(2);
-        $this->appConfigMock->expects($this->once())
-            ->method('getValue')
-            ->with('product_metric_max_page')
-            ->willReturn(10);
-        $collectionMock->expects($this->at(2))
-            ->method('setCurPage')
-            ->with(1);
-        $collectionMock->expects($this->any())
-            ->method('load')
+            ->method('setFormat')
+            ->with('json')
             ->willReturnSelf();
-        $this->afterLoadProcessorPoolMock->expects($this->any())
-            ->method('getAll')
-            ->willReturn([$processCollectionInterfaceMock, $processCollectionInterfaceMockSecond]);
-        $processCollectionInterfaceMock->expects($this->any())
-            ->method('processAfterLoad')
-            ->with($collectionMock, $feedSpecificationMock);
-        $processCollectionInterfaceMockSecond->expects($this->any())
-            ->method('processAfterLoad')
-            ->with($collectionMock, $feedSpecificationMock);
-        $this->contextManagerMock->expects($this->once())
-            ->method('resetContext');
-        $collectionMock->expects($this->at(4))
-            ->method('getItems')
-            ->willReturn([$productMock]);
-        $productMock->expects($this->once())
-            ->method('getEntityId')
-            ->willReturn(1);
-        $this->systemFieldsListMock->expects($this->any())
-            ->method('add')
-            ->with('product_model');
-        $feedSpecificationMock->expects($this->any())
-            ->method('getIgnoreFields')
-            ->willReturn(['test']);
-        $this->dataProviderPoolMock->expects($this->any())
-            ->method('get')
-            ->with(['test'])
-            ->willReturn($dataProviders);
-        $dataProviderMock->expects($this->at(1))
-            ->method('getData')
-            ->with(
-                [
-                    [
-                        'entity_id' => 1,
-                        'product_model' => $productMock
-                    ],
-                ],
-                $feedSpecificationMock
-            )->willReturn([
-                [
-                    'entity_id' => 1,
-                    'product_model' => $productMock,
-                    'data_provider_1' => 'value_1',
-                ],
-            ]);
-        $dataProviderMockSecond->expects($this->at(1))
-            ->method('getData')
-            ->with(
-                [
-                    [
-                        'entity_id' => 1,
-                        'product_model' => $productMock,
-                        'data_provider_1' => 'value_1',
-                    ],
-                ],
-                $feedSpecificationMock
-            )->willReturn(
-                [
-                    [
-                        'entity_id' => 1,
-                        'product_model' => $productMock,
-                        'data_provider_1' => 'value_1',
-                        'data_provider_2' => 'value_3',
-                    ],
-                ]
-            );
-        $productMock->expects($this->once())
-            ->method('__sleep')
-            ->willReturn([]);
-        $this->storageMock->expects($this->at(5))
-            ->method('addData')
-            ->with(
-                [
-                    [
-                        'entity_id' => 1,
-                        'product_model' => $productMockSecond,
-                        'data_provider_1' => 'value_1',
-                        'data_provider_2' => 'value_3',
-                    ]
-                ]
-            );
-        $dataProviderMock->expects($this->any())
-            ->method('resetAfterFetchItems');
-        $dataProviderMockSecond->expects($this->any())
-            ->method('resetAfterFetchItems');
-        $collectionMock->expects($this->exactly(2))
-            ->method('clear');
-        $processCollectionInterfaceMock->expects($this->any())
-            ->method('processAfterFetchItems')
-            ->with($collectionMock, $feedSpecificationMock);
-        $processCollectionInterfaceMockSecond->expects($this->any())
-            ->method('processAfterFetchItems')
-            ->with($collectionMock, $feedSpecificationMock);
-        $collectionMock->expects($this->at(6))
-            ->method('setCurPage')
-            ->with(2);
-        $collectionMock->expects($this->at(8))
-            ->method('getItems')
-            ->willReturn([$productMockSecond]);
-        $productMockSecond->expects($this->any())
-            ->method('getEntityId')
-            ->willReturn(2);
-        $dataProviderMock->expects($this->at(3))
-            ->method('getData')
-            ->with(
-                [
-                    [
-                        'entity_id' => 2,
-                        'product_model' => $productMockSecond
-                    ]
-                ],
-                $feedSpecificationMock
-            )->willReturn(
-                [
-                    [
-                        'entity_id' => 2,
-                        'product_model' => $productMockSecond,
-                        'data_provider_1' => 'value_2',
-                    ]
-                ]
-            );
-        $dataProviderMockSecond->expects($this->at(3))
-            ->method('getData')
-            ->with(
-                [
-                    [
-                        'entity_id' => 2,
-                        'product_model' => $productMockSecond,
-                        'data_provider_1' => 'value_2',
-                    ]
-                ],
-                $feedSpecificationMock
-            )->willReturn(
-                [
-                    [
-                        'entity_id' => 2,
-                        'product_model' => $productMockSecond,
-                        'data_provider_1' => 'value_2',
-                        'data_provider_2' => 'value_4',
-                    ]
-                ]
-            );
-        $productMockSecond->expects($this->once())
-            ->method('__sleep')
-            ->willReturn([]);
-        $this->storageMock->expects($this->at(7))
-            ->method('addData')
-            ->with(
-                [
-                    [
-                        'entity_id' => 2,
-                        'product_model' => $productMockSecond,
-                        'data_provider_1' => 'value_2',
-                        'data_provider_2' => 'value_4',
-                    ]
-                ]
-            );
-        $this->storageMock->expects($this->once())
-            ->method('commit');
-        $this->metricCollectorMock->expects($this->once())
-            ->method('reset')
-            ->with(CollectorInterface::CODE_PRODUCT_FEED);
-        $this->contextManagerMock->expects($this->once())
-            ->method('resetContext');
-        $this->generateFeed->execute($feedSpecificationMock, 1);
+        $feedSpecificationMock->method('getCatalogPreSignedUrl')
+            ->willReturn('https://example.com/catalog.csv');
+
+        $this->storageMock->expects($this->once())->method('isSupportedFormat')->with('json')->willReturn(true);
+        $this->storageMock->expects($this->once())->method('initiate')->with($feedSpecificationMock);
+        $this->catalogStorageMock->expects($this->once())->method('initiate')->with($feedSpecificationMock);
+
+        $this->collectionProcessorMock->expects($this->once())->method('getCollection')->with($feedSpecificationMock)->willReturn($collectionMock);
+        $this->collectionConfigMock->expects($this->once())->method('getPageSize')->willReturn(10);
+        $this->appConfigMock->expects($this->once())->method('isDebug')->willReturn(false);
+        $this->appConfigMock->expects($this->once())->method('getValue')->with('product_metric_max_page')->willReturn(10);
+
+        $collectionMock->expects($this->once())->method('setPageSize')->with(10)->willReturnSelf();
+        $collectionMock->expects($this->once())->method('getLastPageNumber')->willReturn(1);
+        $collectionMock->expects($this->once())->method('setCurPage')->with(1)->willReturnSelf();
+        $collectionMock->expects($this->once())->method('load')->willReturnSelf();
+        $collectionMock->expects($this->once())->method('getItems')->willReturn([$productMock]);
+        $collectionMock->expects($this->once())->method('clear')->willReturnSelf();
+
+        $this->collectionProcessorMock->expects($this->once())->method('processAfterLoad')->with($collectionMock, $feedSpecificationMock);
+        $this->collectionProcessorMock->expects($this->once())->method('processAfterFetchItems')->with($collectionMock, $feedSpecificationMock);
+
+        $this->itemsGeneratorMock->expects($this->once())->method('generate')->with([$productMock], $feedSpecificationMock)->willReturn($itemsData);
+        $this->itemsGeneratorMock->expects($this->once())->method('resetDataProvidersAfterFetchItems')->with($feedSpecificationMock);
+        $this->itemsGeneratorMock->expects($this->exactly(2))->method('resetDataProviders')->with($feedSpecificationMock);
+
+        $this->storageMock->expects($this->once())->method('addData')->with($itemsData, 11);
+        $this->catalogStorageMock->expects($this->once())->method('addData')->with($itemsData, 11);
+        $this->catalogStorageMock->expects($this->once())->method('getCatalogRowCount')->willReturn(7);
+
+        $taskMock->expects($this->once())->method('setProductCount')->with(2)->willReturnSelf();
+        $taskMock->expects($this->once())->method('setPcProductCount')->with(7)->willReturnSelf();
+        $this->taskRepositoryMock->expects($this->once())->method('get')->with(11)->willReturn($taskMock);
+        $this->taskRepositoryMock->expects($this->once())->method('save')->with($taskMock)->willReturn($taskMock);
+
+        $this->catalogStorageMock->expects($this->once())->method('commit')->with(11);
+        $this->storageMock->expects($this->once())->method('commit')->with(11);
+
+        $this->contextManagerMock->expects($this->once())->method('setContextFromSpecification')->with($feedSpecificationMock);
+        $this->contextManagerMock->expects($this->once())->method('resetContext');
+        $this->metricCollectorMock->expects($this->once())->method('reset')->with(CollectorInterface::CODE_PRODUCT_FEED);
+
+        $this->generateFeed->execute($feedSpecificationMock, 11);
     }
 
-    public function testExecuteExceptionCase()
+    public function testExecuteSkipsCatalogAddDataAndCommitWhenCatalogUrlIsMissing(): void
     {
-        $pageSize = 10;
-        $format = 'format';
+        $feedSpecificationMock = $this->createMock(FeedSpecificationInterface::class);
+        $collectionMock = $this->createCollectionMock();
+        $taskMock = $this->createMock(TaskInterface::class);
 
-        $collectionMock = $this->getMockBuilder(Collection::class)->disableOriginalConstructor()->getMock();
-        $feedSpecificationMock = $this->getMockBuilder(Feed::class)->disableOriginalConstructor()->getMock();
-        $feedSpecificationMock->expects($this->once())
-            ->method('getFormat')
-            ->willReturn($format);
-        // Configure getPreSignedUrl() to return a valid URL
-        $feedSpecificationMock->expects($this->once())
-            ->method('getPreSignedUrl')
-            ->willReturn('https://example.com/path/to/file.json.gz');
-        $this->storageMock->expects($this->once())
-            ->method('isSupportedFormat')
-            ->with($format)
-            ->willReturn(true);
-        $this->storageMock->expects($this->any())
-            ->method('getAdditionalData')
-            ->willReturn(
-                [
-                    'name' => 'test',
-                    'size' => 333
-                ]
-            );
-        $this->metricCollectorMock->expects($this->any())
-            ->method('collect')
-            ->withAnyParameters();
-        $this->metricCollectorMock->expects($this->any())
-            ->method('print')
-            ->withAnyParameters();
-        $this->contextManagerMock->expects($this->once())
-            ->method('setContextFromSpecification')
-            ->with($feedSpecificationMock);
-        $this->storageMock->expects($this->once())
-            ->method('initiate')
-            ->with($feedSpecificationMock);
-        $this->collectionProviderMock->expects($this->once())
-            ->method('getCollection')
-            ->willReturn($collectionMock);
-        $this->collectionConfigMock->expects($this->once())
-            ->method('getPageSize')
-            ->willReturn($pageSize);
-        $collectionMock->expects($this->once())
-            ->method('setPageSize')
-            ->with($pageSize);
-        $collectionMock->expects($this->once())
-            ->method('getLastPageNumber')
-            ->willReturn(2);
-        $this->appConfigMock->expects($this->once())
-            ->method('getValue')
-            ->with('product_metric_max_page')
-            ->willReturn(10);
-        $collectionMock->expects($this->at(2))
-            ->method('setCurPage')
-            ->willThrowException(new \Exception());
-        $this->storageMock->expects($this->once())
-            ->method('rollback');
-        $this->expectException(\Exception::class);
-        $this->generateFeed->execute($feedSpecificationMock,1);
+        $feedSpecificationMock->method('getFormat')->willReturn('json');
+        $feedSpecificationMock->expects($this->once())->method('getPreSignedUrl')->willReturn('https://example.com/feed.json');
+        $feedSpecificationMock->expects($this->once())->method('setFormat')->with('json')->willReturnSelf();
+        $feedSpecificationMock->method('getCatalogPreSignedUrl')->willReturn('');
+
+        $this->storageMock->expects($this->once())->method('isSupportedFormat')->with('json')->willReturn(true);
+        $this->storageMock->expects($this->once())->method('initiate')->with($feedSpecificationMock);
+        $this->catalogStorageMock->expects($this->once())->method('initiate')->with($feedSpecificationMock);
+
+        $this->collectionProcessorMock->expects($this->once())->method('getCollection')->willReturn($collectionMock);
+        $this->collectionConfigMock->expects($this->once())->method('getPageSize')->willReturn(10);
+        $this->appConfigMock->expects($this->once())->method('isDebug')->willReturn(false);
+        $this->appConfigMock->expects($this->once())->method('getValue')->with('product_metric_max_page')->willReturn(10);
+
+        $collectionMock->method('setPageSize')->willReturnSelf();
+        $collectionMock->expects($this->once())->method('getLastPageNumber')->willReturn(1);
+        $collectionMock->method('setCurPage')->willReturnSelf();
+        $collectionMock->method('load')->willReturnSelf();
+        $collectionMock->expects($this->once())->method('getItems')->willReturn([]);
+        $collectionMock->method('clear')->willReturnSelf();
+
+        $this->collectionProcessorMock->expects($this->once())->method('processAfterLoad');
+        $this->collectionProcessorMock->expects($this->once())->method('processAfterFetchItems');
+
+        $this->itemsGeneratorMock->expects($this->once())->method('generate')->willReturn([]);
+        $this->itemsGeneratorMock->expects($this->once())->method('resetDataProvidersAfterFetchItems')->with($feedSpecificationMock);
+        $this->itemsGeneratorMock->expects($this->exactly(2))->method('resetDataProviders')->with($feedSpecificationMock);
+
+        $this->storageMock->expects($this->once())->method('addData')->with([], 12);
+        $this->catalogStorageMock->expects($this->never())->method('addData');
+        $this->catalogStorageMock->expects($this->never())->method('getCatalogRowCount');
+        $this->catalogStorageMock->expects($this->never())->method('commit');
+
+        $taskMock->expects($this->once())->method('setProductCount')->with(0)->willReturnSelf();
+        $taskMock->expects($this->once())->method('setPcProductCount')->with(0)->willReturnSelf();
+        $this->taskRepositoryMock->expects($this->once())->method('get')->with(12)->willReturn($taskMock);
+        $this->taskRepositoryMock->expects($this->once())->method('save')->with($taskMock);
+
+        $this->storageMock->expects($this->once())->method('commit')->with(12);
+
+        $this->contextManagerMock->expects($this->once())->method('setContextFromSpecification')->with($feedSpecificationMock);
+        $this->contextManagerMock->expects($this->once())->method('resetContext');
+        $this->metricCollectorMock->expects($this->once())->method('reset')->with(CollectorInterface::CODE_PRODUCT_FEED);
+
+        $this->generateFeed->execute($feedSpecificationMock, 12);
     }
 
-    public function testExecuteExceptionCaseOnUnsupportedFormat()
+    public function testExecuteRollsBackAndRethrowsWhenGenerationFails(): void
     {
-        $format = 'format';
-        $feedSpecificationMock = $this->getMockBuilder(Feed::class)->disableOriginalConstructor()->getMock();
-        $feedSpecificationMock->expects($this->once())
-            ->method('getFormat')
-            ->willReturn($format);
-        // Configure getPreSignedUrl() to return a valid URL
-        $feedSpecificationMock->expects($this->once())
-            ->method('getPreSignedUrl')
-            ->willReturn('https://example.com/path/to/file.json.gz');
-        $this->storageMock->expects($this->once())
-            ->method('isSupportedFormat')
-            ->with($format)
-            ->willReturn(false);
-        $this->expectExceptionMessage('format is not supported format');
-        $this->expectException(\Exception::class);
-        $this->generateFeed->execute($feedSpecificationMock,1);
+        $feedSpecificationMock = $this->createMock(FeedSpecificationInterface::class);
+        $collectionMock = $this->createCollectionMock();
+        $productMock = $this->createMock(Product::class);
+
+        $feedSpecificationMock->method('getFormat')->willReturn('json');
+        $feedSpecificationMock->expects($this->once())->method('getPreSignedUrl')->willReturn('https://example.com/feed.json');
+        $feedSpecificationMock->expects($this->once())->method('setFormat')->with('json')->willReturnSelf();
+
+        $this->storageMock->expects($this->once())->method('isSupportedFormat')->willReturn(true);
+        $this->storageMock->expects($this->once())->method('initiate');
+        $this->catalogStorageMock->expects($this->once())->method('initiate');
+
+        $this->collectionProcessorMock->expects($this->once())->method('getCollection')->willReturn($collectionMock);
+        $this->collectionConfigMock->expects($this->once())->method('getPageSize')->willReturn(10);
+        $this->appConfigMock->expects($this->once())->method('isDebug')->willReturn(false);
+        $this->appConfigMock->expects($this->once())->method('getValue')->with('product_metric_max_page')->willReturn(10);
+
+        $collectionMock->method('setPageSize')->willReturnSelf();
+        $collectionMock->expects($this->once())->method('getLastPageNumber')->willReturn(1);
+        $collectionMock->method('setCurPage')->willReturnSelf();
+        $collectionMock->method('load')->willReturnSelf();
+        $collectionMock->expects($this->once())->method('getItems')->willReturn([$productMock]);
+
+        $this->collectionProcessorMock->expects($this->once())->method('processAfterLoad');
+        $this->itemsGeneratorMock->expects($this->once())
+            ->method('generate')
+            ->willThrowException(new Exception('generation failed'));
+
+        $this->storageMock->expects($this->once())->method('rollback');
+        $this->storageMock->expects($this->never())->method('commit');
+        $this->catalogStorageMock->expects($this->never())->method('commit');
+        $this->taskRepositoryMock->expects($this->never())->method('get');
+
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('generation failed');
+
+        $this->generateFeed->execute($feedSpecificationMock, 13);
+    }
+
+    public function testExecuteThrowsExceptionWhenPreSignedUrlHasNoPath(): void
+    {
+        $feedSpecificationMock = $this->createMock(FeedSpecificationInterface::class);
+
+        $feedSpecificationMock->method('getFormat')->willReturn('json');
+        $feedSpecificationMock->expects($this->once())->method('getPreSignedUrl')->willReturn('https://example.com');
+        $feedSpecificationMock->expects($this->never())->method('setFormat');
+
+        $this->storageMock->expects($this->never())->method('isSupportedFormat');
+
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('Not able to set the format');
+
+        $this->generateFeed->execute($feedSpecificationMock, 14);
+    }
+
+    public function testExecuteThrowsExceptionWhenFormatIsUnsupported(): void
+    {
+        $feedSpecificationMock = $this->createMock(FeedSpecificationInterface::class);
+
+        $feedSpecificationMock->method('getFormat')->willReturn('xml');
+        $feedSpecificationMock->expects($this->once())->method('getPreSignedUrl')->willReturn('https://example.com/feed.xml');
+        $feedSpecificationMock->expects($this->once())->method('setFormat')->with('xml')->willReturnSelf();
+
+        $this->storageMock->expects($this->once())->method('isSupportedFormat')->with('xml')->willReturn(false);
+        $this->storageMock->expects($this->never())->method('initiate');
+
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('xml is not supported format');
+
+        $this->generateFeed->execute($feedSpecificationMock, 15);
+    }
+
+    private function createCollectionMock()
+    {
+        $collectionMock = $this->getMockBuilder(Collection::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods([
+                'setPageSize',
+                'getLastPageNumber',
+                'setCurPage',
+                'load',
+                'getSelect',
+                'getItems',
+                'clear',
+            ])
+            ->getMock();
+
+        $collectionMock->method('getSelect')->willReturn(
+            new class {
+                public function __toString(): string
+                {
+                    return 'SELECT 1';
+                }
+            }
+        );
+
+        return $collectionMock;
     }
 }

@@ -62,6 +62,9 @@ interface TaskInterface extends ExtensibleDataInterface
      *
      */
     public const File_Size = 'file_size';
+    public const PC_PRODUCT_COUNT = 'pc_product_count';
+
+    public const PC_FILE_SIZE = 'pc_file_size';
 
 
     /**
@@ -186,4 +189,26 @@ interface TaskInterface extends ExtensibleDataInterface
      * @return TaskInterface
      */
     public function setFileSize(int $value): self;
+
+    /**
+     * @return int|null
+     */
+    public function getPcProductCount(): ?int;
+
+    /**
+     * @return int
+     */
+    public function getPcFileSize(): int;
+
+    /**
+     * @param int $value
+     * @return TaskInterface
+     */
+    public function setPcProductCount(int $value): self;
+
+    /**
+     * @param int $value
+     * @return TaskInterface
+     */
+    public function setPcFileSize(int $value): self;
 }

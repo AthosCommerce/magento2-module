@@ -118,6 +118,10 @@ class ItemsGenerator
         if (!empty($childIds)) {
             $this->logger->info("Found " . count($childIds) . " items in child items");
             $this->parentRelationsContext->buildContext($childIds, $feedSpecification);
+            $this->logger->debug(
+                "[ItemsGenerator] ChildItems",
+                ['childIdsChunk' => array_chunk($childIds, 100, true)]
+            );
         }
 
         $items = $this->feedItemFilterPool->filterEntities(
