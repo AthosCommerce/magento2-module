@@ -82,7 +82,7 @@ class MsiStockResolver implements StockResolverInterface
      */
     public function resolve(bool $isMsiEnabled): StockProviderInterface
     {
-        $isMsiModuleEnabled = $this->isMsiEnabled();
+        $isMsiModuleEnabled = !empty($isMsiEnabled) ? $this->isMsiEnabled() : false;
         if (!empty($isMsiEnabled) && $isMsiModuleEnabled) {
             $this->logger->info(
                 'MSI Check',

@@ -33,9 +33,9 @@ use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 
 class MsiStockProvider implements StockProviderInterface
 {
-    private const MSI_STOCK_RESOLVER_INTERFACE = Magento\InventorySalesApi\Api\StockResolverInterface::class;
-    private const MSI_STOCK_ITEM_DATA_INTERFACE = Magento\InventorySalesApi\Model\GetStockItemDataInterface::class;
-    private const MSI_RES_QTY_INTERFACE = Magento\InventoryReservationsApi\Model\GetReservationsQuantityInterface::class;
+    private const MSI_STOCK_RESOLVER_INTERFACE = \Magento\InventorySalesApi\Api\StockResolverInterface::class;
+    private const MSI_STOCK_ITEM_DATA_INTERFACE = \Magento\InventorySalesApi\Model\GetStockItemDataInterface::class;
+    private const MSI_RES_QTY_INTERFACE = \Magento\InventoryReservationsApi\Model\GetReservationsQuantityInterface::class;
     private const SALES_CHANNEL_WEBSITE_TYPE = 'website';
     private const STOCK_QUANTITY_KEY = 'quantity';
 
