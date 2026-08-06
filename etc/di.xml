@@ -382,6 +382,8 @@
 
     <type name="AthosCommerce\Feed\Logger\AthosCommerceLogger">
         <arguments>
+            <argument name="name" xsi:type="string">athos</argument>
+            <argument name="level" xsi:type="const">Monolog\Logger::DEBUG</argument>
             <argument name="handlers" xsi:type="array">
                 <item name="system" xsi:type="object">AthosCommerceFeedSafeLogHandler</item>
             </argument>
@@ -419,7 +421,7 @@
             </argument>
         </arguments>
     </type>
-    
+
     <type name="AthosCommerce\Feed\Model\Feed\DataProvider\Stock\CompositeStockResolver">
         <arguments>
             <argument name="logger" xsi:type="object">AthosCommerce\Feed\Logger\AthosCommerceLogger</argument>
@@ -546,4 +548,5 @@
         </arguments>
     </virtualType>
 </config>
+
 
