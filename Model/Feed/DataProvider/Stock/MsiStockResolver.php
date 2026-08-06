@@ -82,31 +82,26 @@ class MsiStockResolver implements StockResolverInterface
      */
     public function resolve(bool $isMsiEnabled): StockProviderInterface
     {
-        $isMsiModuleEnabled = $isMsiEnabled ? $this->isMsiEnabled() : null;
-        if ($isMsiEnabled && $isMsiModuleEnabled === true) {
+        $isInventoryModulesEnabled = $this->isInventoryModulesEnabled();
+        if ($isInventoryModulesEnabled) {
             $this->logger->info(
                 'MSI Check',
                 [
                     'method' => __METHOD__,
-                    'isMsiEnabledViaPayload' => $isMsiEnabled,
-                    'isMsiModuleEnabled' => $isMsiModuleEnabled,
-                    'message' => 'MSI is enabled via payload and MSI module is enabled. Using MsiStockProvider for stock resolution.',
+                    'isInventoryModulesEnabled' => $isInventoryModulesEnabled,
+                    'message' => 'MSI modules are installed and enabled. Using MsiStockProvider for stock resolution.'
                 ]
             );
-
             return $this->msiStockProvider;
         }
-
         $this->logger->info(
             'MSI Check',
             [
                 'method' => __METHOD__,
-                'isMsiEnabledViaPayload' => $isMsiEnabled,
-                'isMsiModuleEnabled' => $isMsiModuleEnabled,
-                'message' => 'MSI is disabled via payload or MSI modules are not installed. Using LegacyStockProvider for stock resolution.',
+                'isInventoryModulesEnabled' => $isInventoryModulesEnabled,
+                'message' => 'MSI modules are not installed. Using LegacyStockProvider for stock resolution.'
             ]
         );
-
         return $this->legacyStockProvider;
     }
 
@@ -115,7 +110,7 @@ class MsiStockResolver implements StockResolverInterface
      *
      * @return bool
      */
-    private function isMsiEnabled(): bool
+    private function isInventoryModulesEnabled(): bool
     {
         if ($this->isMsiEnabledCache !== null) {
             return $this->isMsiEnabledCache;
