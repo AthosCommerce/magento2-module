@@ -552,7 +552,7 @@ class Feed extends AbstractExtensibleObject implements FeedSpecificationInterfac
     }
 
     /**
-     * @return string
+     * @return bool
      */
     public function getEnableCriteriaFilter(): bool
     {

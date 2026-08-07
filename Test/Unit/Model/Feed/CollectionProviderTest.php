@@ -86,6 +86,9 @@ class CollectionProviderTest extends \PHPUnit\Framework\TestCase
             ->method('create')
             ->willReturn($collectionMock);
         $feedSpecificationMock = $this->getMockForAbstractClass(FeedSpecificationInterface::class);
+        $feedSpecificationMock->expects($this->once())
+            ->method('getIgnoreModifiers')
+            ->willReturn([]);
         $this->storeModifierMock->expects($this->once())
             ->method('modify')
             ->with($collectionMock, $feedSpecificationMock)

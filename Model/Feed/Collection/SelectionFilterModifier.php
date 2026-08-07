@@ -45,7 +45,9 @@ class SelectionFilterModifier implements ModifierInterface
     )
     {
         $this->logger = $logger;
-        $this->allowedOperators = $allowedOperators;
+        $this->allowedOperators = !empty($allowedOperators)
+            ? array_values(array_unique(array_map('strtolower', $allowedOperators)))
+            : FeedSpecificationInterface::CRITERIA_OPERATORS;
     }
 
     /**
@@ -69,7 +71,7 @@ class SelectionFilterModifier implements ModifierInterface
 
         if (!in_array($operator, $this->allowedOperators, true)) {
             $this->logger->critical(
-                'Unsupported eligibility operator:',
+                'Unsupported criteria operator:',
                 [
                     'operator' => $operator,
                     'allowed' => $this->allowedOperators,
@@ -79,7 +81,7 @@ class SelectionFilterModifier implements ModifierInterface
             );
             throw new InvalidArgumentException(
                 (string)__(
-                    'Unsupported eligibility operator: %1. Allowed operators are: %2',
+                    'Unsupported criteria operator: %1. Allowed operators are: %2',
                     $operator,
                     implode(',', $this->allowedOperators)
                 )
