@@ -109,6 +109,23 @@ class SelectionFilterModifier implements ModifierInterface
             $value = [$value];
         }
 
+        if (($operator === 'in' || $operator === 'nin') && $value === []) {
+            $this->logger->critical(
+                'Criteria value list is required for operator:',
+                [
+                    'operator' => $operator,
+                    'value' => $value,
+                    'field' => $field
+                ]
+            );
+            throw new InvalidArgumentException(
+                (string)__(
+                    'Criteria value list is required for operator %1',
+                    $operator
+                )
+            );
+        }
+
         if (($operator !== 'in' && $operator !== 'nin') && is_array($value)) {
             $value = reset($value);
         }
