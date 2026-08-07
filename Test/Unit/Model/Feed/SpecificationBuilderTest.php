@@ -81,6 +81,9 @@ class SpecificationBuilderTest extends \PHPUnit\Framework\TestCase
             FeedSpecificationInterface::CUSTOM_STOCK_JOIN_KEY => null,
             FeedSpecificationInterface::CUSTOM_STOCK_IN_STOCK_FIELD => null,
             FeedSpecificationInterface::CUSTOM_STOCK_QTY_FIELD => null,
+            FeedSpecificationInterface::CUSTOM_PRODUCT_ENTITY_COLUMN_FIELD => null,
+            FeedSpecificationInterface::CUSTOM_PRODUCT_ENTITY_COLUMN_OPERATOR => 'eq',
+            FeedSpecificationInterface::CUSTOM_PRODUCT_ENTITY_COLUMN_VALUE => null,
         ],
         'media_gallery' => [
             MediaGallerySpecificationInterface::THUMB_WIDTH => 250,

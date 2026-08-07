@@ -78,6 +78,9 @@ class SpecificationBuilder implements SpecificationBuilderInterface
         'customStockIdentifierField' => FeedSpecificationInterface::CUSTOM_STOCK_IDENTIFIER_FIELD,
         'customStockInStockField' => FeedSpecificationInterface::CUSTOM_STOCK_IN_STOCK_FIELD,
         'customStockQtyField' => FeedSpecificationInterface::CUSTOM_STOCK_QTY_FIELD,
+        'customProductEntityColumnField' => FeedSpecificationInterface::CUSTOM_PRODUCT_ENTITY_COLUMN_FIELD,
+        'customProductEntityColumnOperator' => FeedSpecificationInterface::CUSTOM_PRODUCT_ENTITY_COLUMN_OPERATOR,
+        'customProductEntityColumnValue' => FeedSpecificationInterface::CUSTOM_PRODUCT_ENTITY_COLUMN_VALUE,
     ];
     /**
      * @var array
@@ -117,6 +120,9 @@ class SpecificationBuilder implements SpecificationBuilderInterface
             FeedSpecificationInterface::CUSTOM_STOCK_JOIN_KEY => null,
             FeedSpecificationInterface::CUSTOM_STOCK_IN_STOCK_FIELD => null,
             FeedSpecificationInterface::CUSTOM_STOCK_QTY_FIELD => null,
+            FeedSpecificationInterface::CUSTOM_PRODUCT_ENTITY_COLUMN_FIELD => null,
+            FeedSpecificationInterface::CUSTOM_PRODUCT_ENTITY_COLUMN_OPERATOR => 'eq',
+            FeedSpecificationInterface::CUSTOM_PRODUCT_ENTITY_COLUMN_VALUE => null,
         ],
         'media_gallery' => [
             MediaGallerySpecificationInterface::THUMB_WIDTH => 250,

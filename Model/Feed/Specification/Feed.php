@@ -763,4 +763,59 @@ class Feed extends AbstractExtensibleObject implements FeedSpecificationInterfac
     {
         return $this->setData(self::CUSTOM_STOCK_QTY_FIELD, $value);
     }
+
+    /**
+     * @return string|null
+     */
+    public function getCustomProductEntityColumnField(): ?string
+    {
+        $value = trim((string)$this->_get(self::CUSTOM_PRODUCT_ENTITY_COLUMN_FIELD));
+        return $value !== '' ? $value : null;
+    }
+
+    /**
+     * @param string $value
+     * @return FeedSpecificationInterface
+     */
+    public function setCustomProductEntityColumnField(string $value): FeedSpecificationInterface
+    {
+        return $this->setData(self::CUSTOM_PRODUCT_ENTITY_COLUMN_FIELD, $value);
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getCustomProductEntityColumnOperator(): ?string
+    {
+        $value = trim((string)$this->_get(self::CUSTOM_PRODUCT_ENTITY_COLUMN_OPERATOR));
+        return $value !== '' ? $value : null;
+    }
+
+    /**
+     * @param string $value
+     * @return FeedSpecificationInterface
+     */
+    public function setCustomProductEntityColumnOperator(string $value): FeedSpecificationInterface
+    {
+        return $this->setData(self::CUSTOM_PRODUCT_ENTITY_COLUMN_OPERATOR, $value);
+    }
+
+    /**
+     * Accepts string, int, or array (for in/nin operators). Returns null when not set.
+     *
+     * @return array|string|int|null
+     */
+    public function getCustomProductEntityColumnValue()
+    {
+        return $this->_get(self::CUSTOM_PRODUCT_ENTITY_COLUMN_VALUE);
+    }
+
+    /**
+     * @param array|string|int|null $value
+     * @return FeedSpecificationInterface
+     */
+    public function setCustomProductEntityColumnValue($value): FeedSpecificationInterface
+    {
+        return $this->setData(self::CUSTOM_PRODUCT_ENTITY_COLUMN_VALUE, $value);
+    }
 }
