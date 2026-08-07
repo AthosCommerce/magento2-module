@@ -55,8 +55,13 @@ class CollectionProvider implements CollectionProviderInterface
     public function getCollection(FeedSpecificationInterface $specification): Collection
     {
         $collection = $this->collectionFactory->create();
+        $ignoredModifiers = $specification->getIgnoreModifiers();
         $modifiers = $this->sort($this->modifiers);
         foreach ($modifiers as $key => $modifierData) {
+            if (in_array($key, $ignoredModifiers, true)) {
+                continue;
+            }
+
             /** @var ModifierInterface $modifier */
             $modifier = $modifierData['objectInstance'] ?? null;
             if (!$modifier) {
@@ -74,7 +79,7 @@ class CollectionProvider implements CollectionProviderInterface
      */
     private function sort(array $data)
     {
-        usort($data, function (array $a, array $b) {
+        uasort($data, function (array $a, array $b) {
             return $this->getSortOrder($a) <=> $this->getSortOrder($b);
         });
 
