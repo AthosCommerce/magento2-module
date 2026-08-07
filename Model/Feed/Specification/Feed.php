@@ -533,4 +533,234 @@ class Feed extends AbstractExtensibleObject implements FeedSpecificationInterfac
     {
         return $this->setData(self::VARIANT_ADDITIONAL_DATA_LIMIT, $limit);
     }
+
+    /**
+     * @return array
+     */
+    public function getIgnoreModifiers(): array
+    {
+        return $this->_get(self::IGNORE_MODIFIERS) ?? [];
+    }
+
+    /**
+     * @param array $modifiers
+     * @return FeedSpecificationInterface
+     */
+    public function setIgnoreModifiers(array $modifiers): FeedSpecificationInterface
+    {
+        return $this->setData(self::IGNORE_MODIFIERS, $modifiers);
+    }
+
+    /**
+     * @return string
+     */
+    public function getEnableCriteriaFilter(): bool
+    {
+        return (bool)$this->_get(self::ENABLE_CRITERIA_FILTER);
+    }
+
+    /**
+     * @param bool $value
+     * @return FeedSpecificationInterface
+     */
+    public function setEnableCriteriaFilter(bool $value): FeedSpecificationInterface
+    {
+        return $this->setData(self::ENABLE_CRITERIA_FILTER, $value);
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getCriteriaField(): ?string
+    {
+        $value = trim((string)$this->_get(self::CRITERIA_FIELD));
+        return $value !== '' ? $value : null;
+    }
+
+    /**
+     * @param string $value
+     * @return FeedSpecificationInterface
+     */
+    public function setCriteriaField(string $value): FeedSpecificationInterface
+    {
+        return $this->setData(self::CRITERIA_FIELD, $value);
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getCriteriaOperator(): ?string
+    {
+        $value = trim((string)$this->_get(self::CRITERIA_OPERATOR));
+        return $value !== '' ? $value : null;
+    }
+
+    /**
+     * @param string $value
+     * @return FeedSpecificationInterface
+     */
+    public function setCriteriaOperator(string $value): FeedSpecificationInterface
+    {
+        return $this->setData(self::CRITERIA_OPERATOR, $value);
+    }
+
+    /**
+     * Accepts string, int, or array (for in/nin operators). Returns null when not set.
+     *
+     * @return array|string|int|null
+     */
+    public function getCriteriaValue()
+    {
+        return $this->_get(self::CRITERIA_VALUE);
+    }
+
+    /**
+     * @param array|string|int|null $value
+     * @return FeedSpecificationInterface
+     */
+    public function setCriteriaValue($value): FeedSpecificationInterface
+    {
+        return $this->setData(self::CRITERIA_VALUE, $value);
+    }
+
+    /**
+     * @return bool
+     */
+    public function getConfigTreatAsRow(): bool
+    {
+        return (bool)$this->_get(self::CONFIG_TREAT_AS_ROW);
+    }
+
+    /**
+     * @param bool $value
+     * @return FeedSpecificationInterface
+     */
+    public function setConfigTreatAsRow(bool $value): FeedSpecificationInterface
+    {
+        return $this->setData(self::CONFIG_TREAT_AS_ROW, $value);
+    }
+
+    /**
+     * @return bool
+     */
+    public function getGroupedTreatAsRow(): bool
+    {
+        return (bool)$this->_get(self::GROUPED_TREAT_AS_ROW);
+    }
+
+    /**
+     * @param bool $value
+     * @return FeedSpecificationInterface
+     */
+    public function setGroupedTreatAsRow(bool $value): FeedSpecificationInterface
+    {
+        return $this->setData(self::GROUPED_TREAT_AS_ROW, $value);
+    }
+
+    /**
+     * @return bool
+     */
+    public function getCustomStockEnabled(): bool
+    {
+        return (bool)$this->_get(self::CUSTOM_STOCK_ENABLED);
+    }
+
+    /**
+     * @param bool $value
+     * @return FeedSpecificationInterface
+     */
+    public function setCustomStockEnabled(bool $value): FeedSpecificationInterface
+    {
+        return $this->setData(self::CUSTOM_STOCK_ENABLED, $value);
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getCustomStockTable(): ?string
+    {
+        $value = trim((string)$this->_get(self::CUSTOM_STOCK_TABLE));
+        return $value !== '' ? $value : null;
+    }
+
+    /**
+     * @param string $value
+     * @return FeedSpecificationInterface
+     */
+    public function setCustomStockTable(string $value): FeedSpecificationInterface
+    {
+        return $this->setData(self::CUSTOM_STOCK_TABLE, $value);
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getCustomStockJoinKey(): ?string
+    {
+        $value = trim((string)$this->_get(self::CUSTOM_STOCK_JOIN_KEY));
+        return $value !== '' ? $value : null;
+    }
+
+    /**
+     * @param string $value
+     * @return FeedSpecificationInterface
+     */
+    public function setCustomStockJoinKey(string $value): FeedSpecificationInterface
+    {
+        return $this->setData(self::CUSTOM_STOCK_JOIN_KEY, $value);
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getCustomStockIdentifierField(): ?string
+    {
+        $value = trim((string)$this->_get(self::CUSTOM_STOCK_IDENTIFIER_FIELD));
+        return $value !== '' ? $value : null;
+    }
+
+    /**
+     * @param string $value
+     * @return FeedSpecificationInterface
+     */
+    public function setCustomStockIdentifierField(string $value): FeedSpecificationInterface
+    {
+        return $this->setData(self::CUSTOM_STOCK_IDENTIFIER_FIELD, $value);
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getCustomStockInStockField(): ?string
+    {
+        $value = trim((string)$this->_get(self::CUSTOM_STOCK_IN_STOCK_FIELD));
+        return $value !== '' ? $value : null;
+    }
+
+    /**
+     * @param string $value
+     * @return FeedSpecificationInterface
+     */
+    public function setCustomStockInStockField(string $value): FeedSpecificationInterface
+    {
+        return $this->setData(self::CUSTOM_STOCK_IN_STOCK_FIELD, $value);
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getCustomStockQtyField(): ?string
+    {
+        $value = trim((string)$this->_get(self::CUSTOM_STOCK_QTY_FIELD));
+        return $value !== '' ? $value : null;
+    }
+
+    /**
+     * @param string $value
+     * @return FeedSpecificationInterface
+     */
+    public function setCustomStockQtyField(string $value): FeedSpecificationInterface
+    {
+        return $this->setData(self::CUSTOM_STOCK_QTY_FIELD, $value);
+    }
 }

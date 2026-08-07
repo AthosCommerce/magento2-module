@@ -287,6 +287,10 @@
                     <item name="objectInstance" xsi:type="object">AthosCommerce\Feed\Model\Feed\Collection\StatusModifier</item>
                     <item name="sortOrder" xsi:type="number">200</item>
                 </item>
+                <item name="selectionFilterModifier" xsi:type="array">
+                    <item name="objectInstance" xsi:type="object">AthosCommerce\Feed\Model\Feed\Collection\SelectionFilterModifier</item>
+                    <item name="sortOrder" xsi:type="number">250</item>
+                </item>
                 <item name="stock" xsi:type="array">
                     <item name="objectInstance" xsi:type="object">AthosCommerce\Feed\Model\Feed\Collection\StockModifier</item>
                     <item name="sortOrder" xsi:type="number">400</item>

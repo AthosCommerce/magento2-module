@@ -112,6 +112,20 @@ interface FeedSpecificationInterface extends ExtensibleDataInterface
 
     public const VARIANT_ADDITIONAL_FIELDS = 'variant_additional_fields';
     public const VARIANT_ADDITIONAL_DATA_LIMIT = 'variantAdditionalDataLimit';
+    public const IGNORE_MODIFIERS = 'ignoreModifiers';
+    public const ENABLE_CRITERIA_FILTER = 'enableCriteriaFilter';
+    public const CRITERIA_FIELD = 'criteriaField';
+    public const CRITERIA_OPERATOR = 'criteriaOperator';
+    public const CRITERIA_VALUE = 'criteriaValue';
+    public const CONFIG_TREAT_AS_ROW = 'configTreatAsRow';
+    public const GROUPED_TREAT_AS_ROW = 'groupedTreatAsRow';
+    public const CUSTOM_STOCK_ENABLED = 'customStockEnabled';
+    public const CUSTOM_STOCK_TABLE = 'customStockTable';
+    public const CUSTOM_STOCK_JOIN_KEY = 'customStockJoinKey';
+    public const CUSTOM_STOCK_IDENTIFIER_FIELD = 'customStockIdentifierField';
+    public const CUSTOM_STOCK_IN_STOCK_FIELD = 'customStockInStockField';
+    public const CUSTOM_STOCK_QTY_FIELD = 'customStockQtyField';
+    public const CRITERIA_OPERATORS = ['eq', 'neq', 'gt', 'gteq', 'lt', 'lteq', 'in', 'nin'];
 
 
     /**
@@ -417,4 +431,149 @@ interface FeedSpecificationInterface extends ExtensibleDataInterface
      * @return FeedSpecificationInterface
      */
     public function setVariantAdditionalDataLimit(int $limit): self;
+
+    /**
+     * @return array
+     */
+    public function getIgnoreModifiers(): array;
+
+    /**
+     * @param array $modifiers
+     * @return FeedSpecificationInterface
+     */
+    public function setIgnoreModifiers(array $modifiers): self;
+
+    /**
+     * @return bool
+     */
+    public function getEnableCriteriaFilter(): bool;
+
+    /**
+     * @param bool $value
+     * @return FeedSpecificationInterface
+     */
+    public function setEnableCriteriaFilter(bool $value): self;
+
+    /**
+     * @return string|null
+     */
+    public function getCriteriaField(): ?string;
+
+    /**
+     * @param string $value
+     * @return FeedSpecificationInterface
+     */
+    public function setCriteriaField(string $value): self;
+
+    /**
+     * @return string|null
+     */
+    public function getCriteriaOperator(): ?string;
+
+    /**
+     * @param string $value
+     * @return FeedSpecificationInterface
+     */
+    public function setCriteriaOperator(string $value): self;
+
+    /**
+     * Accepts string, int, or array (for in/nin operators). Returns null when not set.
+     *
+     * @return array|string|int|null
+     */
+    public function getCriteriaValue();
+
+    /**
+     * @param array|string|int|null $value
+     * @return FeedSpecificationInterface
+     */
+    public function setCriteriaValue($value): self;
+
+    /**
+     * @return bool
+     */
+    public function getConfigTreatAsRow(): bool;
+
+    /**
+     * @param bool $value
+     * @return FeedSpecificationInterface
+     */
+    public function setConfigTreatAsRow(bool $value): self;
+
+    /**
+     * @return bool
+     */
+    public function getGroupedTreatAsRow(): bool;
+
+    /**
+     * @param bool $value
+     * @return FeedSpecificationInterface
+     */
+    public function setGroupedTreatAsRow(bool $value): self;
+
+    /**
+     * @return bool
+     */
+    public function getCustomStockEnabled(): bool;
+
+    /**
+     * @param bool $value
+     * @return FeedSpecificationInterface
+     */
+    public function setCustomStockEnabled(bool $value): self;
+
+    /**
+     * @return string|null
+     */
+    public function getCustomStockTable(): ?string;
+
+    /**
+     * @param string $value
+     * @return FeedSpecificationInterface
+     */
+    public function setCustomStockTable(string $value): self;
+
+    /**
+     * @return string|null
+     */
+    public function getCustomStockJoinKey(): ?string;
+
+    /**
+     * @param string $value
+     * @return FeedSpecificationInterface
+     */
+    public function setCustomStockJoinKey(string $value): self;
+
+    /**
+     * @return string|null
+     */
+    public function getCustomStockIdentifierField(): ?string;
+
+    /**
+     * @param string $value
+     * @return FeedSpecificationInterface
+     */
+    public function setCustomStockIdentifierField(string $value): self;
+
+    /**
+     * @return string|null
+     */
+    public function getCustomStockInStockField(): ?string;
+
+    /**
+     * @param string $value
+     * @return FeedSpecificationInterface
+     */
+    public function setCustomStockInStockField(string $value): self;
+
+    /**
+     * @return string|null
+     */
+    public function getCustomStockQtyField(): ?string;
+
+    /**
+     * @param string $value
+     * @return FeedSpecificationInterface
+     */
+    public function setCustomStockQtyField(string $value): self;
 }
