@@ -364,10 +364,11 @@
         <arguments>
             <argument name="handlers" xsi:type="array">
                 <item name="system" xsi:type="object">AthosCommerce\Feed\Logger\Handler</item>
+                <item name="error" xsi:type="object">AthosCommerce\Feed\Logger\ErrorHandler</item>
+                <item name="verbose" xsi:type="object">AthosCommerce\Feed\Logger\VerboseHandler</item>
             </argument>
         </arguments>
     </virtualType>
-
 
     <type name="AthosCommerce\Feed\Logger\ErrorHandler">
         <arguments>
@@ -385,8 +386,6 @@
             <argument name="level" xsi:type="const">Monolog\Logger::DEBUG</argument>
             <argument name="handlers" xsi:type="array">
                 <item name="system" xsi:type="object">AthosCommerceFeedSafeLogHandler</item>
-                <item name="error" xsi:type="object">AthosCommerce\Feed\Logger\ErrorHandler</item>
-                <item name="verbose" xsi:type="object">AthosCommerce\Feed\Logger\VerboseHandler</item>
             </argument>
         </arguments>
     </type>
@@ -549,4 +548,3 @@
         </arguments>
     </virtualType>
 </config>
-
