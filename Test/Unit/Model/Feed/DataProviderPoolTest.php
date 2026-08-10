@@ -38,7 +38,6 @@ class DataProviderPoolTest extends \PHPUnit\Framework\TestCase
         '__all_variants' => null,
         '__selected_options' => null,
         '__variant_position' => null,
-        '__group_by_swatch' => null,
         '__origin_timestamp' => null
     ];
 

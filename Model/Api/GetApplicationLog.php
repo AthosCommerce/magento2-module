@@ -74,4 +74,36 @@ class GetApplicationLog implements GetApplicationLogInterface
     {
         return $this->helper->getCronLogFile($compressOutput);
     }
+
+    /**
+     * @return string
+     */
+    public function getExtensionErrorLog(bool $compressOutput = false) : string
+    {
+        return $this->helper->getExtensionErrorLogFile($compressOutput);
+    }
+
+    /**
+     * @return bool
+     */
+    public function clearExtensionErrorLog() : bool
+    {
+        return $this->helper->deleteExtensionErrorLogFile();
+    }
+
+    /**
+     * @return string
+     */
+    public function getExtensionDebugLog(bool $compressOutput = false) : string
+    {
+        return $this->helper->getExtensionDebugLogFile($compressOutput);
+    }
+
+    /**
+     * @return bool
+     */
+    public function clearExtensionDebugLog() : bool
+    {
+        return $this->helper->deleteExtensionDebugLogFile();
+    }
 }

@@ -21,18 +21,10 @@ namespace AthosCommerce\Feed\Model\Feed\DataProvider\Stock;
 interface StockProviderInterface
 {
     /**
-     * [
-     *      product_id => [
-     *          'qty' => float,
-     *          'in_stock' => bool
-     *          'is_stock_managed' => bool
-     *      ],
-     *      .........
-     * ]
+     * Retrieves stock information for the given product IDs.
      *
      * @param array $productIds
-     * @param int $storeId
      * @return array
      */
-    public function getStock(array $productIds) : array;
+    public function getStock(array $productIds): array;
 }
