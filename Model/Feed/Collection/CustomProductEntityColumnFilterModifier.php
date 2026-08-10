@@ -22,6 +22,7 @@ use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use InvalidArgumentException;
 use Magento\Catalog\Model\ResourceModel\Product\Collection;
+use Magento\Framework\App\ResourceConnection;
 
 class CustomProductEntityColumnFilterModifier implements ModifierInterface
 {
@@ -34,15 +35,23 @@ class CustomProductEntityColumnFilterModifier implements ModifierInterface
      * @var AthosCommerceLogger
      */
     private $logger;
+    /**
+     * @var ResourceConnection
+     */
+    private $resource;
 
     /**
+     * @param ResourceConnection $resource
      * @param AthosCommerceLogger $logger
      * @param array $allowedOperators
      */
     public function __construct(
+        ResourceConnection  $resource,
         AthosCommerceLogger $logger,
-        array $allowedOperators = []
-    ) {
+        array               $allowedOperators = []
+    )
+    {
+        $this->resource = $resource;
         $this->logger = $logger;
         $this->allowedOperators = !empty($allowedOperators)
             ? array_values(array_unique(array_map('strtolower', $allowedOperators)))
@@ -62,8 +71,13 @@ class CustomProductEntityColumnFilterModifier implements ModifierInterface
         }
 
         if (!preg_match('/^[A-Za-z0-9_]+$/', $field)) {
-            $this->logger->critical('Invalid custom product entity column field:', ['field' => $field]);
-            throw new InvalidArgumentException((string)__('Invalid custom product entity column field: %1', $field));
+            $this->logger->critical(
+                '[CustomProductEntityColumnFilterModifier] Invalid custom product entity column field:',
+                ['field' => $field]
+            );
+            throw new InvalidArgumentException(
+                (string)__('Invalid custom product entity column field: %1', $field)
+            );
         }
 
         $operator = strtolower(trim((string)$feedSpecification->getCustomProductEntityColumnOperator()));
@@ -71,7 +85,7 @@ class CustomProductEntityColumnFilterModifier implements ModifierInterface
 
         if (!in_array($operator, $this->allowedOperators, true)) {
             $this->logger->critical(
-                'Unsupported custom product entity column operator:',
+                '[CustomProductEntityColumnFilterModifier] Unsupported custom product entity column operator:',
                 [
                     'operator' => $operator,
                     'allowed' => $this->allowedOperators,
@@ -90,7 +104,7 @@ class CustomProductEntityColumnFilterModifier implements ModifierInterface
 
         if ($value === null || $value === '') {
             $this->logger->critical(
-                'Custom product entity column value is required for operator:',
+                '[CustomProductEntityColumnFilterModifier] Custom product entity column value is required for operator:',
                 [
                     'operator' => $operator,
                     'value' => $value,
@@ -111,7 +125,7 @@ class CustomProductEntityColumnFilterModifier implements ModifierInterface
 
         if (($operator === 'in' || $operator === 'nin') && $value === []) {
             $this->logger->critical(
-                'Custom product entity column value list is required for operator:',
+                '[CustomProductEntityColumnFilterModifier] Custom product entity column value list is required for operator:',
                 [
                     'operator' => $operator,
                     'value' => $value,
@@ -130,7 +144,24 @@ class CustomProductEntityColumnFilterModifier implements ModifierInterface
             $value = reset($value);
         }
 
-        $collection->addFieldToFilter(sprintf('e.%s', $field), [$operator => $value]);
+        try {
+            $cpe = $this->resource->getTableName('catalog_product_entity');
+            $connection = $collection->getConnection();
+            $condition = $connection->prepareSqlCondition('e.' . $field, [$operator => $value]);
+            $collection->getSelect()->where($condition);
+        } catch (\Throwable $e) {
+            $this->logger->critical(
+                "[CustomProductEntityColumnFilterModifier] Error applying custom product entity column filter:",
+                [
+                    'field' => $field,
+                    'operator' => $operator,
+                    'value' => $value,
+                    'error' => $e->getMessage()
+                ]
+            );
+            //return the collection without applying the filter if an error occurs, to avoid breaking the feed generation process.
+            return $collection;
+        }
 
         return $collection;
     }

@@ -125,6 +125,9 @@ interface FeedSpecificationInterface extends ExtensibleDataInterface
     public const CUSTOM_STOCK_IDENTIFIER_FIELD = 'customStockIdentifierField';
     public const CUSTOM_STOCK_IN_STOCK_FIELD = 'customStockInStockField';
     public const CUSTOM_STOCK_QTY_FIELD = 'customStockQtyField';
+    public const CUSTOM_PRODUCT_ENTITY_COLUMN_FIELD = 'customProductEntityColumnField';
+    public const CUSTOM_PRODUCT_ENTITY_COLUMN_OPERATOR = 'customProductEntityColumnOperator';
+    public const CUSTOM_PRODUCT_ENTITY_COLUMN_VALUE = 'customProductEntityColumnValue';
     public const CRITERIA_OPERATORS = ['eq', 'neq', 'gt', 'gteq', 'lt', 'lteq', 'in', 'nin'];
 
 
@@ -576,4 +579,39 @@ interface FeedSpecificationInterface extends ExtensibleDataInterface
      * @return FeedSpecificationInterface
      */
     public function setCustomStockQtyField(string $value): self;
+
+    /**
+     * @return string|null
+     */
+    public function getCustomProductEntityColumnField(): ?string;
+
+    /**
+     * @param string $value
+     * @return FeedSpecificationInterface
+     */
+    public function setCustomProductEntityColumnField(string $value): self;
+
+    /**
+     * @return string|null
+     */
+    public function getCustomProductEntityColumnOperator(): ?string;
+
+    /**
+     * @param string $value
+     * @return FeedSpecificationInterface
+     */
+    public function setCustomProductEntityColumnOperator(string $value): self;
+
+    /**
+     * Accepts string, int, or array (for in/nin operators). Returns null when not set.
+     *
+     * @return array|string|int|null
+     */
+    public function getCustomProductEntityColumnValue();
+
+    /**
+     * @param array|string|int|null $value
+     * @return FeedSpecificationInterface
+     */
+    public function setCustomProductEntityColumnValue($value): self;
 }
