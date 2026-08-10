@@ -23,6 +23,8 @@ use Magento\Framework\Exception\NoSuchEntityException;
 interface StockResolverInterface
 {
     /**
+     * Resolves the appropriate stock provider based on whether MSI is enabled or not.
+     *
      * @param bool $isMsiEnabled
      * @return StockProviderInterface
      * @throws NoSuchEntityException
