@@ -32,6 +32,30 @@
             <resource ref="AthosCommerce_Feed::general" />
         </resources>
     </route>
+    <route url="/V1/athoscommerce/applicationlog/error" method="GET">
+        <service class="AthosCommerce\Feed\Api\GetApplicationLogInterface" method="getExtensionErrorLog" />
+        <resources>
+            <resource ref="AthosCommerce_Feed::general" />
+        </resources>
+    </route>
+    <route url="/V1/athoscommerce/applicationlog/error" method="POST">
+        <service class="AthosCommerce\Feed\Api\GetApplicationLogInterface" method="clearExtensionErrorLog" />
+        <resources>
+            <resource ref="AthosCommerce_Feed::general" />
+        </resources>
+    </route>
+    <route url="/V1/athoscommerce/applicationlog/debug" method="GET">
+        <service class="AthosCommerce\Feed\Api\GetApplicationLogInterface" method="getExtensionDebugLog" />
+        <resources>
+            <resource ref="AthosCommerce_Feed::general" />
+        </resources>
+    </route>
+    <route url="/V1/athoscommerce/applicationlog/debug" method="POST">
+        <service class="AthosCommerce\Feed\Api\GetApplicationLogInterface" method="clearExtensionDebugLog" />
+        <resources>
+            <resource ref="AthosCommerce_Feed::general" />
+        </resources>
+    </route>
     <route url="/V1/athoscommerce/groupcronlog" method="GET">
         <service class="AthosCommerce\Feed\Api\GetApplicationLogInterface" method="getCronLog" />
         <resources>

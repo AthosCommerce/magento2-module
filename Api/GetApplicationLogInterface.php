@@ -66,4 +66,34 @@ interface GetApplicationLogInterface
      * @throws LocalizedException
      */
     public function getCronLog(bool $compressOutput = false) : string;
+    /**
+     * @param bool $compressOutput
+     *
+     * @return string
+     *
+     * @throws LocalizedException
+     */
+    public function getExtensionErrorLog(bool $compressOutput = false) : string;
+
+    /**
+     * @return bool
+     *
+     * @throws LocalizedException
+     */
+    public function clearExtensionErrorLog() : bool;
+    /**
+     * @param bool $compressOutput
+     *
+     * @return string
+     *
+     * @throws LocalizedException
+     */
+    public function getExtensionDebugLog(bool $compressOutput = false) : string;
+
+    /**
+     * @return bool
+     *
+     * @throws LocalizedException
+     */
+    public function clearExtensionDebugLog() : bool;
 }

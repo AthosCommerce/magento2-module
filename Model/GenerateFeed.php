@@ -235,6 +235,7 @@ class GenerateFeed implements GenerateFeedInterface
                         'format' => $format,
                         'query' => $collection->getSelect()->__toString(),
                         'message' => $exception,
+                        'trace' => $exception->getTraceAsString(),
                     ]
                 );
                 throw $exception;

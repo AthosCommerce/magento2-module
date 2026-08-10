@@ -8,13 +8,13 @@ use Magento\Framework\Logger\Handler\Base;
 use Monolog\Logger;
 use AthosCommerce\Feed\Model\Config as ConfigModel;
 
-class Handler extends Base
+class VerboseHandler extends Base
 {
     /**
      * File name
      * @var string
      */
-    protected $fileName = '/var/log/athoscommerce_feed.log';
+    protected $fileName = '/var/log/athoscommerce_feed_debug.log';
 
     /**
      * @var ConfigModel
@@ -35,20 +35,9 @@ class Handler extends Base
     )
     {
         $this->configModel = $configModel;
-
-        $this->loggerType = $this->isDebug()
-            ? Logger::DEBUG
-            : Logger::INFO;
+        $this->loggerType = Logger::DEBUG;
 
         parent::__construct($filesystem, $filePath, $fileName);
-    }
-
-    /**
-     * @return bool
-     */
-    private function isDebug(): bool
-    {
-        return (bool)$this->configModel->isDebugLogEnabled();
     }
 
     /**
@@ -63,10 +52,11 @@ class Handler extends Base
             $levelValue = $record->level->value ?? $record->level;
         }
 
-        if ($levelValue !== Logger::INFO) {
+        if ($levelValue !== Logger::DEBUG) {
             return false;
         }
 
         return parent::handle($record);
     }
 }
+

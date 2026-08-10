@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Model\Feed\DataProvider\Stock;
 
 use AthosCommerce\Feed\Model\Feed\Context\StoreContextManager;
+use Magento\Framework\ObjectManagerInterface;
 use Magento\Catalog\Model\Product\Type;
 use Magento\Catalog\Model\ResourceModel\Product;
 use Magento\CatalogInventory\Api\Data\StockItemInterface;
@@ -27,16 +28,17 @@ use Magento\CatalogInventory\Api\StockItemCriteriaInterfaceFactory;
 use Magento\CatalogInventory\Api\StockItemRepositoryInterface;
 use Magento\CatalogInventory\Model\Stock\Item;
 use Magento\Framework\Exception\NoSuchEntityException;
-use Magento\InventoryReservationsApi\Model\GetReservationsQuantityInterface;
-use Magento\InventorySalesApi\Api\Data\SalesChannelInterface;
-use Magento\InventorySalesApi\Api\StockResolverInterface as MsiStockResolverInterface;
-use Magento\InventorySalesApi\Model\GetStockItemDataInterface;
 use Magento\Store\Api\WebsiteRepositoryInterface;
-use Magento\Framework\Filesystem\DirectoryList;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 
 class MsiStockProvider implements StockProviderInterface
 {
+    private const MSI_STOCK_RESOLVER_INTERFACE = \Magento\InventorySalesApi\Api\StockResolverInterface::class;
+    private const MSI_STOCK_ITEM_DATA_INTERFACE = \Magento\InventorySalesApi\Model\GetStockItemDataInterface::class;
+    private const MSI_RES_QTY_INTERFACE = \Magento\InventoryReservationsApi\Model\GetReservationsQuantityInterface::class;
+    private const SALES_CHANNEL_WEBSITE_TYPE = 'website';
+    private const STOCK_QUANTITY_KEY = 'quantity';
+
     /**
      * @var StoreContextManager
      */
@@ -46,21 +48,9 @@ class MsiStockProvider implements StockProviderInterface
      */
     private $websiteRepository;
     /**
-     * @var MsiStockResolverInterface
-     */
-    private $stockResolver;
-    /**
-     * @var GetStockItemDataInterface
-     */
-    private $getStockItemData;
-    /**
      * @var Product
      */
     private $productResource;
-    /**
-     * @var GetReservationsQuantityInterface
-     */
-    private $getReservationsQuantity;
     /**
      * @var StockItemCriteriaInterfaceFactory
      */
@@ -81,10 +71,16 @@ class MsiStockProvider implements StockProviderInterface
      * @var AthosCommerceLogger
      */
     private $logger;
+    /**
+     * @var ObjectManagerInterface
+     */
+    private $objectManager;
+    /**
+     * @var array<string, object>
+     */
+    private $msiServiceCache = [];
 
     /**
-     * MsiStockProvider constructor.
-     *
      * @param StoreContextManager $storeContextManager
      * @param WebsiteRepositoryInterface $websiteRepository
      * @param Product $productResource
@@ -92,10 +88,8 @@ class MsiStockProvider implements StockProviderInterface
      * @param StockItemRepositoryInterface $legacyStockItemRepository
      * @param StockConfigurationInterface $stockConfiguration
      * @param Type $typeManager
-     * @param GetReservationsQuantityInterface $getReservationsQuantity
-     * @param MsiStockResolverInterface $stockResolver
-     * @param GetStockItemDataInterface $getStockItemData
      * @param AthosCommerceLogger $logger
+     * @param ObjectManagerInterface $objectManager
      */
     public function __construct(
         StoreContextManager $storeContextManager,
@@ -105,10 +99,8 @@ class MsiStockProvider implements StockProviderInterface
         StockItemRepositoryInterface $legacyStockItemRepository,
         StockConfigurationInterface $stockConfiguration,
         Type $typeManager,
-        GetReservationsQuantityInterface $getReservationsQuantity,
-        MsiStockResolverInterface $stockResolver,
-        GetStockItemDataInterface $getStockItemData,
-        AthosCommerceLogger $logger
+        AthosCommerceLogger $logger,
+        ObjectManagerInterface $objectManager
     ) {
         $this->storeContextManager = $storeContextManager;
         $this->websiteRepository = $websiteRepository;
@@ -117,10 +109,8 @@ class MsiStockProvider implements StockProviderInterface
         $this->legacyStockItemRepository = $legacyStockItemRepository;
         $this->stockConfiguration = $stockConfiguration;
         $this->typeManager = $typeManager;
-        $this->getReservationsQuantity = $getReservationsQuantity;
-        $this->stockResolver = $stockResolver;
-        $this->getStockItemData = $getStockItemData;
         $this->logger = $logger;
+        $this->objectManager = $objectManager;
     }
 
     /**
@@ -146,10 +136,10 @@ class MsiStockProvider implements StockProviderInterface
         $storeId = (int)$store->getStoreId();
         $websiteId = $store->getWebsiteId();
         $website = $this->websiteRepository->getById($websiteId);
-        $stock = $this->stockResolver->execute(
-            SalesChannelInterface::TYPE_WEBSITE,
-            $website->getCode()
-        );
+        $stockResolver = $this->getMsiService(self::MSI_STOCK_RESOLVER_INTERFACE);
+        $getStockItemData = $this->getMsiService(self::MSI_STOCK_ITEM_DATA_INTERFACE);
+        $getReservationsQuantity = $this->getMsiService(self::MSI_RES_QTY_INTERFACE);
+        $stock = $stockResolver->execute(self::SALES_CHANNEL_WEBSITE_TYPE, $website->getCode());
         $stockId = $stock->getStockId();
         $skus = $this->getSkus($productIds);
         $configurations = $this->getItemConfigurations($productIds);
@@ -162,8 +152,8 @@ class MsiStockProvider implements StockProviderInterface
 
             $sku = (string)$sku;
             try {
-                $stockData = $this->getStockItemData->execute($sku, $stockId) ?? [];
-                $reservation = $this->getReservationsQuantity->execute($sku, $stockId);
+                $stockData = $getStockItemData->execute($sku, $stockId) ?? [];
+                $reservation = $getReservationsQuantity->execute($sku, $stockId);
             } catch (\Exception $exception) {
                 $this->logger->error(
                     "Error processing stock data for SKU: {$sku}",
@@ -192,6 +182,8 @@ class MsiStockProvider implements StockProviderInterface
     }
 
     /**
+     * Retrieve product quantity
+     *
      * @param array $stockData
      * @param float $reservation
      *
@@ -199,14 +191,16 @@ class MsiStockProvider implements StockProviderInterface
      */
     private function getQty(array $stockData, float $reservation): float
     {
-        if (!isset($stockData[GetStockItemDataInterface::QUANTITY])) {
+        if (!isset($stockData[self::STOCK_QUANTITY_KEY])) {
             return 0;
         }
 
-        return $stockData[GetStockItemDataInterface::QUANTITY] + $reservation;
+        return $stockData[self::STOCK_QUANTITY_KEY] + $reservation;
     }
 
     /**
+     * Determine if the product is in stock
+     *
      * @param array $stockData
      * @param float $reservation
      * @param StockItemInterface|null $configuration
@@ -228,11 +222,11 @@ class MsiStockProvider implements StockProviderInterface
 
         $isSalable = $stockData['is_salable'] ?? null;
         // composite products (configurable, grouped, bundle) always have 0 qty
-        if (!is_null($isSalable) && in_array($configuration->getTypeId(), $this->typeManager->getCompositeTypes())) {
+        if ($isSalable !== null && in_array($configuration->getTypeId(), $this->typeManager->getCompositeTypes())) {
             return (bool)$isSalable;
         }
 
-        if (!is_null($isSalable) && $isSalable == 0) {
+        if ($isSalable !== null && $isSalable == 0) {
             return false;
         }
 
@@ -240,6 +234,8 @@ class MsiStockProvider implements StockProviderInterface
     }
 
     /**
+     * Retrieve item configurations by product IDs
+     *
      * @param array $productIds
      *
      * @return StockItemInterface[]
@@ -259,6 +255,8 @@ class MsiStockProvider implements StockProviderInterface
     }
 
     /**
+     * Retrieve product SKUs by product IDs
+     *
      * @param array $productIds
      *
      * @return array
@@ -272,5 +270,27 @@ class MsiStockProvider implements StockProviderInterface
         }
 
         return $result;
+    }
+
+    /**
+     * Retrieve MSI service instance
+     *
+     * @param string $type
+     *
+     * @return object
+     * @throws NoSuchEntityException
+     */
+    private function getMsiService(string $type): object
+    {
+        if (isset($this->msiServiceCache[$type])) {
+            return $this->msiServiceCache[$type];
+        }
+
+        if (!interface_exists($type) && !class_exists($type)) {
+            throw new NoSuchEntityException(__('MSI dependency is not available: %1', $type));
+        }
+
+        $this->msiServiceCache[$type] = $this->objectManager->get($type);
+        return $this->msiServiceCache[$type];
     }
 }
