@@ -32,6 +32,7 @@ class UrlProvider implements DataProviderInterface
      */
     public function getData(array $products, FeedSpecificationInterface $feedSpecification): array
     {
+        $this->logger->info("[UrlProvider] Started");
         foreach ($products as &$product) {
             /** @var Product $productModel */
             $productModel = $product['product_model'] ?? null;
@@ -47,6 +48,7 @@ class UrlProvider implements DataProviderInterface
             $product['url'] = $productModel->getProductUrl();
         }
 
+        $this->logger->info("[UrlProvider] Completed");
         return $products;
     }
 

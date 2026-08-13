@@ -87,6 +87,9 @@ class RatingProvider implements DataProviderInterface
         array $products,
         FeedSpecificationInterface $feedSpecification
     ): array {
+        
+        $this->logger->info("[RatingProvider] Started");
+        
         $ignoredFields = $feedSpecification->getIgnoreFields();
 
         if (
@@ -131,6 +134,7 @@ class RatingProvider implements DataProviderInterface
             }
         }
         unset($product);
+        $this->logger->info("[RatingProvider] Completed");
 
         return $products;
     }

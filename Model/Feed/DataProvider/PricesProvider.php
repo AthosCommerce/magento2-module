@@ -71,6 +71,8 @@ class PricesProvider implements DataProviderInterface
      */
     public function getData(array $products, FeedSpecificationInterface $feedSpecification): array
     {
+        $this->logger->info("[PricesProvider] Started");
+
         $ignoredFields = $feedSpecification->getIgnoreFields();
         foreach ($products as &$product) {
             /** @var Product $productModel */
@@ -90,7 +92,7 @@ class PricesProvider implements DataProviderInterface
                 $product['tier_pricing'] = $this->json->serialize($productModel->getTierPrice());
             }
         }
-
+        $this->logger->info("[PricesProvider] Completed");
         return $products;
     }
 

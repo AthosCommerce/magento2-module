@@ -71,6 +71,7 @@ class MinMaxPricesProvider implements DataProviderInterface
         array $products,
         FeedSpecificationInterface $feedSpecification
     ): array {
+        $this->logger->info("[MinMaxPricesProvider] Started");
         $ignoredFields = $feedSpecification->getIgnoreFields();
 
         foreach ($products as &$product) {
@@ -87,7 +88,7 @@ class MinMaxPricesProvider implements DataProviderInterface
             );
         }
         unset($product);
-
+        $this->logger->info("[MinMaxPricesProvider] Completed");
         return $products;
     }
 

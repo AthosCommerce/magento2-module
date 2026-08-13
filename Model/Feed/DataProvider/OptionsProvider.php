@@ -51,10 +51,11 @@ class OptionsProvider implements DataProviderInterface
      * @param StoreManagerInterface $storeManager
      */
     public function __construct(
-        MetadataPool $metadataPool,
+        MetadataPool            $metadataPool,
         OptionCollectionFactory $optionCollectionFactory,
-        StoreManagerInterface $storeManager
-    ) {
+        StoreManagerInterface   $storeManager
+    )
+    {
         $this->metadataPool = $metadataPool;
         $this->optionCollectionFactory = $optionCollectionFactory;
         $this->storeManager = $storeManager;
@@ -68,11 +69,18 @@ class OptionsProvider implements DataProviderInterface
      */
     public function getData(array $products, FeedSpecificationInterface $feedSpecification): array
     {
+        $this->logger->info("[OptionsProvider] Started");
+        $ignoreFields = $feedSpecification->getIgnoreFields();
+        if (in_array('__optionsDataProvider', $ignoreFields)) {
+            return $products;
+        }
+
+
         $linkField = $this->metadataPool->getMetadata(ProductInterface::class)->getLinkField();
         $productIds = [];
         foreach ($products as $product) {
             if (isset($product['product_model']) && $product['product_model']->getData($linkField)) {
-                $productIds[] = (int) $product['product_model']->getData($linkField);
+                $productIds[] = (int)$product['product_model']->getData($linkField);
             }
         }
 
@@ -80,7 +88,7 @@ class OptionsProvider implements DataProviderInterface
             return $products;
         }
 
-        $storeId = (int) $this->storeManager->getStore($feedSpecification->getStoreCode())->getId();
+        $storeId = (int)$this->storeManager->getStore($feedSpecification->getStoreCode())->getId();
         $options = $this->getOptions($productIds, $storeId);
 
         foreach ($products as &$product) {
@@ -88,7 +96,7 @@ class OptionsProvider implements DataProviderInterface
                 continue;
             }
 
-            $productId = (int) $product['product_model']->getData($linkField);
+            $productId = (int)$product['product_model']->getData($linkField);
             $productOptions = $options[$productId] ?? null;
             if (!$productOptions) {
                 continue;
@@ -96,7 +104,7 @@ class OptionsProvider implements DataProviderInterface
 
             $product = array_merge($product, $this->buildProductOptions($productOptions, $feedSpecification));
         }
-
+        $this->logger->info("[OptionsProvider] Completed");
         return $products;
     }
 
@@ -105,11 +113,11 @@ class OptionsProvider implements DataProviderInterface
      * @param FeedSpecificationInterface $feedSpecification
      * @return array
      */
-    private function buildProductOptions(array $options, FeedSpecificationInterface $feedSpecification) : array
+    private function buildProductOptions(array $options, FeedSpecificationInterface $feedSpecification): array
     {
         $result = [];
         $ignoreFields = $feedSpecification->getIgnoreFields();
-        foreach($options as $option) {
+        foreach ($options as $option) {
             // Clean up option title for a field name
             $field = TitleToFieldNameConverter::convert($option->getTitle());
             if (in_array($field, $ignoreFields)) {
@@ -117,8 +125,8 @@ class OptionsProvider implements DataProviderInterface
             }
 
             $optionValues = $option->getValues();
-            if($optionValues) {
-                foreach($optionValues as $value) {
+            if ($optionValues) {
+                foreach ($optionValues as $value) {
                     $result[$field][] = $value->getTitle();
                 }
             }
@@ -132,7 +140,7 @@ class OptionsProvider implements DataProviderInterface
      * @param int $storeId
      * @return array
      */
-    private function getOptions(array $productIds, int $storeId) : array
+    private function getOptions(array $productIds, int $storeId): array
     {
         /** @var Collection $optionCollection */
         $optionCollection = $this->optionCollectionFactory->create();

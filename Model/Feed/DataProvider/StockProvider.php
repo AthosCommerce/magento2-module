@@ -61,6 +61,8 @@ class StockProvider implements DataProviderInterface
         FeedSpecificationInterface $feedSpecification
     ): array
     {
+        $this->logger->info("[StockProvider] Started");
+        
         $ignoreFields = $feedSpecification->getIgnoreFields();
         $stockKeys = ['__in_stock', 'in_stock', 'stock_qty', 'is_stock_managed'];
 
@@ -140,6 +142,7 @@ class StockProvider implements DataProviderInterface
             $product['parent_is_stock_managed'] = (int)($pStock['is_stock_managed'] ?? 0);
         }
         unset($product);
+        $this->logger->info("[StockProvider] Completed");
 
         return $products;
     }

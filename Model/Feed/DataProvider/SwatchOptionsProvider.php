@@ -1,4 +1,20 @@
 <?php
+/**
+ * Copyright (C) 2025 AthosCommerce <https://athoscommerce.com>
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Model\Feed\DataProvider;
 
@@ -15,6 +31,7 @@ use Magento\Store\Model\StoreManagerInterface;
 
 class SwatchOptionsProvider implements DataProviderInterface
 {
+    public const FIELD_KEY = '__swatch_options';
     /**
      * @var SwatchHelper
      */
@@ -49,7 +66,6 @@ class SwatchOptionsProvider implements DataProviderInterface
      * @param AthosCommerceLogger $logger
      * @param ParentDataContextManager $parentProductContextManager
      * @param Configurable $configurableType
-     * @param StockRegistryInterface $stockRegistry
      * @param SwatchHelper $swatchHelper
      * @param StoreManagerInterface $storeManager
      */
@@ -82,15 +98,19 @@ class SwatchOptionsProvider implements DataProviderInterface
     {
         $ignoredFields = $feedSpecification->getIgnoreFields();
 
-        if (empty($feedSpecification->getSwatchOptionFieldsNames()) || in_array('swatchOptionSourceFieldNames', $ignoredFields)) {
+        if (empty($feedSpecification->getSwatchOptionFieldsNames()) ||
+            in_array('swatchOptionSourceFieldNames', $ignoredFields)
+        ) {
             return $products;
         }
 
         $swatch = [];
-        if ($feedSpecification->getSwatchOptionFieldsNames() && !in_array('swatchOptionSourceFieldNames', $ignoredFields)) {
+        if ($feedSpecification->getSwatchOptionFieldsNames() &&
+            !in_array('swatchOptionSourceFieldNames', $ignoredFields)
+        ) {
             $swatch = $feedSpecification->getSwatchOptionFieldsNames();
         }
-
+        $this->logger->info("[SwatchOptionsProvider] Started");
 
         foreach ($products as &$product) {
 
@@ -99,11 +119,12 @@ class SwatchOptionsProvider implements DataProviderInterface
             if (!$productModel) {
                 continue;
             }
+            $sku = $productModel->getSku();
 
             // Only SIMPLE products get SwatchOptionsProvider
             if ($productModel->getTypeId() !== 'simple') {
                 $this->logger->debug('Skipping non-simple product', [
-                    'sku' => $productModel->getSku()
+                    'sku' => $sku
                 ]);
                 continue;
             }
@@ -111,7 +132,7 @@ class SwatchOptionsProvider implements DataProviderInterface
             $parentIds = $this->configurableType->getParentIdsByChild($productModel->getId());
 
             if (empty($parentIds)) {
-                $product['__swatch_options'] = [];
+                $product[self::FIELD_KEY] = [];
                 continue;
             }
 
@@ -133,7 +154,9 @@ class SwatchOptionsProvider implements DataProviderInterface
 
                 foreach ($configurableAttributes as $attribute) {
                     $attr = $attribute->getProductAttribute();
-                    if (!$attr) continue;
+                    if (!$attr) {
+                        continue;
+                    }
 
                     $attrCode = $attr->getAttributeCode();
                     $attrLabel = $attr->getStoreLabel();
@@ -142,19 +165,23 @@ class SwatchOptionsProvider implements DataProviderInterface
 
                     $optionId = $productModel->getData($attrCode);
 
-                    $this->logger->info('Processing attribute', [
-                        'sku' => $productModel->getSku(),
+                    $this->logger->debug(
+                        'Processing attribute', [
+                        'sku' => $sku,
                         'attr_code' => $attrCode,
                         'simple_value' => $simpleValue,
                         'option_id' => $optionId
                     ]);
 
-                    if (!$simpleValue) continue;
+                    if (!$simpleValue) {
+                        continue;
+                    }
 
                     // Check against feedSpecification array
                     if (!in_array($attrCode, $swatch)) {
-                        $this->logger->info('Skipping attribute because it is not in swatch array', [
-                            'sku' => $productModel->getSku(),
+                        $this->logger->debug(
+                            'Skipping attribute because it is not in swatch array', [
+                            'sku' => $sku,
                             'attr_code' => $attrCode
                         ]);
                         continue;
@@ -184,9 +211,10 @@ class SwatchOptionsProvider implements DataProviderInterface
                     $swatchOptions[$attrCode] = $entry;
                 }
 
-                $product['__swatch_options'] = $swatchOptions;
+                $product[self::FIELD_KEY] = $swatchOptions;
             }
         }
+        $this->logger->info("[SwatchOptionsProvider] Completed");
 
         return $products;
     }

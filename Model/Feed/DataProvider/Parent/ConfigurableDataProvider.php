@@ -157,6 +157,12 @@ class ConfigurableDataProvider implements DataProviderInterface
             $parentIdIdentifier = $linkField;
         }
 
+        $this->logger->info("[ConfigurableDataProvider] Started processing products", [
+            'childTypeIdsList' => $childTypeIdsList,
+            'linkField' => $linkField,
+            'parentIdIdentifier' => $parentIdIdentifier,
+        ]);
+
         foreach ($products as $product) {
             $productModel = $product['product_model'] ?? null;
             if (!$productModel) {
@@ -180,18 +186,18 @@ class ConfigurableDataProvider implements DataProviderInterface
 
             if ($isChildVisible) {
                 $standalone = $this->buildStandaloneRow($product);
-                
+
                 if (!in_array(Constant::PARENT_ID, $ignoredFields, true)) {
                     $parentIdentifierValue = $this->parentIdSourceFieldEvaluator->execute($productModel, $parentIdIdentifier);
                     if ($parentIdentifierValue !== null) {
                         $standalone[Constant::PARENT_ID] = $parentIdentifierValue;
                     }
                 }
-                
+
                 if (!in_array(Constant::PARENT_SKU, $ignoredFields, true)) {
                     $standalone[Constant::PARENT_SKU] = $productModel->getSku();
                 }
-                
+
                 $finalProducts[] = $standalone;
             }
 
@@ -233,6 +239,9 @@ class ConfigurableDataProvider implements DataProviderInterface
                 $finalProducts[] = $childClone;
             }
         }
+
+        $this->logger->info("[ConfigurableDataProvider] Completed");
+
         return array_values($finalProducts);
     }
 
@@ -245,7 +254,7 @@ class ConfigurableDataProvider implements DataProviderInterface
         $standalone = $product;
         $standalone[Constant::IS_STANDALONE_PRODUCT_KEY] = true;
         $standalone[Constant::IS_BELONG_TO_PARENT_KEY] = false;
-        
+
         unset(
             $standalone[Constant::PARENT_TITLE],
             $standalone[Constant::PARENT_IMAGE],

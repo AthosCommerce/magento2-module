@@ -93,6 +93,8 @@ class CategoriesProvider implements DataProviderInterface
         FeedSpecificationInterface $feedSpecification
     ): array
     {
+        $this->logger->info("[CategoriesProvider] Started");
+        
         $productIds = [];
         $rowCategorySourceMap = [];
 
@@ -204,6 +206,8 @@ class CategoriesProvider implements DataProviderInterface
             }
         }
         unset($product);
+
+        $this->logger->info("[CategoriesProvider] Completed");
 
         return $products;
     }

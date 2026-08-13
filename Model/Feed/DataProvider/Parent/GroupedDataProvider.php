@@ -251,7 +251,7 @@ class GroupedDataProvider implements DataProviderInterface
                 $finalProducts[] = $childClone;
             }
         }
-        $this->logger->info("[GroupedDataProvider] Finished");
+        $this->logger->info("[GroupedDataProvider] Completed");
 
         return array_values($finalProducts);
     }

@@ -95,6 +95,7 @@ class AttributesProvider implements DataProviderInterface
      */
     public function getData(array $products, FeedSpecificationInterface $feedSpecification): array
     {
+        $this->logger->info("[AttributesProvider] Started");
         $this->loadAttributes($feedSpecification);
 
         foreach ($products as &$product) {
@@ -109,6 +110,7 @@ class AttributesProvider implements DataProviderInterface
                 $this->getProductData($product, $productModel, $feedSpecification)
             );
         }
+        $this->logger->info("[AttributesProvider] Completed");
         unset($product);
 
         return $products;
