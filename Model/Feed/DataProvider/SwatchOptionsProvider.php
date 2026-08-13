@@ -123,7 +123,7 @@ class SwatchOptionsProvider implements DataProviderInterface
 
             // Only SIMPLE products get SwatchOptionsProvider
             if ($productModel->getTypeId() !== 'simple') {
-                $this->logger->debug('Skipping non-simple product', [
+                $this->logger->debug('[SwatchOptionsProvider] Skipping non-simple product', [
                     'sku' => $sku
                 ]);
                 continue;
@@ -166,7 +166,7 @@ class SwatchOptionsProvider implements DataProviderInterface
                     $optionId = $productModel->getData($attrCode);
 
                     $this->logger->debug(
-                        'Processing attribute', [
+                        '[SwatchOptionsProvider] Processing attribute', [
                         'sku' => $sku,
                         'attr_code' => $attrCode,
                         'simple_value' => $simpleValue,
@@ -180,7 +180,7 @@ class SwatchOptionsProvider implements DataProviderInterface
                     // Check against feedSpecification array
                     if (!in_array($attrCode, $swatch)) {
                         $this->logger->debug(
-                            'Skipping attribute because it is not in swatch array', [
+                            '[SwatchOptionsProvider] Skipping attribute because it is not in swatch array', [
                             'sku' => $sku,
                             'attr_code' => $attrCode
                         ]);

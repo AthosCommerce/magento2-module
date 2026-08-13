@@ -62,7 +62,7 @@ class ChildVisibilityExclusion implements FeedItemFilterInterface
 
             $this->logger->debug(
                 sprintf(
-                    'Excluding PID %s because it is not visible individually, has type %s and is an orphan',
+                    '[Exclusion] Excluding PID %s because it is not visible individually, has type %s and is an orphan',
                     $product->getId(),
                     $product->getTypeId()
                 )
@@ -114,7 +114,7 @@ class ChildVisibilityExclusion implements FeedItemFilterInterface
         } catch (\Exception $e) {
             $this->logger->error(
                 sprintf(
-                    'Error checking parent relation for product ID %s: %s',
+                    '[Exclusion] Error checking parent relation for product ID %s: %s',
                     $productId,
                     $e->getMessage()
                 )

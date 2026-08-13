@@ -126,7 +126,7 @@ class PreSignedUrl
             && (bool)$this->appConfig->getValue('product_api_mock')
         ) {
             $this->logger->info(
-                'Data feed mocked as per configuration:',
+                'Catalog data feed mocked as per configuration:',
                 [
                     'store' => $feedSpecification->getStoreCode(),
                     'feed_spec' => method_exists($feedSpecification, '__toArray')

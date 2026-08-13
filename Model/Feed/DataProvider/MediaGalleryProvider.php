@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Model\Feed\DataProvider;
 
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use Magento\Catalog\Helper\Image;
 use Magento\Catalog\Model\Product;
 use Magento\Framework\Serialize\Serializer\Json;
@@ -35,21 +36,27 @@ class MediaGalleryProvider implements DataProviderInterface
      * @var Json
      */
     private $json;
+    /**
+     * @var AthosCommerceLogger
+     */
+    private $logger;
 
     private $imageHelpers = [];
 
     /**
-     * MediaGalleryProvider constructor.
      * @param Image $imageHelper
      * @param Json $json
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
-        Image $imageHelper,
-        Json  $json
+        Image               $imageHelper,
+        Json                $json,
+        AthosCommerceLogger $logger
     )
     {
         $this->imageHelper = $imageHelper;
         $this->json = $json;
+        $this->logger = $logger;
     }
 
     /**
@@ -60,7 +67,7 @@ class MediaGalleryProvider implements DataProviderInterface
     public function getData(array $products, FeedSpecificationInterface $feedSpecification): array
     {
         $this->logger->info("[MediaGalleryProvider] Started");
-        
+
         foreach ($products as &$product) {
             $model = $product['product_model'] ?? null;
             if (!$model) {

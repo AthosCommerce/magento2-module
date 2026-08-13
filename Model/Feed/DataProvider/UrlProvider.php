@@ -18,12 +18,28 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Model\Feed\DataProvider;
 
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use Magento\Catalog\Model\Product;
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
 
 class UrlProvider implements DataProviderInterface
 {
+
+    /**
+     * @var AthosCommerceLogger
+     */
+    private $logger;
+
+    /**
+     * @param AthosCommerceLogger $logger
+     */
+    public function __construct(
+        AthosCommerceLogger $logger
+    )
+    {
+        $this->logger = $logger;
+    }
 
     /**
      * @param array $products

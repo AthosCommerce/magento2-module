@@ -29,7 +29,7 @@ use Magento\Framework\Exception\LocalizedException;
 class AllVariantsProvider implements DataProviderInterface
 {
     public const FIELD_KEY_ALL_VARIANTS = 'all_variants';
-    
+
     /**
      * @var StockRegistryInterface
      */
@@ -68,8 +68,8 @@ class AllVariantsProvider implements DataProviderInterface
     ): array
     {
         $this->logger->info('[AllVariantsProvider] Started');
-        $ignoredFields = $feedSpecification->getIgnoreFields();
 
+        $ignoredFields = $feedSpecification->getIgnoreFields();
         if (
             in_array(self::FIELD_KEY_ALL_VARIANTS, $ignoredFields, true)
             || !$feedSpecification->getIncludeAllVariants()
@@ -104,7 +104,7 @@ class AllVariantsProvider implements DataProviderInterface
             $product[self::FIELD_KEY_ALL_VARIANTS] = $allVariants;
         }
         $this->logger->info('[AllVariantsProvider] Completed');
-        
+
         return $products;
     }
 

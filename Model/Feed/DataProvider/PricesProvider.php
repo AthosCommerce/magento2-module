@@ -7,17 +7,18 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Model\Feed\DataProvider;
 
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\ParentVariantResolver;
 use Magento\Catalog\Model\Product;
 use Magento\Catalog\Pricing\Price\FinalPrice;
@@ -45,22 +46,28 @@ class PricesProvider implements DataProviderInterface
      * @var ParentVariantResolver
      */
     private $parentVariantResolver;
+    /**
+     * @var AthosCommerceLogger
+     */
+    private $logger;
 
     /**
-     * PricesProvider constructor.
-     *
      * @param Json $json
      * @param ProviderResolverInterface $priceProviderResolver
      * @param ParentVariantResolver $parentVariantResolver
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
-        Json $json,
+        Json                      $json,
         ProviderResolverInterface $priceProviderResolver,
-        ParentVariantResolver $parentVariantResolver
-    ) {
+        ParentVariantResolver     $parentVariantResolver,
+        AthosCommerceLogger       $logger,
+    )
+    {
         $this->json = $json;
         $this->priceProviderResolver = $priceProviderResolver;
         $this->parentVariantResolver = $parentVariantResolver;
+        $this->logger = $logger;
     }
 
     /**

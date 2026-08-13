@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Model\Feed\DataProvider;
 
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use Exception;
 use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Catalog\Model\Product\Option;
@@ -43,22 +44,29 @@ class OptionsProvider implements DataProviderInterface
      * @var StoreManagerInterface
      */
     private $storeManager;
+    /**
+     * @var AthosCommerceLogger
+     */
+    private $logger;
 
     /**
      * OptionsProvider constructor.
      * @param MetadataPool $metadataPool
      * @param OptionCollectionFactory $optionCollectionFactory
      * @param StoreManagerInterface $storeManager
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
         MetadataPool            $metadataPool,
         OptionCollectionFactory $optionCollectionFactory,
-        StoreManagerInterface   $storeManager
+        StoreManagerInterface   $storeManager,
+        AthosCommerceLogger     $logger
     )
     {
         $this->metadataPool = $metadataPool;
         $this->optionCollectionFactory = $optionCollectionFactory;
         $this->storeManager = $storeManager;
+        $this->logger = $logger;
     }
 
     /**
@@ -74,7 +82,6 @@ class OptionsProvider implements DataProviderInterface
         if (in_array('__optionsDataProvider', $ignoreFields)) {
             return $products;
         }
-
 
         $linkField = $this->metadataPool->getMetadata(ProductInterface::class)->getLinkField();
         $productIds = [];

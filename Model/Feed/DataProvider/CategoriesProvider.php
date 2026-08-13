@@ -94,7 +94,7 @@ class CategoriesProvider implements DataProviderInterface
     ): array
     {
         $this->logger->info("[CategoriesProvider] Started");
-        
+
         $productIds = [];
         $rowCategorySourceMap = [];
 
@@ -499,6 +499,7 @@ class CategoriesProvider implements DataProviderInterface
     }
 
     /**
+     * Resets the loaded categories and categories data.
      * @return void
      */
     public function reset(): void
@@ -508,6 +509,7 @@ class CategoriesProvider implements DataProviderInterface
     }
 
     /**
+     * Resets the loaded categories and categories data after fetching items.
      * @return void
      */
     public function resetAfterFetchItems(): void

@@ -113,7 +113,7 @@ class MinMaxPricesProvider implements DataProviderInterface
 
         if (isset($this->cache[$cacheKey])) {
             $this->logger->debug(
-                'MinMaxPricesProvider: Cached data found',
+                '[MinMaxPricesProvider] Cached data found',
                 [
                     'cacheKey' => $cacheKey,
                     'cacheData' => $this->cache[$cacheKey],
@@ -128,7 +128,7 @@ class MinMaxPricesProvider implements DataProviderInterface
         $variants = $this->getParentChildren($parent);
         if (empty($variants)) {
             $this->logger->debug(
-                'MinMaxPricesProvider: Parent has no child variants',
+                '[MinMaxPricesProvider] Parent has no child variants',
                 [
                     'cacheKey' => $cacheKey,
                     'parentId' => (int)$parent->getId(),
@@ -142,7 +142,7 @@ class MinMaxPricesProvider implements DataProviderInterface
         $this->cache[$cacheKey] = $this->aggregatePrices($variants, $ignoredFields);
 
         $this->logger->debug(
-            'MinMaxPricesProvider: Aggregated min/max prices for parent product',
+            '[MinMaxPricesProvider] Aggregated min/max prices for parent product',
             [
                 'cacheKey' => $cacheKey,
                 'cacheData' => $this->cache[$cacheKey],
@@ -185,7 +185,7 @@ class MinMaxPricesProvider implements DataProviderInterface
         }
 
         $this->logger->debug(
-            'Aggregated prices for parent product',
+            '[MinMaxPricesProvider] Aggregated prices for parent product',
             [
                 'regularPrices' => $regularPrices,
                 'finalPrices' => $finalPrices,
