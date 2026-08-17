@@ -28,6 +28,7 @@ use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
 use Exception;
 use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Catalog\Model\Category;
+use Magento\Catalog\Model\Product;
 use Magento\Framework\Exception\LocalizedException;
 
 class CategoriesProvider implements DataProviderInterface
@@ -97,11 +98,7 @@ class CategoriesProvider implements DataProviderInterface
         $rowCategorySourceMap = [];
 
         foreach ($products as $index => $product) {
-            if (!isset($product['entity_id'])) {
-                continue;
-            }
-
-            $entityId = (int)$product['entity_id'];
+            $entityId = $this->extractProductEntityId($product);
             if ($entityId <= 0) {
                 continue;
             }
@@ -127,7 +124,7 @@ class CategoriesProvider implements DataProviderInterface
         $this->loadCategories($productsCategories, $feedSpecification);
 
         foreach ($products as $index => &$product) {
-            $entityId = isset($product['entity_id']) ? (int)$product['entity_id'] : 0;
+            $entityId = $this->extractProductEntityId($product);
             if ($entityId <= 0) {
                 continue;
             }
@@ -196,10 +193,14 @@ class CategoriesProvider implements DataProviderInterface
             if (!in_array('parent_category_hierarchy', $ignoredFields, true)) {
                 $product['parent_category_hierarchy'] = $resolvedCategories['category_hierarchy'] ?? [];
             }
-            if (!in_array('parent_menu_hierarchy', $ignoredFields, true)) {
+            if (!in_array('parent_menu_hierarchy', $ignoredFields, true)
+                && $feedSpecification->getIncludeMenuCategories()
+            ) {
                 $product['parent_menu_hierarchy'] = $resolvedCategories['menu_hierarchy'] ?? [];
             }
-            if (!in_array('parent_url_hierarchy', $ignoredFields, true)) {
+            if (!in_array('parent_url_hierarchy', $ignoredFields, true)
+                && $feedSpecification->getIncludeUrlHierarchy()
+            ) {
                 $product['parent_url_hierarchy'] = $resolvedCategories['url_hierarchy'] ?? [];
             }
         }
@@ -222,7 +223,7 @@ class CategoriesProvider implements DataProviderInterface
      */
     private function resolveCategorySourceId(array $product): int
     {
-        $entityId = isset($product['entity_id']) ? (int)$product['entity_id'] : 0;
+        $entityId = $this->extractProductEntityId($product);
         if ($entityId <= 0) {
             return 0;
         }
@@ -240,6 +241,13 @@ class CategoriesProvider implements DataProviderInterface
 
         if ($resolvedParentId > 0) {
             return $resolvedParentId;
+        }
+
+        $explicitParentId = isset($product[Constant::PARENT_ID])
+            ? $this->extractNumericIdValue($product[Constant::PARENT_ID])
+            : 0;
+        if ($explicitParentId > 0) {
+            return $explicitParentId;
         }
 
         $parentSku = $product[Constant::RESOLVED_PARENT_SKU_KEY]
@@ -427,43 +435,87 @@ class CategoriesProvider implements DataProviderInterface
             'include_menu' => $category->getIncludeInMenu(),
         ];
 
-        $categoryHierarchy = [];
-        $urlHierarchy = [];
         $currentHierarchy = [];
         $hierarchySeparator = $feedSpecification->getHierarchySeparator();
 
-        foreach ($pathIds as $pathId) {
+        $pathDepth = count($pathIds);
+        foreach ($pathIds as $pathIndex => $pathId) {
             $pathCategory = $this->loadedCategories[$pathId] ?? null;
             if (!$pathCategory) {
                 continue;
             }
 
-            if ($pathId <= 2) {
+            if ($pathIndex === 0) {
                 continue;
             }
 
-            $name = $pathCategory->getName();
-            $currentHierarchy[] = $name;
-
-            $levelPath = implode($hierarchySeparator, $currentHierarchy);
-
-            if (!in_array($levelPath, $categoryHierarchy, true)) {
-                $categoryHierarchy[] = $levelPath;
+            // Keep the store root only when it is the assigned category itself.
+            if ($pathIndex === 1 && $pathDepth > 2) {
+                continue;
             }
 
-            if ($includeUrlHierarchy) {
-                $urlHierarchy[] = $levelPath . '[' . $pathCategory->getUrl() . ']';
-            }
+            $currentHierarchy[] = $pathCategory->getName();
         }
 
-        $result['hierarchy'] = array_values(array_unique($categoryHierarchy));
+        if ($currentHierarchy === []) {
+            return $result;
+        }
+
+        $hierarchy = implode($hierarchySeparator, $currentHierarchy);
+        $result['hierarchy'] = [$hierarchy];
 
         if ($includeUrlHierarchy) {
             $result['url'] = $category->getUrl();
-            $result['url_hierarchy'] = array_values(array_unique($urlHierarchy));
+            $result['url_hierarchy'] = [$hierarchy . '[' . $category->getUrl() . ']'];
         }
 
         return $result;
+    }
+
+    /**
+     * @param array $product
+     * @return int
+     */
+    private function extractProductEntityId(array $product): int
+    {
+        $productModel = $product['product_model'] ?? null;
+        if ($productModel instanceof Product && $productModel->getId()) {
+            return (int)$productModel->getId();
+        }
+
+        $entityId = $product['entity_id'] ?? null;
+        if (is_int($entityId)) {
+            return $entityId;
+        }
+
+        if (is_string($entityId) && ctype_digit($entityId)) {
+            return (int)$entityId;
+        }
+
+        return 0;
+    }
+
+    /**
+     * @param mixed $value
+     * @return int
+     */
+    private function extractNumericIdValue($value): int
+    {
+        if (is_int($value)) {
+            return $value;
+        }
+
+        if (is_string($value)) {
+            if (ctype_digit($value)) {
+                return (int)$value;
+            }
+        }
+
+        if (is_numeric($value)) {
+            return (int)$value;
+        }
+
+        return 0;
     }
 
     /**

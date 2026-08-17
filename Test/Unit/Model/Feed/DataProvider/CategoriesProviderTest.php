@@ -24,6 +24,7 @@ use AthosCommerce\Feed\Model\Feed\DataProvider\CategoriesProvider;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Category\CollectionBuilder;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Category\GetCategoriesByProductIds;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentRelationsContext;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\Constant;
 use Magento\Catalog\Model\Category;
 use Magento\Catalog\Model\ResourceModel\Category\Collection;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -71,88 +72,105 @@ class CategoriesProviderTest extends TestCase
         );
     }
 
-    public function testGetData(): void
+    public function testGetDataUsesStampedParentMarkers(): void
     {
-        $categoryMock = $this->createMock(Category::class);
         $collectionMock = $this->createMock(Collection::class);
 
         $products = [
-            ['entity_id' => 1],
-            ['entity_id' => 2],
+            [
+                'entity_id' => 5,
+                Constant::IS_BELONG_TO_PARENT_KEY => 1,
+                Constant::RESOLVED_PARENT_ID_KEY => 7,
+                Constant::PARENT_ID => 7,
+                Constant::RESOLVED_PARENT_SKU_KEY => 'GP',
+                Constant::RESOLVED_PARENT_TYPE_KEY => 'grouped',
+            ],
         ];
 
         $feedSpecificationMock = $this->createMock(FeedSpecificationInterface::class);
 
-        $feedSpecificationMock->expects($this->once())
-            ->method('getIgnoreFields')
-            ->willReturn([]);
-
-        $feedSpecificationMock->expects($this->once())
-            ->method('getStoreCode')
-            ->willReturn('1');
-
-        $feedSpecificationMock->method('getIncludeMenuCategories')
-            ->willReturn(true);
-
-        $feedSpecificationMock->method('getIncludeUrlHierarchy')
-            ->willReturn(false);
-
-        $feedSpecificationMock->method('getHierarchySeparator')
-            ->willReturn(' > ');
+        $feedSpecificationMock->method('getIgnoreFields')->willReturn([]);
+        $feedSpecificationMock->method('getStoreCode')->willReturn('1');
+        $feedSpecificationMock->method('getIncludeMenuCategories')->willReturn(false);
+        $feedSpecificationMock->method('getIncludeUrlHierarchy')->willReturn(true);
+        $feedSpecificationMock->method('getHierarchySeparator')->willReturn('>');
 
         $this->getCategoriesByProductIdsMock->expects($this->once())
             ->method('execute')
-            ->with([1, 2])
+            ->with([5, 7])
             ->willReturn([
-                1 => [
+                7 => [
                     [
-                        'category_id' => 1,
-                        'path' => '1/3',
+                        'category_id' => 2,
+                        'path' => '1/2',
                     ],
-                ],
-                2 => [
                     [
-                        'category_id' => 1,
-                        'path' => '1/3',
+                        'category_id' => 16,
+                        'path' => '1/2/9/10/16',
                     ],
                 ],
             ]);
 
         $this->collectionBuilderMock->expects($this->once())
             ->method('buildCollection')
-            ->with([1, 3], $feedSpecificationMock)
+            ->with([2, 1, 16, 9, 10], $feedSpecificationMock)
             ->willReturn($collectionMock);
 
         $collectionMock->expects($this->once())
             ->method('getItems')
-            ->willReturn([$categoryMock]);
-
-        $categoryMock->method('setStoreId')->willReturnSelf();
-        $categoryMock->method('getEntityId')->willReturn(1);
-        $categoryMock->method('getPathIds')->willReturn([1, 3]);
-        $categoryMock->method('getName')->willReturn('Category 1');
-        $categoryMock->method('getIncludeInMenu')->willReturn(true);
+            ->willReturn([
+                $this->createCategoryMock(2, [1, 2], 'Default Category', 'http://example.com/default.html'),
+                $this->createCategoryMock(9, [1, 2, 9], 'Gear', 'http://example.com/gear.html'),
+                $this->createCategoryMock(10, [1, 2, 9, 10], 'Fitness Equipment', 'http://example.com/fitness-equipment.html'),
+                $this->createCategoryMock(16, [1, 2, 9, 10, 16], 'Type All', 'http://example.com/type-all.html'),
+            ]);
 
         $result = $this->categoriesProvider->getData($products, $feedSpecificationMock);
 
         $this->assertSame(
             [
                 [
-                    'entity_id' => 1,
-                    'categories' => ['Category 1'],
-                    'category_ids' => [1],
-                    'category_hierarchy' => [],
-                    'menu_hierarchy' => [],
-                ],
-                [
-                    'entity_id' => 2,
-                    'categories' => ['Category 1'],
-                    'category_ids' => [1],
-                    'category_hierarchy' => [],
-                    'menu_hierarchy' => [],
+                    'entity_id' => 5,
+                    Constant::IS_BELONG_TO_PARENT_KEY => 1,
+                    Constant::RESOLVED_PARENT_ID_KEY => 7,
+                    Constant::PARENT_ID => 7,
+                    Constant::RESOLVED_PARENT_SKU_KEY => 'GP',
+                    Constant::RESOLVED_PARENT_TYPE_KEY => 'grouped',
+                    'categories' => ['Default Category', 'Type All'],
+                    'category_ids' => [2, 16],
+                    'category_hierarchy' => ['Default Category', 'Gear>Fitness Equipment>Type All'],
+                    'url_hierarchy' => [
+                        'Default Category[http://example.com/default.html]',
+                        'Gear>Fitness Equipment>Type All[http://example.com/type-all.html]',
+                    ],
+                    'parent_category_id' => 7,
+                    'parent_categories' => ['Default Category', 'Type All'],
+                    'parent_category_ids' => [2, 16],
+                    'parent_category_hierarchy' => ['Default Category', 'Gear>Fitness Equipment>Type All'],
+                    'parent_url_hierarchy' => [
+                        'Default Category[http://example.com/default.html]',
+                        'Gear>Fitness Equipment>Type All[http://example.com/type-all.html]',
+                    ],
                 ],
             ],
             $result
         );
+    }
+
+    private function createCategoryMock(
+        int $entityId,
+        array $pathIds,
+        string $name,
+        string $url
+    ): Category {
+        $categoryMock = $this->createMock(Category::class);
+        $categoryMock->method('setStoreId')->willReturnSelf();
+        $categoryMock->method('getEntityId')->willReturn($entityId);
+        $categoryMock->method('getPathIds')->willReturn($pathIds);
+        $categoryMock->method('getName')->willReturn($name);
+        $categoryMock->method('getIncludeInMenu')->willReturn(false);
+        $categoryMock->method('getUrl')->willReturn($url);
+
+        return $categoryMock;
     }
 }
