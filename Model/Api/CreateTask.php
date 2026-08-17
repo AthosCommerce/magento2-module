@@ -138,7 +138,7 @@ class CreateTask implements CreateTaskInterface
             throw new Exception((string)__('$payload must be array'));
         }
 
-        if (!empty($payload['isMsiEnabled']) && $this->isMsiEnabled()) {
+        if ($this->isMsiEnabled()) {
             $message = 'MSI is enabled via payload and MSI module is enabled. Using MsiStockProvider for stock resolution.';
         } else {
             $message = 'MSI is disabled via payload or MSI modules are not installed. Using LegacyStockProvider for stock resolution.';
@@ -149,9 +149,6 @@ class CreateTask implements CreateTaskInterface
                 'method' => __METHOD__,
                 'type' => $type,
                 'payload' => $payload,
-                'isMsiEnabledViaPayload' => array_key_exists('isMsiEnabled', $payload)
-                    ? $payload['isMsiEnabled']
-                    : '',
                 'isMsiModuleEnabled' => $this->isMsiEnabled(),
                 'message' => $message
             ]
