@@ -53,10 +53,6 @@ class LogInfo extends AbstractHelper
         'deleteExtensionDebugLogFileRemove' => 'File athoscommerce feed debug log removed successfully',
         'deleteExtensionDebugLogFileError' => 'File athoscommerce feed debug log not present at the location',
 
-        'deleteExceptionLogFileInfo' => 'File exception log will be removed from the path',
-        'deleteExceptionLogFileRemove' => 'File exception log removed successfully from the path',
-        'deleteExceptionLogFileError' => 'File exception log not present at the location',
-
         // Get Log Constants
         'getExtensionLogFileInfo' => 'File athoscommerce feed log will be retrieved from the path',
         'getExtensionLogFileError' => 'File athoscommerce feed log not present at the location:',
@@ -182,21 +178,6 @@ class LogInfo extends AbstractHelper
             self::LOG['getExtensionDebugLogInfo'],
             self::LOG['getExtensionDebugLogFileError'],
             $compressOutput
-        );
-    }
-
-    /**
-     * Delete Exception Log File
-     *
-     * @return bool
-     */
-    public function deleteExceptionLogFile(): bool
-    {
-        return $this->deleteLogFile(
-            self::LOG['exception'],
-            self::LOG['deleteExceptionLogFileInfo'],
-            self::LOG['deleteExceptionLogFileRemove'],
-            self::LOG['deleteExceptionLogFileError']
         );
     }
 

@@ -53,12 +53,6 @@ interface GetApplicationLogInterface
     public function getExceptionLog(bool $compressOutput = false) : string;
 
     /**
-     * @return bool
-     *
-     * @throws LocalizedException
-     */
-    public function clearExceptionLog() : bool;
-    /**
      * @param bool $compressOutput
      *
      * @return string

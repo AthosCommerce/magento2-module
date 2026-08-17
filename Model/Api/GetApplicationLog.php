@@ -60,14 +60,6 @@ class GetApplicationLog implements GetApplicationLogInterface
     }
 
     /**
-     * @return bool
-     */
-    public function clearExceptionLog() : bool
-    {
-        return $this->helper->deleteExceptionLogFile();
-    }
-
-    /**
      * @return string
      */
     public function getCronLog(bool $compressOutput = false) : string

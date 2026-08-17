@@ -26,12 +26,6 @@
             <resource ref="AthosCommerce_Feed::general" />
         </resources>
     </route>
-    <route url="/V1/athoscommerce/exceptionlog/clear" method="POST">
-        <service class="AthosCommerce\Feed\Api\GetApplicationLogInterface" method="clearExceptionLog" />
-        <resources>
-            <resource ref="AthosCommerce_Feed::general" />
-        </resources>
-    </route>
     <route url="/V1/athoscommerce/applicationlog/error" method="GET">
         <service class="AthosCommerce\Feed\Api\GetApplicationLogInterface" method="getExtensionErrorLog" />
         <resources>
