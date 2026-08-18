@@ -143,7 +143,7 @@ class LogInfoTest extends TestCase
 
         $result = $this->helper->getExtensionLogFile(true);
 
-        // Calculate expected URL-safe base64 deflate output
+        // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
         $expectedCompressed = rtrim(strtr(base64_encode(gzdeflate($logContent, 9)), '+/', '-_'), '=');
 
         $this->assertEquals($expectedCompressed, $result);
@@ -156,6 +156,11 @@ class LogInfoTest extends TestCase
         $this->fileDriverMock->expects($this->once())
             ->method('isExists')
             ->with($expectedFilePath)
+            ->willReturn(true);
+
+        $this->fileDriverMock->expects($this->once())
+            ->method('fileGetContents')
+            ->with($expectedFilePath)
             ->willThrowException(new FileSystemException(__('File error')));
 
         $this->loggerMock->expects($this->once())
@@ -164,5 +169,57 @@ class LogInfoTest extends TestCase
 
         $result = $this->helper->getExtensionLogFile(false);
         $this->assertEquals('', $result);
+    }
+
+    /**
+     * Test keyword filtering with plain text search
+     */
+    public function testGetExtensionLogFileWithPlainKeyword(): void
+    {
+        $expectedFilePath = $this->logDirPath . '/athoscommerce_feed.log';
+        $logContent = "Line 1: INFO operation succeeded\nLine 2: ERROR system failure\nLine 3: DEBUG info";
+
+        $this->fileDriverMock->method('isExists')->willReturn(true);
+        $this->fileDriverMock->method('fileGetContents')->willReturn($logContent);
+
+        $result = $this->helper->getExtensionLogFile(false, 100, 0, 0, 'ERROR');
+
+        $this->assertEquals('Line 2: ERROR system failure', $result);
+    }
+
+    /**
+     * Test keyword filtering with a valid regex pattern
+     */
+    public function testGetExtensionLogFileWithValidRegexKeyword(): void
+    {
+        $expectedFilePath = $this->logDirPath . '/athoscommerce_feed.log';
+        $logContent = "Line 1: INFO success\nLine 2: ERROR critical failure\nLine 3: WARNING soft failure";
+
+        $this->fileDriverMock->method('isExists')->willReturn(true);
+        $this->fileDriverMock->method('fileGetContents')->willReturn($logContent);
+
+        $result = $this->helper->getExtensionLogFile(false, 100, 0, 0, '/(ERROR|WARNING)/i');
+
+        $this->assertStringContainsString('Line 2: ERROR critical failure', $result);
+        $this->assertStringContainsString('Line 3: WARNING soft failure', $result);
+        $this->assertStringNotContainsString('Line 1: INFO success', $result);
+    }
+
+    /**
+     * Test keyword filtering with an invalid regex falls back to plain substring
+     */
+    public function testGetExtensionLogFileWithInvalidRegexFallback(): void
+    {
+        $expectedFilePath = $this->logDirPath . '/athoscommerce_feed.log';
+        // Content contains a literal malformed pattern string
+        $logContent = "Line 1: Normal log\nLine 2: /[unclosed bracket log";
+
+        $this->fileDriverMock->method('isExists')->willReturn(true);
+        $this->fileDriverMock->method('fileGetContents')->willReturn($logContent);
+
+        // Malformed regex: missing closing bracket ']'
+        $result = $this->helper->getExtensionLogFile(false, 100, 0, 0, '/[unclosed');
+
+        $this->assertEquals('Line 2: /[unclosed bracket log', $result);
     }
 }
