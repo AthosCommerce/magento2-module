@@ -38,9 +38,9 @@ class GetApplicationLog implements GetApplicationLogInterface
     /**
      * @return string
      */
-    public function getExtensionLog(bool $compressOutput = false) : string
+    public function getExtensionLog(bool $compressOutput = false, int $lastLines = 100, int $startLine = 0, int $endLine = 0, string $keyword = '', string $startDate = '', string $endDate = '') : string
     {
-        return $this->helper->getExtensionLogFile($compressOutput);
+        return $this->helper->getExtensionLogFile($compressOutput, $lastLines, $startLine, $endLine, $keyword, $startDate, $endDate);
     }
 
     /**
@@ -54,9 +54,9 @@ class GetApplicationLog implements GetApplicationLogInterface
     /**
      * @return string
      */
-    public function getExceptionLog(bool $compressOutput = false) : string
+    public function getExceptionLog(bool $compressOutput = false, int $lastLines = 100, int $startLine = 0, int $endLine = 0, string $keyword = '', string $startDate = '', string $endDate = '') : string
     {
-        return $this->helper->getExceptionLogFile($compressOutput);
+        return $this->helper->getExceptionLogFile($compressOutput, $lastLines, $startLine, $endLine, $keyword, $startDate, $endDate);
     }
 
     /**
@@ -70,17 +70,17 @@ class GetApplicationLog implements GetApplicationLogInterface
     /**
      * @return string
      */
-    public function getCronLog(bool $compressOutput = false) : string
+    public function getCronLog(bool $compressOutput = false, int $lastLines = 100, int $startLine = 0, int $endLine = 0, string $keyword = '', string $startDate = '', string $endDate = '') : string
     {
-        return $this->helper->getCronLogFile($compressOutput);
+        return $this->helper->getCronLogFile($compressOutput, $lastLines, $startLine, $endLine, $keyword, $startDate, $endDate);
     }
 
     /**
      * @return string
      */
-    public function getExtensionErrorLog(bool $compressOutput = false) : string
+    public function getExtensionErrorLog(bool $compressOutput = false, int $lastLines = 100, int $startLine = 0, int $endLine = 0, string $keyword = '', string $startDate = '', string $endDate = '') : string
     {
-        return $this->helper->getExtensionErrorLogFile($compressOutput);
+        return $this->helper->getExtensionErrorLogFile($compressOutput, $lastLines, $startLine, $endLine, $keyword, $startDate, $endDate);
     }
 
     /**
@@ -94,9 +94,9 @@ class GetApplicationLog implements GetApplicationLogInterface
     /**
      * @return string
      */
-    public function getExtensionDebugLog(bool $compressOutput = false) : string
+    public function getExtensionDebugLog(bool $compressOutput = false, int $lastLines = 100, int $startLine = 0, int $endLine = 0, string $keyword = '', string $startDate = '', string $endDate = '') : string
     {
-        return $this->helper->getExtensionDebugLogFile($compressOutput);
+        return $this->helper->getExtensionDebugLogFile($compressOutput, $lastLines, $startLine, $endLine, $keyword, $startDate, $endDate);
     }
 
     /**

@@ -29,12 +29,18 @@ interface GetApplicationLogInterface
 {
     /**
      * @param bool $compressOutput
+     * @param int $lastLines Number of lines from the end (default 100). Ignored when startLine or endLine is provided.
+     * @param int $startLine 1-based start line (0 = beginning of file). Used with endLine for a positional range.
+     * @param int $endLine 1-based end line (0 = end of file). Used with startLine for a positional range.
+     * @param string $keyword Plain string or regex (e.g. /pattern/i) to filter matching lines.
+     * @param string $startDate ISO 8601 date/datetime to filter lines on or after (e.g. 2025-01-15 or 2025-01-15T10:00:00).
+     * @param string $endDate ISO 8601 date/datetime to filter lines on or before (e.g. 2025-01-15 includes the full day).
      *
      * @return string
      *
      * @throws LocalizedException
      */
-    public function getExtensionLog(bool $compressOutput = false) : string;
+    public function getExtensionLog(bool $compressOutput = false, int $lastLines = 100, int $startLine = 0, int $endLine = 0, string $keyword = '', string $startDate = '', string $endDate = '') : string;
 
     /**
      * @return bool
@@ -45,12 +51,18 @@ interface GetApplicationLogInterface
 
     /**
      * @param bool $compressOutput
+     * @param int $lastLines Number of lines from the end (default 100). Ignored when startLine or endLine is provided.
+     * @param int $startLine 1-based start line (0 = beginning of file). Used with endLine for a positional range.
+     * @param int $endLine 1-based end line (0 = end of file). Used with startLine for a positional range.
+     * @param string $keyword Plain string or regex (e.g. /pattern/i) to filter matching lines.
+     * @param string $startDate ISO 8601 date/datetime to filter lines on or after.
+     * @param string $endDate ISO 8601 date/datetime to filter lines on or before.
      *
      * @return string
      *
      * @throws LocalizedException
      */
-    public function getExceptionLog(bool $compressOutput = false) : string;
+    public function getExceptionLog(bool $compressOutput = false, int $lastLines = 100, int $startLine = 0, int $endLine = 0, string $keyword = '', string $startDate = '', string $endDate = '') : string;
 
     /**
      * @return bool
@@ -58,22 +70,36 @@ interface GetApplicationLogInterface
      * @throws LocalizedException
      */
     public function clearExceptionLog() : bool;
+
     /**
      * @param bool $compressOutput
+     * @param int $lastLines Number of lines from the end (default 100). Ignored when startLine or endLine is provided.
+     * @param int $startLine 1-based start line (0 = beginning of file). Used with endLine for a positional range.
+     * @param int $endLine 1-based end line (0 = end of file). Used with startLine for a positional range.
+     * @param string $keyword Plain string or regex (e.g. /pattern/i) to filter matching lines.
+     * @param string $startDate ISO 8601 date/datetime to filter lines on or after.
+     * @param string $endDate ISO 8601 date/datetime to filter lines on or before.
      *
      * @return string
      *
      * @throws LocalizedException
      */
-    public function getCronLog(bool $compressOutput = false) : string;
+    public function getCronLog(bool $compressOutput = false, int $lastLines = 100, int $startLine = 0, int $endLine = 0, string $keyword = '', string $startDate = '', string $endDate = '') : string;
+
     /**
      * @param bool $compressOutput
+     * @param int $lastLines Number of lines from the end (default 100). Ignored when startLine or endLine is provided.
+     * @param int $startLine 1-based start line (0 = beginning of file). Used with endLine for a positional range.
+     * @param int $endLine 1-based end line (0 = end of file). Used with startLine for a positional range.
+     * @param string $keyword Plain string or regex (e.g. /pattern/i) to filter matching lines.
+     * @param string $startDate ISO 8601 date/datetime to filter lines on or after.
+     * @param string $endDate ISO 8601 date/datetime to filter lines on or before.
      *
      * @return string
      *
      * @throws LocalizedException
      */
-    public function getExtensionErrorLog(bool $compressOutput = false) : string;
+    public function getExtensionErrorLog(bool $compressOutput = false, int $lastLines = 100, int $startLine = 0, int $endLine = 0, string $keyword = '', string $startDate = '', string $endDate = '') : string;
 
     /**
      * @return bool
@@ -81,14 +107,21 @@ interface GetApplicationLogInterface
      * @throws LocalizedException
      */
     public function clearExtensionErrorLog() : bool;
+
     /**
      * @param bool $compressOutput
+     * @param int $lastLines Number of lines from the end (default 100). Ignored when startLine or endLine is provided.
+     * @param int $startLine 1-based start line (0 = beginning of file). Used with endLine for a positional range.
+     * @param int $endLine 1-based end line (0 = end of file). Used with startLine for a positional range.
+     * @param string $keyword Plain string or regex (e.g. /pattern/i) to filter matching lines.
+     * @param string $startDate ISO 8601 date/datetime to filter lines on or after.
+     * @param string $endDate ISO 8601 date/datetime to filter lines on or before.
      *
      * @return string
      *
      * @throws LocalizedException
      */
-    public function getExtensionDebugLog(bool $compressOutput = false) : string;
+    public function getExtensionDebugLog(bool $compressOutput = false, int $lastLines = 100, int $startLine = 0, int $endLine = 0, string $keyword = '', string $startDate = '', string $endDate = '') : string;
 
     /**
      * @return bool
