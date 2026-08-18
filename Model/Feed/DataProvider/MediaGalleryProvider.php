@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Model\Feed\DataProvider;
 
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use Magento\Catalog\Helper\Image;
 use Magento\Catalog\Model\Product;
 use Magento\Framework\Serialize\Serializer\Json;
@@ -35,20 +36,27 @@ class MediaGalleryProvider implements DataProviderInterface
      * @var Json
      */
     private $json;
+    /**
+     * @var AthosCommerceLogger
+     */
+    private $logger;
 
     private $imageHelpers = [];
 
     /**
-     * MediaGalleryProvider constructor.
      * @param Image $imageHelper
      * @param Json $json
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
-        Image $imageHelper,
-        Json $json
-    ) {
+        Image               $imageHelper,
+        Json                $json,
+        AthosCommerceLogger $logger
+    )
+    {
         $this->imageHelper = $imageHelper;
         $this->json = $json;
+        $this->logger = $logger;
     }
 
     /**
@@ -58,6 +66,8 @@ class MediaGalleryProvider implements DataProviderInterface
      */
     public function getData(array $products, FeedSpecificationInterface $feedSpecification): array
     {
+        $this->logger->info("[MediaGalleryProvider] Started");
+
         foreach ($products as &$product) {
             $model = $product['product_model'] ?? null;
             if (!$model) {
@@ -66,6 +76,7 @@ class MediaGalleryProvider implements DataProviderInterface
 
             $product = array_merge($product, $this->getImages($model, $feedSpecification));
         }
+        $this->logger->info("[MediaGalleryProvider] Completed");
 
         return $products;
     }
@@ -75,7 +86,7 @@ class MediaGalleryProvider implements DataProviderInterface
      * @param FeedSpecificationInterface $feedSpecification
      * @return array
      */
-    private function getImages(Product $product, FeedSpecificationInterface $feedSpecification) : array
+    private function getImages(Product $product, FeedSpecificationInterface $feedSpecification): array
     {
         $mediaGallerySpecification = $feedSpecification->getMediaGallerySpecification();
         $ignoredFields = $feedSpecification->getIgnoreFields();
@@ -98,8 +109,8 @@ class MediaGalleryProvider implements DataProviderInterface
         ) {
             $images = $product->getMediaGalleryImages();
             $mediaGallery = [];
-            foreach($images as $image) {
-                if($image->getMediaType() == 'image') {
+            foreach ($images as $image) {
+                if ($image->getMediaType() == 'image') {
                     $mediaGallery[] = [
                         'label' => $image->getLabel(),
                         'position' => $image->getPosition(),
@@ -128,18 +139,19 @@ class MediaGalleryProvider implements DataProviderInterface
      * @return string
      */
     private function getImage(
-        Product $product,
-        string $type,
+        Product                            $product,
+        string                             $type,
         MediaGallerySpecificationInterface $mediaGallerySpecification,
-        ?string $file = null
-    ) : string {
+        ?string                            $file = null
+    ): string
+    {
         $imageHelper = $this->imageHelper->init($product, $type);
 
         if ($file) {
             $imageHelper->setImageFile($file);
         }
 
-        if($mediaGallerySpecification->getKeepAspectRatio()) {
+        if ($mediaGallerySpecification->getKeepAspectRatio()) {
             $resizedImage = $imageHelper->constrainOnly(true)
                 ->keepAspectRatio(true)
                 ->keepTransparency(true)

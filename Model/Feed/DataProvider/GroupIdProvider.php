@@ -60,6 +60,7 @@ class GroupIdProvider implements DataProviderInterface
         FeedSpecificationInterface $feedSpecification
     ): array
     {
+        $this->logger->info("[GroupIdProvider] Started");
         $ignoredFields = $feedSpecification->getIgnoreFields();
         $groupBySourceFieldName = $feedSpecification->getGroupBySourceFieldName();
 
@@ -133,7 +134,7 @@ class GroupIdProvider implements DataProviderInterface
             }
         }
         unset($product);
-
+        $this->logger->info("[GroupIdProvider] Completed");
         return $products;
     }
 

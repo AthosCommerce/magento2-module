@@ -94,15 +94,20 @@ class LiveIndexing implements LiveIndexingInterface
             }
             $storeId = (int)$store->getId();
             $storeCode = $store->getCode();
-            $isValid = $this->shouldLiveIndexingProcess($storeId);
+
+            $endPoint = $this->config->getEndpointByStoreId($storeId);
+            $liveIndexingStatus = $this->config->isLiveIndexingEnabled($storeId);
+            if(!$endPoint || !$liveIndexingStatus) {
+                continue;
+            }
             $siteId = $this->config->getSiteIdByStoreId($storeId);
-            if ($isValid === false) {
+            if ($siteId === false) {
                 $this->logger->info(
                     "[LiveIndexing] Configuration incomplete for store: " . $storeCode,
                     [
-                        'endpoint' => $this->config->getEndpointByStoreId($storeId),
-                        'status' => $this->config->isLiveIndexingEnabled($storeId),
-                        'siteId' => $siteId,
+                        'endpoint' => $endPoint ?? '',
+                        'status' => $liveIndexingStatus ?? '',
+                        'siteId' => $siteId ?? '',
                     ]
                 );
                 continue;

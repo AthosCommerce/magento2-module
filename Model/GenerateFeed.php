@@ -253,6 +253,7 @@ class GenerateFeed implements GenerateFeedInterface
         $this->logger->debug('Product feed generation time taken execution',
             [
                 'startTime' => $startTime,
+                'entityId' => $id,
                 'endTime' => $endTime,
                 'totalSeconds' => ($endTime - $startTime),
             ]

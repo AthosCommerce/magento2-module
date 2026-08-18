@@ -20,6 +20,7 @@ namespace AthosCommerce\Feed\Model\Feed\DataProvider;
 
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\Constant;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\ParentVariantResolver;
 use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
 use Magento\Catalog\Model\Product;
@@ -28,6 +29,8 @@ use Magento\Framework\Exception\LocalizedException;
 
 class AllVariantsProvider implements DataProviderInterface
 {
+    public const FIELD_KEY_ALL_VARIANTS = 'all_variants';
+
     /**
      * @var StockRegistryInterface
      */
@@ -65,10 +68,11 @@ class AllVariantsProvider implements DataProviderInterface
         FeedSpecificationInterface $feedSpecification
     ): array
     {
-        $ignoredFields = $feedSpecification->getIgnoreFields();
+        $this->logger->info('[AllVariantsProvider] Started');
 
+        $ignoredFields = $feedSpecification->getIgnoreFields();
         if (
-            in_array('__all_variants', $ignoredFields, true)
+            in_array(self::FIELD_KEY_ALL_VARIANTS, $ignoredFields, true)
             || !$feedSpecification->getIncludeAllVariants()
         ) {
             return $products;
@@ -82,10 +86,15 @@ class AllVariantsProvider implements DataProviderInterface
                 continue;
             }
 
+            $isStandaloneProduct = (bool)($product[Constant::IS_STANDALONE_PRODUCT_KEY] ?? false);
+            if ($isStandaloneProduct) {
+                continue;
+            }
+
             $parentProduct = $this->parentVariantResolver->getParentProduct($productModel);
 
             if (!$parentProduct) {
-                $product['__all_variants'] = [];
+                $product[self::FIELD_KEY_ALL_VARIANTS] = [];
                 continue;
             }
 
@@ -98,8 +107,9 @@ class AllVariantsProvider implements DataProviderInterface
                 $allVariants[] = $this->buildVariantRow($child, $variantOptions);
             }
 
-            $product['__all_variants'] = $allVariants;
+            $product[self::FIELD_KEY_ALL_VARIANTS] = $allVariants;
         }
+        $this->logger->info('[AllVariantsProvider] Completed');
 
         return $products;
     }

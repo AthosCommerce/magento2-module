@@ -41,8 +41,9 @@ class CollectionProvider implements CollectionProviderInterface
      */
     public function __construct(
         CollectionFactory $collectionFactory,
-        array $modifiers = []
-    ) {
+        array             $modifiers = []
+    )
+    {
         $this->collectionFactory = $collectionFactory;
         $this->modifiers = $modifiers;
     }
@@ -55,12 +56,21 @@ class CollectionProvider implements CollectionProviderInterface
     public function getCollection(FeedSpecificationInterface $specification): Collection
     {
         $collection = $this->collectionFactory->create();
+        $ignoreFields = $specification->getIgnoreFields();
+
         $modifiers = $this->sort($this->modifiers);
         foreach ($modifiers as $key => $modifierData) {
+            // Check if the modifier should be ignored based on the specification
+            // Add `stockModifier`,`<modifierKey>Modifier` to the ignoreFields to skip it
+            // This is helpful for cases where you want to ignore certain modifiers based on the feed specification
+            $uniqueModifierKey = $key . 'Modifier';
+            if (in_array($uniqueModifierKey, $ignoreFields, true)) {
+                continue;
+            }
             /** @var ModifierInterface $modifier */
             $modifier = $modifierData['objectInstance'] ?? null;
             if (!$modifier) {
-                throw new \Exception((string) __('No objectInstance for modifier %1', $key));
+                throw new \Exception((string)__('No objectInstance for modifier %1', $key));
             }
             $collection = $modifier->modify($collection, $specification);
         }
@@ -87,6 +97,6 @@ class CollectionProvider implements CollectionProviderInterface
      */
     private function getSortOrder(array $variable)
     {
-        return !empty($variable['sortOrder']) ? (int) $variable['sortOrder'] : 0;
+        return !empty($variable['sortOrder']) ? (int)$variable['sortOrder'] : 0;
     }
 }

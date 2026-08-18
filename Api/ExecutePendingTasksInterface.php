@@ -21,7 +21,8 @@ namespace AthosCommerce\Feed\Api;
 interface ExecutePendingTasksInterface
 {
     /**
+     * @param string|null $storeCode
      * @return array
      */
-    public function execute() : array;
+    public function execute(?string $storeCode = null) : array;
 }

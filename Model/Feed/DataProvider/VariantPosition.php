@@ -57,11 +57,12 @@ class VariantPosition implements DataProviderInterface
      * @param AthosCommerceLogger $logger
      */
     public function __construct(
-        ConfigurableHelper $configurableHelper,
-        ConfigurableType $configurableType,
+        ConfigurableHelper    $configurableHelper,
+        ConfigurableType      $configurableType,
         ParentVariantResolver $parentVariantResolver,
-        AthosCommerceLogger $logger
-    ) {
+        AthosCommerceLogger   $logger
+    )
+    {
         $this->configurableHelper = $configurableHelper;
         $this->configurableType = $configurableType;
         $this->parentVariantResolver = $parentVariantResolver;
@@ -76,6 +77,7 @@ class VariantPosition implements DataProviderInterface
      */
     public function getData(array $products, FeedSpecificationInterface $feedSpecification): array
     {
+        $this->logger->info("[VariantPosition] Started");
         $ignoredFields = $feedSpecification->getIgnoreFields();
         if (in_array('__variant_position', $ignoredFields, true)) {
             return $products;
@@ -129,7 +131,7 @@ class VariantPosition implements DataProviderInterface
             }
         }
         unset($product);
-
+        $this->logger->info("[VariantPosition] Completed");
         return $products;
     }
 

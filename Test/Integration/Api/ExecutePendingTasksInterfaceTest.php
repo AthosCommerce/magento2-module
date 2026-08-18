@@ -134,14 +134,41 @@ class ExecutePendingTasksInterfaceTest extends TestCase
     }
 
     /**
+     * @magentoAppIsolation enabled
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configure_generate_feed_mock.php
+     *
+     * @return void
+     * @throws LocalizedException
+     * @throws NoSuchEntityException
+     */
+    public function testExecuteWithStoreFilter(): void
+    {
+        $defaultTask = $this->createPendingTask(['store' => 'default']);
+        $frenchTask = $this->createPendingTask(['store' => 'french']);
+
+        $result = $this->executePendingTasks->execute('default');
+        $this->assertCount(1, $result);
+        $this->assertArrayHasKey($defaultTask->getEntityId(), $result);
+        $this->assertArrayNotHasKey($frenchTask->getEntityId(), $result);
+
+        $defaultTask = $this->taskRepository->get($defaultTask->getEntityId());
+        $frenchTask = $this->taskRepository->get($frenchTask->getEntityId());
+        $this->assertEquals(MetadataInterface::TASK_STATUS_SUCCESS, $defaultTask->getStatus());
+        $this->assertEquals(MetadataInterface::TASK_STATUS_PENDING, $frenchTask->getStatus());
+
+        $this->taskRepository->delete($defaultTask);
+        $this->taskRepository->delete($frenchTask);
+    }
+
+    /**
      * @return TaskInterface
      * @throws \Magento\Framework\Exception\CouldNotSaveException
      */
-    private function createPendingTask(): TaskInterface
+    private function createPendingTask(array $payload = []): TaskInterface
     {
         /** @var TaskInterface $task */
         $task = $this->objectManager->create(TaskInterface::class);
-        $task->setPayload($this->getPayload())
+        $task->setPayload($this->getPayload($payload))
             ->setType(MetadataInterface::FEED_GENERATION_TASK_CODE)
             ->setStatus(MetadataInterface::TASK_STATUS_PENDING);
 
@@ -151,10 +178,10 @@ class ExecutePendingTasksInterfaceTest extends TestCase
     /**
      * @return array
      */
-    private function getPayload(): array
+    private function getPayload(array $extraPayload = []): array
     {
-        return [
+        return array_merge([
             'preSignedUrl' => 'https://testurl.com',
-        ];
+        ], $extraPayload);
     }
 }
