@@ -25,7 +25,17 @@ bin/magento cache:clean
 ```
 
 ---------
+## Compatible with:
+- Adobe Commerce 2.4.4-p18, 2.4.5-p17, 2.4.6-p15, 2.4.7-p10, 2.4.8-p5, 2.4.9.
+- Magento Open Source 2.4.4-p18, 2.4.5-p17, 2.4.6-p15, 2.4.7-p10, 2.4.8-p5, 2.4.9.
+- PHP 8.1, 8.2, 8.3, 8.4, 8.5
 
+This module may function on earlier releases, but we only officially support the latest patch version listed above.
+
+## Change Log
+Visit the <a href="https://github.com/athoscommerce/magento2-module/releases" target="_blank">Releases</a> page to see the latest changes and download previous versions.
+
+---------
 # Module Extensibility
 
 ##  Product Feed: Product Collection modification
