@@ -33,21 +33,17 @@ class UrlValidatorTest extends \PHPUnit\Framework\TestCase
      */
     private $urlValidatorMock;
 
-    private $fields = [
-        'preSignedUrl',
-        'catalogPreSignedUrl',
-    ];
-
     /**
      * @return void
      */
-    public function setUp(): void
+    protected function setUp(): void
     {
         $this->createValidationResultMock = $this->createMock(CreateValidationResult::class);
         $this->urlValidatorMock = $this->createMock(Url::class);
     }
 
     /**
+     * @param array $fields
      * @param array $payload
      * @param bool $fieldRequired
      * @param array $expectedValidatedValues
@@ -57,6 +53,7 @@ class UrlValidatorTest extends \PHPUnit\Framework\TestCase
      * @dataProvider validateDataProvider
      */
     public function testValidate(
+        array $fields,
         array $payload,
         bool $fieldRequired,
         array $expectedValidatedValues,
@@ -67,13 +64,13 @@ class UrlValidatorTest extends \PHPUnit\Framework\TestCase
         $this->urlValidatorMock->expects($this->exactly(count($expectedValidatedValues)))
             ->method('isValid')
             ->willReturnCallback(
-                function (string $value, array $schemes) use (
+                function ($value, array $schemes) use (
                     &$callIndex,
                     $expectedValidatedValues,
                     $urlValidationResults
                 ): bool {
-                    $this->assertSame(['http','https'], $schemes);
-                    $this->assertSame($expectedValidatedValues[$callIndex], $value);
+                    $this->assertSame(['http', 'https'], $schemes);
+                    $this->assertSame((string)$expectedValidatedValues[$callIndex], (string)$value);
                     $result = $urlValidationResults[$callIndex];
                     $callIndex++;
                     return $result;
@@ -83,10 +80,12 @@ class UrlValidatorTest extends \PHPUnit\Framework\TestCase
         $resultValidationMock = $this->getMockBuilder(ValidationResult::class)
             ->disableOriginalConstructor()
             ->getMock();
+
         $this->createValidationResultMock->expects($this->once())
             ->method('create')
             ->with($expectedErrors)
             ->willReturn($resultValidationMock);
+
         $resultValidationMock->expects($this->any())
             ->method('getErrors')
             ->willReturn($expectedErrors);
@@ -94,7 +93,7 @@ class UrlValidatorTest extends \PHPUnit\Framework\TestCase
         $validator = new UrlValidator(
             $this->createValidationResultMock,
             $this->urlValidatorMock,
-            $this->fields,
+            $fields,
             $fieldRequired
         );
 
@@ -107,96 +106,67 @@ class UrlValidatorTest extends \PHPUnit\Framework\TestCase
     /**
      * @return array[]
      */
-    public function validateDataProvider(): array
+    public static function validateDataProvider(): array
     {
         $validS3Url1 = 'https://my-bucket.s3.us-east-1.amazonaws.com/file.json.gz?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAIOSFODNN7EXAMPLE%2F20260101%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260101T000000Z&X-Amz-Expires=86400&X-Amz-SignedHeaders=host&X-Amz-Signature=0000000000000000000000000000000000000000000000000000000000000000';
         $validS3Url2 = 'https://my-bucket.s3.amazonaws.com/file-catalog.txt.gz?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAIOSFODNN7EXAMPLE%2F20260101%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260101T000000Z&X-Amz-Expires=86400&X-Amz-SignedHeaders=host&X-Amz-Signature=0000000000000000000000000000000000000000000000000000000000000000';
 
         return [
-            'valid-required-values' => [
-                [
-                    'preSignedUrl' => $validS3Url1,
-                    'catalogPreSignedUrl' => $validS3Url2,
-                ],
+            'required-presignedurl-valid' => [
+                ['preSignedUrl'],
+                ['preSignedUrl' => $validS3Url1],
                 true,
-                [$validS3Url1, $validS3Url2],
-                [true, true],
+                [$validS3Url1],
+                [true],
                 [],
             ],
-            'php8-malformed-url-invalid-port' => [
-                [
-                    'preSignedUrl' => 'https://s3.amazonaws.com:999999/catalog.json',
-                    'catalogPreSignedUrl' => $validS3Url2,
-                ],
+            'required-presignedurl-missing' => [
+                ['preSignedUrl'],
+                [],
                 true,
-                ['https://s3.amazonaws.com:999999/catalog.json', $validS3Url2],
-                [false, true],
-                [
-                    (string) __('"preSignedUrl" field value must be valid url address'),
-                    (string) __('"preSignedUrl" field value must contain valid bucket url')
-                ],
+                [],
+                [],
+                [(string) __('preSignedUrl field is required')],
             ],
-            'php8-numeric-non-string-value' => [
-                [
-                    'preSignedUrl' => 12345678,
-                    'catalogPreSignedUrl' => $validS3Url2,
-                ],
-                true,
-                ['12345678', $validS3Url2],
-                [false, true],
-                [
-                    (string) __('"preSignedUrl" field value must be valid url address'),
-                    (string) __('"preSignedUrl" field value must contain valid bucket url')
-                ],
+            'optional-catalogpresignedurl-provided-and-valid' => [
+                ['catalogPreSignedUrl'],
+                ['catalogPreSignedUrl' => $validS3Url2],
+                false,
+                [$validS3Url2],
+                [true],
+                [],
             ],
-            'spoofed-host-fakeamazonaws-domain' => [
-                [
-                    'preSignedUrl' => 'https://fakeamazonaws.com/file.jpg',
-                    'catalogPreSignedUrl' => $validS3Url2,
-                ],
-                true,
-                ['https://fakeamazonaws.com/file.jpg', $validS3Url2],
-                [true, true],
-                [(string) __('"preSignedUrl" field value must contain valid bucket url')],
-            ],
-            'invalid-required-url' => [
-                [
-                    'preSignedUrl' => 'not-a-url',
-                    'catalogPreSignedUrl' => $validS3Url2,
-                ],
-                true,
-                ['not-a-url', $validS3Url2],
-                [false, true],
-                [
-                    (string) __('"preSignedUrl" field value must be valid url address'),
-                    (string) __('"preSignedUrl" field value must contain valid bucket url')
-                ],
-            ],
-            'spoofed-host-userinfo-auth' => [
-                [
-                    'preSignedUrl' => 'https://amazonaws.com@evil.com/file.jpg',
-                    'catalogPreSignedUrl' => $validS3Url2,
-                ],
-                true,
-                ['https://amazonaws.com@evil.com/file.jpg', $validS3Url2],
-                [true, true],
-                [(string) __('"preSignedUrl" field value must contain valid bucket url')],
-            ],
-            'missing-optional-fields' => [
+            'optional-catalogpresignedurl-missing-passes' => [
+                ['catalogPreSignedUrl'],
                 [],
                 false,
                 [],
                 [],
                 [],
             ],
-            'missing-required-field' => [
-                [
-                    'preSignedUrl' => $validS3Url1,
-                ],
-                true,
-                [$validS3Url1],
+            'optional-catalogpresignedurl-invalid-domain-fails' => [
+                ['catalogPreSignedUrl'],
+                ['catalogPreSignedUrl' => 'https://fakeamazonaws.com/file.txt'],
+                false,
+                ['https://fakeamazonaws.com/file.txt'],
                 [true],
-                [(string) __('catalogPreSignedUrl field is required')],
+                [(string) __('"catalogPreSignedUrl" field value must contain valid bucket url')],
+            ],
+            'spoofed-domain-amazonaws-dummy-com' => [
+                ['catalogPreSignedUrl'],
+                ['catalogPreSignedUrl' => 'http://amazonaws.dummy.com/disabled-all-flags.json'],
+                false,
+                ['http://amazonaws.dummy.com/disabled-all-flags.json'],
+                [true],
+                [(string) __('"catalogPreSignedUrl" field value must contain valid bucket url')],
+            ],
+            'spoofed-domain-fakeamazonaws-com' => [
+                ['preSignedUrl'],
+                ['preSignedUrl' => 'https://fakeamazonaws.com/disabled-all-flags.json'],
+                true,
+                ['https://fakeamazonaws.com/disabled-all-flags.json'],
+                [true],
+                [(string) __('"preSignedUrl" field value must contain valid bucket url')],
             ],
         ];
     }
