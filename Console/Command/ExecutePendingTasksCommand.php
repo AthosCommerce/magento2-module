@@ -27,11 +27,13 @@ use AthosCommerce\Feed\Model\Metric\CollectorInterface;
 use AthosCommerce\Feed\Model\Metric\Output\CliOutput;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class ExecutePendingTasksCommand extends Command
 {
     public const COMMAND_NAME = 'athoscommerce:feed:execute-pending-tasks';
+    private const OPTION_STORE = 'store';
     /**
      * @var ExecutePendingTasksInterfaceFactory
      */
@@ -86,7 +88,13 @@ class ExecutePendingTasksCommand extends Command
     protected function configure(): void
     {
         $this->setName(self::COMMAND_NAME)
-            ->setDescription('AthosCommerce: Execute Pending Tasks aka full feed generation.');
+            ->setDescription('AthosCommerce: Execute Pending Tasks aka full feed generation.')
+            ->addOption(
+                self::OPTION_STORE,
+                null,
+                InputOption::VALUE_REQUIRED,
+                'Store code to execute pending tasks for'
+            );
 
         parent::configure();
     }
@@ -110,10 +118,14 @@ class ExecutePendingTasksCommand extends Command
             }
 
             $dateTime = $this->dateTimeFactory->create();
-            $output->writeln('<info>Execution started: ' . $dateTime->gmtDate() . '</info>');
+            $storeCode = $input->getOption(self::OPTION_STORE);
+            $storeCode = is_string($storeCode) ? trim($storeCode) : null;
+            $storeCode = $storeCode !== '' ? $storeCode : null;
+            $scopeLabel = $storeCode ? sprintf(' for store "%s"', $storeCode) : '';
+            $output->writeln('<info>Execution started' . $scopeLabel . ': ' . $dateTime->gmtDate() . '</info>');
             $this->cliOutput->setOutput($output);
             $this->metricCollector->setOutput($this->cliOutput);
-            $result = $this->executePendingTasksFactory->create()->execute();
+            $result = $this->executePendingTasksFactory->create()->execute($storeCode);
             if ($result === []) {
                 $output->writeln('<info>No pending tasks found.</info>');
             } else {
@@ -122,7 +134,7 @@ class ExecutePendingTasksCommand extends Command
                 }
             }
 
-            $output->writeln('<info>Execution ended: ' . $dateTime->gmtDate() . '</info>');
+            $output->writeln('<info>Execution ended' . $scopeLabel . ': ' . $dateTime->gmtDate() . '</info>');
 
             return Command::SUCCESS; // 0
         } catch (\Throwable $e) {

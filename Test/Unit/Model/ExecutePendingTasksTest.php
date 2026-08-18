@@ -142,4 +142,57 @@ class ExecutePendingTasksTest extends \PHPUnit\Framework\TestCase
 
         $this->executePendingTasks->execute();
     }
+
+    public function testExecuteWithStoreCodeFilter(): void
+    {
+        $defaultTaskId = 1;
+        $frenchTaskId = 2;
+        $executeResult = ['payload' => 'test'];
+        $defaultTaskMock = $this->createMock(TaskInterface::class);
+        $frenchTaskMock = $this->createMock(TaskInterface::class);
+        $searchCriteriaMock = $this->getMockBuilder(SearchCriteriaInterface::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+        $searchResultsMock = $this->getMockBuilder(TaskSearchResultsInterface::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $this->searchCriteriaBuilderMock->expects($this->once())
+            ->method('addFilter')
+            ->with('status', 'pending')
+            ->willReturnSelf();
+        $this->searchCriteriaBuilderMock->expects($this->once())
+            ->method('create')
+            ->willReturn($searchCriteriaMock);
+        $this->taskRepositoryMock->expects($this->once())
+            ->method('getList')
+            ->with($searchCriteriaMock)
+            ->willReturn($searchResultsMock);
+        $searchResultsMock->expects($this->once())
+            ->method('getItems')
+            ->willReturn([$defaultTaskMock, $frenchTaskMock]);
+
+        $defaultTaskMock->expects($this->once())
+            ->method('getPayload')
+            ->willReturn(['store' => 'default']);
+        $defaultTaskMock->expects($this->once())
+            ->method('getEntityId')
+            ->willReturn($defaultTaskId);
+
+        $frenchTaskMock->expects($this->once())
+            ->method('getPayload')
+            ->willReturn(['store' => 'french']);
+        $frenchTaskMock->expects($this->never())
+            ->method('getEntityId');
+
+        $this->executeTaskMock->expects($this->once())
+            ->method('execute')
+            ->with($defaultTaskMock)
+            ->willReturn($executeResult);
+
+        $this->assertSame(
+            [$defaultTaskId => $executeResult],
+            $this->executePendingTasks->execute('default')
+        );
+    }
 }

@@ -67,12 +67,18 @@ class ExecutePendingTasks implements ExecutePendingTasksInterface
     }
 
     /**
+     * @param string|null $storeCode
      * @return array
      * @throws LocalizedException
      */
-    public function execute(): array
+    public function execute(?string $storeCode = null): array
     {
-        $this->logger->info('TaskExecution: Pending tasks execution started.');
+        $storeCode = $storeCode !== null ? trim($storeCode) : null;
+        if ($storeCode === '') {
+            $storeCode = null;
+        }
+
+        $this->logger->info('TaskExecution: Pending tasks execution started.', ['store' => $storeCode]);
         $searchCriteria = $this->searchCriteriaBuilder
             ->addFilter(TaskInterface::STATUS, MetadataInterface::TASK_STATUS_PENDING)
             ->create();
@@ -82,6 +88,9 @@ class ExecutePendingTasks implements ExecutePendingTasksInterface
 
         $result = [];
         foreach ($taskItems as $task) {
+            if (!$this->canProcessTask($task, $storeCode)) {
+                continue;
+            }
             $taskId = $task->getEntityId();
             try {
                 $this->logger->info(
@@ -90,6 +99,7 @@ class ExecutePendingTasks implements ExecutePendingTasksInterface
                         'method' => __METHOD__,
                         'taskId' => $taskId,
                         'status' => $task->getStatus(),
+                        'store' => $storeCode,
                     ]
                 );
                 $result[$taskId] = $this->executeTask->execute($task);
@@ -98,14 +108,34 @@ class ExecutePendingTasks implements ExecutePendingTasksInterface
                     sprintf('Task ID %d failed. Error: %s', $taskId, $exception->getMessage()),
                     [
                         'taskId' => $taskId,
-                        'trace' => $exception->getTraceAsString()
+                        'trace' => $exception->getTraceAsString(),
+                        'store' => $storeCode,
                     ]
                 );
                 $result[$taskId] = 'ERROR';
             }
         }
-        $this->logger->info('TaskExecution: Pending tasks execution completed.');
+        $this->logger->info('TaskExecution: Pending tasks execution completed.', ['store' => $storeCode]);
 
         return $result;
+    }
+
+    /**
+     * @param TaskInterface $task
+     * @param string|null $storeCode
+     * @return bool
+     */
+    private function canProcessTask(TaskInterface $task, ?string $storeCode): bool
+    {
+        if ($storeCode === null) {
+            return true;
+        }
+
+        $payload = $task->getPayload();
+        if (!isset($payload['store']) || !is_string($payload['store'])) {
+            return false;
+        }
+
+        return $payload['store'] === $storeCode;
     }
 }
