@@ -28,21 +28,23 @@ class UrlValidator implements ValidatorInterface
      * @var CreateValidationResult
      */
     private $createValidationResult;
+
     /**
      * @var bool
      */
     private $fieldRequired;
+
     /**
      * @var array
      */
     private $fields;
+
     /**
      * @var Url
      */
     private $urlValidator;
 
     /**
-     * IntValidator constructor.
      * @param CreateValidationResult $createValidationResult
      * @param Url $urlValidator
      * @param array $fields
@@ -67,18 +69,26 @@ class UrlValidator implements ValidatorInterface
     public function validate(array $payload): ValidationResult
     {
         $errors = [];
+
         foreach ($this->fields as $field) {
-            if (!isset($payload[$field]) && !$this->fieldRequired) {
-                continue;
-            } elseif (!isset($payload[$field]) && $this->fieldRequired) {
-                $errors[] = (string) __('%1 field is required', $field);
+            $hasField = array_key_exists($field, $payload);
+            $value = $payload[$field] ?? null;
+
+            // Handle missing or empty optional/required fields
+            if (!$hasField || $value === null || $value === '') {
+                if ($this->fieldRequired) {
+                    $errors[] = (string) __('%1 field is required', $field);
+                }
                 continue;
             }
 
-            $value = $payload[$field] ?? null;
+            // Enforce standard URL format
             if (!$this->urlValidator->isValid((string) $value, ['http', 'https'])) {
-                $errors[] = (string)__('"%1" field value must be valid url address', $field);
+                $errors[] = (string) __('"%1" field value must be valid url address', $field);
+                continue; // Skip host check if basic URL format is invalid
             }
+
+            // Enforce AWS Bucket host format
             if (!$this->isAllowedAmazonAwsHost((string) $value)) {
                 $errors[] = (string) __('"%1" field value must contain valid bucket url', $field);
             }
@@ -106,8 +116,12 @@ class UrlValidator implements ValidatorInterface
         }
 
         $suffix = '.' . $targetDomain;
-        $suffixLength = strlen($suffix);
 
+        if (function_exists('str_ends_with')) {
+            return str_ends_with($normalizedHost, $suffix);
+        }
+
+        $suffixLength = strlen($suffix);
         if (strlen($normalizedHost) <= $suffixLength) {
             return false;
         }

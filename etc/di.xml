@@ -217,6 +217,9 @@
                 <item name="url_required" xsi:type="array">
                     <item name="objectInstance" xsi:type="object">AthosCommerceFeedTaskValidatorFeedGenerationUrlRequired</item>
                 </item>
+                <item name="catalog_url_optional" xsi:type="array">
+                    <item name="objectInstance" xsi:type="object">AthosCommerceFeedTaskValidatorCatalogPreSignedUrlOptional</item>
+                </item>
                 <item name="bool" xsi:type="array">
                     <item name="objectInstance" xsi:type="object">AthosCommerceFeedTaskValidatorFeedGenerationBool</item>
                 </item>
@@ -245,9 +248,16 @@
         <arguments>
             <argument name="fields" xsi:type="array">
                 <item name="preSignedUrl" xsi:type="string">preSignedUrl</item>
-                <item name="catalogPreSignedUrl" xsi:type="string">catalogPreSignedUrl</item>
             </argument>
             <argument name="fieldRequired" xsi:type="boolean">true</argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="AthosCommerceFeedTaskValidatorCatalogPreSignedUrlOptional" type="AthosCommerce\Feed\Model\Task\Validator\UrlValidator">
+        <arguments>
+            <argument name="fields" xsi:type="array">
+                <item name="catalogPreSignedUrl" xsi:type="string">catalogPreSignedUrl</item>
+            </argument>
+            <argument name="fieldRequired" xsi:type="boolean">false</argument>
         </arguments>
     </virtualType>
 
