@@ -237,7 +237,6 @@
         <arguments>
             <argument name="fields" xsi:type="array">
                 <item name="preSignedUrl" xsi:type="string">preSignedUrl</item>
-                <item name="catalogPreSignedUrl" xsi:type="string">catalogPreSignedUrl</item>
             </argument>
         </arguments>
     </virtualType>
@@ -246,6 +245,7 @@
         <arguments>
             <argument name="fields" xsi:type="array">
                 <item name="preSignedUrl" xsi:type="string">preSignedUrl</item>
+                <item name="catalogPreSignedUrl" xsi:type="string">catalogPreSignedUrl</item>
             </argument>
             <argument name="fieldRequired" xsi:type="boolean">true</argument>
         </arguments>
