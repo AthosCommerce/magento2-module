@@ -16,11 +16,11 @@
 
 namespace AthosCommerce\Feed\Helper;
 
-use Magento\Framework\App\Helper\AbstractHelper;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use Magento\Framework\App\Filesystem\DirectoryList;
+use Magento\Framework\App\Helper\AbstractHelper;
 use Magento\Framework\Exception\FileSystemException;
 use Magento\Framework\Filesystem\Driver\File;
-use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 
 class LogInfo extends AbstractHelper
 {
@@ -437,22 +437,47 @@ class LogInfo extends AbstractHelper
     }
 
     /**
-     * Filters lines by a keyword (plain substring) or regex pattern (e.g. /error/i).
+     * Filters lines by a keyword (plain substring) or regex pattern.
      *
-     * @param array $lines
+     * @param string[] $lines
      * @param string $keyword
-     * @return array
+     * @return string[]
      */
     private function filterByKeyword(array $lines, string $keyword): array
     {
-        $isRegex = preg_match('/^([\/~#@!|]).*\1[gimsxuADJUe]*$/s', $keyword)
-            && @preg_match($keyword, '') !== false;
+        $isRegex = $this->isValidRegex($keyword);
 
         return array_filter($lines, static function (string $line) use ($keyword, $isRegex): bool {
             return $isRegex
                 ? (bool)preg_match($keyword, $line)
-                : strpos($line, $keyword);
+                : strpos($line, $keyword) !== false;
         });
+    }
+
+    /**
+     * Checks if string is a valid regex pattern without throwing PHP warnings
+     *
+     * @param string $pattern
+     * @return bool
+     */
+    private function isValidRegex(string $pattern): bool
+    {
+        if (!preg_match('/^([\/~#@!|]).*\1[gimsxuADJUe]*$/s', $pattern)) {
+            return false;
+        }
+
+        $unescaped = preg_replace('/\\\\./', '', $pattern);
+
+        $openParens = substr_count($unescaped, '(');
+        $closeParens = substr_count($unescaped, ')');
+        $openSquare = substr_count($unescaped, '[');
+        $closeSquare = substr_count($unescaped, ']');
+
+        if ($openParens !== $closeParens || $openSquare !== $closeSquare) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -463,6 +488,7 @@ class LogInfo extends AbstractHelper
      */
     private function compressString(string $content): string
     {
+        // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
         $compressed = gzdeflate($content, 9);
         if ($compressed === false) {
             return '';
