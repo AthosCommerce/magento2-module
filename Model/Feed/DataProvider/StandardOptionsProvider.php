@@ -109,7 +109,7 @@ class StandardOptionsProvider implements DataProviderInterface
         FeedSpecificationInterface $feedSpecification
     ): array
     {
-        $this->logger->info('[StandardOptionsProvider] started');
+        $this->logger->info('[StandardOptionsProvider] Started');
         foreach ($products as &$product) {
             /** @var Product $productModel */
             $productModel = $product['product_model'] ?? null;
@@ -180,7 +180,7 @@ class StandardOptionsProvider implements DataProviderInterface
         if (!empty($this->optionNames)) {
             $this->saveOptionNames($feedSpecification);
         }
-        $this->logger->info('[StandardOptionsProvider] completed');
+        $this->logger->info('[StandardOptionsProvider] Completed');
         return $products;
     }
 

@@ -93,6 +93,8 @@ class CategoriesProvider implements DataProviderInterface
         FeedSpecificationInterface $feedSpecification
     ): array
     {
+        $this->logger->info("[CategoriesProvider] Started");
+
         $productIds = [];
         $rowCategorySourceMap = [];
 
@@ -204,6 +206,8 @@ class CategoriesProvider implements DataProviderInterface
             }
         }
         unset($product);
+
+        $this->logger->info("[CategoriesProvider] Completed");
 
         return $products;
     }
@@ -495,6 +499,7 @@ class CategoriesProvider implements DataProviderInterface
     }
 
     /**
+     * Resets the loaded categories and categories data.
      * @return void
      */
     public function reset(): void
@@ -504,6 +509,7 @@ class CategoriesProvider implements DataProviderInterface
     }
 
     /**
+     * Resets the loaded categories and categories data after fetching items.
      * @return void
      */
     public function resetAfterFetchItems(): void

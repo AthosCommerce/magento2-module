@@ -34,6 +34,9 @@ use Magento\Swatches\Block\Product\Renderer\Configurable as SwatchRenderer;
 
 class JsonConfigProvider implements DataProviderInterface
 {
+    public const FIELD_KEY_JSON_CONFIG = 'json_config';
+    public const FIELD_KEY_SWATCH_JSON_CONFIG = 'swatch_json_config';
+
     /**
      * @var SwatchRenderer
      */
@@ -121,9 +124,11 @@ class JsonConfigProvider implements DataProviderInterface
      */
     public function getData(array $products, FeedSpecificationInterface $feedSpecification): array
     {
+        $this->logger->info("[JsonConfigProvider] Started");
+
         $ignoredFields = $feedSpecification->getIgnoreFields();
-        if (in_array('json_config', $ignoredFields)
-            && in_array('swatch_json_config', $ignoredFields)
+        if (in_array(self::FIELD_KEY_JSON_CONFIG, $ignoredFields)
+            && in_array(self::FIELD_KEY_SWATCH_JSON_CONFIG, $ignoredFields)
         ) {
             return $products;
         }
@@ -144,8 +149,8 @@ class JsonConfigProvider implements DataProviderInterface
             $parentIds = $this->configurableResource->getParentIdsByChild($simpleId);
 
             if (empty($parentIds)) {
-                $product['json_config'] = null;
-                $product['swatch_json_config'] = null;
+                $product[self::FIELD_KEY_JSON_CONFIG] = null;
+                $product[self::FIELD_KEY_SWATCH_JSON_CONFIG] = null;
                 continue;
             }
 
@@ -156,14 +161,20 @@ class JsonConfigProvider implements DataProviderInterface
              */
             try {
                 $parentProduct = $this->productRepository->getById($parentId);
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
+                $this->logger->error(
+                    "[JsonConfigProvider] Error loading parent product ID {$parentId}: " . $e->getMessage(),
+                    [
+                        'trace' => $e->getTraceAsString()
+                    ]
+                );
                 continue;
             }
 
             /**
              *  Generate JSON CONFIG (NO BLOCKS)
              */
-            if (!in_array('json_config', $ignoredFields)) {
+            if (!in_array(self::FIELD_KEY_JSON_CONFIG, $ignoredFields)) {
                 try {
                     $allowedProducts = $this->configurableType->getUsedProducts($parentProduct);
                     $options = $this->configurableHelper->getOptions($parentProduct, $allowedProducts);
@@ -176,30 +187,43 @@ class JsonConfigProvider implements DataProviderInterface
                         'productId' => $parentId
                     ];
 
-                    $product['json_config'] = json_encode($jsonConfigArr);
+                    $product[self::FIELD_KEY_JSON_CONFIG] = json_encode($jsonConfigArr);
 
-                } catch (\Exception $e) {
-                    $product['json_config'] = '{}';
+                } catch (\Throwable $e) {
+                    $this->logger->error(
+                        "[JsonConfigProvider] Error generating JSON config for product ID {$parentId}: " . $e->getMessage(),
+                        [
+                            'trace' => $e->getTraceAsString()
+                        ]
+                    );
+                    $product[self::FIELD_KEY_JSON_CONFIG] = '{}';
                 }
             }
 
-            if (!in_array('swatch_json_config', $ignoredFields)) {
+            if (!in_array(self::FIELD_KEY_SWATCH_JSON_CONFIG, $ignoredFields)) {
                 try {
                     $swatchRenderer = clone $this->swatchRenderer;
                     $swatchRenderer->setProduct($parentProduct);
-                    $product['swatch_json_config'] = $swatchRenderer->getJsonConfig();
+                    $product[self::FIELD_KEY_SWATCH_JSON_CONFIG] = $swatchRenderer->getJsonConfig();
 
-                } catch (\Exception $e) {
-                    $product['swatch_json_config'] = '{}';
+                } catch (\Throwable $e) {
+                    $this->logger->error(
+                        "[JsonConfigProvider] Error generating SWATCH JSON config for product ID {$parentId}: " . $e->getMessage(),
+                        [
+                            'trace' => $e->getTraceAsString()
+                        ]
+                    );
+                    $product[self::FIELD_KEY_SWATCH_JSON_CONFIG] = '{}';
                 }
             }
         }
+        $this->logger->info("[JsonConfigProvider] Completed");
 
         return $products;
     }
 
     /**
-     *
+     * @return void
      */
     public function reset(): void
     {
@@ -207,7 +231,7 @@ class JsonConfigProvider implements DataProviderInterface
     }
 
     /**
-     *
+     * @return void
      */
     public function resetAfterFetchItems(): void
     {

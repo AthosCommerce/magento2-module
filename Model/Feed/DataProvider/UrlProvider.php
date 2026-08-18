@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Model\Feed\DataProvider;
 
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use Magento\Catalog\Model\Product;
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
@@ -26,12 +27,28 @@ class UrlProvider implements DataProviderInterface
 {
 
     /**
+     * @var AthosCommerceLogger
+     */
+    private $logger;
+
+    /**
+     * @param AthosCommerceLogger $logger
+     */
+    public function __construct(
+        AthosCommerceLogger $logger
+    )
+    {
+        $this->logger = $logger;
+    }
+
+    /**
      * @param array $products
      * @param FeedSpecificationInterface $feedSpecification
      * @return array
      */
     public function getData(array $products, FeedSpecificationInterface $feedSpecification): array
     {
+        $this->logger->info("[UrlProvider] Started");
         foreach ($products as &$product) {
             /** @var Product $productModel */
             $productModel = $product['product_model'] ?? null;
@@ -47,6 +64,7 @@ class UrlProvider implements DataProviderInterface
             $product['url'] = $productModel->getProductUrl();
         }
 
+        $this->logger->info("[UrlProvider] Completed");
         return $products;
     }
 

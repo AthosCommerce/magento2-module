@@ -30,6 +30,8 @@ use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
 
 class SelectedOptionsProvider implements DataProviderInterface
 {
+    public const FIELD_KEY_SELECTED_OPTIONS = '__selected_options';
+
     /**
      * @var array
      */
@@ -91,8 +93,9 @@ class SelectedOptionsProvider implements DataProviderInterface
      */
     public function getData(array $products, FeedSpecificationInterface $feedSpecification): array
     {
+        $this->logger->info("[SelectedOptionsProvider] Started");
         $ignoredFields = $feedSpecification->getIgnoreFields();
-        if (in_array('__selected_options', $ignoredFields)) {
+        if (in_array(self::FIELD_KEY_SELECTED_OPTIONS, $ignoredFields, true)) {
             return $products;
         }
 
@@ -109,13 +112,13 @@ class SelectedOptionsProvider implements DataProviderInterface
             $parentProduct = $this->parentRelationsContext->getParentsByChildId($simpleId);
 
             if (!$parentProduct) {
-                $product['__selected_options'] = null;
+                $product[self::FIELD_KEY_SELECTED_OPTIONS] = null;
                 continue;
             }
             $parentId = (int)$parentProduct->getId();
 
             if ($parentProduct->getTypeId() !== \Magento\ConfigurableProduct\Model\Product\Type\Configurable::TYPE_CODE) {
-                $product['__selected_options'] = null;
+                $product[self::FIELD_KEY_SELECTED_OPTIONS] = null;
                 continue;
             }
 
@@ -137,7 +140,7 @@ class SelectedOptionsProvider implements DataProviderInterface
 
                 $selectedOptions = [];
                 if (!isset($options['index'][$simpleId]) || !is_array($options['index'][$simpleId])) {
-                    $product['__selected_options'] = null;
+                    $product[self::FIELD_KEY_SELECTED_OPTIONS] = null;
                     continue;
                 }
 
@@ -153,29 +156,28 @@ class SelectedOptionsProvider implements DataProviderInterface
                     }
                 }
 
-
-                $product['__selected_options'] = $selectedOptions
+                $product[self::FIELD_KEY_SELECTED_OPTIONS] = $selectedOptions
                     ? json_encode($selectedOptions)
                     : null;
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
                 $this->logger->error(
-                    "SelectedOptionProvider Exception: ",
+                    "[SelectedOptionsProvider] Exception: ",
                     [
                         'method' => __METHOD__,
                         'exception' => $e->getMessage(),
                         'trace' => $e->getTraceAsString()
                     ]
                 );
-                $product['__selected_options'] = null;
+                $product[self::FIELD_KEY_SELECTED_OPTIONS] = null;
             }
         }
-
+        $this->logger->info("[SelectedOptionsProvider] Completed");
         return $products;
     }
 
 
     /**
-     *
+     * @return void
      */
     public function reset(): void
     {

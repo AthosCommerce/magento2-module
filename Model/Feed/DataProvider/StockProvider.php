@@ -7,11 +7,11 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 declare(strict_types=1);
@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Model\Feed\DataProvider;
 
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Feed\Context\StoreContextManager;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\ParentVariantResolver;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Stock\StockResolverInterface;
@@ -39,28 +40,43 @@ class StockProvider implements DataProviderInterface
      * @var ParentVariantResolver
      */
     private $parentVariantResolver;
+    /**
+     * @var AthosCommerceLogger
+     */
+    private $logger;
 
     /**
      * @param StockResolverInterface $stockResolver
      * @param StoreContextManager $storeContextManager
      * @param ParentVariantResolver $parentVariantResolver
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
         StockResolverInterface $stockResolver,
         StoreContextManager    $storeContextManager,
-        ParentVariantResolver  $parentVariantResolver
+        ParentVariantResolver  $parentVariantResolver,
+        AthosCommerceLogger    $logger
     )
     {
         $this->stockResolver = $stockResolver;
         $this->storeContextManager = $storeContextManager;
         $this->parentVariantResolver = $parentVariantResolver;
+        $this->logger = $logger;
     }
 
+    /**
+     * @param array $products
+     * @param FeedSpecificationInterface $feedSpecification
+     * @return array
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     */
     public function getData(
         array                      $products,
         FeedSpecificationInterface $feedSpecification
     ): array
     {
+        $this->logger->info("[StockProvider] Started");
+
         $ignoreFields = $feedSpecification->getIgnoreFields();
         $stockKeys = ['__in_stock', 'in_stock', 'stock_qty', 'is_stock_managed'];
 
@@ -140,6 +156,7 @@ class StockProvider implements DataProviderInterface
             $product['parent_is_stock_managed'] = (int)($pStock['is_stock_managed'] ?? 0);
         }
         unset($product);
+        $this->logger->info("[StockProvider] Completed");
 
         return $products;
     }

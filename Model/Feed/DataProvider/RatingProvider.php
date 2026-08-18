@@ -87,6 +87,9 @@ class RatingProvider implements DataProviderInterface
         array $products,
         FeedSpecificationInterface $feedSpecification
     ): array {
+        
+        $this->logger->info("[RatingProvider] Started");
+        
         $ignoredFields = $feedSpecification->getIgnoreFields();
 
         if (
@@ -131,6 +134,7 @@ class RatingProvider implements DataProviderInterface
             }
         }
         unset($product);
+        $this->logger->info("[RatingProvider] Completed");
 
         return $products;
     }
@@ -226,7 +230,7 @@ class RatingProvider implements DataProviderInterface
 
         if (isset($this->ratingsCache[$parentId]) && $this->ratingsCache[$parentId] instanceof Summary) {
             $this->logger->debug(
-                'RatingProvider: Resolved parent rating for child row',
+                '[RatingProvider] Resolved parent rating for child row',
                 [
                     'childId' => $productId,
                     'parentId' => $parentId,
