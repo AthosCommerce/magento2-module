@@ -7,11 +7,11 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 declare(strict_types=1);
@@ -19,7 +19,6 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Model\Api;
 
 use AthosCommerce\Feed\Api\GetApplicationLogInterface;
-use AthosCommerce\Feed\Exception\ValidationException;
 use AthosCommerce\Feed\Helper\LogInfo;
 
 class GetApplicationLog implements GetApplicationLogInterface
@@ -36,73 +35,171 @@ class GetApplicationLog implements GetApplicationLogInterface
     }
 
     /**
+     * @param bool $compressOutput
+     * @param int $lastLines
+     * @param int $startLine
+     * @param int $endLine
+     * @param string $keyword
+     * @param string $startDate
+     * @param string $endDate
      * @return string
      */
-    public function getExtensionLog(bool $compressOutput = false, int $lastLines = 100, int $startLine = 0, int $endLine = 0, string $keyword = '', string $startDate = '', string $endDate = '') : string
+    public function getExceptionLog(
+        bool   $compressOutput = false,
+        int    $lastLines = 100,
+        int    $startLine = 0,
+        int    $endLine = 0,
+        string $keyword = '',
+        string $startDate = '',
+        string $endDate = ''
+    ): string
     {
-        return $this->helper->getExtensionLogFile($compressOutput, $lastLines, $startLine, $endLine, $keyword, $startDate, $endDate);
+        return $this->helper->getExceptionLogFile(
+            $compressOutput,
+            $lastLines,
+            $startLine,
+            $endLine,
+            $keyword,
+            $startDate,
+            $endDate
+        );
+    }
+
+    /**
+     * @param bool $compressOutput
+     * @param int $lastLines
+     * @param int $startLine
+     * @param int $endLine
+     * @param string $keyword
+     * @param string $startDate
+     * @param string $endDate
+     * @return string
+     */
+    public function getExtensionLog(
+        bool   $compressOutput = false,
+        int    $lastLines = 100,
+        int    $startLine = 0,
+        int    $endLine = 0,
+        string $keyword = '',
+        string $startDate = '',
+        string $endDate = ''
+    ): string
+    {
+        return $this->helper->getExtensionLogFile(
+            $compressOutput,
+            $lastLines,
+            $startLine,
+            $endLine,
+            $keyword,
+            $startDate,
+            $endDate
+        );
+    }
+
+    /**
+     * @param bool $compressOutput
+     * @param int $lastLines
+     * @param int $startLine
+     * @param int $endLine
+     * @param string $keyword
+     * @param string $startDate
+     * @param string $endDate
+     * @return string
+     */
+    public function getCronLog(
+        bool   $compressOutput = false,
+        int    $lastLines = 100,
+        int    $startLine = 0,
+        int    $endLine = 0,
+        string $keyword = '',
+        string $startDate = '',
+        string $endDate = ''): string
+    {
+        return $this->helper->getCronLogFile(
+            $compressOutput,
+            $lastLines,
+            $startLine,
+            $endLine,
+            $keyword,
+            $startDate,
+            $endDate
+        );
+    }
+
+    /**
+     * @param bool $compressOutput
+     * @param int $lastLines
+     * @param int $startLine
+     * @param int $endLine
+     * @param string $keyword
+     * @param string $startDate
+     * @param string $endDate
+     * @return string
+     */
+    public function getExtensionErrorLog(
+        bool $compressOutput = false,
+        int $lastLines = 100,
+        int $startLine = 0,
+        int $endLine = 0,
+        string $keyword = '',
+        string $startDate = '',
+        string $endDate = ''
+    ): string
+    {
+        return $this->helper->getExtensionErrorLogFile(
+            $compressOutput,
+            $lastLines,
+            $startLine,
+            $endLine,
+            $keyword,
+            $startDate,
+            $endDate
+        );
     }
 
     /**
      * @return bool
      */
-    public function clearExtensionLog() : bool
-    {
-        return $this->helper->deleteExtensionLogFile();
-    }
-
-    /**
-     * @return string
-     */
-    public function getExceptionLog(bool $compressOutput = false, int $lastLines = 100, int $startLine = 0, int $endLine = 0, string $keyword = '', string $startDate = '', string $endDate = '') : string
-    {
-        return $this->helper->getExceptionLogFile($compressOutput, $lastLines, $startLine, $endLine, $keyword, $startDate, $endDate);
-    }
-
-    /**
-     * @return bool
-     */
-    public function clearExceptionLog() : bool
-    {
-        return $this->helper->deleteExceptionLogFile();
-    }
-
-    /**
-     * @return string
-     */
-    public function getCronLog(bool $compressOutput = false, int $lastLines = 100, int $startLine = 0, int $endLine = 0, string $keyword = '', string $startDate = '', string $endDate = '') : string
-    {
-        return $this->helper->getCronLogFile($compressOutput, $lastLines, $startLine, $endLine, $keyword, $startDate, $endDate);
-    }
-
-    /**
-     * @return string
-     */
-    public function getExtensionErrorLog(bool $compressOutput = false, int $lastLines = 100, int $startLine = 0, int $endLine = 0, string $keyword = '', string $startDate = '', string $endDate = '') : string
-    {
-        return $this->helper->getExtensionErrorLogFile($compressOutput, $lastLines, $startLine, $endLine, $keyword, $startDate, $endDate);
-    }
-
-    /**
-     * @return bool
-     */
-    public function clearExtensionErrorLog() : bool
+    public function clearExtensionErrorLog(): bool
     {
         return $this->helper->deleteExtensionErrorLogFile();
     }
 
     /**
+     * @param bool $compressOutput
+     * @param int $lastLines
+     * @param int $startLine
+     * @param int $endLine
+     * @param string $keyword
+     * @param string $startDate
+     * @param string $endDate
      * @return string
      */
-    public function getExtensionDebugLog(bool $compressOutput = false, int $lastLines = 100, int $startLine = 0, int $endLine = 0, string $keyword = '', string $startDate = '', string $endDate = '') : string
+    public function getExtensionDebugLog(
+        bool $compressOutput = false,
+        int $lastLines = 100,
+        int $startLine = 0,
+        int $endLine = 0,
+        string $keyword = '',
+        string $startDate = '',
+        string $endDate = ''
+    ): string
     {
-        return $this->helper->getExtensionDebugLogFile($compressOutput, $lastLines, $startLine, $endLine, $keyword, $startDate, $endDate);
+        return $this->helper->getExtensionDebugLogFile(
+            $compressOutput,
+            $lastLines,
+            $startLine,
+            $endLine,
+            $keyword,
+            $startDate,
+            $endDate
+        );
     }
 
     /**
      * @return bool
      */
-    public function clearExtensionDebugLog() : bool
+    public function clearExtensionDebugLog(): bool
     {
         return $this->helper->deleteExtensionDebugLogFile();
     }

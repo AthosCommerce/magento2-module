@@ -1,11 +1,17 @@
 <?php
 /**
- * Helper to fetch version data.
+ * Copyright (C) 2025 AthosCommerce <https://athoscommerce.com>
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
  *
- * This file is part of AthosCommerce/Feed.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
  *
- * For the full copyright and license information, please view the LICENSE.txt
- * file that was distributed with this source code.
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 namespace AthosCommerce\Feed\Helper;
@@ -52,10 +58,6 @@ class LogInfo extends AbstractHelper
         'deleteExtensionDebugLogFileInfo' => 'File athoscommerce feed debug log will be removed from the path',
         'deleteExtensionDebugLogFileRemove' => 'File athoscommerce feed debug log removed successfully',
         'deleteExtensionDebugLogFileError' => 'File athoscommerce feed debug log not present at the location',
-
-        'deleteExceptionLogFileInfo' => 'File exception log will be removed from the path',
-        'deleteExceptionLogFileRemove' => 'File exception log removed successfully from the path',
-        'deleteExceptionLogFileError' => 'File exception log not present at the location',
 
         // Get Log Constants
         'getExtensionLogFileInfo' => 'File athoscommerce feed log will be retrieved from the path',
@@ -114,9 +116,20 @@ class LogInfo extends AbstractHelper
      * @param int $lastLines
      * @param int $startLine
      * @param int $endLine
+     * @param string $keyword
+     * @param string $startDate
+     * @param string $endDate
      * @return string
      */
-    public function getExtensionLogFile(bool $compressOutput = false, int $lastLines = 100, int $startLine = 0, int $endLine = 0, string $keyword = '', string $startDate = '', string $endDate = ''): string
+    public function getExtensionLogFile(
+        bool   $compressOutput = false,
+        int    $lastLines = 100,
+        int    $startLine = 0,
+        int    $endLine = 0,
+        string $keyword = '',
+        string $startDate = '',
+        string $endDate = ''
+    ): string
     {
         return $this->getLogFile(
             self::LOG['athoscommerce'],
@@ -148,9 +161,20 @@ class LogInfo extends AbstractHelper
      * @param int $lastLines
      * @param int $startLine
      * @param int $endLine
+     * @param string $keyword
+     * @param string $startDate
+     * @param string $endDate
      * @return string
      */
-    public function getExtensionErrorLogFile(bool $compressOutput = false, int $lastLines = 100, int $startLine = 0, int $endLine = 0, string $keyword = '', string $startDate = '', string $endDate = ''): string
+    public function getExtensionErrorLogFile(
+        bool   $compressOutput = false,
+        int    $lastLines = 100,
+        int    $startLine = 0,
+        int    $endLine = 0,
+        string $keyword = '',
+        string $startDate = '',
+        string $endDate = ''
+    ): string
     {
         return $this->getLogFile(
             self::LOG['athoscommerceError'],
@@ -182,9 +206,20 @@ class LogInfo extends AbstractHelper
      * @param int $lastLines
      * @param int $startLine
      * @param int $endLine
+     * @param string $keyword
+     * @param string $startDate
+     * @param string $endDate
      * @return string
      */
-    public function getExtensionDebugLogFile(bool $compressOutput = false, int $lastLines = 100, int $startLine = 0, int $endLine = 0, string $keyword = '', string $startDate = '', string $endDate = ''): string
+    public function getExtensionDebugLogFile(
+        bool   $compressOutput = false,
+        int    $lastLines = 100,
+        int    $startLine = 0,
+        int    $endLine = 0,
+        string $keyword = '',
+        string $startDate = '',
+        string $endDate = ''
+    ): string
     {
         return $this->getLogFile(
             self::LOG['athoscommerceDebug'],
@@ -195,30 +230,26 @@ class LogInfo extends AbstractHelper
     }
 
     /**
-     * Delete Exception Log File
-     *
-     * @return bool
-     */
-    public function deleteExceptionLogFile(): bool
-    {
-        return $this->deleteLogFile(
-            self::LOG['exception'],
-            self::LOG['deleteExceptionLogFileInfo'],
-            self::LOG['deleteExceptionLogFileRemove'],
-            self::LOG['deleteExceptionLogFileError']
-        );
-    }
-
-    /**
      * Get Exception Log File
      *
      * @param bool $compressOutput
      * @param int $lastLines
      * @param int $startLine
      * @param int $endLine
+     * @param string $keyword
+     * @param string $startDate
+     * @param string $endDate
      * @return string
      */
-    public function getExceptionLogFile(bool $compressOutput = false, int $lastLines = 100, int $startLine = 0, int $endLine = 0, string $keyword = '', string $startDate = '', string $endDate = ''): string
+    public function getExceptionLogFile(
+        bool   $compressOutput = false,
+        int    $lastLines = 100,
+        int    $startLine = 0,
+        int    $endLine = 0,
+        string $keyword = '',
+        string $startDate = '',
+        string $endDate = ''
+    ): string
     {
         return $this->getLogFile(
             self::LOG['exception'],
@@ -233,9 +264,20 @@ class LogInfo extends AbstractHelper
      * @param int $lastLines
      * @param int $startLine
      * @param int $endLine
+     * @param string $keyword
+     * @param string $startDate
+     * @param string $endDate
      * @return string
      */
-    public function getCronLogFile(bool $compressOutput = false, int $lastLines = 100, int $startLine = 0, int $endLine = 0, string $keyword = '', string $startDate = '', string $endDate = ''): string
+    public function getCronLogFile(
+        bool   $compressOutput = false,
+        int    $lastLines = 100,
+        int    $startLine = 0,
+        int    $endLine = 0,
+        string $keyword = '',
+        string $startDate = '',
+        string $endDate = ''
+    ): string
     {
         return $this->getLogFile(
             self::LOG['groupCron'],
@@ -254,7 +296,12 @@ class LogInfo extends AbstractHelper
      * @param string $errorMsg
      * @return bool
      */
-    private function deleteLogFile(string $fileName, string $infoMsg, string $successMsg, string $errorMsg): bool
+    private function deleteLogFile(
+        string $fileName,
+        string $infoMsg,
+        string $successMsg,
+        string $errorMsg
+    ): bool
     {
         try {
             $logPath = $this->directoryList->getPath(DirectoryList::LOG);
@@ -332,7 +379,7 @@ class LogInfo extends AbstractHelper
 
                     if ($startLine > 0 || $endLine > 0) {
                         $start = $startLine > 0 ? $startLine - 1 : 0;
-                        $end   = $endLine > 0 ? $endLine - 1 : count($lines) - 1;
+                        $end = $endLine > 0 ? $endLine - 1 : count($lines) - 1;
                         $lines = array_slice(array_values($lines), $start, $end - $start + 1);
                     } else {
                         $lines = array_slice(array_values($lines), -$lastLines);
@@ -358,7 +405,7 @@ class LogInfo extends AbstractHelper
 
     /**
      * Filters lines by a date range based on the Monolog timestamp [Y-m-d\TH:i:sP].
-     * Lines without a recognisable timestamp are excluded when a date filter is active.
+     * Lines without a recognizable timestamp are excluded when a date filter is active.
      *
      * @param array $lines
      * @param string $startDate
@@ -403,8 +450,8 @@ class LogInfo extends AbstractHelper
 
         return array_filter($lines, static function (string $line) use ($keyword, $isRegex): bool {
             return $isRegex
-                ? (bool) preg_match($keyword, $line)
-                : str_contains($line, $keyword);
+                ? (bool)preg_match($keyword, $line)
+                : strpos($line, $keyword);
         });
     }
 

@@ -245,6 +245,7 @@
         <arguments>
             <argument name="fields" xsi:type="array">
                 <item name="preSignedUrl" xsi:type="string">preSignedUrl</item>
+                <item name="catalogPreSignedUrl" xsi:type="string">catalogPreSignedUrl</item>
             </argument>
             <argument name="fieldRequired" xsi:type="boolean">true</argument>
         </arguments>
@@ -421,7 +422,7 @@
             </argument>
         </arguments>
     </type>
-    
+
     <type name="AthosCommerce\Feed\Model\Feed\DataProvider\Stock\CompositeStockResolver">
         <arguments>
             <argument name="logger" xsi:type="object">AthosCommerce\Feed\Logger\AthosCommerceLogger</argument>

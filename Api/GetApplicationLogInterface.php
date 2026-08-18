@@ -7,11 +7,11 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 declare(strict_types=1);
@@ -29,6 +29,26 @@ interface GetApplicationLogInterface
 {
     /**
      * @param bool $compressOutput
+     * @param int $lastLines
+     * @param int $startLine
+     * @param int $endLine
+     * @param string $keyword
+     * @param string $startDate
+     * @param string $endDate
+     * @return string
+     */
+    public function getExceptionLog(
+        bool   $compressOutput = false,
+        int    $lastLines = 100,
+        int    $startLine = 0,
+        int    $endLine = 0,
+        string $keyword = '',
+        string $startDate = '',
+        string $endDate = ''
+    ): string;
+
+    /**
+     * @param bool $compressOutput
      * @param int $lastLines Number of lines from the end (default 100). Ignored when startLine or endLine is provided.
      * @param int $startLine 1-based start line (0 = beginning of file). Used with endLine for a positional range.
      * @param int $endLine 1-based end line (0 = end of file). Used with startLine for a positional range.
@@ -40,36 +60,15 @@ interface GetApplicationLogInterface
      *
      * @throws LocalizedException
      */
-    public function getExtensionLog(bool $compressOutput = false, int $lastLines = 100, int $startLine = 0, int $endLine = 0, string $keyword = '', string $startDate = '', string $endDate = '') : string;
-
-    /**
-     * @return bool
-     *
-     * @throws LocalizedException
-     */
-    public function clearExtensionLog() : bool;
-
-    /**
-     * @param bool $compressOutput
-     * @param int $lastLines Number of lines from the end (default 100). Ignored when startLine or endLine is provided.
-     * @param int $startLine 1-based start line (0 = beginning of file). Used with endLine for a positional range.
-     * @param int $endLine 1-based end line (0 = end of file). Used with startLine for a positional range.
-     * @param string $keyword Plain string or regex (e.g. /pattern/i) to filter matching lines.
-     * @param string $startDate ISO 8601 date/datetime to filter lines on or after.
-     * @param string $endDate ISO 8601 date/datetime to filter lines on or before.
-     *
-     * @return string
-     *
-     * @throws LocalizedException
-     */
-    public function getExceptionLog(bool $compressOutput = false, int $lastLines = 100, int $startLine = 0, int $endLine = 0, string $keyword = '', string $startDate = '', string $endDate = '') : string;
-
-    /**
-     * @return bool
-     *
-     * @throws LocalizedException
-     */
-    public function clearExceptionLog() : bool;
+    public function getExtensionLog(
+        bool   $compressOutput = false,
+        int    $lastLines = 100,
+        int    $startLine = 0,
+        int    $endLine = 0,
+        string $keyword = '',
+        string $startDate = '',
+        string $endDate = ''
+    ): string;
 
     /**
      * @param bool $compressOutput
@@ -84,7 +83,15 @@ interface GetApplicationLogInterface
      *
      * @throws LocalizedException
      */
-    public function getCronLog(bool $compressOutput = false, int $lastLines = 100, int $startLine = 0, int $endLine = 0, string $keyword = '', string $startDate = '', string $endDate = '') : string;
+    public function getCronLog(
+        bool   $compressOutput = false,
+        int    $lastLines = 100,
+        int    $startLine = 0,
+        int    $endLine = 0,
+        string $keyword = '',
+        string $startDate = '',
+        string $endDate = ''
+    ): string;
 
     /**
      * @param bool $compressOutput
@@ -99,14 +106,22 @@ interface GetApplicationLogInterface
      *
      * @throws LocalizedException
      */
-    public function getExtensionErrorLog(bool $compressOutput = false, int $lastLines = 100, int $startLine = 0, int $endLine = 0, string $keyword = '', string $startDate = '', string $endDate = '') : string;
+    public function getExtensionErrorLog(
+        bool   $compressOutput = false,
+        int    $lastLines = 100,
+        int    $startLine = 0,
+        int    $endLine = 0,
+        string $keyword = '',
+        string $startDate = '',
+        string $endDate = ''
+    ): string;
 
     /**
      * @return bool
      *
      * @throws LocalizedException
      */
-    public function clearExtensionErrorLog() : bool;
+    public function clearExtensionErrorLog(): bool;
 
     /**
      * @param bool $compressOutput
@@ -121,12 +136,20 @@ interface GetApplicationLogInterface
      *
      * @throws LocalizedException
      */
-    public function getExtensionDebugLog(bool $compressOutput = false, int $lastLines = 100, int $startLine = 0, int $endLine = 0, string $keyword = '', string $startDate = '', string $endDate = '') : string;
+    public function getExtensionDebugLog(
+        bool   $compressOutput = false,
+        int    $lastLines = 100,
+        int    $startLine = 0,
+        int    $endLine = 0,
+        string $keyword = '',
+        string $startDate = '',
+        string $endDate = ''
+    ): string;
 
     /**
      * @return bool
      *
      * @throws LocalizedException
      */
-    public function clearExtensionDebugLog() : bool;
+    public function clearExtensionDebugLog(): bool;
 }

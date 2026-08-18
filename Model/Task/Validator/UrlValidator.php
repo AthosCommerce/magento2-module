@@ -7,11 +7,11 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 declare(strict_types=1);
@@ -79,8 +79,39 @@ class UrlValidator implements ValidatorInterface
             if (!$this->urlValidator->isValid((string) $value, ['http', 'https'])) {
                 $errors[] = (string)__('"%1" field value must be valid url address', $field);
             }
+            if (!$this->isAllowedAmazonAwsHost((string) $value)) {
+                $errors[] = (string) __('"%1" field value must contain valid bucket url', $field);
+            }
         }
 
         return $this->createValidationResult->create($errors);
+    }
+
+    /**
+     * @param string $url
+     * @return bool
+     */
+    private function isAllowedAmazonAwsHost(string $url): bool
+    {
+        $host = parse_url($url, PHP_URL_HOST);
+        if (!is_string($host) || $host === '') {
+            return false;
+        }
+
+        $normalizedHost = strtolower(rtrim($host, '.'));
+        $targetDomain = 'amazonaws.com';
+
+        if ($normalizedHost === $targetDomain) {
+            return true;
+        }
+
+        $suffix = '.' . $targetDomain;
+        $suffixLength = strlen($suffix);
+
+        if (strlen($normalizedHost) <= $suffixLength) {
+            return false;
+        }
+
+        return substr($normalizedHost, -$suffixLength) === $suffix;
     }
 }
