@@ -20,6 +20,7 @@ namespace AthosCommerce\Feed\Model\Feed\DataProvider;
 
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\Constant;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\ParentVariantResolver;
 use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
 use Magento\Catalog\Model\Product;
@@ -82,6 +83,11 @@ class AllVariantsProvider implements DataProviderInterface
             $productModel = $product['product_model'] ?? null;
 
             if (!$productModel || !in_array($productModel->getTypeId(), ['simple', 'virtual'], true)) {
+                continue;
+            }
+
+            $isStandaloneProduct = (bool)($product[Constant::IS_STANDALONE_PRODUCT_KEY] ?? false);
+            if ($isStandaloneProduct) {
                 continue;
             }
 

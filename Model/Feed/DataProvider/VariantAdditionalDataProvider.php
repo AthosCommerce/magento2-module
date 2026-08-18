@@ -92,6 +92,11 @@ class VariantAdditionalDataProvider implements DataProviderInterface
                 continue;
             }
 
+            $isStandaloneProduct = (bool)($product[Constant::IS_STANDALONE_PRODUCT_KEY] ?? false);
+            if ($isStandaloneProduct) {
+                continue;
+            }
+
             $variantAdditionalData = $this->buildProductVariantAdditionalData(
                 $product,
                 $productModel,
