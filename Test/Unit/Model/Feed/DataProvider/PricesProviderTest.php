@@ -19,6 +19,8 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Test\Unit\Model\Feed\DataProvider;
 
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\Constant;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\ParentVariantResolver;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Price\PriceProviderInterface;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Price\ProviderResolverInterface;
@@ -46,6 +48,11 @@ class PricesProviderTest extends TestCase
     private $parentVariantResolverMock;
 
     /**
+     * @var AthosCommerceLogger|MockObject
+     */
+    private $loggerMock;
+
+    /**
      * @var PricesProvider
      */
     private $pricesProvider;
@@ -55,11 +62,13 @@ class PricesProviderTest extends TestCase
         $this->jsonMock = $this->createMock(Json::class);
         $this->priceProviderResolverMock = $this->createMock(ProviderResolverInterface::class);
         $this->parentVariantResolverMock = $this->createMock(ParentVariantResolver::class);
+        $this->loggerMock = $this->createMock(AthosCommerceLogger::class);
 
         $this->pricesProvider = new PricesProvider(
             $this->jsonMock,
             $this->priceProviderResolverMock,
-            $this->parentVariantResolverMock
+            $this->parentVariantResolverMock,
+            $this->loggerMock
         );
     }
 
@@ -81,6 +90,9 @@ class PricesProviderTest extends TestCase
             'final_price' => 3.33,
             'max_price' => 3.33,
         ];
+
+        $this->loggerMock->expects($this->exactly(2))
+            ->method('info');
 
         $feedSpecificationMock->expects($this->once())
             ->method('getIgnoreFields')
@@ -116,6 +128,109 @@ class PricesProviderTest extends TestCase
 
         $this->assertSame(
             [array_merge($products[0], array_merge($prices, ['tier_pricing' => json_encode($tierPrice)]))],
+            $this->pricesProvider->getData($products, $feedSpecificationMock)
+        );
+    }
+
+    public function testGetDataForStandaloneRowSkipsParentResolution(): void
+    {
+        $priceProviderMock = $this->createMock(PriceProviderInterface::class);
+        $feedSpecificationMock = $this->createMock(FeedSpecificationInterface::class);
+        $productMock = $this->createMock(Product::class);
+
+        $products = [
+            [
+                'product_model' => $productMock,
+                Constant::IS_STANDALONE_PRODUCT_KEY => true,
+                Constant::IS_BELONG_TO_PARENT_KEY => false,
+            ],
+        ];
+
+        $prices = [
+            'regular_price' => 11.0,
+            'final_price' => 9.5,
+            'max_price' => 11.0,
+        ];
+
+        $this->loggerMock->expects($this->exactly(2))
+            ->method('info');
+
+        $feedSpecificationMock->expects($this->once())
+            ->method('getIgnoreFields')
+            ->willReturn([]);
+
+        $this->priceProviderResolverMock->expects($this->once())
+            ->method('resolve')
+            ->with($productMock)
+            ->willReturn($priceProviderMock);
+
+        $this->parentVariantResolverMock->expects($this->never())
+            ->method('resolveParentProductForRow');
+
+        $priceProviderMock->expects($this->once())
+            ->method('getPrices')
+            ->with($productMock, [], null)
+            ->willReturn($prices);
+
+        $feedSpecificationMock->expects($this->once())
+            ->method('getIncludeTierPricing')
+            ->willReturn(false);
+
+        $this->assertSame(
+            [array_merge($products[0], $prices)],
+            $this->pricesProvider->getData($products, $feedSpecificationMock)
+        );
+    }
+
+    public function testGetDataForParentLinkedRowUsesResolvedParent(): void
+    {
+        $priceProviderMock = $this->createMock(PriceProviderInterface::class);
+        $feedSpecificationMock = $this->createMock(FeedSpecificationInterface::class);
+        $productMock = $this->createMock(Product::class);
+        $resolvedParentMock = $this->createMock(Product::class);
+
+        $products = [
+            [
+                'product_model' => $productMock,
+                Constant::IS_STANDALONE_PRODUCT_KEY => false,
+                Constant::IS_BELONG_TO_PARENT_KEY => true,
+            ],
+        ];
+
+        $prices = [
+            'regular_price' => 0.0,
+            'final_price' => 1000.0,
+            'max_price' => 1001.0,
+        ];
+
+        $this->loggerMock->expects($this->exactly(2))
+            ->method('info');
+
+        $feedSpecificationMock->expects($this->once())
+            ->method('getIgnoreFields')
+            ->willReturn([]);
+
+        $this->priceProviderResolverMock->expects($this->once())
+            ->method('resolve')
+            ->with($productMock)
+            ->willReturn($priceProviderMock);
+
+        $this->parentVariantResolverMock->expects($this->once())
+            ->method('resolveParentProductForRow')
+            ->with($products[0], $productMock)
+            ->willReturn($resolvedParentMock);
+
+        $priceProviderMock->expects($this->once())
+            ->method('getPrices')
+            ->with($productMock, [], $resolvedParentMock)
+            ->willReturn($prices);
+
+        $feedSpecificationMock->expects($this->once())
+            ->method('getIncludeTierPricing')
+            ->willReturn(false);
+
+        $this->assertSame(
+            [array_merge($products[0], $prices)],
             $this->pricesProvider->getData($products, $feedSpecificationMock)
         );
     }
