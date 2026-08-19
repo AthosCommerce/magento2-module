@@ -8,8 +8,10 @@ use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Configurable\DataProvider as ConfigurableDataProvider;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentDataContextManager;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentRelationsContext;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\Constant;
 use AthosCommerce\Feed\Model\Feed\DataProvider\SwatchOptionsProvider;
+use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Catalog\Model\Product;
 use Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable;
 use Magento\Framework\DataObject;
@@ -29,6 +31,10 @@ class SwatchOptionsProviderTest extends TestCase
 
     private StoreManagerInterface&MockObject $storeManagerMock;
 
+    private ParentRelationsContext&MockObject $parentRelationsContextMock;
+
+    private ProductRepositoryInterface&MockObject $productRepositoryMock;
+
     private SwatchOptionsProvider $provider;
 
     protected function setUp(): void
@@ -39,6 +45,8 @@ class SwatchOptionsProviderTest extends TestCase
         $this->configurableTypeMock = $this->createMock(Configurable::class);
         $this->swatchHelperMock = $this->createMock(SwatchHelper::class);
         $this->storeManagerMock = $this->createMock(StoreManagerInterface::class);
+        $this->parentRelationsContextMock = $this->createMock(ParentRelationsContext::class);
+        $this->productRepositoryMock = $this->createMock(ProductRepositoryInterface::class);
 
         $this->provider = new SwatchOptionsProvider(
             $this->createMock(ConfigurableDataProvider::class),
@@ -46,7 +54,9 @@ class SwatchOptionsProviderTest extends TestCase
             $this->parentDataContextManagerMock,
             $this->configurableTypeMock,
             $this->swatchHelperMock,
-            $this->storeManagerMock
+            $this->storeManagerMock,
+            $this->parentRelationsContextMock,
+            $this->productRepositoryMock
         );
     }
 

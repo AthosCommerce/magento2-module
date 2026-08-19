@@ -7,11 +7,11 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 declare(strict_types=1);
@@ -51,12 +51,18 @@ class SelectedOptionsProviderTest extends TestCase
      * @var SelectedOptionsProvider
      */
     private $selectedOptionsProvider;
-
-    private ContextManagerInterface $contextManager;
-
-    private ParentRelationsContext $parentRelationsContext;
-
-    private ProductRepositoryInterface $productRepository;
+    /**
+     * @var ContextManagerInterface
+     */
+    private $contextManager;
+    /**
+     * @var ParentRelationsContext
+     */
+    private $parentRelationsContext;
+    /**
+     * @var ProductRepositoryInterface|mixed
+     */
+    private $productRepository;
 
     protected function setUp(): void
     {
@@ -73,10 +79,10 @@ class SelectedOptionsProviderTest extends TestCase
     /**
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
-     * @magentoDataFixture /var/www/html/athoscommerce/magento2-module/Test/_files/product_color_attribute_select.php
-     * @magentoDataFixture /var/www/html/athoscommerce/magento2-module/Test/_files/product_size_attribute_select.php
-     * @magentoDataFixture /var/www/html/athoscommerce/magento2-module/Test/_files/simple_products_for_selected_options.php
-     * @magentoDataFixture /var/www/html/athoscommerce/magento2-module/Test/_files/configurable_product_for_selected_options.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/product_color_attribute_select.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/product_size_attribute_select.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products_for_selected_options.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable_product_for_selected_options.php
      */
     public function testSelectedOptions(): void
     {
@@ -211,13 +217,15 @@ class SelectedOptionsProviderTest extends TestCase
     }
 
     /**
+     *
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable/configurable_products.php
+     *
+     * @throws Exception
      */
     public function testStandaloneAndParentAwareRows(): void
     {
-        require '/var/www/html/athoscommerce/magento2-module/Test/_files/configurable/configurable_products_rollback.php';
-        require '/var/www/html/athoscommerce/magento2-module/Test/_files/configurable/configurable_products.php';
 
         try {
             $specification = $this->specificationBuilder->build([]);
@@ -250,7 +258,6 @@ class SelectedOptionsProviderTest extends TestCase
             $this->parentRelationsContext->reset();
             $this->contextManager->resetContext();
             $this->selectedOptionsProvider->reset();
-            require '/var/www/html/athoscommerce/magento2-module/Test/_files/configurable/configurable_products_rollback.php';
         }
     }
 }

@@ -1,4 +1,18 @@
 <?php
+/**
+ * Copyright (C) 2025 AthosCommerce <https://athoscommerce.com>
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 declare(strict_types=1);
 
@@ -41,14 +55,16 @@ class StandardOptionsProviderTest extends TestCase
     }
 
     /**
+     *
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_products_catalogrule.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable/configurable_products.php
+     *
+     * @throws Exception
      */
     public function testStandaloneAndParentAwareRows(): void
     {
-        require '/var/www/html/athoscommerce/magento2-module/Test/_files/configurable/configurable_products_rollback.php';
-        require '/var/www/html/athoscommerce/magento2-module/Test/_files/configurable/configurable_products.php';
-
         try {
             $specification = $this->specificationBuilder->build([]);
             $this->contextManager->setContextFromSpecification($specification);
@@ -56,20 +72,22 @@ class StandardOptionsProviderTest extends TestCase
             $simple = $this->productRepository->get('athoscommerce_configurable_test_simple_10', false, null, true);
             $this->parentRelationsContext->buildContext([(int)$simple->getId()], $specification);
 
-            $result = $this->provider->getData([
-                [
-                    'entity_id' => (int)$simple->getId(),
-                    'product_model' => $simple,
-                    Constant::IS_STANDALONE_PRODUCT_KEY => true,
-                ],
-                [
-                    'entity_id' => (int)$simple->getId(),
-                    'product_model' => $simple,
-                    Constant::IS_STANDALONE_PRODUCT_KEY => false,
-                ],
-            ], $specification);
+            $standaloneRow = [
+                'entity_id' => (int)$simple->getId(),
+                'product_model' => $simple,
+                Constant::IS_STANDALONE_PRODUCT_KEY => true,
+            ];
+            $parentAwareRow = [
+                'entity_id' => (int)$simple->getId(),
+                'product_model' => $simple,
+                Constant::IS_STANDALONE_PRODUCT_KEY => false,
+            ];
 
+            $result = $this->provider->getData([$standaloneRow, $parentAwareRow], $specification);
+
+            $this->assertArrayHasKey(StandardOptionsProvider::FIELD_KEY_STANDARD_OPTIONS, $result[0]);
             $this->assertSame([], $result[0][StandardOptionsProvider::FIELD_KEY_STANDARD_OPTIONS]);
+            $this->assertArrayHasKey(StandardOptionsProvider::FIELD_KEY_STANDARD_OPTIONS, $result[1], print_r($result[1], true));
             $this->assertSame(
                 [
                     'test_configurable_first' => [
@@ -83,7 +101,6 @@ class StandardOptionsProviderTest extends TestCase
             $this->parentRelationsContext->reset();
             $this->contextManager->resetContext();
             $this->provider->reset();
-            require '/var/www/html/athoscommerce/magento2-module/Test/_files/configurable/configurable_products_rollback.php';
         }
     }
 }

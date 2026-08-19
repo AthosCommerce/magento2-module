@@ -294,11 +294,10 @@ class MinMaxPricesProviderTest extends TestCase
     /**
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable/configurable_products.php
      */
     public function testStandaloneRowIsSkippedAndParentAwareRowGetsAggregates(): void
     {
-        require '/var/www/html/athoscommerce/magento2-module/Test/_files/configurable/configurable_products_rollback.php';
-        require '/var/www/html/athoscommerce/magento2-module/Test/_files/configurable/configurable_products.php';
 
         try {
             $specification = $this->specificationBuilder->build([]);
@@ -344,7 +343,6 @@ class MinMaxPricesProviderTest extends TestCase
             $this->parentRelationsContext->reset();
             $this->contextManager->resetContext();
             $this->provider->reset();
-            require '/var/www/html/athoscommerce/magento2-module/Test/_files/configurable/configurable_products_rollback.php';
         }
     }
 

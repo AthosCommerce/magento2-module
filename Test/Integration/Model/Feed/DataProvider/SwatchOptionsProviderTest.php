@@ -1,4 +1,18 @@
 <?php
+/**
+ * Copyright (C) 2025 AthosCommerce <https://athoscommerce.com>
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 
 declare(strict_types=1);
 
@@ -18,15 +32,15 @@ use PHPUnit\Framework\TestCase;
  */
 class SwatchOptionsProviderTest extends TestCase
 {
-    private SpecificationBuilderInterface $specificationBuilder;
+    private $specificationBuilder;
 
-    private ContextManagerInterface $contextManager;
+    private $contextManager;
 
-    private ParentRelationsContext $parentRelationsContext;
+    private $parentRelationsContext;
 
-    private ProductRepositoryInterface $productRepository;
+    private $productRepository;
 
-    private SwatchOptionsProvider $provider;
+    private $provider;
 
     protected function setUp(): void
     {
@@ -43,15 +57,10 @@ class SwatchOptionsProviderTest extends TestCase
     /**
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable/configurable_product_two_swatches_attributes.php
      */
     public function testStandaloneAndParentAwareRows(): void
     {
-        try {
-            require '/var/www/html/athoscommerce/magento2-module/Test/_files/configurable/configurable_product_two_swatches_attributes_rollback.php';
-        } catch (\Throwable $exception) {
-            // ignore cleanup failures before fixture creation
-        }
-        require '/var/www/html/athoscommerce/magento2-module/Test/_files/configurable/configurable_product_two_swatches_attributes.php';
 
         try {
             $specification = $this->specificationBuilder->build([
@@ -62,21 +71,23 @@ class SwatchOptionsProviderTest extends TestCase
             $simple = $this->productRepository->get('simple_option_1_option_1', false, null, true);
             $this->parentRelationsContext->buildContext([(int)$simple->getId()], $specification);
 
-            $result = $this->provider->getData([
-                [
-                    'entity_id' => (int)$simple->getId(),
-                    'product_model' => $simple,
-                    Constant::IS_STANDALONE_PRODUCT_KEY => true,
-                ],
-                [
-                    'entity_id' => (int)$simple->getId(),
-                    'product_model' => $simple,
-                    Constant::IS_STANDALONE_PRODUCT_KEY => false,
-                ],
-            ], $specification);
+            $standaloneRow = [
+                'entity_id' => (int)$simple->getId(),
+                'product_model' => $simple,
+                Constant::IS_STANDALONE_PRODUCT_KEY => true,
+            ];
+            $parentAwareRow = [
+                'entity_id' => (int)$simple->getId(),
+                'product_model' => $simple,
+                Constant::IS_STANDALONE_PRODUCT_KEY => false,
+            ];
 
+            $result = $this->provider->getData([$standaloneRow, $parentAwareRow], $specification);
+
+            $this->assertArrayHasKey(SwatchOptionsProvider::FIELD_KEY, $result[0]);
             $this->assertSame([], $result[0][SwatchOptionsProvider::FIELD_KEY]);
 
+            $this->assertArrayHasKey(SwatchOptionsProvider::FIELD_KEY, $result[1], print_r($result[1], true));
             $parentAwareOptions = $result[1][SwatchOptionsProvider::FIELD_KEY];
             $this->assertArrayHasKey('visual_swatch_attribute', $parentAwareOptions);
             $this->assertSame(
@@ -94,7 +105,6 @@ class SwatchOptionsProviderTest extends TestCase
             $this->parentRelationsContext->reset();
             $this->contextManager->resetContext();
             $this->provider->reset();
-            require '/var/www/html/athoscommerce/magento2-module/Test/_files/configurable/configurable_product_two_swatches_attributes_rollback.php';
         }
     }
 }
