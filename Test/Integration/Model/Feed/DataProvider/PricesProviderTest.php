@@ -21,12 +21,16 @@ namespace AthosCommerce\Feed\Test\Integration\Model\Feed\DataProvider;
 use AthosCommerce\Feed\Model\ItemsGenerator;
 use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\ResourceModel\Product\Collection;
+use Magento\Catalog\Pricing\Price\FinalPrice;
+use Magento\Catalog\Pricing\Price\RegularPrice;
 use Magento\Customer\Model\Group;
 use Magento\Framework\Serialize\Serializer\Json;
 use Magento\TestFramework\Helper\Bootstrap;
 use PHPUnit\Framework\TestCase;
 use AthosCommerce\Feed\Model\Feed\ContextManagerInterface;
 use AthosCommerce\Feed\Model\Feed\DataProvider\PricesProvider;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentRelationsContext;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\Constant;
 use AthosCommerce\Feed\Model\Feed\SpecificationBuilderInterface;
 
 /**
@@ -64,6 +68,10 @@ class PricesProviderTest extends TestCase
      * @var ItemsGenerator
      */
     private $itemsGenerator;
+    /**
+     * @var ParentRelationsContext
+     */
+    private $parentRelationsContext;
 
     private $defaultPriceConfig = [
         'athoscommerce_simple_1' => [
@@ -127,6 +135,7 @@ class PricesProviderTest extends TestCase
         $this->contextManager = $this->objectManager->get(ContextManagerInterface::class);
         $this->json = $this->objectManager->get(Json::class);
         $this->itemsGenerator = $this->objectManager->get(ItemsGenerator::class);
+        $this->parentRelationsContext = $this->objectManager->get(ParentRelationsContext::class);
         parent::setUp();
     }
 
@@ -147,6 +156,163 @@ class PricesProviderTest extends TestCase
         $config = $this->buildConfig();
         $this->assertPrices($data, $config);
         $this->assertTierPrice($data, $this->buildConfig([], true));
+    }
+
+    /**
+     * @magentoAppIsolation enabled
+     * @magentoDbIsolation disabled
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/01_simple_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/grouped/grouped_products.php
+     *
+     * @throws \Exception
+     */
+    public function testGetDataForStandaloneAndParentLinkedSimpleRows(): void
+    {
+        $specification = $this->specificationBuilder->build([]);
+        $this->contextManager->setContextFromSpecification($specification);
+
+        $products = $this->getProducts->get($specification);
+        $childIds = [];
+        foreach ($products as $product) {
+            /** @var Product|null $productModel */
+            $productModel = $product['product_model'] ?? null;
+            if ($productModel instanceof Product && in_array($productModel->getTypeId(), ['simple', 'virtual'], true)) {
+                $childIds[] = (int)$productModel->getId();
+            }
+        }
+
+        $this->parentRelationsContext->buildContext($childIds, $specification);
+
+        $simpleProduct = $this->findProductBySku($products, 'athoscommerce_simple_1');
+        $groupedChildProduct = $this->findProductBySku($products, 'athoscommerce_grouped_test_simple_1000');
+
+        $rows = [
+            array_merge($simpleProduct, [
+                Constant::IS_STANDALONE_PRODUCT_KEY => true,
+                Constant::IS_BELONG_TO_PARENT_KEY => false,
+            ]),
+            array_merge($simpleProduct, [
+                Constant::IS_STANDALONE_PRODUCT_KEY => false,
+                Constant::IS_BELONG_TO_PARENT_KEY => true,
+            ]),
+            array_merge($groupedChildProduct, [
+                Constant::IS_STANDALONE_PRODUCT_KEY => true,
+                Constant::IS_BELONG_TO_PARENT_KEY => false,
+            ]),
+            array_merge($groupedChildProduct, [
+                Constant::IS_STANDALONE_PRODUCT_KEY => false,
+                Constant::IS_BELONG_TO_PARENT_KEY => true,
+            ]),
+        ];
+
+        $data = $this->pricesProvider->getData($rows, $specification);
+
+        $this->assertSame(10.0, $data[0]['final_price']);
+        $this->assertSame(10.0, $data[0]['regular_price']);
+        $this->assertSame(10.0, $data[0]['max_price']);
+        $this->assertTrue($data[0][Constant::IS_STANDALONE_PRODUCT_KEY]);
+        $this->assertFalse($data[0][Constant::IS_BELONG_TO_PARENT_KEY]);
+
+        $this->assertSame(10.0, $data[1]['final_price']);
+        $this->assertSame(10.0, $data[1]['regular_price']);
+        $this->assertSame(10.0, $data[1]['max_price']);
+        $this->assertFalse($data[1][Constant::IS_STANDALONE_PRODUCT_KEY]);
+        $this->assertTrue($data[1][Constant::IS_BELONG_TO_PARENT_KEY]);
+
+        $this->assertSame(1000.0, $data[2]['final_price']);
+        $this->assertSame(1000.0, $data[2]['regular_price']);
+        $this->assertSame(1000.0, $data[2]['max_price']);
+        $this->assertTrue($data[2][Constant::IS_STANDALONE_PRODUCT_KEY]);
+        $this->assertFalse($data[2][Constant::IS_BELONG_TO_PARENT_KEY]);
+
+        $this->assertSame(1000.0, $data[3]['final_price']);
+        $this->assertSame(0.0, $data[3]['regular_price']);
+        $this->assertSame(1001.0, $data[3]['max_price']);
+        $this->assertFalse($data[3][Constant::IS_STANDALONE_PRODUCT_KEY]);
+        $this->assertTrue($data[3][Constant::IS_BELONG_TO_PARENT_KEY]);
+
+        $this->parentRelationsContext->reset();
+        $this->contextManager->resetContext();
+    }
+
+    /**
+     * @magentoAppIsolation enabled
+     * @magentoDbIsolation disabled
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/01_virtual_products.php
+     *
+     * @throws \Exception
+     */
+    public function testGetDataForVirtualProducts(): void
+    {
+        $specification = $this->specificationBuilder->build([]);
+        $products = $this->getProducts->get($specification);
+        $data = $this->pricesProvider->getData($products, $specification);
+
+        $virtualProductOne = $this->findProductBySku($data, 'athoscommerce_virtual_1');
+        $virtualProductTwo = $this->findProductBySku($data, 'athoscommerce_virtual_2');
+
+        $this->assertItemMatchesProductPriceInfo($virtualProductOne);
+        $this->assertItemMatchesProductPriceInfo($virtualProductTwo);
+    }
+
+    /**
+     * @magentoAppIsolation enabled
+     * @magentoDbIsolation disabled
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_product_not_visible.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_product_visibility_catalog.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/simple_product_visibility_search.php
+     *
+     * @throws \Exception
+     */
+    public function testGetDataForSimpleProductsWithDifferentVisibilities(): void
+    {
+        $specification = $this->specificationBuilder->build([]);
+        $products = $this->getProducts->get($specification);
+        $data = $this->pricesProvider->getData($products, $specification);
+
+        $notVisibleProduct = $this->findProductBySku($data, 'athoscommerce_simple_not_visible');
+        $catalogVisibleProduct = $this->findProductBySku($data, 'athoscommerce_simple_visibility_catalog');
+        $searchVisibleProduct = $this->findProductBySku($data, 'athoscommerce_simple_visibility_search');
+
+        $this->assertItemMatchesProductPriceInfo($notVisibleProduct);
+        $this->assertItemMatchesProductPriceInfo($catalogVisibleProduct);
+        $this->assertItemMatchesProductPriceInfo($searchVisibleProduct);
+    }
+
+    /**
+     * @magentoAppIsolation enabled
+     * @magentoDbIsolation disabled
+     * @magentoDataFixture Magento_Bundle::Test/_files/fixed_bundle_product_without_discounts.php
+     *
+     * @throws \Exception
+     */
+    public function testGetDataForBundleProduct(): void
+    {
+        $specification = $this->specificationBuilder->build([]);
+        $products = $this->getProducts->get($specification);
+        $data = $this->pricesProvider->getData($products, $specification);
+
+        $bundleProduct = $this->findProductBySku($data, 'fixed_bundle_product_without_discounts');
+
+        $this->assertItemMatchesProductPriceInfo($bundleProduct);
+    }
+
+    /**
+     * @magentoAppIsolation enabled
+     * @magentoDbIsolation disabled
+     * @magentoDataFixture Magento_GiftCard::Test/_files/gift_card_with_amount.php
+     *
+     * @throws \Exception
+     */
+    public function testGetDataForGiftCardProduct(): void
+    {
+        $specification = $this->specificationBuilder->build([]);
+        $products = $this->getProducts->get($specification);
+        $data = $this->pricesProvider->getData($products, $specification);
+
+        $giftCardProduct = $this->findProductBySku($data, 'gift-card-with-amount');
+
+        $this->assertItemMatchesProductPriceInfo($giftCardProduct);
     }
 
     /**
@@ -439,5 +605,51 @@ class PricesProviderTest extends TestCase
         }
 
         return $result;
+    }
+
+    /**
+     * @param array $item
+     */
+    private function assertItemMatchesProductPriceInfo(array $item): void
+    {
+        /** @var Product|null $productModel */
+        $productModel = $item['product_model'] ?? null;
+
+        $this->assertInstanceOf(Product::class, $productModel);
+        $this->assertArrayHasKey('final_price', $item);
+        $this->assertArrayHasKey('regular_price', $item);
+        $this->assertArrayHasKey('max_price', $item);
+
+        $this->assertEquals(
+            (float)$productModel->getPriceInfo()->getPrice(FinalPrice::PRICE_CODE)->getMinimalPrice()->getValue(),
+            $item['final_price']
+        );
+        $this->assertEquals(
+            (float)$productModel->getPriceInfo()->getPrice(RegularPrice::PRICE_CODE)->getValue(),
+            $item['regular_price']
+        );
+        $this->assertEquals(
+            (float)$productModel->getPriceInfo()->getPrice(FinalPrice::PRICE_CODE)->getMaximalPrice()->getValue(),
+            $item['max_price']
+        );
+    }
+
+    /**
+     * @param array $products
+     * @param string $sku
+     *
+     * @return array
+     */
+    private function findProductBySku(array $products, string $sku): array
+    {
+        foreach ($products as $product) {
+            /** @var Product|null $productModel */
+            $productModel = $product['product_model'] ?? null;
+            if ($productModel instanceof Product && $productModel->getSku() === $sku) {
+                return $product;
+            }
+        }
+
+        $this->fail('Product not found for sku ' . $sku);
     }
 }

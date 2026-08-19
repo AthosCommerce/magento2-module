@@ -44,9 +44,10 @@ class SimplePriceProvider implements PriceProviderInterface
      * @param ConfigurableOptionsProviderInterface $configurableOptionsProvider
      */
     public function __construct(
-        ParentVariantResolver $parentVariantResolver,
+        ParentVariantResolver                $parentVariantResolver,
         ConfigurableOptionsProviderInterface $configurableOptionsProvider
-    ) {
+    )
+    {
         $this->parentVariantResolver = $parentVariantResolver;
         $this->configurableOptionsProvider = $configurableOptionsProvider;
     }
@@ -58,10 +59,11 @@ class SimplePriceProvider implements PriceProviderInterface
      * @return array
      */
     public function getPrices(
-        ProductInterface $product,
-        array $ignoredFields,
+        ProductInterface  $product,
+        array             $ignoredFields,
         ?ProductInterface $resolvedParent = null
-    ): array {
+    ): array
+    {
         $result = [];
         $priceKeys = [
             PricesProvider::FINAL_PRICE_KEY,
@@ -73,7 +75,10 @@ class SimplePriceProvider implements PriceProviderInterface
             return $result;
         }
 
-        $parent = $resolvedParent ?: $this->resolveFallbackParentProduct($product);
+        $parent = null;
+        if ($resolvedParent) {
+            $parent = $this->resolveFallbackParentProduct($product);
+        }
 
         if (!in_array(PricesProvider::FINAL_PRICE_KEY, $ignoredFields, true)) {
             $result[PricesProvider::FINAL_PRICE_KEY] = $this->getPriceValueByCode(
@@ -151,10 +156,11 @@ class SimplePriceProvider implements PriceProviderInterface
      * @return float
      */
     private function getPriceValueByCode(
-        ProductInterface $product,
-        string $priceKey,
+        ProductInterface  $product,
+        string            $priceKey,
         ?ProductInterface $parent = null
-    ): float {
+    ): float
+    {
         switch ($priceKey) {
             case PricesProvider::FINAL_PRICE_KEY:
                 if ($parent && method_exists($parent, 'getPriceInfo')) {
@@ -200,9 +206,10 @@ class SimplePriceProvider implements PriceProviderInterface
      * @return float
      */
     private function resolveMaxPrice(
-        ProductInterface $product,
+        ProductInterface  $product,
         ?ProductInterface $parent = null
-    ): float {
+    ): float
+    {
         if ($parent && method_exists($parent, 'getTypeId')) {
             if ($parent->getTypeId() === Constant::CONFIGURABLE_TYPE) {
                 $maximumAmount = method_exists($parent, 'hasMaxPrice') && $parent->hasMaxPrice()

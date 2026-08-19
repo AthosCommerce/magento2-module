@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Model\Feed\DataProvider;
 
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\Constant;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\ParentVariantResolver;
 use Magento\Catalog\Model\Product;
 use Magento\Catalog\Pricing\Price\FinalPrice;
@@ -87,9 +88,13 @@ class PricesProvider implements DataProviderInterface
             if (!$productModel) {
                 continue;
             }
+            $resolvedParent = null;
 
             $priceProvider = $this->priceProviderResolver->resolve($productModel);
-            $resolvedParent = $this->parentVariantResolver->resolveParentProductForRow($product, $productModel);
+            $isStandaloneProduct = (bool)($product[Constant::IS_STANDALONE_PRODUCT_KEY] ?? false);
+            if (false === $isStandaloneProduct) {
+                $resolvedParent = $this->parentVariantResolver->resolveParentProductForRow($product, $productModel);
+            }
             $product = array_merge(
                 $product,
                 $priceProvider->getPrices($productModel, $ignoredFields, $resolvedParent)

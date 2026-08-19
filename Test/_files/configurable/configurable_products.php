@@ -129,6 +129,7 @@ $attributeValues = [];
 $associatedProductIds = [];
 $productIds = [50, 60];
 array_shift($firstAttributeOptions); //remove the first option which is empty
+array_shift($secondAttributeOptions); //remove the first option which is empty
 
 $firstAttributeValues = [];
 $secondAttributeValues = [];
