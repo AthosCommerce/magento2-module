@@ -94,12 +94,6 @@ class PricesProvider implements DataProviderInterface
             $isStandaloneProduct = (bool)($product[Constant::IS_STANDALONE_PRODUCT_KEY] ?? false);
             if (false === $isStandaloneProduct) {
                 $resolvedParent = $this->parentVariantResolver->resolveParentProductForRow($product, $productModel);
-                $this->logger->debug("[PricesProvider] Prices",
-                    [
-                        'productId' => $productModel->getId(),
-                        'resolvedPrentId' => $resolvedParent->getId() ?? null,
-                    ],
-                );
             }
             $product = array_merge(
                 $product,
