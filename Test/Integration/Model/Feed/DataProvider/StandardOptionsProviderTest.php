@@ -70,6 +70,7 @@ class StandardOptionsProviderTest extends TestCase
             $this->contextManager->setContextFromSpecification($specification);
 
             $simple = $this->productRepository->get('athoscommerce_configurable_test_simple_10', false, null, true);
+            $parent = $this->productRepository->get('athoscommerce_configurable_test_configurable', false, null, true);
             $this->parentRelationsContext->buildContext([(int)$simple->getId()], $specification);
 
             $standaloneRow = [
@@ -81,6 +82,10 @@ class StandardOptionsProviderTest extends TestCase
                 'entity_id' => (int)$simple->getId(),
                 'product_model' => $simple,
                 Constant::IS_STANDALONE_PRODUCT_KEY => false,
+                Constant::PARENT_ID => (int)$parent->getId(),
+                Constant::PARENT_SKU => (string)$parent->getSku(),
+                Constant::RESOLVED_PARENT_ID_KEY => (int)$parent->getId(),
+                Constant::RESOLVED_PARENT_SKU_KEY => (string)$parent->getSku(),
             ];
 
             $result = $this->provider->getData([$standaloneRow, $parentAwareRow], $specification);

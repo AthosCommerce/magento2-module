@@ -7,13 +7,11 @@ namespace AthosCommerce\Feed\Test\Unit\Model\Feed\DataProvider;
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Configurable\DataProvider as ConfigurableDataProvider;
-use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentDataContextManager;
-use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentRelationsContext;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\Constant;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\ParentVariantResolver;
 use AthosCommerce\Feed\Model\Feed\DataProvider\SwatchOptionsProvider;
 use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Catalog\Model\Product;
-use Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable;
 use Magento\Framework\DataObject;
 use Magento\Store\Model\StoreManagerInterface;
 use Magento\Store\Model\Store;
@@ -23,15 +21,11 @@ use PHPUnit\Framework\TestCase;
 
 class SwatchOptionsProviderTest extends TestCase
 {
-    private ParentDataContextManager&MockObject $parentDataContextManagerMock;
-
-    private Configurable&MockObject $configurableTypeMock;
-
     private SwatchHelper&MockObject $swatchHelperMock;
 
     private StoreManagerInterface&MockObject $storeManagerMock;
 
-    private ParentRelationsContext&MockObject $parentRelationsContextMock;
+    private ParentVariantResolver&MockObject $parentVariantResolverMock;
 
     private ProductRepositoryInterface&MockObject $productRepositoryMock;
 
@@ -41,21 +35,17 @@ class SwatchOptionsProviderTest extends TestCase
     {
         parent::setUp();
 
-        $this->parentDataContextManagerMock = $this->createMock(ParentDataContextManager::class);
-        $this->configurableTypeMock = $this->createMock(Configurable::class);
         $this->swatchHelperMock = $this->createMock(SwatchHelper::class);
         $this->storeManagerMock = $this->createMock(StoreManagerInterface::class);
-        $this->parentRelationsContextMock = $this->createMock(ParentRelationsContext::class);
+        $this->parentVariantResolverMock = $this->createMock(ParentVariantResolver::class);
         $this->productRepositoryMock = $this->createMock(ProductRepositoryInterface::class);
 
         $this->provider = new SwatchOptionsProvider(
             $this->createMock(ConfigurableDataProvider::class),
             $this->createMock(AthosCommerceLogger::class),
-            $this->parentDataContextManagerMock,
-            $this->configurableTypeMock,
             $this->swatchHelperMock,
             $this->storeManagerMock,
-            $this->parentRelationsContextMock,
+            $this->parentVariantResolverMock,
             $this->productRepositoryMock
         );
     }
@@ -69,8 +59,10 @@ class SwatchOptionsProviderTest extends TestCase
         $feedSpecificationMock->method('getIgnoreFields')->willReturn([]);
         $feedSpecificationMock->method('getSwatchOptionFieldsNames')->willReturn(['flavour_visual_swatch_attribute']);
 
-        $this->configurableTypeMock->expects($this->never())
-            ->method('getParentIdsByChild');
+        $this->parentVariantResolverMock->expects($this->never())
+            ->method('resolveParentProductForRow');
+        $this->productRepositoryMock->expects($this->never())
+            ->method('getById');
 
         $result = $this->provider->getData([[
             'product_model' => $productModelMock,
@@ -94,6 +86,7 @@ class SwatchOptionsProviderTest extends TestCase
             ->willReturn(123);
 
         $parentProductMock = $this->createMock(Product::class);
+        $parentProductMock->method('getTypeId')->willReturn(Constant::CONFIGURABLE_TYPE);
         $typeInstanceMock = $this->getMockBuilder(\stdClass::class)
             ->addMethods(['getConfigurableAttributes'])
             ->getMock();
@@ -122,14 +115,14 @@ class SwatchOptionsProviderTest extends TestCase
         $feedSpecificationMock->method('getIgnoreFields')->willReturn([]);
         $feedSpecificationMock->method('getSwatchOptionFieldsNames')->willReturn(['flavour_visual_swatch_attribute']);
 
-        $this->configurableTypeMock->expects($this->once())
-            ->method('getParentIdsByChild')
-            ->with(101)
-            ->willReturn([55]);
+        $row = [
+            'product_model' => $productModelMock,
+            Constant::IS_STANDALONE_PRODUCT_KEY => false,
+        ];
 
-        $this->parentDataContextManagerMock->expects($this->once())
-            ->method('getParentsDataByProductId')
-            ->with(55)
+        $this->parentVariantResolverMock->expects($this->once())
+            ->method('resolveParentProductForRow')
+            ->with($row, $productModelMock)
             ->willReturn($parentProductMock);
 
         $this->swatchHelperMock->expects($this->once())
@@ -146,10 +139,7 @@ class SwatchOptionsProviderTest extends TestCase
             ->method('getStore')
             ->willReturn($storeMock);
 
-        $result = $this->provider->getData([[
-            'product_model' => $productModelMock,
-            Constant::IS_STANDALONE_PRODUCT_KEY => false,
-        ]], $feedSpecificationMock);
+        $result = $this->provider->getData([$row], $feedSpecificationMock);
 
         $this->assertSame(
             [

@@ -21,12 +21,12 @@ namespace AthosCommerce\Feed\Model\Feed\DataProvider;
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Configurable\DataProvider as ConfigurableDataProvider;
-use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentDataContextManager;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\Constant;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\ParentVariantResolver;
 use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
 use AthosCommerce\Feed\Service\Provider\StoreProvider;
+use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Catalog\Model\Product;
-use Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\Config\Storage\WriterInterface;
 use Magento\Framework\Exception\LocalizedException;
@@ -37,11 +37,6 @@ class StandardOptionsProvider implements DataProviderInterface
 {
     public const FIELD_KEY_STANDARD_OPTIONS = '__standard_options';
     /**
-     * @var Configurable
-     */
-    private $configurableType;
-
-    /**
      * @var AthosCommerceLogger
      */
     private $logger;
@@ -51,10 +46,6 @@ class StandardOptionsProvider implements DataProviderInterface
      */
     private $provider;
 
-    /**
-     * @var ParentDataContextManager
-     */
-    private $parentProductContextManager;
     /**
      * @var WriterInterface
      */
@@ -69,6 +60,16 @@ class StandardOptionsProvider implements DataProviderInterface
     private $json;
 
     /**
+     * @var ParentVariantResolver
+     */
+    private $parentVariantResolver;
+
+    /**
+     * @var ProductRepositoryInterface
+     */
+    private $productRepository;
+
+    /**
      * @var array
      */
     private $optionNames = [];
@@ -76,27 +77,25 @@ class StandardOptionsProvider implements DataProviderInterface
     /**
      * @param ConfigurableDataProvider $provider
      * @param AthosCommerceLogger $logger
-     * @param ParentDataContextManager $parentProductContextManager
-     * @param Configurable $configurableType
      * @param WriterInterface $configWriter
      */
     public function __construct(
-        ConfigurableDataProvider $provider,
-        AthosCommerceLogger      $logger,
-        ParentDataContextManager $parentProductContextManager,
-        Configurable             $configurableType,
-        WriterInterface          $configWriter,
-        StoreProvider            $storeProvider,
-        Json                     $json
+        ConfigurableDataProvider   $provider,
+        AthosCommerceLogger        $logger,
+        WriterInterface            $configWriter,
+        StoreProvider              $storeProvider,
+        Json                       $json,
+        ParentVariantResolver      $parentVariantResolver,
+        ProductRepositoryInterface $productRepository
     )
     {
         $this->provider = $provider;
         $this->logger = $logger;
-        $this->parentProductContextManager = $parentProductContextManager;
-        $this->configurableType = $configurableType;
         $this->configWriter = $configWriter;
         $this->storeProvider = $storeProvider;
         $this->json = $json;
+        $this->parentVariantResolver = $parentVariantResolver;
+        $this->productRepository = $productRepository;
     }
 
     /**
@@ -130,22 +129,19 @@ class StandardOptionsProvider implements DataProviderInterface
                 continue;
             }
 
-            $parentIds = $this->configurableType->getParentIdsByChild($productModel->getId());
-
-            if (empty($parentIds)) {
-                $product[self::FIELD_KEY_STANDARD_OPTIONS] = [];
-                continue;
-            }
-
-            $parentId = (int)$parentIds[0];
-            $parentProduct = $this->parentProductContextManager->getParentsDataByProductId($parentId);
+            $parentProduct = $this->parentVariantResolver->resolveParentProductForRow($product, $productModel);
 
             if (!$parentProduct) {
+                $parentProduct = $this->getParentProductFromRow($product);
+            }
+
+            if (!$parentProduct || $parentProduct->getTypeId() !== Constant::CONFIGURABLE_TYPE) {
+                $product[self::FIELD_KEY_STANDARD_OPTIONS] = [];
                 $this->logger->warning(
                     '[StandardOptions] Parent product missing in context',
                     [
                         'productId' => $productModel->getId(),
-                        'parentIds' => $parentIds,
+                        'row' => $product,
                         'method' => __METHOD__
                     ]
                 );
@@ -190,6 +186,25 @@ class StandardOptionsProvider implements DataProviderInterface
         }
         $this->logger->info('[StandardOptionsProvider] Completed');
         return $products;
+    }
+
+    /**
+     * @param array $product
+     * @return Product|null
+     */
+    private function getParentProductFromRow(array $product): ?Product
+    {
+        $parentId = $product[Constant::RESOLVED_PARENT_ID_KEY] ?? null;
+        if (!is_numeric($parentId)) {
+            return null;
+        }
+
+        $parentProduct = $this->productRepository->getById((int)$parentId, false, null, true);
+        if ($parentProduct instanceof Product) {
+            return $parentProduct;
+        }
+
+        return null;
     }
 
     /**
