@@ -21,6 +21,7 @@ namespace AthosCommerce\Feed\Model\Feed\DataProvider;
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Configurable\DataProvider;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentDataContextManager;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\Constant;
 use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
 use Magento\Catalog\Model\Product;
 use Magento\Framework\Exception\LocalizedException;
@@ -126,6 +127,12 @@ class SwatchOptionsProvider implements DataProviderInterface
                 $this->logger->debug('[SwatchOptionsProvider] Skipping non-simple product', [
                     'sku' => $sku
                 ]);
+                continue;
+            }
+
+            $isStandaloneProduct = (bool)($product[Constant::IS_STANDALONE_PRODUCT_KEY] ?? false);
+            if ($isStandaloneProduct) {
+                $product[self::FIELD_KEY] = [];
                 continue;
             }
 

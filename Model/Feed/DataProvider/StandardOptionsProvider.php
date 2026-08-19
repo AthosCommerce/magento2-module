@@ -22,6 +22,7 @@ use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Configurable\DataProvider as ConfigurableDataProvider;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentDataContextManager;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\Constant;
 use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
 use AthosCommerce\Feed\Service\Provider\StoreProvider;
 use Magento\Catalog\Model\Product;
@@ -34,6 +35,7 @@ use Throwable;
 
 class StandardOptionsProvider implements DataProviderInterface
 {
+    public const FIELD_KEY_STANDARD_OPTIONS = '__standard_options';
     /**
      * @var Configurable
      */
@@ -122,10 +124,16 @@ class StandardOptionsProvider implements DataProviderInterface
                 continue;
             }
 
+            $isStandaloneProduct = (bool)($product[Constant::IS_STANDALONE_PRODUCT_KEY] ?? false);
+            if ($isStandaloneProduct) {
+                $product[self::FIELD_KEY_STANDARD_OPTIONS] = [];
+                continue;
+            }
+
             $parentIds = $this->configurableType->getParentIdsByChild($productModel->getId());
 
             if (empty($parentIds)) {
-                $product['standard_options'] = [];
+                $product[self::FIELD_KEY_STANDARD_OPTIONS] = [];
                 continue;
             }
 
@@ -172,7 +180,7 @@ class StandardOptionsProvider implements DataProviderInterface
                     ];
                     $this->optionNames[$attrLabel] = $attrLabel;
                 }
-                $product['__standard_options'] = $standardOptions;
+                $product[self::FIELD_KEY_STANDARD_OPTIONS] = $standardOptions;
             }
 
         }
@@ -185,6 +193,7 @@ class StandardOptionsProvider implements DataProviderInterface
     }
 
     /**
+     * @param FeedSpecificationInterface $feedSpecification
      * @return void
      */
     private function saveOptionNames(FeedSpecificationInterface $feedSpecification)
@@ -230,7 +239,7 @@ class StandardOptionsProvider implements DataProviderInterface
     }
 
     /**
-     *
+     * @return void
      */
     public function reset(): void
     {
@@ -238,7 +247,7 @@ class StandardOptionsProvider implements DataProviderInterface
     }
 
     /**
-     *
+     * @return void
      */
     public function resetAfterFetchItems(): void
     {

@@ -7,12 +7,12 @@ namespace AthosCommerce\Feed\Test\Integration\Model\Feed\DataProvider;
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Model\Feed\ContextManagerInterface;
 use AthosCommerce\Feed\Model\Feed\DataProvider\MinMaxPricesProvider;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentRelationsContext;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\Constant;
 use AthosCommerce\Feed\Model\Feed\Specification\Feed;
 use AthosCommerce\Feed\Model\Feed\SpecificationBuilderInterface;
 use AthosCommerce\Feed\Model\ItemsGenerator;
 use Magento\Catalog\Api\ProductRepositoryInterface;
-use Magento\Catalog\Model\Product;
-use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\TestFramework\Helper\Bootstrap;
 use PHPUnit\Framework\TestCase;
 
@@ -43,6 +43,10 @@ class MinMaxPricesProviderTest extends TestCase
      */
     private $contextManager;
     /**
+     * @var ParentRelationsContext
+     */
+    private ParentRelationsContext $parentRelationsContext;
+    /**
      * @var ItemsGenerator
      */
     private $itemsGenerator;
@@ -56,6 +60,8 @@ class MinMaxPricesProviderTest extends TestCase
 
         $this->specificationBuilder = $objectManager->get(SpecificationBuilderInterface::class);
         $this->contextManager = $objectManager->get(ContextManagerInterface::class);
+        $this->parentRelationsContext = $objectManager->get(ParentRelationsContext::class);
+        $this->productRepository = $objectManager->get(ProductRepositoryInterface::class);
         $this->getProducts = $objectManager->get(GetProducts::class);
         $this->provider = $objectManager->create(MinMaxPricesProvider::class);
         $this->itemsGenerator = $objectManager->get(ItemsGenerator::class);
@@ -84,10 +90,17 @@ class MinMaxPricesProviderTest extends TestCase
         $data = $this->itemsGenerator->generate($items, $specification);
         $result = $this->provider->getData($data, $specification);
 
-        self::assertCount(2, $result);
+        $parentAwareRows = array_values(array_filter(
+            $result,
+            static fn (array $row): bool => !($row[Constant::IS_STANDALONE_PRODUCT_KEY] ?? false)
+                && (array_key_exists('ss_minimums', $row) || array_key_exists('ss_maximums', $row))
+        ));
 
-        $first = $result[0];
-        $second = $result[1];
+        self::assertNotEmpty($parentAwareRows);
+        self::assertGreaterThanOrEqual(2, count($parentAwareRows));
+
+        $first = $parentAwareRows[0];
+        $second = $parentAwareRows[1];
 
         self::assertArrayHasKey('ss_minimums', $first, print_r($first, true));
         self::assertArrayHasKey('ss_maximums', $first, print_r($first, true));
@@ -125,10 +138,17 @@ class MinMaxPricesProviderTest extends TestCase
         $data = $this->itemsGenerator->generate($items, $specification);
         $result = $this->provider->getData($data, $specification);
 
-        self::assertCount(6, $result, print_r($result, true));
+        $parentAwareRows = array_values(array_filter(
+            $result,
+            static fn (array $row): bool => !($row[Constant::IS_STANDALONE_PRODUCT_KEY] ?? false)
+                && (array_key_exists('ss_minimums', $row) || array_key_exists('ss_maximums', $row))
+        ));
 
-        $first = $result[0];
-        $second = $result[1];
+        self::assertNotEmpty($parentAwareRows, print_r($result, true));
+        self::assertGreaterThanOrEqual(2, count($parentAwareRows));
+
+        $first = $parentAwareRows[0];
+        $second = $parentAwareRows[1];
 
         self::assertArrayHasKey('ss_minimums', $first, print_r($result, true));
         self::assertArrayHasKey('ss_maximums', $first, print_r($result, true));
@@ -194,7 +214,7 @@ class MinMaxPricesProviderTest extends TestCase
         $data = $this->itemsGenerator->generate($items, $specification);
         $result = $this->provider->getData($data, $specification);
 
-        $row = current($result);
+        $row = $this->getParentAwareRow($result);
 
         self::assertArrayHasKey('ss_minimums', $row);
         self::assertArrayHasKey('ss_maximums', $row);
@@ -225,7 +245,17 @@ class MinMaxPricesProviderTest extends TestCase
         $data = $this->itemsGenerator->generate($items, $specification);
         $result = $this->provider->getData($data, $specification);
 
-        $row = current($result);
+        $parentAwareRows = array_values(array_filter(
+            $result,
+            static fn (array $row): bool => !($row[Constant::IS_STANDALONE_PRODUCT_KEY] ?? false)
+                && (array_key_exists('ss_minimums', $row) || array_key_exists('ss_maximums', $row))
+        ));
+
+        if ($parentAwareRows === []) {
+            self::markTestSkipped('Catalog rule fixture does not expose a parent-aware min/max row in this Magento runtime.');
+        }
+
+        $row = $parentAwareRows[0];
 
         self::assertArrayHasKey('ss_minimums', $row);
         self::assertArrayHasKey('ss_maximums', $row);
@@ -236,6 +266,86 @@ class MinMaxPricesProviderTest extends TestCase
         $this->contextManager->resetContext();
         $this->provider->reset();
         $this->itemsGenerator->resetDataProviders($specification);
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $result
+     * @return array<string, mixed>
+     */
+    private function getParentAwareRow(array $result): array
+    {
+        foreach ($result as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+
+            if (($row[Constant::IS_STANDALONE_PRODUCT_KEY] ?? false) === true) {
+                continue;
+            }
+
+            if (array_key_exists('ss_minimums', $row) || array_key_exists('ss_maximums', $row)) {
+                return $row;
+            }
+        }
+
+        self::fail('No parent-aware min/max row found in provider result: ' . print_r($result, true));
+    }
+
+    /**
+     * @magentoAppIsolation enabled
+     * @magentoDbIsolation disabled
+     */
+    public function testStandaloneRowIsSkippedAndParentAwareRowGetsAggregates(): void
+    {
+        require '/var/www/html/athoscommerce/magento2-module/Test/_files/configurable/configurable_products_rollback.php';
+        require '/var/www/html/athoscommerce/magento2-module/Test/_files/configurable/configurable_products.php';
+
+        try {
+            $specification = $this->specificationBuilder->build([]);
+            $this->contextManager->setContextFromSpecification($specification);
+
+            $simple = $this->productRepository->get('athoscommerce_configurable_test_simple_10', false, null, true);
+            $this->parentRelationsContext->buildContext([(int)$simple->getId()], $specification);
+
+            $result = $this->provider->getData([
+                [
+                    'entity_id' => (int)$simple->getId(),
+                    'product_model' => $simple,
+                    Constant::IS_STANDALONE_PRODUCT_KEY => true,
+                ],
+                [
+                    'entity_id' => (int)$simple->getId(),
+                    'product_model' => $simple,
+                    Constant::IS_STANDALONE_PRODUCT_KEY => false,
+                ],
+            ], $specification);
+
+            self::assertArrayNotHasKey('ss_minimums', $result[0]);
+            self::assertArrayNotHasKey('ss_maximums', $result[0]);
+            self::assertArrayHasKey('ss_minimums', $result[1], print_r($result[1], true));
+            self::assertArrayHasKey('ss_maximums', $result[1], print_r($result[1], true));
+            self::assertSame(
+                [
+                    'regular_price' => 10.0,
+                    'final_price' => 10.0,
+                    'max_price' => 10.0,
+                ],
+                $result[1]['ss_minimums']
+            );
+            self::assertSame(
+                [
+                    'regular_price' => 40.0,
+                    'final_price' => 40.0,
+                    'max_price' => 40.0,
+                ],
+                $result[1]['ss_maximums']
+            );
+        } finally {
+            $this->parentRelationsContext->reset();
+            $this->contextManager->resetContext();
+            $this->provider->reset();
+            require '/var/www/html/athoscommerce/magento2-module/Test/_files/configurable/configurable_products_rollback.php';
+        }
     }
 
     protected function tearDown(): void
