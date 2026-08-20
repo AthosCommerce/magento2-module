@@ -77,6 +77,14 @@ class ParentRelationsContext
     }
 
     /**
+     * Return a parent product already loaded in the current parent context.
+     */
+    public function getParentById(int $parentId): ?ProductInterface
+    {
+        return $this->parentDataContextManager->getParentsDataByProductId($parentId);
+    }
+
+    /**
      * Return all resolved parent products for a child.
      *
      * @param int $childId

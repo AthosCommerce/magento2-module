@@ -7,19 +7,22 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Test\Integration\Model\Feed\DataProvider;
 
+use AthosCommerce\Feed\Model\Feed\ContextManagerInterface;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentRelationsContext;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\Constant;
 use Magento\Catalog\Model\Product;
-use Magento\Catalog\Model\ResourceModel\Product\Collection;
+use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\TestFramework\Helper\Bootstrap;
 use PHPUnit\Framework\TestCase;
 use AthosCommerce\Feed\Model\Feed\DataProvider\SelectedOptionsProvider;
@@ -48,6 +51,18 @@ class SelectedOptionsProviderTest extends TestCase
      * @var SelectedOptionsProvider
      */
     private $selectedOptionsProvider;
+    /**
+     * @var ContextManagerInterface
+     */
+    private $contextManager;
+    /**
+     * @var ParentRelationsContext
+     */
+    private $parentRelationsContext;
+    /**
+     * @var ProductRepositoryInterface|mixed
+     */
+    private $productRepository;
 
     protected function setUp(): void
     {
@@ -55,6 +70,9 @@ class SelectedOptionsProviderTest extends TestCase
         $this->specificationBuilder = $this->objectManager->get(SpecificationBuilderInterface::class);
         $this->getProducts = $this->objectManager->get(GetProducts::class);
         $this->selectedOptionsProvider = $this->objectManager->get(SelectedOptionsProvider::class);
+        $this->contextManager = $this->objectManager->get(ContextManagerInterface::class);
+        $this->parentRelationsContext = $this->objectManager->get(ParentRelationsContext::class);
+        $this->productRepository = $this->objectManager->get(ProductRepositoryInterface::class);
         parent::setUp();
     }
 
@@ -196,5 +214,50 @@ class SelectedOptionsProviderTest extends TestCase
         $data3 = $this->selectedOptionsProvider->getData($products, $specification);
 
         $this->assertEquals($data1, $data3, 'Reset should not affect correctness');
+    }
+
+    /**
+     *
+     * @magentoAppIsolation enabled
+     * @magentoDbIsolation disabled
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable/configurable_products.php
+     *
+     * @throws Exception
+     */
+    public function testStandaloneAndParentAwareRows(): void
+    {
+
+        try {
+            $specification = $this->specificationBuilder->build([]);
+            $this->contextManager->setContextFromSpecification($specification);
+
+            $simple = $this->productRepository->get('athoscommerce_configurable_test_simple_10', false, null, true);
+            $this->parentRelationsContext->buildContext([(int)$simple->getId()], $specification);
+
+            $result = $this->selectedOptionsProvider->getData([
+                [
+                    'entity_id' => (int)$simple->getId(),
+                    'product_model' => $simple,
+                    Constant::IS_STANDALONE_PRODUCT_KEY => true,
+                ],
+                [
+                    'entity_id' => (int)$simple->getId(),
+                    'product_model' => $simple,
+                    Constant::IS_STANDALONE_PRODUCT_KEY => false,
+                ],
+            ], $specification);
+
+            $this->assertNull($result[0]['__selected_options']);
+            $this->assertSame(
+                json_encode([
+                    'test_configurable_first' => ['value' => 'First Option 1'],
+                ]),
+                $result[1]['__selected_options']
+            );
+        } finally {
+            $this->parentRelationsContext->reset();
+            $this->contextManager->resetContext();
+            $this->selectedOptionsProvider->reset();
+        }
     }
 }
