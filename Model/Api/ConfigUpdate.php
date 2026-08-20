@@ -30,7 +30,6 @@ class ConfigUpdate implements ConfigUpdateInterface
      * with AthosCommerce-owned infrastructure.
      */
     public const ALLOWED_ENDPOINT_SUFFIXES = [
-        '.athoscommerce.com',
         '.athoscommerce.net',
     ];
 
