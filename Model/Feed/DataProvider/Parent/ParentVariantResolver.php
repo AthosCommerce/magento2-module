@@ -177,29 +177,19 @@ class ParentVariantResolver
     /**
      * Try to resolve parent ID from row data.
      *
+     * Only uses the stable resolver constants — generic keys like parent_id / __parent_id
+     * are intentionally excluded because they reflect a configurable source field and
+     * cannot be relied upon to always contain the internal entity ID.
+     *
      * @param array $row
      * @return int|null
      */
     private function extractResolvedParentId(array $row): ?int
     {
-        $candidateKeys = [
-            'parent_id',
-            '__parent_id',
-            'parent_product_id',
-            '__parent_product_id',
-            '__resolver_parent_id',
-        ];
+        $value = $row[Constant::RESOLVED_PARENT_ID_KEY] ?? null;
 
-        foreach ($candidateKeys as $key) {
-            if (!array_key_exists($key, $row)) {
-                continue;
-            }
-
-            $value = $row[$key];
-
-            if ($this->isNumericScalar($value)) {
-                return (int)$value;
-            }
+        if ($this->isNumericScalar($value)) {
+            return (int)$value;
         }
 
         return null;
@@ -208,31 +198,20 @@ class ParentVariantResolver
     /**
      * Try to resolve parent SKU from row data.
      *
+     * Only uses the stable resolver constants — generic keys like parent_sku / __parent_sku
+     * are intentionally excluded because they reflect a configurable source field.
+     *
      * @param array $row
      * @return string|null
      */
     private function extractResolvedParentSku(array $row): ?string
     {
-        $candidateKeys = [
-            'parent_sku',
-            '__parent_sku',
-            'parent_product_sku',
-            '__parent_product_sku',
-            '__resolver_parent_sku',
-        ];
+        $value = $row[Constant::RESOLVED_PARENT_SKU_KEY] ?? null;
 
-        foreach ($candidateKeys as $key) {
-            if (!array_key_exists($key, $row)) {
-                continue;
-            }
-
-            $value = $row[$key];
-
-            if (is_scalar($value)) {
-                $value = trim((string)$value);
-                if ($value !== '') {
-                    return $value;
-                }
+        if (is_scalar($value)) {
+            $value = trim((string)$value);
+            if ($value !== '') {
+                return $value;
             }
         }
 
@@ -240,7 +219,11 @@ class ParentVariantResolver
     }
 
     /**
-     * Determine whether the row appears to belong to the given parent.
+     * Determine whether the row was built for the given parent.
+     *
+     * Only reads the stable resolver constants written by ConfigurableDataProvider
+     * and GroupedDataProvider. Generic fields like parent_sku / __parent_sku are
+     * intentionally excluded because they reflect a configurable source field.
      *
      * @param array $row
      * @param Product $parentProduct
@@ -248,52 +231,18 @@ class ParentVariantResolver
      */
     private function isChildAssignedToParentRow(array $row, Product $parentProduct): bool
     {
-        $parentId = (string)$parentProduct->getId();
+        $parentId  = (string)$parentProduct->getId();
         $parentSku = (string)$parentProduct->getSku();
 
-        $candidateValues = [
-            isset($row['sku']) ? $row['sku'] : null,
-            isset($row['parent_sku']) ? $row['parent_sku'] : null,
-            isset($row['__parent_sku']) ? $row['__parent_sku'] : null,
-            isset($row['parent_product_sku']) ? $row['parent_product_sku'] : null,
-            isset($row['__parent_product_sku']) ? $row['__parent_product_sku'] : null,
-            isset($row['grouped_products']) ? $row['grouped_products'] : null,
-            isset($row['__resolver']) ? $row['__resolver'] : null,
-            isset($row['__resolver_parent_sku']) ? $row['__resolver_parent_sku'] : null,
-            isset($row['__resolver_parent_id']) ? $row['__resolver_parent_id'] : null,
-        ];
+        $resolvedId  = $row[Constant::RESOLVED_PARENT_ID_KEY]  ?? null;
+        $resolvedSku = $row[Constant::RESOLVED_PARENT_SKU_KEY] ?? null;
 
-        foreach ($candidateValues as $value) {
-            if ($this->matchesParentIdentity($value, $parentId, $parentSku)) {
-                return true;
-            }
+        if ($resolvedId !== null && $this->isNumericScalar($resolvedId)) {
+            return (string)(int)$resolvedId === $parentId;
         }
 
-        return false;
-    }
-
-    /**
-     * @param mixed $value
-     * @param string $parentId
-     * @param string $parentSku
-     * @return bool
-     */
-    private function matchesParentIdentity($value, string $parentId, string $parentSku): bool
-    {
-        if (is_scalar($value)) {
-            $scalarValue = trim((string)$value);
-
-            return $scalarValue === $parentId || $scalarValue === $parentSku;
-        }
-
-        if (is_array($value)) {
-            foreach ($value as $nestedValue) {
-                if (!$this->matchesParentIdentity($nestedValue, $parentId, $parentSku)) {
-                    continue;
-                }
-
-                return true;
-            }
+        if ($resolvedSku !== null && is_scalar($resolvedSku)) {
+            return trim((string)$resolvedSku) === $parentSku;
         }
 
         return false;
