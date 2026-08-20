@@ -20,6 +20,7 @@ use AthosCommerce\Feed\Model\Api\GetStoresInfo;
 use Magento\Framework\App\Area;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Config\View;
+use Magento\Framework\Escaper;
 use Magento\Framework\View\ConfigInterface;
 use Magento\Framework\View\DesignInterface;
 use Magento\Store\Model\App\Emulation;
@@ -52,6 +53,11 @@ class GetStoresInfoTest extends TestCase
     private $scopeConfigMock;
 
     /**
+     * @var Escaper&MockObject
+     */
+    private $escaperMock;
+
+    /**
      * @var GetStoresInfo
      */
     private $getStoresInfoModel;
@@ -59,15 +65,17 @@ class GetStoresInfoTest extends TestCase
     public function setUp(): void
     {
         $this->storeManagerMock = $this->createMock(StoreManagerInterface::class);
-        $this->viewConfigMock = $this->createMock(ConfigInterface::class);
-        $this->emulationMock = $this->createMock(Emulation::class);
-        $this->scopeConfigMock = $this->createMock(ScopeConfigInterface::class);
+        $this->viewConfigMock   = $this->createMock(ConfigInterface::class);
+        $this->emulationMock    = $this->createMock(Emulation::class);
+        $this->scopeConfigMock  = $this->createMock(ScopeConfigInterface::class);
+        $this->escaperMock      = $this->createMock(Escaper::class);
 
         $this->getStoresInfoModel = new GetStoresInfo(
             $this->storeManagerMock,
             $this->viewConfigMock,
             $this->emulationMock,
-            $this->scopeConfigMock
+            $this->scopeConfigMock,
+            $this->escaperMock
         );
     }
 
@@ -162,6 +170,10 @@ class GetStoresInfoTest extends TestCase
         $this->emulationMock->expects($this->exactly(2))
             ->method('stopEnvironmentEmulation');
 
+        $this->escaperMock->expects($this->any())
+            ->method('escapeHtml')
+            ->willReturnArgument(0);
+
         $this->viewConfigMock->expects($this->exactly(2))
             ->method('getViewConfig')
             ->willReturn($viewMock);
@@ -183,6 +195,41 @@ class GetStoresInfoTest extends TestCase
 
         $this->assertSame($expectedResult, $this->getStoresInfoModel->getAsHtml());
         $this->assertSame([1, 2], $emulatedStoreIds);
+    }
+
+    public function testGetAsHtmlEscapesStoreName(): void
+    {
+        $viewMock  = $this->createMock(View::class);
+        $storeMock = $this->createMock(Store::class);
+
+        $storeMock->expects($this->any())->method('getId')->willReturn(1);
+        $storeMock->expects($this->once())->method('getName')->willReturn('<script>alert(1)</script>');
+        $storeMock->expects($this->once())->method('getCode')->willReturn('default');
+
+        $this->storeManagerMock->expects($this->once())
+            ->method('getStores')
+            ->willReturn([$storeMock]);
+
+        $this->emulationMock->expects($this->once())->method('startEnvironmentEmulation');
+        $this->emulationMock->expects($this->once())->method('stopEnvironmentEmulation');
+
+        $this->viewConfigMock->expects($this->once())
+            ->method('getViewConfig')
+            ->willReturn($viewMock);
+        $viewMock->expects($this->once())
+            ->method('read')
+            ->willReturn(['media' => ['Magento_Catalog' => ['images' => []]]]);
+
+        $this->escaperMock->expects($this->any())
+            ->method('escapeHtml')
+            ->willReturnCallback(function (string $value): string {
+                return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+            });
+
+        $html = $this->getStoresInfoModel->getAsHtml();
+
+        $this->assertStringNotContainsString('<script>', $html);
+        $this->assertStringContainsString('&lt;script&gt;', $html);
     }
 
     public function testGetAsJson(): void

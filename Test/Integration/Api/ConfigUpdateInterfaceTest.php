@@ -95,4 +95,68 @@ class ConfigUpdateInterfaceTest extends TestCase
         $payload = $this->configItemFactory->create();
         $this->configUpdate->update($payload);
     }
+
+    /**
+     * @magentoDbIsolation enabled
+     * @magentoAppIsolation enabled
+     * @dataProvider allowedEndpointProvider
+     */
+    public function testAllowedEndpointPasses(string $endpoint): void
+    {
+        $store = $this->storeManager->getDefaultStoreView();
+
+        $payload = $this->configItemFactory->create();
+        $payload->setStoreCode($store->getCode());
+        $payload->setEndPoint($endpoint);
+
+        $response = $this->configUpdate->update($payload);
+
+        $this->assertTrue($response->getSuccess(), sprintf('Endpoint "%s" should be accepted', $endpoint));
+    }
+
+    /**
+     * @return array<string, array{0: string}>
+     */
+    public function allowedEndpointProvider(): array
+    {
+        return [
+            'subdomain of athoscommerce.com' => ['api.athoscommerce.com'],
+            'subdomain of athoscommerce.net' => ['ingest.athoscommerce.net'],
+            'deep subdomain of athoscommerce.com' => ['eu.api.athoscommerce.com'],
+        ];
+    }
+
+    /**
+     * @magentoDbIsolation enabled
+     * @magentoAppIsolation enabled
+     * @dataProvider disallowedEndpointProvider
+     */
+    public function testDisallowedEndpointThrowsLocalizedException(string $endpoint): void
+    {
+        $this->expectException(\Magento\Framework\Exception\LocalizedException::class);
+
+        $store = $this->storeManager->getDefaultStoreView();
+
+        $payload = $this->configItemFactory->create();
+        $payload->setStoreCode($store->getCode());
+        $payload->setEndPoint($endpoint);
+
+        $this->configUpdate->update($payload);
+    }
+
+    /**
+     * @return array<string, array{0: string}>
+     */
+    public function disallowedEndpointProvider(): array
+    {
+        return [
+            'arbitrary public domain'           => ['example.com'],
+            'suffix spoofing via subdomain'     => ['athoscommerce.com.evil.com'],
+            'suffix spoofing via path'          => ['evil.com/athoscommerce.com'],
+            'localhost'                         => ['localhost/path'],
+            'private IP'                        => ['192.168.1.1'],
+            'loopback IP'                       => ['127.0.0.1'],
+            'AWS metadata IP'                   => ['169.254.169.254'],
+        ];
+    }
 }

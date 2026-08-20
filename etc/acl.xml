@@ -10,6 +10,7 @@
         <resources>
             <resource id="Magento_Backend::admin">
                 <resource id="AthosCommerce_Feed::general" title="AthosCommerce" translate="title" sortOrder="900">
+                    <resource id="AthosCommerce_Feed::config_write" title="Config Write" translate="title" sortOrder="5" />
                     <resource id="AthosCommerce_Feed::task" title="Products" translate="title" sortOrder="10" />
                     <resource id="AthosCommerce_Feed::customers" title="Customers" translate="title" sortOrder="20" />
                     <resource id="AthosCommerce_Feed::sales" title="Sales" translate="title" sortOrder="30" />
