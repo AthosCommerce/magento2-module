@@ -28,7 +28,6 @@ use AthosCommerce\Feed\Api\Data\ProductInfoResponseInterfaceFactory;
 use AthosCommerce\Feed\Model\Task\TaskPayloadProvider;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Serialize\SerializerInterface;
-use Throwable;
 use Magento\Store\Model\ScopeInterface;
 
 class ProductInfo implements ProductInfoInterface
