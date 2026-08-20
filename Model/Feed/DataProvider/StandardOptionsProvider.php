@@ -30,6 +30,7 @@ use Magento\Catalog\Model\Product;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\Config\Storage\WriterInterface;
 use Magento\Framework\Exception\LocalizedException;
+use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Serialize\Serializer\Json;
 use Throwable;
 
@@ -199,9 +200,16 @@ class StandardOptionsProvider implements DataProviderInterface
             return null;
         }
 
-        $parentProduct = $this->productRepository->getById((int)$parentId, false, null, true);
-        if ($parentProduct instanceof Product) {
-            return $parentProduct;
+        try {
+            $parentProduct = $this->productRepository->getById((int)$parentId, false, null, true);
+            if ($parentProduct instanceof Product) {
+                return $parentProduct;
+            }
+        } catch (NoSuchEntityException $e) {
+            $this->logger->warning(
+                '[StandardOptionsProvider] Resolved parent not found in repository',
+                ['parentId' => (int)$parentId, 'error' => $e->getMessage()]
+            );
         }
 
         return null;

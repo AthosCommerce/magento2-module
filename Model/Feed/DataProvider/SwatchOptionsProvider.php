@@ -26,6 +26,7 @@ use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
 use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Catalog\Model\Product;
 use Magento\Framework\Exception\LocalizedException;
+use Magento\Framework\Exception\NoSuchEntityException;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use Magento\Swatches\Helper\Data as SwatchHelper;
 use Magento\Store\Model\StoreManagerInterface;
@@ -232,9 +233,16 @@ class SwatchOptionsProvider implements DataProviderInterface
             return null;
         }
 
-        $parentProduct = $this->productRepository->getById((int)$parentId, false, null, true);
-        if ($parentProduct instanceof Product) {
-            return $parentProduct;
+        try {
+            $parentProduct = $this->productRepository->getById((int)$parentId, false, null, true);
+            if ($parentProduct instanceof Product) {
+                return $parentProduct;
+            }
+        } catch (NoSuchEntityException $e) {
+            $this->logger->warning(
+                '[SwatchOptionsProvider] Resolved parent not found in repository',
+                ['parentId' => (int)$parentId, 'error' => $e->getMessage()]
+            );
         }
 
         return null;
