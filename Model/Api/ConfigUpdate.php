@@ -25,6 +25,16 @@ class ConfigUpdate implements ConfigUpdateInterface
     public const ALLOWED_INDEXING_VALUES = ['0', '1'];
 
     /**
+     * Endpoint must end with one of these domain suffixes (case-insensitive).
+     * This acts as an allowlist to prevent SSRF — the module only communicates
+     * with AthosCommerce-owned infrastructure.
+     */
+    public const ALLOWED_ENDPOINT_SUFFIXES = [
+        '.athoscommerce.com',
+        '.athoscommerce.net',
+    ];
+
+    /**
      * @var WriterInterface
      */
     private $configWriter;
@@ -371,12 +381,36 @@ class ConfigUpdate implements ConfigUpdateInterface
             return;
         }
         $urlToValidate = 'https://' . $endpoint;
-        if (filter_var($urlToValidate, FILTER_VALIDATE_URL)) {
-            return;
+        if (!filter_var($urlToValidate, FILTER_VALIDATE_URL)) {
+            throw new LocalizedException(
+                __(
+                    'Supplied Endpoint URL is invalid. Received %1',
+                    $endpoint,
+                ),
+            );
         }
+
+        $host = parse_url($urlToValidate, PHP_URL_HOST); // phpcs:ignore Magento2.Functions.DiscouragedFunction
+        if (!$host) {
+            throw new LocalizedException(
+                __(
+                    'Supplied Endpoint URL is invalid. Received %1',
+                    $endpoint,
+                ),
+            );
+        }
+
+        $hostLower = strtolower($host);
+        foreach (self::ALLOWED_ENDPOINT_SUFFIXES as $suffix) {
+            $suffix = strtolower($suffix);
+            if (substr($hostLower, -strlen($suffix)) === $suffix) {
+                return;
+            }
+        }
+
         throw new LocalizedException(
             __(
-                'Supplied Endpoint URl is invalid. Received %1',
+                'Supplied Endpoint URL must belong to an allowed domain. Received %1',
                 $endpoint,
             ),
         );
