@@ -133,9 +133,6 @@ class GroupedDataProvider implements DataProviderInterface
         $linkField = $this->getLinkField();
 
         $parentIdIdentifier = $feedSpecification->getParentIdSourceFieldName();
-        if (empty($parentIdIdentifier)) {
-            $parentIdIdentifier = $linkField;
-        }
 
         $childEntityToLink = [];
         foreach ($products as $product) {
@@ -307,7 +304,7 @@ class GroupedDataProvider implements DataProviderInterface
      * @param Product $parent
      * @param array $ignoredFields
      * @param array $childTypeIds
-     * @param string $parentIdIdentifier
+     * @param string|null $parentIdIdentifier
      * @return array
      */
     private function buildParentContextRow(
@@ -316,7 +313,7 @@ class GroupedDataProvider implements DataProviderInterface
         Product $parent,
         array   $ignoredFields,
         array   $childTypeIds,
-        string  $parentIdIdentifier
+        ?string $parentIdIdentifier
     ): array
     {
         $childClone = $product;

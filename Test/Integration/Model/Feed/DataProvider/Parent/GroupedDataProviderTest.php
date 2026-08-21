@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Test\Integration\Model\Feed\DataProvider\Parent;
 
+use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\Constant;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\GroupedDataProvider;
 use AthosCommerce\Feed\Model\Feed\ContextManagerInterface;
@@ -79,6 +80,11 @@ class GroupedDataProviderTest extends TestCase
         parent::setUp();
     }
 
+    private function buildSpecification(array $data = []): FeedSpecificationInterface
+    {
+        return $this->specificationBuilder->build($data);
+    }
+
     /**
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
@@ -88,7 +94,7 @@ class GroupedDataProviderTest extends TestCase
      */
     public function testGetDataWithNotVisible(): void
     {
-        $specification = $this->specificationBuilder->build([]);
+        $specification = $this->buildSpecification([]);
         $this->contextManager->setContextFromSpecification($specification);
 
         $items = $this->getProducts->getCollectionItems($specification);
@@ -127,7 +133,7 @@ class GroupedDataProviderTest extends TestCase
      */
     public function testGetData(): void
     {
-        $specification = $this->specificationBuilder->build(['includeChildPrices' => true]);
+        $specification = $this->buildSpecification(['includeChildPrices' => true]);
         $this->contextManager->setContextFromSpecification($specification);
 
         $items = $this->getProducts->getCollectionItems($specification);
@@ -166,7 +172,7 @@ class GroupedDataProviderTest extends TestCase
      */
     public function testGetDataWithAdditionalAttributes(): void
     {
-        $specification = $this->specificationBuilder->build([
+        $specification = $this->buildSpecification([
             'includeChildPrices' => true,
             'childFields' => ['boolean_attribute', 'decimal_attribute']
         ]);
@@ -215,7 +221,7 @@ class GroupedDataProviderTest extends TestCase
      */
     public function testGetDataWithMultistoreValues(): void
     {
-        $specification = $this->specificationBuilder->build(['includeChildPrices' => true]);
+        $specification = $this->buildSpecification(['includeChildPrices' => true]);
         $this->contextManager->setContextFromSpecification($specification);
 
         $items = $this->getProducts->getCollectionItems($specification);
@@ -252,7 +258,7 @@ class GroupedDataProviderTest extends TestCase
      */
     public function testGetDataWithDisabledSimples(): void
     {
-        $specification = $this->specificationBuilder->build([]);
+        $specification = $this->buildSpecification([]);
         $this->contextManager->setContextFromSpecification($specification);
 
         $items = $this->getProducts->getCollectionItems($specification);
@@ -285,7 +291,7 @@ class GroupedDataProviderTest extends TestCase
      */
     public function testVisibleChildIsExportedAsStandalone(): void
     {
-        $specification = $this->specificationBuilder->build(['includeChildPrices' => true]);
+        $specification = $this->buildSpecification(['includeChildPrices' => true]);
         $this->contextManager->setContextFromSpecification($specification);
 
         $items = $this->getProducts->getCollectionItems($specification);
@@ -315,7 +321,7 @@ class GroupedDataProviderTest extends TestCase
      */
     public function testStandaloneRowDoesNotContainParentFields(): void
     {
-        $specification = $this->specificationBuilder->build(['includeChildPrices' => true]);
+        $specification = $this->buildSpecification(['includeChildPrices' => true]);
         $products = $this->getProducts->get($specification);
         $data = $this->groupedDataProvider->getData($products, $specification);
 
@@ -362,7 +368,7 @@ class GroupedDataProviderTest extends TestCase
      */
     public function testNotVisibleChildIsExportedOnlyInParentContextRows(): void
     {
-        $specification = $this->specificationBuilder->build([]);
+        $specification = $this->buildSpecification([]);
         $this->contextManager->setContextFromSpecification($specification);
 
         $items = $this->getProducts->getCollectionItems($specification);
@@ -402,7 +408,7 @@ class GroupedDataProviderTest extends TestCase
      */
     public function testSharedVisibleChildExportsTwoParentRowsAndOneStandaloneRow(): void
     {
-        $specification = $this->specificationBuilder->build([]);
+        $specification = $this->buildSpecification([]);
         $this->contextManager->setContextFromSpecification($specification);
 
         $items = $this->getProducts->getCollectionItems($specification);
@@ -465,7 +471,7 @@ class GroupedDataProviderTest extends TestCase
      */
     public function testSharedVisibleChildUsesStoreSpecificParentOverridesInMultistore(): void
     {
-        $specification = $this->specificationBuilder->build(['store' => 'fixturestore']);
+        $specification = $this->buildSpecification(['store' => 'fixturestore']);
         $this->contextManager->setContextFromSpecification($specification);
 
         $items = $this->getProducts->getCollectionItems($specification);
@@ -558,7 +564,7 @@ class GroupedDataProviderTest extends TestCase
      */
     public function testSharedNotVisibleChildExportsOnlyTwoParentRows(): void
     {
-        $specification = $this->specificationBuilder->build([]);
+        $specification = $this->buildSpecification([]);
         $this->contextManager->setContextFromSpecification($specification);
 
         $items = $this->getProducts->getCollectionItems($specification);
@@ -609,7 +615,7 @@ class GroupedDataProviderTest extends TestCase
      */
     public function testSharedVisibleChildWithDisabledParentExportsOnlyEnabledParentAndStandaloneRow(): void
     {
-        $specification = $this->specificationBuilder->build([]);
+        $specification = $this->buildSpecification([]);
         $this->contextManager->setContextFromSpecification($specification);
 
         $items = $this->getProducts->getCollectionItems($specification);
@@ -652,7 +658,7 @@ class GroupedDataProviderTest extends TestCase
      */
     public function testSharedCatalogVisibleChildIsExportedAsStandalone(): void
     {
-        $specification = $this->specificationBuilder->build([]);
+        $specification = $this->buildSpecification([]);
         $this->contextManager->setContextFromSpecification($specification);
 
         $items = $this->getProducts->getCollectionItems($specification);
@@ -696,7 +702,7 @@ class GroupedDataProviderTest extends TestCase
      */
     public function testGroupedParentRowsContainParentStockFields(): void
     {
-        $specification = $this->specificationBuilder->build([]);
+        $specification = $this->buildSpecification([]);
         $this->contextManager->setContextFromSpecification($specification);
 
         $items = $this->getProducts->getCollectionItems($specification);
@@ -734,7 +740,7 @@ class GroupedDataProviderTest extends TestCase
      */
     public function testSharedChildParentRowsUseParentSpecificStockValues(): void
     {
-        $specification = $this->specificationBuilder->build([]);
+        $specification = $this->buildSpecification([]);
         $this->contextManager->setContextFromSpecification($specification);
 
         $items = $this->getProducts->getCollectionItems($specification);
@@ -794,7 +800,7 @@ class GroupedDataProviderTest extends TestCase
      */
     public function testSharedChildParentRowsUseParentSpecificStockValuesLegacy(): void
     {
-        $specification = $this->specificationBuilder->build([
+        $specification = $this->buildSpecification([
             'isMsiEnabled' => false,
         ]);
         $this->contextManager->setContextFromSpecification($specification);
@@ -865,7 +871,7 @@ class GroupedDataProviderTest extends TestCase
      */
     public function testReset(): void
     {
-        $specification = $this->specificationBuilder->build([]);
+        $specification = $this->buildSpecification([]);
         $products = $this->getProducts->get($specification);
         $this->groupedDataProvider->getData($products, $specification);
         $this->groupedDataProvider->reset();
@@ -888,7 +894,7 @@ class GroupedDataProviderTest extends TestCase
      */
     public function testStandaloneProductsParentIdAndSku(): void
     {
-        $specification = $this->specificationBuilder->build([]);
+        $specification = $this->buildSpecification([]);
         $this->contextManager->setContextFromSpecification($specification);
 
         $items = $this->getProducts->getCollectionItems($specification);
@@ -950,7 +956,7 @@ class GroupedDataProviderTest extends TestCase
      */
     public function testChildProductsParentIdAndSku(): void
     {
-        $specification = $this->specificationBuilder->build([]);
+        $specification = $this->buildSpecification([]);
         $this->contextManager->setContextFromSpecification($specification);
 
         $items = $this->getProducts->getCollectionItems($specification);
@@ -1043,6 +1049,66 @@ class GroupedDataProviderTest extends TestCase
                 );
             }
         }
+
+        $this->contextManager->resetContext();
+        $this->groupedDataProvider->reset();
+    }
+
+    /**
+     * @magentoAppIsolation enabled
+     * @magentoDbIsolation disabled
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/01_simple_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/grouped/grouped_products.php
+     *
+     * @throws \Exception
+     */
+    public function testBlankParentIdSourceUsesEntityIdSpaceForGroupedRows(): void
+    {
+        $specification = $this->buildSpecification([]);
+        $this->contextManager->setContextFromSpecification($specification);
+
+        $items = $this->getProducts->getCollectionItems($specification);
+        $data = $this->itemsGenerator->generate($items, $specification);
+
+        $this->assertNotEmpty($data, 'Data should not be empty');
+
+        $assertedParentRows = 0;
+        $assertedStandaloneRows = 0;
+
+        foreach ($data as $product) {
+            if (($product[Constant::IS_BELONG_TO_PARENT_KEY] ?? false) === true
+                && ($product[Constant::RESOLVED_PARENT_ROW_SOURCE_KEY] ?? '') === 'grouped'
+            ) {
+                $parentId = (string)($product[Constant::PARENT_ID] ?? '');
+                $resolvedParentId = (string)($product[Constant::RESOLVED_PARENT_ID_KEY] ?? '');
+
+                $this->assertNotSame('', $parentId, Constant::PARENT_ID . ' should not be empty for grouped row');
+                $this->assertNotSame('', $resolvedParentId, Constant::RESOLVED_PARENT_ID_KEY . ' should not be empty');
+                $this->assertSame(
+                    $resolvedParentId,
+                    $parentId,
+                    'Grouped child row should use parent entity_id in __parent_id when parentIdSourceFieldName is blank'
+                );
+                $assertedParentRows++;
+            }
+
+            if (($product[Constant::IS_STANDALONE_PRODUCT_KEY] ?? false) === true) {
+                $entityId = (string)($product['entity_id'] ?? '');
+                $parentId = (string)($product[Constant::PARENT_ID] ?? '');
+
+                $this->assertNotSame('', $entityId, 'Standalone row entity_id should not be empty');
+                $this->assertNotSame('', $parentId, 'Standalone row __parent_id should not be empty');
+                $this->assertSame(
+                    $entityId,
+                    $parentId,
+                    'Standalone row should use its own entity_id in __parent_id when parentIdSourceFieldName is blank'
+                );
+                $assertedStandaloneRows++;
+            }
+        }
+
+        $this->assertGreaterThan(0, $assertedParentRows, 'Expected grouped parent-context rows to be asserted');
+        $this->assertGreaterThan(0, $assertedStandaloneRows, 'Expected standalone rows to be asserted');
 
         $this->contextManager->resetContext();
         $this->groupedDataProvider->reset();
