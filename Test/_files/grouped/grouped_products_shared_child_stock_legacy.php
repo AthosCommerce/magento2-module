@@ -2,10 +2,10 @@
 declare(strict_types=1);
 
 use Magento\Catalog\Api\ProductRepositoryInterface;
+use Magento\Catalog\Api\Data\ProductLinkInterfaceFactory;
 use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\Product\Attribute\Source\Status;
 use Magento\Catalog\Model\Product\Visibility;
-use Magento\Catalog\Model\Product\Link;
 use Magento\CatalogInventory\Api\StockRegistryInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\Config\Storage\WriterInterface;
@@ -17,6 +17,8 @@ $objectManager = Bootstrap::getObjectManager();
 
 /** @var ProductRepositoryInterface $productRepository */
 $productRepository = $objectManager->get(ProductRepositoryInterface::class);
+/** @var ProductLinkInterfaceFactory $productLinkFactory */
+$productLinkFactory = $objectManager->get(ProductLinkInterfaceFactory::class);
 
 /** @var StockRegistryInterface $stockRegistry */
 $stockRegistry = $objectManager->get(StockRegistryInterface::class);
@@ -127,7 +129,7 @@ $parent2 = $createGrouped(
 /**
  * Attach the same child to both grouped parents
  */
-$link1 = Bootstrap::getObjectManager()->create(Link::class);
+$link1 = $productLinkFactory->create();
 $link1->setSku($parent1->getSku());
 $link1->setLinkType('associated');
 $link1->setLinkedProductSku($sharedChild->getSku());
@@ -136,7 +138,7 @@ $link1->setPosition(1);
 $parent1->setProductLinks([$link1]);
 $productRepository->save($parent1);
 
-$link2 = Bootstrap::getObjectManager()->create(Link::class);
+$link2 = $productLinkFactory->create();
 $link2->setSku($parent2->getSku());
 $link2->setLinkType('associated');
 $link2->setLinkedProductSku($sharedChild->getSku());

@@ -2,13 +2,13 @@
 declare(strict_types=1);
 
 use Magento\Catalog\Api\ProductRepositoryInterface;
+use Magento\Catalog\Api\Data\ProductLinkInterfaceFactory;
 use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\Product\Attribute\Source\Status;
 use Magento\Catalog\Model\Product\Visibility;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\TestFramework\Helper\Bootstrap;
 use Magento\GroupedProduct\Model\Product\Type\Grouped as GroupedType;
-use Magento\Catalog\Model\Product\Link;
 use Magento\CatalogInventory\Api\StockRegistryInterface;
 
 /** @var \Magento\Framework\ObjectManagerInterface $objectManager */
@@ -16,6 +16,8 @@ $objectManager = Bootstrap::getObjectManager();
 
 /** @var ProductRepositoryInterface $productRepository */
 $productRepository = $objectManager->get(ProductRepositoryInterface::class);
+/** @var ProductLinkInterfaceFactory $productLinkFactory */
+$productLinkFactory = $objectManager->get(ProductLinkInterfaceFactory::class);
 
 /** @var StockRegistryInterface $stockRegistry */
 $stockRegistry = $objectManager->get(StockRegistryInterface::class);
@@ -118,7 +120,7 @@ $parent2 = $createGrouped(
 /**
  * Attach the same shared child to both grouped parents
  */
-$link1 = Bootstrap::getObjectManager()->create(Link::class);
+$link1 = $productLinkFactory->create();
 $link1->setSku($parent1->getSku())
     ->setLinkType('associated')
     ->setLinkedProductSku($sharedChild->getSku())
@@ -128,7 +130,7 @@ $link1->setSku($parent1->getSku())
 $parent1->setProductLinks([$link1]);
 $productRepository->save($parent1);
 
-$link2 = Bootstrap::getObjectManager()->create(Link::class);
+$link2 = $productLinkFactory->create();
 $link2->setSku($parent2->getSku())
     ->setLinkType('associated')
     ->setLinkedProductSku($sharedChild->getSku())

@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Test\Integration\Model\Feed\DataProvider\Parent;
 
 use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentRelationsContext;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\Constant;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\ConfigurableDataProvider;
 use AthosCommerce\Feed\Model\Feed\ContextManagerInterface;
 use AthosCommerce\Feed\Model\Feed\Resolver\RowResolverPool;
@@ -582,6 +583,66 @@ class ConfigurableDataProviderTest extends TestCase
                 );
             }
         }
+
+        $this->contextManager->resetContext();
+        $this->configurableDataProvider->reset();
+    }
+
+    /**
+     * @magentoAppIsolation enabled
+     * @magentoDbIsolation disabled
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple/01_simple_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable/configurable_products.php
+     *
+     * @throws \Exception
+     */
+    public function testBlankParentIdSourceUsesEntityIdSpaceForConfigurableRows(): void
+    {
+        $specification = $this->specificationBuilder->build([]);
+        $this->contextManager->setContextFromSpecification($specification);
+
+        $items = $this->getProducts->getCollectionItems($specification);
+        $data = $this->itemsGenerator->generate($items, $specification);
+
+        $this->assertNotEmpty($data, 'Data should not be empty');
+
+        $assertedParentRows = 0;
+        $assertedStandaloneRows = 0;
+
+        foreach ($data as $product) {
+            if (($product[Constant::IS_BELONG_TO_PARENT_KEY] ?? false) === true
+                && ($product[Constant::RESOLVED_PARENT_ROW_SOURCE_KEY] ?? '') === 'configurable'
+            ) {
+                $parentId = (string)($product[Constant::PARENT_ID] ?? '');
+                $resolvedParentId = (string)($product[Constant::RESOLVED_PARENT_ID_KEY] ?? '');
+
+                $this->assertNotSame('', $parentId, Constant::PARENT_ID . ' should not be empty for configurable row');
+                $this->assertNotSame('', $resolvedParentId, Constant::RESOLVED_PARENT_ID_KEY . ' should not be empty');
+                $this->assertSame(
+                    $resolvedParentId,
+                    $parentId,
+                    'Configurable child row should use parent entity_id in __parent_id when parentIdSourceFieldName is blank'
+                );
+                $assertedParentRows++;
+            }
+
+            if (($product[Constant::IS_STANDALONE_PRODUCT_KEY] ?? false) === true) {
+                $entityId = (string)($product['entity_id'] ?? '');
+                $parentId = (string)($product[Constant::PARENT_ID] ?? '');
+
+                $this->assertNotSame('', $entityId, 'Standalone row entity_id should not be empty');
+                $this->assertNotSame('', $parentId, 'Standalone row __parent_id should not be empty');
+                $this->assertSame(
+                    $entityId,
+                    $parentId,
+                    'Standalone row should use its own entity_id in __parent_id when parentIdSourceFieldName is blank'
+                );
+                $assertedStandaloneRows++;
+            }
+        }
+
+        $this->assertGreaterThan(0, $assertedParentRows, 'Expected configurable parent-context rows to be asserted');
+        $this->assertGreaterThan(0, $assertedStandaloneRows, 'Expected standalone rows to be asserted');
 
         $this->contextManager->resetContext();
         $this->configurableDataProvider->reset();
