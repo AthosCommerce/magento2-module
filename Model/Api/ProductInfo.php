@@ -195,7 +195,7 @@ class ProductInfo implements ProductInfoInterface
             );
 
             $response->setProductInfo($itemsData);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $this->logger->error(
                 'ProductInfoAPI: Failed to fetch product info',
                 [
@@ -233,10 +233,6 @@ class ProductInfo implements ProductInfoInterface
             $parentIds = [];
             $groupedParentIds = [];
             $groupedChildrenIds = [];
-            //\AthosCommerce\Feed\Model\Feed\DataProvider\Parent\RelationsProvider::getConfigurableRelationIds
-            //\AthosCommerce\Feed\Model\Feed\DataProvider\Parent\RelationsProvider::getGroupRelationIds
-            //\AthosCommerce\Feed\Model\Feed\DataProvider\Parent\RelationsProvider::getConfigurableChildrenIds
-            //\AthosCommerce\Feed\Model\Feed\DataProvider\Parent\RelationsProvider::getGroupedChildrenIds
 
             $childIds = array_merge(...
                 array_values($childIds
@@ -252,7 +248,7 @@ class ProductInfo implements ProductInfoInterface
                 $groupedChildrenIds
                     ?: []
             );
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             $this->logger->error(
                 'ProductInfoAPI: Failed to resolve parent/child IDs',
                 [

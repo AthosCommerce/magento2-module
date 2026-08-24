@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Model\Api;
 
 use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Framework\Escaper;
 use Magento\Framework\View\ConfigInterface;
 use Magento\Framework\View\DesignInterface;
 use Magento\Store\Model\ScopeInterface;
@@ -49,21 +50,29 @@ class GetStoresInfo implements GetStoresInfoInterface
     private $scopeConfig;
 
     /**
+     * @var Escaper
+     */
+    private $escaper;
+
+    /**
      * @param StoreManagerInterface $storeManager
      * @param ConfigInterface $viewConfig
      * @param Emulation $emulation
      * @param ScopeConfigInterface $scopeConfig
+     * @param Escaper $escaper
      */
     public function __construct(
         StoreManagerInterface $storeManager,
         ConfigInterface $viewConfig,
         Emulation $emulation,
-        ScopeConfigInterface $scopeConfig
+        ScopeConfigInterface $scopeConfig,
+        Escaper $escaper
     ) {
         $this->storeManager = $storeManager;
         $this->viewConfig = $viewConfig;
         $this->emulation = $emulation;
         $this->scopeConfig = $scopeConfig;
+        $this->escaper = $escaper;
     }
 
     /**
@@ -75,15 +84,18 @@ class GetStoresInfo implements GetStoresInfoInterface
         $stores = $this->storeManager->getStores();
         foreach ($stores as $store) {
             $storeId = (int)$store->getId();
-            $name = $store->getName();
-            $code = $store->getCode();
+            $name = $this->escaper->escapeHtml((string)$store->getName());
+            $code = $this->escaper->escapeHtml((string)$store->getCode());
             $result .= "<li>$storeId . $name - $code</li>";
             $result .= '<h2>Store Images</h2><ul>';
             $viewConfig = $this->getViewConfigWithStoreEmulation($storeId);
             foreach ($viewConfig as $id => $image) {
-                $result .= "<li>$id<ul>";
+                $escapedId = $this->escaper->escapeHtml((string)$id);
+                $result .= "<li>$escapedId<ul>";
                 foreach ($image as $attr => $val) {
-                    $result .= "<li>$attr = $val</li>";
+                    $escapedAttr = $this->escaper->escapeHtml((string)$attr);
+                    $escapedVal  = $this->escaper->escapeHtml((string)$val);
+                    $result .= "<li>$escapedAttr = $escapedVal</li>";
                 }
                 $result .= '</ul></li>';
             }
