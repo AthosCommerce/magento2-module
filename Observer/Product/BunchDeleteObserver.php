@@ -21,11 +21,11 @@ namespace AthosCommerce\Feed\Observer\Product;
 use AthosCommerce\Feed\Helper\Constants;
 use AthosCommerce\Feed\Model\Source\Actions;
 use AthosCommerce\Feed\Observer\BaseProductObserver;
-use Magento\Catalog\Model\ResourceModel\Product as ProductResource;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Store\Model\ScopeInterface;
+use Magento\Store\Model\StoreManagerInterface;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 
 class BunchDeleteObserver implements ObserverInterface
@@ -38,17 +38,31 @@ class BunchDeleteObserver implements ObserverInterface
      * @var AthosCommerceLogger
      */
     private $logger;
+    /**
+     * @var ScopeConfigInterface
+     */
+    private $scopeConfig;
+    /**
+     * @var StoreManagerInterface
+     */
+    private $storeManager;
 
     /**
      * @param BaseProductObserver $baseProductObserver
      * @param AthosCommerceLogger $logger
+     * @param ScopeConfigInterface $scopeConfig
+     * @param StoreManagerInterface $storeManager
      */
     public function __construct(
-        BaseProductObserver $baseProductObserver,
-        AthosCommerceLogger $logger
+        BaseProductObserver   $baseProductObserver,
+        AthosCommerceLogger   $logger,
+        ScopeConfigInterface  $scopeConfig,
+        StoreManagerInterface $storeManager
     ) {
         $this->baseProductObserver = $baseProductObserver;
         $this->logger = $logger;
+        $this->scopeConfig = $scopeConfig;
+        $this->storeManager = $storeManager;
     }
 
     /**
@@ -59,6 +73,11 @@ class BunchDeleteObserver implements ObserverInterface
     public function execute(Observer $observer): void
     {
         try {
+            if (!$this->isLiveIndexingEnabledForAnyStore()) {
+                $this->logger->debug('[BunchDeleteObserver] Live indexing disabled for all stores, skipping.');
+                return;
+            }
+
             $productIds = (array)$observer->getEvent()->getIdsToDelete();
 
             if (empty($productIds)) {
@@ -89,5 +108,26 @@ class BunchDeleteObserver implements ObserverInterface
                 ['exception' => $e]
             );
         }
+    }
+
+    /**
+     * Returns true if live indexing is enabled for at least one active store.
+     *
+     * Import deletions are a global operation so we cannot resolve the deleted
+     * products' store associations. Checking any active store is the closest
+     * equivalent to the per-store check used in the other product observers.
+     */
+    private function isLiveIndexingEnabledForAnyStore(): bool
+    {
+        foreach ($this->storeManager->getStores(false) as $store) {
+            if ((bool)$this->scopeConfig->getValue(
+                Constants::XML_PATH_LIVE_INDEXING_ENABLED,
+                ScopeInterface::SCOPE_STORE,
+                $store->getId()
+            )) {
+                return true;
+            }
+        }
+        return false;
     }
 }

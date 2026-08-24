@@ -27,6 +27,7 @@ use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
+use AthosCommerce\Feed\Service\Provider\ProductNextActionProvider;
 
 class InventoryUpdateObserver implements ObserverInterface
 {
@@ -49,18 +50,24 @@ class InventoryUpdateObserver implements ObserverInterface
      * @var ScopeConfigInterface
      */
     private $scopeConfig;
+    /**
+     * @var ProductNextActionProvider
+     */
+    private $productNextActionProvider;
 
     public function __construct(
-        AthosCommerceLogger  $logger,
-        ProductRepository    $productRepository,
-        ScopeConfigInterface $scopeConfig,
-        BaseProductObserver  $baseProductObserver
+        AthosCommerceLogger       $logger,
+        ProductRepository         $productRepository,
+        ScopeConfigInterface      $scopeConfig,
+        BaseProductObserver       $baseProductObserver,
+        ProductNextActionProvider $productNextActionProvider
     )
     {
         $this->logger = $logger;
         $this->productRepository = $productRepository;
         $this->scopeConfig = $scopeConfig;
         $this->baseProductObserver = $baseProductObserver;
+        $this->productNextActionProvider = $productNextActionProvider;
     }
 
     /**
@@ -105,9 +112,7 @@ class InventoryUpdateObserver implements ObserverInterface
                         continue;
                     }
 
-                    $nextAction = ($product->getStatus() != 1 || $product->getVisibility() == 1)
-                        ? Actions::DELETE
-                        : Actions::UPSERT;
+                    $nextAction = $this->productNextActionProvider->getNextActionByProduct($product);
 
                     $this->baseProductObserver->execute([$productId], $nextAction);
 

@@ -20,7 +20,6 @@ namespace AthosCommerce\Feed\Observer\Product;
 
 use AthosCommerce\Feed\Helper\Constants;
 use AthosCommerce\Feed\Model\Source\Actions;
-use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Catalog\Model\ResourceModel\Product as ProductResource;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Event\Observer;
@@ -28,6 +27,7 @@ use Magento\Framework\Event\ObserverInterface;
 use AthosCommerce\Feed\Observer\BaseProductObserver;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use Magento\Framework\App\ResourceConnection;
+use AthosCommerce\Feed\Service\Provider\ProductNextActionProvider;
 
 class BunchSaveObserver implements ObserverInterface
 {
@@ -47,11 +47,6 @@ class BunchSaveObserver implements ObserverInterface
     private $resource;
 
     /**
-     * @var ProductRepositoryInterface
-     */
-    private $productRepository;
-
-    /**
      * @var ScopeConfigInterface
      */
     private $scopeConfig;
@@ -60,30 +55,34 @@ class BunchSaveObserver implements ObserverInterface
      * @var ProductResource
      */
     private $productResource;
+    /**
+     * @var ProductNextActionProvider
+     */
+    private $productNextActionProvider;
 
     /**
      * @param BaseProductObserver $baseProductObserver
      * @param AthosCommerceLogger $logger
      * @param ResourceConnection $resourceConnection
-     * @param ProductRepositoryInterface $productRepository
      * @param ScopeConfigInterface $scopeConfig
      * @param ProductResource $productResource
+     * @param ProductNextActionProvider $productNextActionProvider
      */
     public function __construct(
-        BaseProductObserver        $baseProductObserver,
-        AthosCommerceLogger        $logger,
-        ResourceConnection         $resourceConnection,
-        ProductRepositoryInterface $productRepository,
-        ScopeConfigInterface       $scopeConfig,
-        ProductResource            $productResource
+        BaseProductObserver       $baseProductObserver,
+        AthosCommerceLogger       $logger,
+        ResourceConnection        $resourceConnection,
+        ScopeConfigInterface      $scopeConfig,
+        ProductResource           $productResource,
+        ProductNextActionProvider $productNextActionProvider
     )
     {
         $this->baseProductObserver = $baseProductObserver;
         $this->logger = $logger;
         $this->resource = $resourceConnection;
-        $this->productRepository = $productRepository;
         $this->scopeConfig = $scopeConfig;
         $this->productResource = $productResource;
+        $this->productNextActionProvider = $productNextActionProvider;
     }
 
     /**
@@ -122,14 +121,16 @@ class BunchSaveObserver implements ObserverInterface
             }
 
             $productIds = array_column($skuToData, 'entity_id');
-            $productIdsToProcess = [];
+            $productIdsToUpsert = [];
+            $productIdsToDelete = [];
 
             // Process in chunks to avoid memory issues
             $chunks = array_chunk($productIds, 200);
             foreach ($chunks as $chunk) {
                 try {
-                    // Get store IDs for this chunk in ONE query
+                    // Get store IDs and next actions for this chunk in ONE query each
                     $productStores = $this->getStoreIdsForProducts($chunk);
+                    $productNextActions = $this->productNextActionProvider->getNextActionsByProductIds($chunk);
 
                     foreach ($productStores as $productId => $storeIds) {
                         $shouldProcess = false;
@@ -159,7 +160,13 @@ class BunchSaveObserver implements ObserverInterface
                         }
 
                         if ($shouldProcess) {
-                            $productIdsToProcess[] = $productId;
+                            $nextAction = $productNextActions[$productId] ?? Actions::UPSERT;
+
+                            if ($nextAction === Actions::DELETE) {
+                                $productIdsToDelete[] = $productId;
+                            } else {
+                                $productIdsToUpsert[] = $productId;
+                            }
                         }
                     }
 
@@ -171,17 +178,19 @@ class BunchSaveObserver implements ObserverInterface
                 }
             }
 
-            if (!empty($productIdsToProcess)) {
-                $this->baseProductObserver->execute(
-                    $productIdsToProcess,
-                    Actions::UPSERT,
-                    true
-                );
+            if (!empty($productIdsToUpsert)) {
+                $this->baseProductObserver->execute($productIdsToUpsert, Actions::UPSERT, true);
                 $this->logger->info(
-                    '[BunchSaveObserver] Executed for products',
-                    [
-                        'productIds' => $productIdsToProcess
-                    ]
+                    '[BunchSaveObserver] Executed UPSERT for products',
+                    ['productIds' => $productIdsToUpsert]
+                );
+            }
+
+            if (!empty($productIdsToDelete)) {
+                $this->baseProductObserver->execute($productIdsToDelete, Actions::DELETE);
+                $this->logger->info(
+                    '[BunchSaveObserver] Executed DELETE for products',
+                    ['productIds' => $productIdsToDelete]
                 );
             }
         } catch (\Throwable $e) {

@@ -25,6 +25,7 @@ use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
 use AthosCommerce\Feed\Observer\BaseProductObserver;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
+use AthosCommerce\Feed\Service\Provider\ProductNextActionProvider;
 
 class UpdateObserver implements ObserverInterface
 {
@@ -41,21 +42,28 @@ class UpdateObserver implements ObserverInterface
      * @var ScopeConfigInterface
      */
     private $scopeConfig;
+    /**
+     * @var ProductNextActionProvider
+     */
+    private $productNextActionProvider;
 
     /**
      * @param BaseProductObserver $baseProductObserver
      * @param AthosCommerceLogger $logger
      * @param ScopeConfigInterface $scopeConfig
+     * @param ProductNextActionProvider $productNextActionProvider
      */
     public function __construct(
-        BaseProductObserver  $baseProductObserver,
-        AthosCommerceLogger  $logger,
-        ScopeConfigInterface $scopeConfig
+        BaseProductObserver       $baseProductObserver,
+        AthosCommerceLogger       $logger,
+        ScopeConfigInterface      $scopeConfig,
+        ProductNextActionProvider $productNextActionProvider
     )
     {
         $this->baseProductObserver = $baseProductObserver;
         $this->logger = $logger;
         $this->scopeConfig = $scopeConfig;
+        $this->productNextActionProvider = $productNextActionProvider;
     }
 
     /**
@@ -87,9 +95,7 @@ class UpdateObserver implements ObserverInterface
                         continue;
                     }
 
-                    $nextAction = ($product->getStatus() != 1 || $product->getVisibility() == 1)
-                        ? Actions::DELETE
-                        : Actions::UPSERT;
+                    $nextAction = $this->productNextActionProvider->getNextActionByProduct($product);
 
                     $this->baseProductObserver->execute(
                         [$product->getId()],
