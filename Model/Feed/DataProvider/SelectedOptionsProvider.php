@@ -20,6 +20,7 @@ namespace AthosCommerce\Feed\Model\Feed\DataProvider;
 
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentRelationsContext;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\Constant;
 use Magento\Catalog\Model\Product;
 use Magento\ConfigurableProduct\Helper\Data as ConfigurableHelper;
 use Magento\ConfigurableProduct\Model\ConfigurableAttributeData;
@@ -108,6 +109,11 @@ class SelectedOptionsProvider implements DataProviderInterface
             }
 
             $simpleId = (int)$simpleProduct->getId();
+            $isStandaloneProduct = (bool)($product[Constant::IS_STANDALONE_PRODUCT_KEY] ?? false);
+            if ($isStandaloneProduct) {
+                $product[self::FIELD_KEY_SELECTED_OPTIONS] = null;
+                continue;
+            }
 
             $parentProduct = $this->parentRelationsContext->getParentsByChildId($simpleId);
 

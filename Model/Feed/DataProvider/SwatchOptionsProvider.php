@@ -20,12 +20,14 @@ namespace AthosCommerce\Feed\Model\Feed\DataProvider;
 
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Configurable\DataProvider;
-use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentDataContextManager;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\Constant;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\ParentVariantResolver;
 use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
+use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Catalog\Model\Product;
 use Magento\Framework\Exception\LocalizedException;
+use Magento\Framework\Exception\NoSuchEntityException;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
-use Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable;
 use Magento\Swatches\Helper\Data as SwatchHelper;
 use Magento\Store\Model\StoreManagerInterface;
 
@@ -43,11 +45,6 @@ class SwatchOptionsProvider implements DataProviderInterface
     protected $storeManager;
 
     /**
-     * @var Configurable
-     */
-    private $configurableType;
-
-    /**
      * @var AthosCommerceLogger
      */
     private $logger;
@@ -57,33 +54,36 @@ class SwatchOptionsProvider implements DataProviderInterface
     private $provider;
 
     /**
-     * @var ParentDataContextManager
+     * @var ParentVariantResolver
      */
-    private $parentProductContextManager;
+    private $parentVariantResolver;
+
+    /**
+     * @var ProductRepositoryInterface
+     */
+    private $productRepository;
 
     /**
      * @param DataProvider $provider
      * @param AthosCommerceLogger $logger
-     * @param ParentDataContextManager $parentProductContextManager
-     * @param Configurable $configurableType
      * @param SwatchHelper $swatchHelper
      * @param StoreManagerInterface $storeManager
      */
     public function __construct(
-        DataProvider             $provider,
-        AthosCommerceLogger      $logger,
-        ParentDataContextManager $parentProductContextManager,
-        Configurable             $configurableType,
-        SwatchHelper             $swatchHelper,
-        StoreManagerInterface    $storeManager
+        DataProvider               $provider,
+        AthosCommerceLogger        $logger,
+        SwatchHelper               $swatchHelper,
+        StoreManagerInterface      $storeManager,
+        ParentVariantResolver      $parentVariantResolver,
+        ProductRepositoryInterface $productRepository
     )
     {
         $this->provider = $provider;
         $this->logger = $logger;
-        $this->parentProductContextManager = $parentProductContextManager;
-        $this->configurableType = $configurableType;
         $this->swatchHelper = $swatchHelper;
         $this->storeManager = $storeManager;
+        $this->parentVariantResolver = $parentVariantResolver;
+        $this->productRepository = $productRepository;
     }
 
     /**
@@ -129,17 +129,20 @@ class SwatchOptionsProvider implements DataProviderInterface
                 continue;
             }
 
-            $parentIds = $this->configurableType->getParentIdsByChild($productModel->getId());
-
-            if (empty($parentIds)) {
+            $isStandaloneProduct = (bool)($product[Constant::IS_STANDALONE_PRODUCT_KEY] ?? false);
+            if ($isStandaloneProduct) {
                 $product[self::FIELD_KEY] = [];
                 continue;
             }
 
-            $parentId = (int)$parentIds[0];
-            $parentProduct = $this->parentProductContextManager->getParentsDataByProductId($parentId);
+            $parentProduct = $this->parentVariantResolver->resolveParentProductForRow($product, $productModel);
 
             if (!$parentProduct) {
+                $parentProduct = $this->getParentProductFromRow($product);
+            }
+
+            if (!$parentProduct || $parentProduct->getTypeId() !== Constant::CONFIGURABLE_TYPE) {
+                $product[self::FIELD_KEY] = [];
                 continue;
             }
             // todo  performance check pending
@@ -217,6 +220,32 @@ class SwatchOptionsProvider implements DataProviderInterface
         $this->logger->info("[SwatchOptionsProvider] Completed");
 
         return $products;
+    }
+
+    /**
+     * @param array $product
+     * @return Product|null
+     */
+    private function getParentProductFromRow(array $product): ?Product
+    {
+        $parentId = $product[Constant::RESOLVED_PARENT_ID_KEY] ?? null;
+        if (!is_numeric($parentId)) {
+            return null;
+        }
+
+        try {
+            $parentProduct = $this->productRepository->getById((int)$parentId, false, null, true);
+            if ($parentProduct instanceof Product) {
+                return $parentProduct;
+            }
+        } catch (NoSuchEntityException $e) {
+            $this->logger->warning(
+                '[SwatchOptionsProvider] Resolved parent not found in repository',
+                ['parentId' => (int)$parentId, 'error' => $e->getMessage()]
+            );
+        }
+
+        return null;
     }
 
     /**

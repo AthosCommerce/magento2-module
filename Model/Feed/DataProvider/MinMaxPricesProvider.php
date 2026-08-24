@@ -6,6 +6,7 @@ namespace AthosCommerce\Feed\Model\Feed\DataProvider;
 
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\Constant;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\ParentVariantResolver;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Price\BasePriceProvider;
 use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
@@ -79,6 +80,10 @@ class MinMaxPricesProvider implements DataProviderInterface
             $productModel = $product['product_model'] ?? null;
 
             if (!$productModel instanceof Product) {
+                continue;
+            }
+            $isStandaloneProduct = (bool)($product[Constant::IS_STANDALONE_PRODUCT_KEY] ?? false);
+            if ($isStandaloneProduct) {
                 continue;
             }
 
