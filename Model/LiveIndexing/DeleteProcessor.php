@@ -80,12 +80,12 @@ class DeleteProcessor
             return 0;
         }
 
-        [$successApiIds, $failedApiIds, $successEntityIds] =
+        [$successApiIds, $failedApiIds, $successIndexingEntityIds] =
             $this->sendDeleteRequests($items, $siteId, $storeCode);
 
-        if (!empty($successEntityIds)) {
+        if (!empty($successIndexingEntityIds)) {
             $this->updateIndexingEntitiesActionsAction->execute(
-                array_values(array_unique($successEntityIds)),
+                array_values(array_unique($successIndexingEntityIds)),
                 $siteId,
                 Actions::DELETE,
                 IndexingEntity::ENTITY_ID
@@ -93,9 +93,9 @@ class DeleteProcessor
             $this->logger->info(
                 '[LiveIndexing][DELETE] Action updates completed successfully',
                 [
-                    'siteId'            => $siteId,
-                    'store'             => $storeCode,
-                    'successEntityIds'  => $successEntityIds,
+                    'siteId'                   => $siteId,
+                    'store'                    => $storeCode,
+                    'successIndexingEntityIds' => $successIndexingEntityIds,
                 ]
             );
         }
@@ -111,7 +111,7 @@ class DeleteProcessor
      * For standalone products it is the plain string representation of target_id.
      *
      * @param IndexingEntity[] $deleteRecords
-     * @return array<array{apiId: string, entityId: int}>
+     * @return array<array{apiId: string, indexingEntityId: int}>
      */
     private function buildDeleteItems(array $deleteRecords): array
     {
@@ -126,7 +126,7 @@ class DeleteProcessor
                 ? ((int)$parentId . '_' . $targetId)
                 : (string)$targetId;
 
-            $items[] = ['apiId' => $apiId, 'entityId' => (int)$record->getId()];
+            $items[] = ['apiId' => $apiId, 'indexingEntityId' => (int)$record->getId()];
         }
         return $items;
     }
@@ -137,7 +137,7 @@ class DeleteProcessor
      * Returns three parallel arrays:
      *  [0] successApiIds   — composite/plain API ids that succeeded
      *  [1] failedApiIds    — those that failed
-     *  [2] successEntityIds — indexing row ids for DB update
+     *  [2] successIndexingEntityIds — indexing row ids for DB update
      *
      * @param array  $items
      * @param string $siteId
@@ -147,9 +147,9 @@ class DeleteProcessor
      */
     private function sendDeleteRequests(array $items, string $siteId, string $storeCode): array
     {
-        $successApiIds   = [];
-        $failedApiIds    = [];
-        $successEntityIds = [];
+        $successApiIds            = [];
+        $failedApiIds             = [];
+        $successIndexingEntityIds = [];
 
         $this->logger->info(
             '[LiveIndexing] DELETE operation started',
@@ -161,12 +161,12 @@ class DeleteProcessor
         );
 
         foreach ($items as $item) {
-            $apiId    = $item['apiId'];
-            $entityId = $item['entityId'];
+            $apiId = $item['apiId'];
+            $indexingEntityId = $item['indexingEntityId'];
             try {
                 if ($this->deleteHandler->process($apiId)) {
-                    $successApiIds[]   = $apiId;
-                    $successEntityIds[] = $entityId;
+                    $successApiIds[] = $apiId;
+                    $successIndexingEntityIds[] = $indexingEntityId;
                 } else {
                     $failedApiIds[] = $apiId;
                 }
@@ -193,6 +193,6 @@ class DeleteProcessor
             ]
         );
 
-        return [$successApiIds, $failedApiIds, $successEntityIds];
+        return [$successApiIds, $failedApiIds, $successIndexingEntityIds];
     }
 }

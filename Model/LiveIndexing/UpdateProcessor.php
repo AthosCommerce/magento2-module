@@ -36,7 +36,7 @@ use Magento\Store\Api\Data\StoreInterface;
  *  1. Resolve Magento product models from the pending target_ids via a collection.
  *  2. Generate API payloads through the feed's item pipeline.
  *  3. Send payloads to the remote API in rate-limited chunks.
- *  4. Mark successfully upserted entities in the local indexing table.
+ *  4. Mark successfully upserted indexing rows in the local table.
  */
 class UpdateProcessor
 {
@@ -99,7 +99,7 @@ class UpdateProcessor
      * @param string                     $siteId
      * @param FeedSpecificationInterface $feedSpecification
      *
-     * @return int  Number of successfully upserted entities
+     * @return int  Number of successfully upserted indexing rows
      */
     public function execute(
         array                      $updateRecords,
@@ -113,6 +113,7 @@ class UpdateProcessor
 
         $storeId   = (int)$store->getId();
         $storeCode = $store->getCode();
+        $indexingEntityIdsByApiId = $this->buildIndexingEntityIdsByApiId($updateRecords);
 
         $payloads = $this->buildPayloads($updateRecords, $feedSpecification, $siteId, $storeCode);
 
@@ -123,27 +124,66 @@ class UpdateProcessor
         $chunkSize = $this->config->getChunkSizeByStoreId($storeId);
         $delayMs   = $this->config->getMillisecondsDelayByStoreId($storeId);
 
-        [$successIds, $failedIds] = $this->sendUpsertRequests($payloads, $chunkSize, $delayMs, $siteId, $storeCode);
+        [$successApiIds, $failedApiIds, $successIndexingEntityIds] = $this->sendUpsertRequests(
+            $payloads,
+            $indexingEntityIdsByApiId,
+            $chunkSize,
+            $delayMs,
+            $siteId,
+            $storeCode
+        );
 
-        $successIds = array_values(array_unique($successIds));
-        if (!empty($successIds)) {
+        $successIndexingEntityIds = array_values(array_unique($successIndexingEntityIds));
+        if (!empty($successIndexingEntityIds)) {
             $this->updateIndexingEntitiesActionsAction->execute(
-                $successIds,
+                $successIndexingEntityIds,
                 $siteId,
                 Actions::UPSERT,
-                IndexingEntity::TARGET_ID
+                IndexingEntity::ENTITY_ID
             );
             $this->logger->info(
                 '[LiveIndexing][UPDATE] Action updates completed successfully',
                 [
-                    'siteId'           => $siteId,
-                    'store'            => $storeCode,
-                    'successUpdateIds' => $successIds,
+                    'siteId'                   => $siteId,
+                    'store'                    => $storeCode,
+                    'successApiIds'            => $successApiIds,
+                    'successIndexingEntityIds' => $successIndexingEntityIds,
                 ]
             );
         }
 
-        return count($successIds);
+        return count($successIndexingEntityIds);
+    }
+
+    /**
+     * Builds a map of API entity ids to indexing row ids.
+     *
+     * Child rows use the same composite identifier as the outbound payload
+     * ("parentId_childId"), matching EntityIdProvider. Standalone rows use the
+     * plain target id string.
+     *
+     * @param IndexingEntity[] $updateRecords
+     * @return array<string, int[]>
+     */
+    private function buildIndexingEntityIdsByApiId(array $updateRecords): array
+    {
+        $indexingEntityIdsByApiId = [];
+
+        foreach ($updateRecords as $record) {
+            if (!$record instanceof IndexingEntity) {
+                continue;
+            }
+
+            $targetId = (int)$record->getTargetId();
+            $parentId = $record->getTargetParentId();
+            $apiId = $parentId !== null
+                ? ((int)$parentId . '_' . $targetId)
+                : (string)$targetId;
+
+            $indexingEntityIdsByApiId[$apiId][] = (int)$record->getId();
+        }
+
+        return $indexingEntityIdsByApiId;
     }
 
     /**
@@ -214,22 +254,25 @@ class UpdateProcessor
      * Sends upsert payloads to the API in rate-limited chunks.
      *
      * @param array  $payloads
-     * @param int    $chunkSize
-     * @param int    $delayMs
-     * @param string $siteId
-     * @param string $storeCode
+     * @param array<string, int[]> $indexingEntityIdsByApiId
+     * @param int                  $chunkSize
+     * @param int                  $delayMs
+     * @param string               $siteId
+     * @param string               $storeCode
      *
-     * @return array{0: int[], 1: int[]}  [successIds, failedIds]
+     * @return array{0: string[], 1: string[], 2: int[]}  [successApiIds, failedApiIds, successIndexingEntityIds]
      */
     private function sendUpsertRequests(
         array  $payloads,
+        array  $indexingEntityIdsByApiId,
         int    $chunkSize,
         int    $delayMs,
         string $siteId,
         string $storeCode
     ): array {
-        $successIds  = [];
-        $failedIds   = [];
+        $successApiIds            = [];
+        $failedApiIds             = [];
+        $successIndexingEntityIds = [];
         $batchChunks = array_chunk($payloads, $chunkSize);
         $totalChunks = count($batchChunks);
 
@@ -247,17 +290,20 @@ class UpdateProcessor
                 if (!$payload) {
                     continue;
                 }
-                $id = $this->extractEntityId($payload);
+                $apiId = $this->extractApiEntityId($payload);
                 try {
                     if ($this->upsertHandler->process($payload)) {
-                        $successIds[] = $id;
+                        $successApiIds[] = $apiId;
+                        foreach ($indexingEntityIdsByApiId[$apiId] ?? [] as $indexingEntityId) {
+                            $successIndexingEntityIds[] = $indexingEntityId;
+                        }
                     } else {
-                        $failedIds[] = $id;
+                        $failedApiIds[] = $apiId;
                     }
                 } catch (\Throwable $e) {
-                    $failedIds[] = $id;
+                    $failedApiIds[] = $apiId;
                     $this->logger->error(
-                        sprintf('Exception thrown while UPDATE for ID(%s)', $id),
+                        sprintf('Exception thrown while UPDATE for ID(%s)', $apiId),
                         [
                             'siteId' => $siteId,
                             'store'  => $storeCode,
@@ -279,36 +325,36 @@ class UpdateProcessor
                 'siteId'     => $siteId,
                 'store'      => $storeCode,
                 'chunks'     => $totalChunks,
-                'successIds' => $successIds,
-                'failedIds'  => $failedIds,
+                'successIds' => $successApiIds,
+                'failedIds'  => $failedApiIds,
             ]
         );
 
-        return [$successIds, $failedIds];
+        return [$successApiIds, $failedApiIds, $successIndexingEntityIds];
     }
 
     /**
      * @param mixed $payload
-     * @return int
+     * @return string
      */
-    private function extractEntityId($payload): int
+    private function extractApiEntityId($payload): string
     {
         if (is_object($payload)) {
             if (method_exists($payload, 'getEntityId')) {
-                return (int)$payload->getEntityId();
+                return (string)$payload->getEntityId();
             }
             if (method_exists($payload, 'getId')) {
-                return (int)$payload->getId();
+                return (string)$payload->getId();
             }
             if (property_exists($payload, 'entity_id')) {
-                return (int)$payload->entity_id;
+                return (string)$payload->entity_id;
             }
         }
 
         if (is_array($payload)) {
-            return (int)($payload['entity_id'] ?? $payload['id'] ?? 0);
+            return (string)($payload['entity_id'] ?? $payload['id'] ?? '');
         }
 
-        return 0;
+        return '';
     }
 }
