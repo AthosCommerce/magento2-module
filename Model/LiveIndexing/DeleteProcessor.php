@@ -31,7 +31,7 @@ use AthosCommerce\Feed\Logger\AthosCommerceLogger;
  *  1. Map each IndexingEntity record to the correct API entity identifier
  *     (plain target_id for standalone products, "parentId_childId" for children).
  *  2. Send individual delete requests to the remote API.
- *  3. Mark successfully deleted entities in the local indexing table.
+ *  3. Mark only the successfully deleted indexing rows in the local table.
  */
 class DeleteProcessor
 {
@@ -70,7 +70,7 @@ class DeleteProcessor
      * @param string           $siteId
      * @param string           $storeCode      Used for logging only
      *
-     * @return int  Number of successfully deleted entities
+     * @return int  Number of successfully deleted indexing rows
      */
     public function execute(array $deleteRecords, string $siteId, string $storeCode): int
     {
@@ -80,22 +80,22 @@ class DeleteProcessor
             return 0;
         }
 
-        [$successApiIds, $failedApiIds, $successTargetIds] =
+        [$successApiIds, $failedApiIds, $successEntityIds] =
             $this->sendDeleteRequests($items, $siteId, $storeCode);
 
-        if (!empty($successTargetIds)) {
+        if (!empty($successEntityIds)) {
             $this->updateIndexingEntitiesActionsAction->execute(
-                array_values(array_unique($successTargetIds)),
+                array_values(array_unique($successEntityIds)),
                 $siteId,
                 Actions::DELETE,
-                IndexingEntity::TARGET_ID
+                IndexingEntity::ENTITY_ID
             );
             $this->logger->info(
                 '[LiveIndexing][DELETE] Action updates completed successfully',
                 [
-                    'siteId'     => $siteId,
-                    'store'      => $storeCode,
-                    'successIds' => $successTargetIds,
+                    'siteId'            => $siteId,
+                    'store'             => $storeCode,
+                    'successEntityIds'  => $successEntityIds,
                 ]
             );
         }
@@ -104,14 +104,14 @@ class DeleteProcessor
     }
 
     /**
-     * Maps each IndexingEntity record to the API identifier and its raw target_id.
+     * Maps each IndexingEntity record to the API identifier and its indexing row id.
      *
      * For child products (configurable/grouped) the API id is "parentId_childId",
      * matching the entity_id produced by EntityIdProvider on UPSERT.
      * For standalone products it is the plain string representation of target_id.
      *
      * @param IndexingEntity[] $deleteRecords
-     * @return array<array{apiId: string, targetId: int}>
+     * @return array<array{apiId: string, entityId: int}>
      */
     private function buildDeleteItems(array $deleteRecords): array
     {
@@ -126,7 +126,7 @@ class DeleteProcessor
                 ? ((int)$parentId . '_' . $targetId)
                 : (string)$targetId;
 
-            $items[] = ['apiId' => $apiId, 'targetId' => $targetId];
+            $items[] = ['apiId' => $apiId, 'entityId' => (int)$record->getId()];
         }
         return $items;
     }
@@ -137,7 +137,7 @@ class DeleteProcessor
      * Returns three parallel arrays:
      *  [0] successApiIds   — composite/plain API ids that succeeded
      *  [1] failedApiIds    — those that failed
-     *  [2] successTargetIds — raw target_id values for DB update
+     *  [2] successEntityIds — indexing row ids for DB update
      *
      * @param array  $items
      * @param string $siteId
@@ -147,9 +147,9 @@ class DeleteProcessor
      */
     private function sendDeleteRequests(array $items, string $siteId, string $storeCode): array
     {
-        $successApiIds    = [];
-        $failedApiIds     = [];
-        $successTargetIds = [];
+        $successApiIds   = [];
+        $failedApiIds    = [];
+        $successEntityIds = [];
 
         $this->logger->info(
             '[LiveIndexing] DELETE operation started',
@@ -162,11 +162,11 @@ class DeleteProcessor
 
         foreach ($items as $item) {
             $apiId    = $item['apiId'];
-            $targetId = $item['targetId'];
+            $entityId = $item['entityId'];
             try {
                 if ($this->deleteHandler->process($apiId)) {
-                    $successApiIds[]    = $apiId;
-                    $successTargetIds[] = $targetId;
+                    $successApiIds[]   = $apiId;
+                    $successEntityIds[] = $entityId;
                 } else {
                     $failedApiIds[] = $apiId;
                 }
@@ -193,6 +193,6 @@ class DeleteProcessor
             ]
         );
 
-        return [$successApiIds, $failedApiIds, $successTargetIds];
+        return [$successApiIds, $failedApiIds, $successEntityIds];
     }
 }

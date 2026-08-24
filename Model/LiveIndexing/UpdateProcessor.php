@@ -268,8 +268,8 @@ class UpdateProcessor
             }
 
             if ($delayMs > 0 && ($chunkIndex + 1) < $totalChunks) {
-                // Cap at 1 second (1000 ms) to avoid excessively long sleeps.
-                usleep(min($delayMs, 1000));
+                // usleep() expects microseconds; config is stored in milliseconds.
+                usleep(min($delayMs, 1000) * 1000);
             }
         }
 
