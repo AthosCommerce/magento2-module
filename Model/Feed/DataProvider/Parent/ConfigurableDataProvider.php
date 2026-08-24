@@ -153,9 +153,6 @@ class ConfigurableDataProvider implements DataProviderInterface
         $ignoredFields = $feedSpecification->getIgnoreFields();
 
         $parentIdIdentifier = $feedSpecification->getParentIdSourceFieldName();
-        if (empty($parentIdIdentifier)) {
-            $parentIdIdentifier = $linkField;
-        }
 
         $this->logger->info("[ConfigurableDataProvider] Started processing products", [
             'childTypeIdsList' => $childTypeIdsList,
@@ -309,7 +306,7 @@ class ConfigurableDataProvider implements DataProviderInterface
      * @param Product $parent
      * @param array $ignoredFields
      * @param array $childTypeIdsList
-     * @param string $parentIdIdentifier
+     * @param string|null $parentIdIdentifier
      * @return array
      */
     private function buildParentContextRow(
@@ -318,7 +315,7 @@ class ConfigurableDataProvider implements DataProviderInterface
         Product $parent,
         array   $ignoredFields,
         array   $childTypeIdsList,
-        string  $parentIdIdentifier
+        ?string $parentIdIdentifier
     ): array
     {
         $childClone = $product;
