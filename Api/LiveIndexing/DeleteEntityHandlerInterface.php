@@ -23,9 +23,14 @@ interface DeleteEntityHandlerInterface
     /**
      * Process a single entity id.
      *
-     * @param int $entityId
+     * For child products (configurable/grouped children) the id is a composite
+     * string in the format "parentId_childId" matching the entity_id sent during
+     * UPSERT.  For standalone products it is the plain string representation of
+     * the Magento entity id.
+     *
+     * @param string $entityId
      *
      * @return bool True if success
      */
-    public function process(int $entityId): bool;
+    public function process(string $entityId): bool;
 }

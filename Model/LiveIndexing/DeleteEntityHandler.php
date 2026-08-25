@@ -48,11 +48,11 @@ class DeleteEntityHandler implements DeleteEntityHandlerInterface
     }
 
     /**
-     * @param int $id
+     * @param string $id  Plain entity id ("123") or composite "parentId_childId" ("456_123")
      *
      * @return bool
      */
-    public function process(int $id): bool
+    public function process(string $id): bool
     {
         try {
             return $this->client->send(
