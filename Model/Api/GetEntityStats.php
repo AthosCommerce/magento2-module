@@ -57,7 +57,7 @@ class GetEntityStats implements GetEntityStatsInterface
         IndexingEntityRepositoryInterface        $entityRepository,
         ProductCountListResponseInterfaceFactory $responseFactory,
         ProductCountItemInterfaceFactory         $itemFactory,
-        AthosCommerceLogger                      $logger,
+        AthosCommerceLogger                      $logger
     )
     {
         $this->entityRepository = $entityRepository;
@@ -78,7 +78,11 @@ class GetEntityStats implements GetEntityStatsInterface
             ? [$siteId]
             : $this->entityRepository->getAllSiteIds();
 
-        $this->logger->info("[EntityStatsApi] ", ['siteIds' => $siteIds]);
+        $this->logger->info('[EntityStatsApi] Fetching entity stats',
+            [
+                'siteIds' => $siteIds
+            ]
+        );
 
         foreach ($siteIds as $sid) {
             /** @var \AthosCommerce\Feed\Api\Data\ProductCountItemInterface $item */

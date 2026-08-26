@@ -20,7 +20,6 @@ namespace AthosCommerce\Feed\Model\Feed\Context;
 
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use Magento\Framework\App\Area;
-use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Store\Model\App\Emulation;
 use Magento\Store\Model\Store;
 use Magento\Store\Model\StoreManagerInterface;
@@ -66,8 +65,7 @@ class StoreContextManager implements ContextManagerInterface
 
     /**
      * @param FeedSpecificationInterface $feedSpecification
-     *
-     * @throws NoSuchEntityException
+     * @return void
      */
     public function setContextFromSpecification(FeedSpecificationInterface $feedSpecification): void
     {
@@ -85,14 +83,23 @@ class StoreContextManager implements ContextManagerInterface
 
         try {
             $store = $this->storeManager->getStore($storeCode);
-            $this->currentStore = $store;
 
             $this->emulation->startEnvironmentEmulation(
                 (int)$store->getId(),
                 Area::AREA_FRONTEND,
                 true
             );
+
+            $this->currentStore = $store;
         } catch (\Throwable $exception) {
+            $this->currentStore = null;
+
+            try {
+                $this->emulation->stopEnvironmentEmulation();
+            } catch (\Throwable $stopException) {
+                // ignore
+            }
+
             $this->logger->critical(
                 $exception,
                 [
