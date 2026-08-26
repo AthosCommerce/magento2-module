@@ -107,12 +107,19 @@ class StoreContextManager implements ContextManagerInterface
                 // ignore
             }
 
+            $feedSpecificationData = method_exists($feedSpecification, '__toArray')
+                ? $feedSpecification->__toArray()
+                : null;
+            if (is_array($feedSpecificationData)) {
+                $feedSpecificationData = \AthosCommerce\Feed\Helper\SensitiveDataMasker::mask(
+                    $feedSpecificationData
+                );
+            }
             $this->logger->critical(
-                $exception,
+                $exception->getMessage(),
                 [
-                    'feedSpecification' => method_exists($feedSpecification, '__toArray')
-                        ? $feedSpecification->__toArray()
-                        : null
+                    'trace' => $exception->getTraceAsString(),
+                    'feedSpecification' => $feedSpecificationData
                 ]
             );
         }
