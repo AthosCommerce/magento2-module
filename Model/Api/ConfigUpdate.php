@@ -7,6 +7,7 @@ use AthosCommerce\Feed\Api\Data\ConfigItemInterface;
 use AthosCommerce\Feed\Api\Data\ConfigUpdateResponseInterface;
 use AthosCommerce\Feed\Api\Data\ConfigUpdateResultInterface;
 use AthosCommerce\Feed\Helper\Constants;
+use AthosCommerce\Feed\Helper\EndpointUrlValidator;
 use AthosCommerce\Feed\Helper\SensitiveDataMasker;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Config\ConfigMap;
@@ -24,15 +25,6 @@ class ConfigUpdate implements ConfigUpdateInterface
     public const MODULE_PREFIX = 'athoscommerce/';
 
     public const ALLOWED_INDEXING_VALUES = ['0', '1'];
-
-    /**
-     * Endpoint must end with one of these domain suffixes (case-insensitive).
-     * This acts as an allowlist to prevent SSRF — the module only communicates
-     * with AthosCommerce-owned infrastructure.
-     */
-    public const ALLOWED_ENDPOINT_SUFFIXES = [
-        '.athoscommerce.net',
-    ];
 
     /**
      * @var WriterInterface
@@ -381,63 +373,14 @@ class ConfigUpdate implements ConfigUpdateInterface
         if (null === $endpoint) {
             return;
         }
-        $urlToValidate = trim($endpoint);
-        if ($urlToValidate === '') {
+        if (EndpointUrlValidator::normalizeAndValidate($endpoint) === null) {
             throw new LocalizedException(
                 __(
-                    'Supplied Endpoint URL is invalid. Received %1',
+                    'Supplied Endpoint URL is invalid or not allowed. Received %1',
                     $endpoint,
                 ),
             );
         }
-
-        if (parse_url($urlToValidate, PHP_URL_SCHEME) === null) {
-            $urlToValidate = 'https://' . $urlToValidate;
-        }
-
-        if (!filter_var($urlToValidate, FILTER_VALIDATE_URL)) {
-            throw new LocalizedException(
-                __(
-                    'Supplied Endpoint URL is invalid. Received %1',
-                    $endpoint,
-                ),
-            );
-        }
-
-        $scheme = strtolower((string)parse_url($urlToValidate, PHP_URL_SCHEME)); // phpcs:ignore Magento2.Functions.DiscouragedFunction
-        if ($scheme !== 'https') {
-            throw new LocalizedException(
-                __(
-                    'Supplied Endpoint URL must use https scheme. Received %1',
-                    $endpoint,
-                ),
-            );
-        }
-
-        $host = parse_url($urlToValidate, PHP_URL_HOST); // phpcs:ignore Magento2.Functions.DiscouragedFunction
-        if (!$host) {
-            throw new LocalizedException(
-                __(
-                    'Supplied Endpoint URL is invalid. Received %1',
-                    $endpoint,
-                ),
-            );
-        }
-
-        $hostLower = strtolower($host);
-        foreach (self::ALLOWED_ENDPOINT_SUFFIXES as $suffix) {
-            $suffix = strtolower($suffix);
-            if (substr($hostLower, -strlen($suffix)) === $suffix) {
-                return;
-            }
-        }
-
-        throw new LocalizedException(
-            __(
-                'Supplied Endpoint URL must belong to an allowed domain. Received %1',
-                $endpoint,
-            ),
-        );
     }
 
     /**

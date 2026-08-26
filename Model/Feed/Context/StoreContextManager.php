@@ -71,11 +71,18 @@ class StoreContextManager implements ContextManagerInterface
     {
         $storeCode = $feedSpecification->getStoreCode();
         if (!$storeCode) {
-            $this->logger->info("StoreCode not found",
+            $feedSpecificationData = method_exists($feedSpecification, '__toArray')
+                ? $feedSpecification->__toArray()
+                : null;
+            if (is_array($feedSpecificationData)) {
+                $feedSpecificationData = \AthosCommerce\Feed\Helper\SensitiveDataMasker::mask(
+                    $feedSpecificationData
+                );
+            }
+            $this->logger->error(
+                'StoreCode not found',
                 [
-                    'feedSpecification' => method_exists($feedSpecification, '__toArray')
-                        ? $feedSpecification->__toArray()
-                        : null
+                    'feedSpecification' => $feedSpecificationData
                 ]
             );
             return;

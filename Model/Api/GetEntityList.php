@@ -122,7 +122,7 @@ class GetEntityList implements GetEntityListInterface
         if ($targetId !== null) {
             $searchCriteriaBuilder->addFilter(IndexingEntity::TARGET_ID, $targetId, 'eq');
         }
-        if ($targetParentId !== null) {
+        if ($targetParentId !== null && $targetParentId > 0) {
             $searchCriteriaBuilder->addFilter(IndexingEntity::TARGET_PARENT_ID, $targetParentId, 'eq');
         }
         if ($entityType !== null && $entityType !== '') {

@@ -40,8 +40,11 @@ class SensitiveDataMasker
      * @param string $redactedValue
      * @return mixed
      */
-    public static function mask($value, array $sensitiveKeys = self::DEFAULT_SENSITIVE_KEYS, string $redactedValue = self::REDACTED_VALUE)
-    {
+    public static function mask(
+        $value,
+        array $sensitiveKeys = self::DEFAULT_SENSITIVE_KEYS,
+        string $redactedValue = self::REDACTED_VALUE
+    ) {
         if (!is_array($value)) {
             return $value;
         }

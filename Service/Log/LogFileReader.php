@@ -266,6 +266,7 @@ class LogFileReader
         // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
         $compressed = gzdeflate($content, 9);
         if ($compressed === false) {
+            $this->logger->warning('Failed to compress log output');
             return '';
         }
 
@@ -273,4 +274,3 @@ class LogFileReader
         return rtrim(strtr($encoded, '+/', '-_'), '=');
     }
 }
-

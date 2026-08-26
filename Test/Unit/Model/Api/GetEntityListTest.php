@@ -178,4 +178,56 @@ class GetEntityListTest extends TestCase
 
         $this->assertSame($response, $result);
     }
+
+    public function testGetListIgnoresZeroTargetParentIdFilter(): void
+    {
+        $searchCriteriaBuilder = $this->createMock(SearchCriteriaBuilder::class);
+        $searchCriteria = $this->createMock(SearchCriteria::class);
+        $sortOrderBuilder = $this->createMock(SortOrderBuilder::class);
+        $sortOrder = $this->createMock(SortOrder::class);
+        $searchResults = $this->createMock(IndexingEntitySearchResultsInterface::class);
+        $response = $this->createMock(EntityTrackingListResponseInterface::class);
+        $filterCalls = [];
+
+        $this->searchCriteriaBuilderFactoryMock->expects($this->once())
+            ->method('create')
+            ->willReturn($searchCriteriaBuilder);
+
+        $searchCriteriaBuilder->method('setCurrentPage')->willReturnSelf();
+        $searchCriteriaBuilder->method('setPageSize')->willReturnSelf();
+        $searchCriteriaBuilder->method('addFilter')
+            ->willReturnCallback(function (...$args) use (&$filterCalls, $searchCriteriaBuilder) {
+                $filterCalls[] = $args;
+                return $searchCriteriaBuilder;
+            });
+        $searchCriteriaBuilder->method('addSortOrder')->willReturnSelf();
+        $searchCriteriaBuilder->method('create')->willReturn($searchCriteria);
+
+        $this->sortOrderBuilderFactoryMock->expects($this->once())
+            ->method('create')
+            ->willReturn($sortOrderBuilder);
+        $sortOrderBuilder->method('setField')->willReturnSelf();
+        $sortOrderBuilder->method('setDirection')->willReturnSelf();
+        $sortOrderBuilder->method('create')->willReturn($sortOrder);
+
+        $this->repositoryMock->expects($this->once())
+            ->method('getList')
+            ->with($searchCriteria, true)
+            ->willReturn($searchResults);
+
+        $searchResults->method('getItems')->willReturn([]);
+        $searchResults->method('getTotalCount')->willReturn(0);
+
+        $this->responseFactoryMock->expects($this->once())->method('create')->willReturn($response);
+        $response->method('setItems')->willReturnSelf();
+        $response->method('setTotal')->willReturnSelf();
+        $response->method('setCurrentPage')->willReturnSelf();
+        $response->method('setPageSize')->willReturnSelf();
+
+        $this->model->getList(1, 20, null, 0, null, null, null);
+
+        foreach ($filterCalls as $filterCall) {
+            $this->assertNotSame(IndexingEntity::TARGET_PARENT_ID, $filterCall[0]);
+        }
+    }
 }

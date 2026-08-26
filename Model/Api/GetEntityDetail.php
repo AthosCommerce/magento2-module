@@ -130,7 +130,7 @@ class GetEntityDetail implements GetEntityDetailInterface
         $item->setLastActionTimestamp($entity->getLastActionTimestamp());
         $item->setLockTimestamp($entity->getLockTimestamp());
         $item->setIsIndexable($entity->getIsIndexable());
-        $item->setLastApiResponse(null);//To be added in future if needed
+        $item->setLastApiResponse(null); // To be added in future if needed
         $item->setCreatedAt($entity->getCreatedAt());
         $item->setUpdatedAt($entity->getUpdatedAt());
 
