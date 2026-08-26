@@ -206,7 +206,7 @@ class UpdateProcessor
         $targetIds = [];
         foreach ($updateRecords as $record) {
             if ($record instanceof IndexingEntity) {
-                $targetIds[] = (int)$record->getTargetId();
+                $targetIds[] = (string)$record->getTargetId();
             }
         }
 

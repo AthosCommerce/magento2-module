@@ -18,49 +18,53 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Api\Data;
 
-interface ProductCountItemInterface
+interface EntityTrackingListResponseInterface
 {
     /**
-     * @return string
+     * @return \AthosCommerce\Feed\Api\Data\EntityTrackingItemInterface[]
      */
-    public function getSiteId(): string;
+    public function getItems(): array;
 
     /**
-     * @param string $siteId
+     * @param \AthosCommerce\Feed\Api\Data\EntityTrackingItemInterface[] $items
+     *
      * @return $this
      */
-    public function setSiteId(string $siteId): ProductCountItemInterface;
+    public function setItems(array $items): self;
 
     /**
      * @return int
      */
-    public function getTotalProductCount(): int;
+    public function getTotal(): int;
 
     /**
-     * @param int $count
-     * @return ProductCountItemInterface
+     * @param int $total
+     *
+     * @return $this
      */
-    public function setTotalProductCount(int $count): ProductCountItemInterface;
-
-    /**
-     * @return int
-     */
-    public function getDeleteProductCount(): int;
-
-    /**
-     * @param int $count
-     * @return ProductCountItemInterface
-     */
-    public function setDeleteProductCount(int $count): ProductCountItemInterface;
+    public function setTotal(int $total): self;
 
     /**
      * @return int
      */
-    public function getUpsertProductCount(): int;
+    public function getCurrentPage(): int;
 
     /**
-     * @param int $count
-     * @return ProductCountItemInterface
+     * @param int $currentPage
+     *
+     * @return $this
      */
-    public function setUpsertProductCount(int $count): ProductCountItemInterface;
+    public function setCurrentPage(int $currentPage): self;
+
+    /**
+     * @return int
+     */
+    public function getPageSize(): int;
+
+    /**
+     * @param int $pageSize
+     *
+     * @return $this
+     */
+    public function setPageSize(int $pageSize): self;
 }

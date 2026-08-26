@@ -128,6 +128,18 @@
             <resource ref="AthosCommerce_Feed::general" />
         </resources>
     </route>
+    <route url="/V1/athoscommerce/entity" method="GET">
+        <service class="AthosCommerce\Feed\Api\GetEntityListInterface" method="getList" />
+        <resources>
+            <resource ref="AthosCommerce_Feed::general" />
+        </resources>
+    </route>
+    <route url="/V1/athoscommerce/entity/:entityType/:targetId" method="GET">
+        <service class="AthosCommerce\Feed\Api\GetEntityDetailInterface" method="get" />
+        <resources>
+            <resource ref="AthosCommerce_Feed::general" />
+        </resources>
+    </route>
     <route url="/V1/athoscommerce/variantoptions" method="GET">
         <service class="AthosCommerce\Feed\Api\GetOptionsInterface" method="get" />
         <resources>
