@@ -374,6 +374,10 @@ class ConfigUpdate implements ConfigUpdateInterface
             return;
         }
         if (EndpointUrlValidator::normalizeAndValidate($endpoint) === null) {
+            $this->logger->info(
+                '[ConfigUpdate] Endpoint rejected — not an allowed domain.',
+                ['endpoint' => $endpoint]
+            );
             throw new LocalizedException(
                 __(
                     'Supplied Endpoint URL is invalid or not allowed. Received %1',

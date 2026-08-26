@@ -47,7 +47,7 @@ class ConfigTest extends TestCase
         $this->configModel = new Config($this->scopeConfigMock, $this->encryptorMock);
     }
 
-    public function testGetEndpointByStoreIdAddsHttpsAndAllowsAthosDomain(): void
+    public function testGetEndpointByStoreIdAddsHttpsWhenNoSchemePresent(): void
     {
         $this->scopeConfigMock->expects($this->once())
             ->method('getValue')
@@ -57,32 +57,34 @@ class ConfigTest extends TestCase
         $this->assertSame('https://api.athoscommerce.net', $this->configModel->getEndpointByStoreId(1));
     }
 
-    public function testGetEndpointByStoreIdRejectsMalformedEndpointContainingEmbeddedScheme(): void
+    public function testGetEndpointByStoreIdReturnsStoredValueForAnyDomain(): void
     {
         $this->scopeConfigMock->expects($this->once())
             ->method('getValue')
             ->with(Constants::XML_PATH_CONFIG_ENDPOINT, ScopeInterface::SCOPE_STORE, 1)
-            ->willReturn('foohttps://evil.com');
+            ->willReturn('https://bigcommerce-sandip-app.ngrok.io/dummy-webhook/feed-webhook.php');
 
-        $this->assertSame('', $this->configModel->getEndpointByStoreId(1));
+        $this->assertSame(
+            'https://bigcommerce-sandip-app.ngrok.io/dummy-webhook/feed-webhook.php',
+            $this->configModel->getEndpointByStoreId(1)
+        );
     }
 
-    public function testGetEndpointByStoreIdRejectsHttpScheme(): void
+    public function testGetEndpointByStoreIdTrimsTrailingSlash(): void
     {
         $this->scopeConfigMock->expects($this->once())
             ->method('getValue')
-            ->with(Constants::XML_PATH_CONFIG_ENDPOINT, ScopeInterface::SCOPE_STORE, 1)
-            ->willReturn('http://api.athoscommerce.net');
+            ->with(Constants::XML_PATH_CONFIG_ENDPOINT, ScopeInterface::SCOPE_STORE, null)
+            ->willReturn('https://api.athoscommerce.net/');
 
-        $this->assertSame('', $this->configModel->getEndpointByStoreId(1));
+        $this->assertSame('https://api.athoscommerce.net', $this->configModel->getEndpointByStoreId());
     }
 
-    public function testGetEndpointByStoreIdRejectsNonAthosDomain(): void
+    public function testGetEndpointByStoreIdReturnsEmptyWhenNotConfigured(): void
     {
         $this->scopeConfigMock->expects($this->once())
             ->method('getValue')
-            ->with(Constants::XML_PATH_CONFIG_ENDPOINT, ScopeInterface::SCOPE_STORE, 1)
-            ->willReturn('https://example.com');
+            ->willReturn('');
 
         $this->assertSame('', $this->configModel->getEndpointByStoreId(1));
     }
