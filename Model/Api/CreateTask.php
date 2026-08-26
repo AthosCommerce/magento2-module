@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Model\Api;
 
 use Exception;
+use AthosCommerce\Feed\Helper\SensitiveDataMasker;
 use Magento\Framework\Event\ManagerInterface as EventManagerInterface;
 use Magento\Framework\Exception\CouldNotSaveException;
 use Magento\Framework\Exception\NoSuchEntityException;
@@ -121,10 +122,11 @@ class CreateTask implements CreateTaskInterface
      */
     public function execute(string $type, $payload): TaskInterface
     {
+        $sanitizedPayload = SensitiveDataMasker::mask($payload);
         $this->logger->info('Task creation started', [
             'method' => __METHOD__,
             'type' => $type,
-            'payload' => $payload,
+            'payload' => $sanitizedPayload,
             'payloadType' => gettype($payload)
         ]);
 
@@ -132,7 +134,7 @@ class CreateTask implements CreateTaskInterface
             $this->logger->error('Invalid payload found', [
                 'method' => __METHOD__,
                 'type' => $type,
-                'payload' => $payload,
+                'payload' => $sanitizedPayload,
                 'payloadType' => gettype($payload)
             ]);
             throw new Exception((string)__('$payload must be array'));
@@ -148,7 +150,7 @@ class CreateTask implements CreateTaskInterface
             'MSI Check', [
                 'method' => __METHOD__,
                 'type' => $type,
-                'payload' => $payload,
+                'payload' => $sanitizedPayload,
                 'isMsiModuleEnabled' => $this->isMsiEnabled(),
                 'message' => $message
             ]
@@ -162,7 +164,7 @@ class CreateTask implements CreateTaskInterface
             $this->logger->error('Invalid task type', [
                 'method' => __METHOD__,
                 'type' => $type,
-                'payload' => $payload,
+                'payload' => $sanitizedPayload,
                 'typeListType' => gettype($type),
                 'availableTypes' => $availableTaskTypes,
                 'message' => $message
@@ -178,7 +180,7 @@ class CreateTask implements CreateTaskInterface
                 $this->logger->error('Task payload validation failed', [
                     'method' => __METHOD__,
                     'type' => $type,
-                    'payload' => $payload,
+                    'payload' => $sanitizedPayload,
                     'validatorType' => gettype($validator),
                     'error' => $errors,
                     'message' => 'Please check the data is sent in correct format.'
@@ -192,7 +194,7 @@ class CreateTask implements CreateTaskInterface
             $this->logger->warning('Duplicate task detected', [
                 'method' => __METHOD__,
                 'type' => $type,
-                'payload' => $payload,
+                'payload' => $sanitizedPayload,
                 'uniqueCheckerType' => gettype($uniqueChecker),
                 'message' => 'please re-run update index'
             ]);
@@ -207,7 +209,7 @@ class CreateTask implements CreateTaskInterface
         $this->logger->info('Attempting to save task', [
             'method' => __METHOD__,
             'type' => $type,
-            'payload' => $payload,
+            'payload' => $sanitizedPayload,
             'payloadType' => gettype($payload)
         ]);
 
@@ -222,7 +224,7 @@ class CreateTask implements CreateTaskInterface
         $this->logger->info('Task saved and created successfully', [
             'method' => __METHOD__,
             'type' => $type,
-            'payload' => $payload,
+            'payload' => $sanitizedPayload,
             'payloadType' => gettype($payload),
             'taskId' => $savedTask->getId(),
             'status' => $savedTask->getStatus(),

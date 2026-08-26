@@ -25,6 +25,13 @@ use Magento\Framework\Encryption\EncryptorInterface;
 class Config
 {
     /**
+     * Endpoint must belong to AthosCommerce domains.
+     */
+    private const ALLOWED_ENDPOINT_SUFFIXES = [
+        '.athoscommerce.net',
+    ];
+
+    /**
      * @var ScopeConfigInterface
      */
     private $scopeConfig;
@@ -81,16 +88,37 @@ class Config
      */
     public function getEndpointByStoreId(?int $storeId = null): string
     {
-        $value = (string)$this->scopeConfig->getValue(
+        $value = trim((string)$this->scopeConfig->getValue(
             Constants::XML_PATH_CONFIG_ENDPOINT,
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
             $storeId
-        );
-        if (strpos($value, 'https://') === false) {
+        ));
+
+        if ($value === '') {
+            return '';
+        }
+
+        if (parse_url($value, PHP_URL_SCHEME) === null) {
             $value = 'https://' . $value;
         }
 
-        return $value;
+        if (!filter_var($value, FILTER_VALIDATE_URL)) {
+            return '';
+        }
+
+        $scheme = strtolower((string)parse_url($value, PHP_URL_SCHEME));
+        $host = strtolower((string)parse_url($value, PHP_URL_HOST));
+        if ($scheme !== 'https' || $host === '') {
+            return '';
+        }
+
+        foreach (self::ALLOWED_ENDPOINT_SUFFIXES as $suffix) {
+            if (substr($host, -strlen($suffix)) === $suffix) {
+                return rtrim($value, '/');
+            }
+        }
+
+        return '';
     }
 
     /**

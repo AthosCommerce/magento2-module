@@ -7,6 +7,7 @@ use AthosCommerce\Feed\Api\Data\ConfigItemInterface;
 use AthosCommerce\Feed\Api\Data\ConfigUpdateResponseInterface;
 use AthosCommerce\Feed\Api\Data\ConfigUpdateResultInterface;
 use AthosCommerce\Feed\Helper\Constants;
+use AthosCommerce\Feed\Helper\SensitiveDataMasker;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Config\ConfigMap;
 use AthosCommerce\Feed\Api\Data\ConfigUpdateResponseInterfaceFactory;
@@ -128,6 +129,7 @@ class ConfigUpdate implements ConfigUpdateInterface
         $taskPayload = [];
 
         $data = $payload->toArray();
+        $sanitizedData = SensitiveDataMasker::mask($data);
         foreach (ConfigMap::MAP as $requestKey => $config) {
 
             if (!array_key_exists($requestKey, $data)) {
@@ -136,7 +138,7 @@ class ConfigUpdate implements ConfigUpdateInterface
                     [
                         'storeCode' => $storeCode,
                         'requestKey' => $requestKey,
-                        'data' => $data
+                        'data' => $sanitizedData
                     ]
                 );
                 continue;
@@ -248,7 +250,7 @@ class ConfigUpdate implements ConfigUpdateInterface
                     'storeCode' => $storeCode,
                     'config' => $config,
                     'result' => $configUpdateResultRow->toArray(),
-                    'data' => $data
+                    'data' => $sanitizedData
                 ]
             );
         }
@@ -280,8 +282,8 @@ class ConfigUpdate implements ConfigUpdateInterface
                 '[ConfigUpdateAPI] Task Payload: ',
                 [
                     'storeCode' => $storeCode,
-                    'taskPayload' => $taskPayload,
-                    'data' => $data
+                    'taskPayload' => SensitiveDataMasker::mask($taskPayload),
+                    'data' => $sanitizedData
                 ]
             );
             $this->configWriter->save(
@@ -304,7 +306,7 @@ class ConfigUpdate implements ConfigUpdateInterface
             [
                 'storeCode' => $storeCode,
                 'results' => $results,
-                'data' => $data
+                'data' => $sanitizedData
             ],
         );
         return $response;
@@ -379,11 +381,34 @@ class ConfigUpdate implements ConfigUpdateInterface
         if (null === $endpoint) {
             return;
         }
-        $urlToValidate = 'https://' . $endpoint;
+        $urlToValidate = trim($endpoint);
+        if ($urlToValidate === '') {
+            throw new LocalizedException(
+                __(
+                    'Supplied Endpoint URL is invalid. Received %1',
+                    $endpoint,
+                ),
+            );
+        }
+
+        if (parse_url($urlToValidate, PHP_URL_SCHEME) === null) {
+            $urlToValidate = 'https://' . $urlToValidate;
+        }
+
         if (!filter_var($urlToValidate, FILTER_VALIDATE_URL)) {
             throw new LocalizedException(
                 __(
                     'Supplied Endpoint URL is invalid. Received %1',
+                    $endpoint,
+                ),
+            );
+        }
+
+        $scheme = strtolower((string)parse_url($urlToValidate, PHP_URL_SCHEME)); // phpcs:ignore Magento2.Functions.DiscouragedFunction
+        if ($scheme !== 'https') {
+            throw new LocalizedException(
+                __(
+                    'Supplied Endpoint URL must use https scheme. Received %1',
                     $endpoint,
                 ),
             );
@@ -475,10 +500,10 @@ class ConfigUpdate implements ConfigUpdateInterface
             );
         }
 
-        //5 characters minimum, to avoid overly simple keys
-        if (strlen($value) < 5) {
+        //25 characters minimum, to avoid overly simple keys
+        if (strlen($value) < 25) {
             throw new LocalizedException(
-                __('Secret Key must be at least 5 characters long.')
+                __('Secret Key must be at least 25 characters long.')
             );
         }
     }

@@ -84,9 +84,13 @@ class GetStoresInfo implements GetStoresInfoInterface
         $stores = $this->storeManager->getStores();
         foreach ($stores as $store) {
             $storeId = (int)$store->getId();
-            $name = $this->escaper->escapeHtml((string)$store->getName());
-            $code = $this->escaper->escapeHtml((string)$store->getCode());
-            $result .= "<li>$storeId . $name - $code</li>";
+            $storeLabel = sprintf(
+                '%s . %s - %s',
+                (string)$storeId,
+                (string)$store->getName(),
+                (string)$store->getCode()
+            );
+            $result .= '<li>' . $this->escaper->escapeHtml($storeLabel) . '</li>';
             $result .= '<h2>Store Images</h2><ul>';
             $viewConfig = $this->getViewConfigWithStoreEmulation($storeId);
             foreach ($viewConfig as $id => $image) {

@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Model\Feed\Context;
 
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use Magento\Framework\App\Area;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Store\Model\App\Emulation;
@@ -29,6 +30,10 @@ use AthosCommerce\Feed\Model\Feed\ContextManagerInterface;
 class StoreContextManager implements ContextManagerInterface
 {
     /**
+     * @var Store|null
+     */
+    private $currentStore = null;
+    /**
      * @var StoreManagerInterface
      */
     private $storeManager;
@@ -37,22 +42,26 @@ class StoreContextManager implements ContextManagerInterface
      */
     private $emulation;
     /**
-     * @var Store|null
+     * @var AthosCommerceLogger
      */
-    private $currentStore = null;
+    private $logger;
 
     /**
      * StoreContextManager constructor.
      *
      * @param StoreManagerInterface $storeManager
      * @param Emulation $emulation
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
         StoreManagerInterface $storeManager,
-        Emulation $emulation
-    ) {
+        Emulation             $emulation,
+        AthosCommerceLogger   $logger
+    )
+    {
         $this->storeManager = $storeManager;
         $this->emulation = $emulation;
+        $this->logger = $logger;
     }
 
     /**
@@ -64,16 +73,35 @@ class StoreContextManager implements ContextManagerInterface
     {
         $storeCode = $feedSpecification->getStoreCode();
         if (!$storeCode) {
+            $this->logger->info("StoreCode not found",
+                [
+                    'feedSpecification' => method_exists($feedSpecification, '__toArray')
+                        ? $feedSpecification->__toArray()
+                        : null
+                ]
+            );
             return;
         }
 
-        $store = $this->storeManager->getStore($storeCode);
-        $this->currentStore = $store;
-        $this->emulation->startEnvironmentEmulation(
-            (int)$store->getId(),
-            Area::AREA_FRONTEND,
-            true
-        );
+        try {
+            $store = $this->storeManager->getStore($storeCode);
+            $this->currentStore = $store;
+
+            $this->emulation->startEnvironmentEmulation(
+                (int)$store->getId(),
+                Area::AREA_FRONTEND,
+                true
+            );
+        } catch (\Throwable $exception) {
+            $this->logger->critical(
+                $exception,
+                [
+                    'feedSpecification' => method_exists($feedSpecification, '__toArray')
+                        ? $feedSpecification->__toArray()
+                        : null
+                ]
+            );
+        }
     }
 
     /**

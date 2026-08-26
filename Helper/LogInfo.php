@@ -17,6 +17,7 @@
 namespace AthosCommerce\Feed\Helper;
 
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
+use AthosCommerce\Feed\Service\Log\LogFileReader;
 use Magento\Framework\App\Filesystem\DirectoryList;
 use Magento\Framework\App\Helper\AbstractHelper;
 use Magento\Framework\Exception\FileSystemException;
@@ -38,6 +39,11 @@ class LogInfo extends AbstractHelper
      * @var AthosCommerceLogger
      */
     protected $logger;
+
+    /**
+     * @var LogFileReader
+     */
+    private $logFileReader;
 
     public const LOG = [
         'athoscommerce' => 'athoscommerce_feed.log',
@@ -82,16 +88,19 @@ class LogInfo extends AbstractHelper
      * @param DirectoryList $directoryList
      * @param File $fileDriver
      * @param AthosCommerceLogger $logger
+     * @param LogFileReader $logFileReader
      */
     public function __construct(
         DirectoryList       $directoryList,
         File                $fileDriver,
-        AthosCommerceLogger $logger
+        AthosCommerceLogger $logger,
+        LogFileReader $logFileReader
     )
     {
         $this->directoryList = $directoryList;
         $this->fileDriver = $fileDriver;
         $this->logger = $logger;
+        $this->logFileReader = $logFileReader;
     }
 
     /**
@@ -327,7 +336,7 @@ class LogInfo extends AbstractHelper
      *
      * Filtering order:
      *   1. Date range (startDate / endDate) — applied to timestamped lines only.
-     *   2. Keyword — plain substring or regex (e.g. /pattern/i).
+     *   2. Keyword — plain substring match.
      *   3. Positional slice — startLine/endLine (1-based, takes priority over lastLines)
      *      or lastLines (last N matching lines, default 100).
      *
@@ -358,143 +367,30 @@ class LogInfo extends AbstractHelper
         string $endDate = ''
     ): string
     {
+        $logFile = '';
         try {
             $logPath = $this->directoryList->getPath(DirectoryList::LOG);
             $logFile = $logPath . '/' . $fileName;
 
             if ($this->fileDriver->isExists($logFile)) {
                 $this->logger->info($infoMsg . ' ' . $logPath);
-                $result = $this->fileDriver->fileGetContents($logFile);
-
-                if ($result !== '') {
-                    $lines = explode("\n", $result);
-
-                    if ($startDate !== '' || $endDate !== '') {
-                        $lines = $this->filterByDateRange($lines, $startDate, $endDate);
-                    }
-
-                    if ($keyword !== '') {
-                        $lines = $this->filterByKeyword($lines, $keyword);
-                    }
-
-                    if ($startLine > 0 || $endLine > 0) {
-                        $start = $startLine > 0 ? $startLine - 1 : 0;
-                        $end = $endLine > 0 ? $endLine - 1 : count($lines) - 1;
-                        $lines = array_slice(array_values($lines), $start, $end - $start + 1);
-                    } else {
-                        $lines = array_slice(array_values($lines), -$lastLines);
-                    }
-
-                    $result = implode("\n", $lines);
-                }
-
-                if ($result !== '' && $compressOutput) {
-                    $result = $this->compressString($result);
-                }
-
-                return $result;
+                return $this->logFileReader->read(
+                    $logFile,
+                    $compressOutput,
+                    $lastLines,
+                    $startLine,
+                    $endLine,
+                    $keyword,
+                    $startDate,
+                    $endDate
+                );
             }
 
-            $this->logger->error($errorMsg . ' ' . $logPath);
+            $this->logger->debug($errorMsg . ' ' . $logPath);
         } catch (FileSystemException $e) {
-            $this->logger->error('Error fetching log file: ' . $e->getMessage());
+            $this->logger->error('Error fetching log file: ' . $e->getMessage() . ' file ' . $logFile);
         }
 
         return '';
-    }
-
-    /**
-     * Filters lines by a date range based on the Monolog timestamp [Y-m-d\TH:i:sP].
-     * Lines without a recognizable timestamp are excluded when a date filter is active.
-     *
-     * @param array $lines
-     * @param string $startDate
-     * @param string $endDate
-     * @return array
-     */
-    private function filterByDateRange(array $lines, string $startDate, string $endDate): array
-    {
-        $startTs = $startDate !== '' ? (strtotime($startDate) ?: 0) : 0;
-
-        if ($endDate !== '') {
-            // If date-only (no time component), include the full day
-            $endTs = preg_match('/^\d{4}-\d{2}-\d{2}$/', $endDate)
-                ? (strtotime($endDate . 'T23:59:59') ?: PHP_INT_MAX)
-                : (strtotime($endDate) ?: PHP_INT_MAX);
-        } else {
-            $endTs = PHP_INT_MAX;
-        }
-
-        $timestampPattern = '/^\[(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[^\]]*)\]/';
-
-        return array_filter($lines, static function (string $line) use ($startTs, $endTs, $timestampPattern): bool {
-            if (preg_match($timestampPattern, $line, $matches)) {
-                $lineTs = strtotime($matches[1]);
-                return $lineTs !== false && $lineTs >= $startTs && $lineTs <= $endTs;
-            }
-            return false;
-        });
-    }
-
-    /**
-     * Filters lines by a keyword (plain substring) or regex pattern.
-     *
-     * @param string[] $lines
-     * @param string $keyword
-     * @return string[]
-     */
-    private function filterByKeyword(array $lines, string $keyword): array
-    {
-        $isRegex = $this->isValidRegex($keyword);
-
-        return array_filter($lines, static function (string $line) use ($keyword, $isRegex): bool {
-            return $isRegex
-                ? (bool)preg_match($keyword, $line)
-                : strpos($line, $keyword) !== false;
-        });
-    }
-
-    /**
-     * Checks if string is a valid regex pattern without throwing PHP warnings
-     *
-     * @param string $pattern
-     * @return bool
-     */
-    private function isValidRegex(string $pattern): bool
-    {
-        if (!preg_match('/^([\/~#@!|]).*\1[gimsxuADJUe]*$/s', $pattern)) {
-            return false;
-        }
-
-        $unescaped = preg_replace('/\\\\./', '', $pattern);
-
-        $openParens = substr_count($unescaped, '(');
-        $closeParens = substr_count($unescaped, ')');
-        $openSquare = substr_count($unescaped, '[');
-        $closeSquare = substr_count($unescaped, ']');
-
-        if ($openParens !== $closeParens || $openSquare !== $closeSquare) {
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Compresses string using gzdeflate and base64 encoding.
-     *
-     * @param string $content
-     * @return string
-     */
-    private function compressString(string $content): string
-    {
-        // phpcs:ignore Magento2.Functions.DiscouragedFunction.Discouraged
-        $compressed = gzdeflate($content, 9);
-        if ($compressed === false) {
-            return '';
-        }
-
-        $encoded = base64_encode($compressed);
-        return rtrim(strtr($encoded, '+/', '-_'), '=');
     }
 }

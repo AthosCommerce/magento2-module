@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Model\Task\Webapi;
 
 use AthosCommerce\Feed\Api\Data\TaskInterface;
+use AthosCommerce\Feed\Helper\SensitiveDataMasker;
 
 class TaskOutputProcessor
 {
@@ -29,7 +30,7 @@ class TaskOutputProcessor
      */
     public function execute(TaskInterface $task, array $outputData) : array
     {
-        $payload = $task->getPayload();
+        $payload = SensitiveDataMasker::mask($task->getPayload());
         $outputData[TaskInterface::PAYLOAD] = $payload;
         return $outputData;
     }
