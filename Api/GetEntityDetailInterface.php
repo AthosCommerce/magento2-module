@@ -31,5 +31,9 @@ interface GetEntityDetailInterface
      *
      * @return \AthosCommerce\Feed\Api\Data\EntityTrackingItemInterface
      */
-    public function get(string $entityType, int $targetId, int $targetParentId = 0): EntityTrackingItemInterface;
+    public function get(
+        string $entityType,
+        int    $targetId,
+        int    $targetParentId = 0
+    ): EntityTrackingItemInterface;
 }
