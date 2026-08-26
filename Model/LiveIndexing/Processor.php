@@ -153,6 +153,17 @@ class Processor
         $this->logger->info(
             sprintf('[LiveIndexing] Delete IDs summary | Store: %s | Count: %s', $storeCode, $deleteCount)
         );
+        $this->logger->debug(
+            '[LiveIndexing][Processor][QueueState]',
+            [
+                'siteId' => $siteId,
+                'store' => $storeCode,
+                'deletePendingCount' => $deleteCount,
+                'updatePendingCount' => 0,
+                'deleteSkipped' => false,
+                'updateSkipped' => false,
+            ]
+        );
 
         $deleteSuccessCount = $this->deleteProcessor->execute($deleteRecords, $siteId, $storeCode);
 
@@ -167,6 +178,17 @@ class Processor
                     'store' => $storeCode,
                     'deleteCount' => $deleteCount,
                     'maxLimit' => $maxLimit,
+                ]
+            );
+            $this->logger->debug(
+                '[LiveIndexing][Processor][QueueState]',
+                [
+                    'siteId' => $siteId,
+                    'store' => $storeCode,
+                    'deletePendingCount' => $deleteCount,
+                    'updatePendingCount' => 0,
+                    'deleteSkipped' => false,
+                    'updateSkipped' => true,
                 ]
             );
         } else {
@@ -194,11 +216,35 @@ class Processor
                     )
                 );
 
+                $this->logger->debug(
+                    '[LiveIndexing][Processor][QueueState]',
+                    [
+                        'siteId' => $siteId,
+                        'store' => $storeCode,
+                        'deletePendingCount' => $deleteCount,
+                        'updatePendingCount' => count($updateRecords),
+                        'deleteSkipped' => false,
+                        'updateSkipped' => false,
+                    ]
+                );
+
                 $updateSuccessCount = $this->updateProcessor->execute(
                     $updateRecords,
                     $store,
                     $siteId,
                     $feedSpecification
+                );
+            } else {
+                $this->logger->debug(
+                    '[LiveIndexing][Processor][QueueState]',
+                    [
+                        'siteId' => $siteId,
+                        'store' => $storeCode,
+                        'deletePendingCount' => $deleteCount,
+                        'updatePendingCount' => 0,
+                        'deleteSkipped' => false,
+                        'updateSkipped' => true,
+                    ]
                 );
             }
         }
