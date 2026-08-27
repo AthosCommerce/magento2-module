@@ -50,7 +50,10 @@ class ExecuteTasksCron
     public function execute(): void
     {
         $this->logger->info('CRON started for task execution');
-        $this->executePendingTasks->execute();
+        $this->executePendingTasks->execute(
+            null,
+            ExecutePendingTasksInterface::EXECUTION_MODE_CRON
+        );
         $this->logger->info('CRON completed for task execution');
     }
 }

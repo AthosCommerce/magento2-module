@@ -23,6 +23,8 @@ use Magento\Framework\App\State;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Stdlib\DateTime\DateTimeFactory;
 use AthosCommerce\Feed\Api\ExecutePendingTasksInterfaceFactory;
+use AthosCommerce\Feed\Api\ExecutePendingTasksInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Metric\CollectorInterface;
 use AthosCommerce\Feed\Model\Metric\Output\CliOutput;
 use Symfony\Component\Console\Command\Command;
@@ -54,6 +56,10 @@ class ExecutePendingTasksCommand extends Command
      * @var CollectorInterface
      */
     private $metricCollector;
+    /**
+     * @var AthosCommerceLogger
+     */
+    private $logger;
 
     /**
      * ExecutePendingTasks constructor.
@@ -63,6 +69,7 @@ class ExecutePendingTasksCommand extends Command
      * @param State $state
      * @param CliOutput $cliOutput
      * @param CollectorInterface $metricCollector
+     * @param AthosCommerceLogger $logger
      * @param string|null $name
      */
     public function __construct(
@@ -71,6 +78,7 @@ class ExecutePendingTasksCommand extends Command
         State                               $state,
         CliOutput                           $cliOutput,
         CollectorInterface                  $metricCollector,
+        AthosCommerceLogger                 $logger,
         ?string                             $name = null
     )
     {
@@ -80,6 +88,7 @@ class ExecutePendingTasksCommand extends Command
         $this->state = $state;
         $this->cliOutput = $cliOutput;
         $this->metricCollector = $metricCollector;
+        $this->logger = $logger;
     }
 
     /**
@@ -123,9 +132,19 @@ class ExecutePendingTasksCommand extends Command
             $storeCode = $storeCode !== '' ? $storeCode : null;
             $scopeLabel = $storeCode ? sprintf(' for store "%s"', $storeCode) : '';
             $output->writeln('<info>Execution started' . $scopeLabel . ': ' . $dateTime->gmtDate() . '</info>');
+            $this->logger->info(
+                'CLI started for task execution.',
+                [
+                    'store' => $storeCode,
+                    'executionMode' => ExecutePendingTasksInterface::EXECUTION_MODE_CLI
+                ]
+            );
             $this->cliOutput->setOutput($output);
             $this->metricCollector->setOutput($this->cliOutput);
-            $result = $this->executePendingTasksFactory->create()->execute($storeCode);
+            $result = $this->executePendingTasksFactory->create()->execute(
+                $storeCode,
+                ExecutePendingTasksInterface::EXECUTION_MODE_CLI
+            );
             if ($result === []) {
                 $output->writeln('<info>No pending tasks found.</info>');
             } else {
@@ -134,6 +153,13 @@ class ExecutePendingTasksCommand extends Command
                 }
             }
 
+            $this->logger->info(
+                'CLI completed for task execution.',
+                [
+                    'store' => $storeCode,
+                    'executionMode' => ExecutePendingTasksInterface::EXECUTION_MODE_CLI
+                ]
+            );
             $output->writeln('<info>Execution ended' . $scopeLabel . ': ' . $dateTime->gmtDate() . '</info>');
 
             return Command::SUCCESS; // 0

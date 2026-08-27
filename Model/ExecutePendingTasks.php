@@ -68,17 +68,31 @@ class ExecutePendingTasks implements ExecutePendingTasksInterface
 
     /**
      * @param string|null $storeCode
+     * @param string $executionMode
      * @return array
      * @throws LocalizedException
      */
-    public function execute(?string $storeCode = null): array
+    public function execute(
+        ?string $storeCode = null,
+        string $executionMode = ExecutePendingTasksInterface::EXECUTION_MODE_UNKNOWN
+    ): array
     {
         $storeCode = $storeCode !== null ? trim($storeCode) : null;
         if ($storeCode === '') {
             $storeCode = null;
         }
-
-        $this->logger->info('TaskExecution: Pending tasks execution started.', ['store' => $storeCode]);
+        $executionMode = trim($executionMode) !== '' ? strtolower(trim($executionMode)) : ExecutePendingTasksInterface::EXECUTION_MODE_UNKNOWN;
+        if (!in_array($executionMode, [
+            ExecutePendingTasksInterface::EXECUTION_MODE_CLI,
+            ExecutePendingTasksInterface::EXECUTION_MODE_CRON,
+            ExecutePendingTasksInterface::EXECUTION_MODE_UNKNOWN,
+        ], true)) {
+            $executionMode = ExecutePendingTasksInterface::EXECUTION_MODE_UNKNOWN;
+        }
+        $this->logger->info(
+            'TaskExecution: Pending tasks execution started.',
+            ['store' => $storeCode, 'executionMode' => $executionMode]
+        );
         $searchCriteria = $this->searchCriteriaBuilder
             ->addFilter(TaskInterface::STATUS, MetadataInterface::TASK_STATUS_PENDING)
             ->create();
@@ -100,6 +114,7 @@ class ExecutePendingTasks implements ExecutePendingTasksInterface
                         'taskId' => $taskId,
                         'status' => $task->getStatus(),
                         'store' => $storeCode,
+                        'executionMode' => $executionMode,
                     ]
                 );
                 $result[$taskId] = $this->executeTask->execute($task);
@@ -110,12 +125,16 @@ class ExecutePendingTasks implements ExecutePendingTasksInterface
                         'taskId' => $taskId,
                         'trace' => $exception->getTraceAsString(),
                         'store' => $storeCode,
+                        'executionMode' => $executionMode,
                     ]
                 );
                 $result[$taskId] = 'ERROR';
             }
         }
-        $this->logger->info('TaskExecution: Pending tasks execution completed.', ['store' => $storeCode]);
+        $this->logger->info(
+            'TaskExecution: Pending tasks execution completed.',
+            ['store' => $storeCode, 'executionMode' => $executionMode]
+        );
 
         return $result;
     }

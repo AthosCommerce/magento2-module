@@ -42,6 +42,7 @@ class ExecuteTasksTest extends \PHPUnit\Framework\TestCase
     {
         $this->executePendingTaskInterfaceMock->expects($this->once())
             ->method('execute')
+            ->with(null, ExecutePendingTasksInterface::EXECUTION_MODE_CRON)
             ->willReturn([]);
 
         $this->assertSame(null, $this->executeTasks->execute());
