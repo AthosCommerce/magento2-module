@@ -20,9 +20,17 @@ namespace AthosCommerce\Feed\Api;
 
 interface ExecutePendingTasksInterface
 {
+    public const EXECUTION_MODE_UNKNOWN = 'unknown';
+    public const EXECUTION_MODE_CLI = 'cli';
+    public const EXECUTION_MODE_CRON = 'cron';
+
     /**
      * @param string|null $storeCode
+     * @param string $executionMode
      * @return array
      */
-    public function execute(?string $storeCode = null) : array;
+    public function execute(
+        ?string $storeCode = null,
+        string $executionMode = self::EXECUTION_MODE_UNKNOWN
+    ) : array;
 }
