@@ -299,7 +299,10 @@ class Processor
             return null;
         }
 
+        $payloadConfig['store'] = $storeCode;
+
         $feedSpecification = $this->specificationBuilder->build($payloadConfig);
+        $feedSpecification->setStoreCode($storeCode);
         $feedSpecification->setIndexingMode(FeedSpecificationInterface::LIVE_MODE);
 
         return $feedSpecification;
