@@ -44,37 +44,6 @@ class GetApplicationLog implements GetApplicationLogInterface
      * @param string $endDate
      * @return string
      */
-    public function getExceptionLog(
-        bool   $compressOutput = false,
-        int    $lastLines = 100,
-        int    $startLine = 0,
-        int    $endLine = 0,
-        string $keyword = '',
-        string $startDate = '',
-        string $endDate = ''
-    ): string
-    {
-        return $this->helper->getExceptionLogFile(
-            $compressOutput,
-            $lastLines,
-            $startLine,
-            $endLine,
-            $keyword,
-            $startDate,
-            $endDate
-        );
-    }
-
-    /**
-     * @param bool $compressOutput
-     * @param int $lastLines
-     * @param int $startLine
-     * @param int $endLine
-     * @param string $keyword
-     * @param string $startDate
-     * @param string $endDate
-     * @return string
-     */
     public function getExtensionLog(
         bool   $compressOutput = false,
         int    $lastLines = 100,

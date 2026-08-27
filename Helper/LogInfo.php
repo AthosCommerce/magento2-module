@@ -49,7 +49,6 @@ class LogInfo extends AbstractHelper
         'athoscommerce' => 'athoscommerce_feed.log',
         'athoscommerceError' => 'athoscommerce_feed_error.log',
         'athoscommerceDebug' => 'athoscommerce_feed_debug.log',
-        'exception' => 'exception.log',
         'groupCron' => 'magento.cron.athoscommerce_task.log',
 
         // Delete Log Constants
@@ -74,9 +73,6 @@ class LogInfo extends AbstractHelper
 
         'getExtensionDebugLogInfo' => 'File athoscommerce feed debug log will be retrieved from the path',
         'getExtensionDebugLogFileError' => 'File athoscommerce feed debug log not present at the location:',
-
-        'getExceptionLogFileInfo' => 'File exception log will be retrieved from the path',
-        'getExceptionLogFileError' => 'File exception log not present at the location',
 
         'getCronLogFileInfo' => 'File group cron log file will be retrieved from the path',
         'getCronLogFileError' => 'File group cron log file not present at the location',
@@ -234,36 +230,6 @@ class LogInfo extends AbstractHelper
             self::LOG['athoscommerceDebug'],
             self::LOG['getExtensionDebugLogInfo'],
             self::LOG['getExtensionDebugLogFileError'],
-            $compressOutput, $lastLines, $startLine, $endLine, $keyword, $startDate, $endDate
-        );
-    }
-
-    /**
-     * Get Exception Log File
-     *
-     * @param bool $compressOutput
-     * @param int $lastLines
-     * @param int $startLine
-     * @param int $endLine
-     * @param string $keyword
-     * @param string $startDate
-     * @param string $endDate
-     * @return string
-     */
-    public function getExceptionLogFile(
-        bool   $compressOutput = false,
-        int    $lastLines = 100,
-        int    $startLine = 0,
-        int    $endLine = 0,
-        string $keyword = '',
-        string $startDate = '',
-        string $endDate = ''
-    ): string
-    {
-        return $this->getLogFile(
-            self::LOG['exception'],
-            self::LOG['getExceptionLogFileInfo'],
-            self::LOG['getExceptionLogFileError'],
             $compressOutput, $lastLines, $startLine, $endLine, $keyword, $startDate, $endDate
         );
     }
