@@ -29,26 +29,6 @@ interface GetApplicationLogInterface
 {
     /**
      * @param bool $compressOutput
-     * @param int $lastLines
-     * @param int $startLine
-     * @param int $endLine
-     * @param string $keyword
-     * @param string $startDate
-     * @param string $endDate
-     * @return string
-     */
-    public function getExceptionLog(
-        bool   $compressOutput = false,
-        int    $lastLines = 100,
-        int    $startLine = 0,
-        int    $endLine = 0,
-        string $keyword = '',
-        string $startDate = '',
-        string $endDate = ''
-    ): string;
-
-    /**
-     * @param bool $compressOutput
      * @param int $lastLines Number of lines from the end (default 100). Ignored when startLine or endLine is provided.
      * @param int $startLine 1-based start line (0 = beginning of file). Used with endLine for a positional range.
      * @param int $endLine 1-based end line (0 = end of file). Used with startLine for a positional range.
