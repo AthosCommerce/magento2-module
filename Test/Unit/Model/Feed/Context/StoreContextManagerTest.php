@@ -16,6 +16,7 @@
 
 namespace AthosCommerce\Feed\Test\Unit\Model\Feed\Context;
 
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use Magento\Framework\App\Area;
 use Magento\Store\Model\App\Emulation;
 use Magento\Store\Model\Store;
@@ -29,13 +30,20 @@ class StoreContextManagerTest extends \PHPUnit\Framework\TestCase
 
     private $emulationMock;
 
+    private $loggerMock;
+
     private $storeContextManager;
 
     public function setUp(): void
     {
         $this->storeManagerMock = $this->createMock(StoreManagerInterface::class);
         $this->emulationMock = $this->createMock(Emulation::class);
-        $this->storeContextManager = new StoreContextManager($this->storeManagerMock, $this->emulationMock);
+        $this->loggerMock = $this->createMock(AthosCommerceLogger::class);
+        $this->storeContextManager = new StoreContextManager(
+            $this->storeManagerMock,
+            $this->emulationMock,
+            $this->loggerMock
+        );
     }
 
     public function testSetContextFromSpecification()

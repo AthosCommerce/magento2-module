@@ -96,6 +96,17 @@ class ApiClient
         $shopDomain = $this->config->getShopDomainByStoreId($storeId);
         $secretKey = $this->config->getSecretKeyByStoreId($storeId);
         $endpointUrl = rtrim($this->config->getEndpointByStoreId($storeId), '/');
+        if ($endpointUrl === '') {
+            $this->logger->error(
+                '[LiveIndexing] Invalid endpoint configuration',
+                [
+                    'storeCode' => $storeCode,
+                    'storeId' => $storeId,
+                    'siteId' => $siteId,
+                ]
+            );
+            return false;
+        }
         $jsonPayload = $this->jsonSerializer->serialize($payload);
         $sizeInBytes = strlen($jsonPayload);
 

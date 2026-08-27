@@ -91,15 +91,16 @@ class Processor
         DeleteProcessor               $deleteProcessor,
         UpdateProcessor               $updateProcessor,
         AthosCommerceLogger           $logger
-    ) {
+    )
+    {
         $this->indexingEntityProvider = $indexingEntityProvider;
-        $this->config                 = $config;
-        $this->specificationBuilder   = $specificationBuilder;
-        $this->serializer             = $serializer;
-        $this->contextManager         = $contextManager;
-        $this->deleteProcessor        = $deleteProcessor;
-        $this->updateProcessor        = $updateProcessor;
-        $this->logger                 = $logger;
+        $this->config = $config;
+        $this->specificationBuilder = $specificationBuilder;
+        $this->serializer = $serializer;
+        $this->contextManager = $contextManager;
+        $this->deleteProcessor = $deleteProcessor;
+        $this->updateProcessor = $updateProcessor;
+        $this->logger = $logger;
     }
 
     /**
@@ -110,18 +111,28 @@ class Processor
      */
     public function execute($store, string $siteId): int
     {
-        $storeId   = (int)$store->getId();
+        $storeId = (int)$store->getId();
         $storeCode = $store->getCode();
 
         $feedSpecification = $this->buildFeedSpecification($storeId, $storeCode);
         if ($feedSpecification === null) {
+            $this->logger->info(
+                sprintf('[LiveIndexing] Feed specification is null for store:%s | siteId:%s', $storeCode, $siteId)
+            );
             return 0;
         }
 
+        $this->logger->info(
+            sprintf('[LiveIndexing] Feed specification built for store:%s | siteId:%s', $storeCode, $siteId)
+        );
+
         $this->contextManager->setContextFromSpecification($feedSpecification);
+        $this->logger->debug(
+            sprintf('[LiveIndexing] Context set for store:%s | siteId:%s', $storeCode, $siteId)
+        );
 
         $perMinute = $this->config->getRequestPerMinuteByStoreId($storeId);
-        $maxLimit  = (int)$perMinute * 2; // 2-minute window to avoid rate-limiting at the receiving end
+        $maxLimit = (int)$perMinute * 2; // 2-minute window to avoid rate-limiting at the receiving end
 
         $this->logger->info(
             sprintf(
@@ -142,6 +153,17 @@ class Processor
         $this->logger->info(
             sprintf('[LiveIndexing] Delete IDs summary | Store: %s | Count: %s', $storeCode, $deleteCount)
         );
+        $this->logger->debug(
+            '[LiveIndexing][Processor][QueueState]',
+            [
+                'siteId' => $siteId,
+                'store' => $storeCode,
+                'deletePendingCount' => $deleteCount,
+                'updatePendingCount' => 0,
+                'deleteSkipped' => false,
+                'updateSkipped' => false,
+            ]
+        );
 
         $deleteSuccessCount = $this->deleteProcessor->execute($deleteRecords, $siteId, $storeCode);
 
@@ -152,10 +174,21 @@ class Processor
             $this->logger->info(
                 '[LiveIndexing] Skipping Update operation fully because deletes saturate window',
                 [
-                    'siteId'      => $siteId,
-                    'store'       => $storeCode,
+                    'siteId' => $siteId,
+                    'store' => $storeCode,
                     'deleteCount' => $deleteCount,
-                    'maxLimit'    => $maxLimit,
+                    'maxLimit' => $maxLimit,
+                ]
+            );
+            $this->logger->debug(
+                '[LiveIndexing][Processor][QueueState]',
+                [
+                    'siteId' => $siteId,
+                    'store' => $storeCode,
+                    'deletePendingCount' => $deleteCount,
+                    'updatePendingCount' => 0,
+                    'deleteSkipped' => false,
+                    'updateSkipped' => true,
                 ]
             );
         } else {
@@ -164,8 +197,8 @@ class Processor
                 $this->logger->info(
                     '[LiveIndexing] Fetching indexable Update IDs',
                     [
-                        'siteId'            => $siteId,
-                        'store'             => $storeCode,
+                        'siteId' => $siteId,
+                        'store' => $storeCode,
                         'remainingRequests' => $remainingRequests,
                     ]
                 );
@@ -183,11 +216,35 @@ class Processor
                     )
                 );
 
+                $this->logger->debug(
+                    '[LiveIndexing][Processor][QueueState]',
+                    [
+                        'siteId' => $siteId,
+                        'store' => $storeCode,
+                        'deletePendingCount' => $deleteCount,
+                        'updatePendingCount' => count($updateRecords),
+                        'deleteSkipped' => false,
+                        'updateSkipped' => false,
+                    ]
+                );
+
                 $updateSuccessCount = $this->updateProcessor->execute(
                     $updateRecords,
                     $store,
                     $siteId,
                     $feedSpecification
+                );
+            } else {
+                $this->logger->debug(
+                    '[LiveIndexing][Processor][QueueState]',
+                    [
+                        'siteId' => $siteId,
+                        'store' => $storeCode,
+                        'deletePendingCount' => $deleteCount,
+                        'updatePendingCount' => 0,
+                        'deleteSkipped' => false,
+                        'updateSkipped' => true,
+                    ]
                 );
             }
         }
@@ -197,8 +254,8 @@ class Processor
         $this->logger->info(
             '[LiveIndexing] Summary',
             [
-                'siteId'            => $siteId,
-                'store'             => $storeCode,
+                'siteId' => $siteId,
+                'store' => $storeCode,
                 'totalSuccessCount' => $totalSuccessCount,
             ]
         );
@@ -212,7 +269,7 @@ class Processor
      * Validates and deserialises the payload config, then builds a FeedSpecification.
      * Returns null and logs an error if the config is missing or invalid.
      *
-     * @param int    $storeId
+     * @param int $storeId
      * @param string $storeCode
      *
      * @return FeedSpecificationInterface|null
@@ -234,9 +291,9 @@ class Processor
             $this->logger->error(
                 'Invalid payload config type',
                 [
-                    'store'         => $storeCode,
+                    'store' => $storeCode,
                     'payloadConfig' => $payloadConfig,
-                    'getType'       => gettype($payloadConfig),
+                    'getType' => gettype($payloadConfig),
                 ]
             );
             return null;

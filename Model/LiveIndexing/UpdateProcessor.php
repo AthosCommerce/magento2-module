@@ -107,12 +107,30 @@ class UpdateProcessor
         string                     $siteId,
         FeedSpecificationInterface $feedSpecification
     ): int {
+        $storeId   = (int)$store->getId();
+        $storeCode = $store->getCode();
+
+        $this->logger->debug(
+            '[LiveIndexing][Update][Execute]',
+            [
+                'siteId' => $siteId,
+                'store' => $storeCode,
+                'updateRecordCount' => count($updateRecords),
+            ]
+        );
+
         if (empty($updateRecords)) {
+            $this->logger->debug(
+                '[LiveIndexing][Update][Execute][NoRecords]',
+                [
+                    'siteId' => $siteId,
+                    'store' => $storeCode,
+                ]
+            );
+
             return 0;
         }
 
-        $storeId   = (int)$store->getId();
-        $storeCode = $store->getCode();
         $indexingEntityIdsByApiId = $this->buildIndexingEntityIdsByApiId($updateRecords);
 
         $payloads = $this->buildPayloads($updateRecords, $feedSpecification, $siteId, $storeCode);
@@ -206,15 +224,33 @@ class UpdateProcessor
         $targetIds = [];
         foreach ($updateRecords as $record) {
             if ($record instanceof IndexingEntity) {
-                $targetIds[] = (int)$record->getTargetId();
+                $targetIds[] = (string)$record->getTargetId();
             }
         }
 
         if (empty($targetIds)) {
+            $this->logger->debug(
+                '[LiveIndexing][Update][Collection Query][EmptyTargetIds]',
+                [
+                    'siteId'          => $siteId,
+                    'store'           => $storeCode,
+                    'updateRecordCount' => count($updateRecords),
+                ]
+            );
+
             return [];
         }
 
         $startTimestamp = microtime(true);
+
+        $this->logger->debug(
+            '[LiveIndexing][Update][Collection Query][TargetIds]',
+            [
+                'siteId' => $siteId,
+                'store' => $storeCode,
+                'targetIds' => $targetIds,
+            ]
+        );
 
         $collection = $this->collectionProcessor->getCollection($feedSpecification);
         $collection->addFieldToFilter('entity_id', ['in' => $targetIds]);
@@ -229,25 +265,41 @@ class UpdateProcessor
                 'siteId'                  => $siteId,
                 'store'                   => $storeCode,
                 'query'                   => $collection->getSelect()->__toString(),
+                'collectionItemCount'     => count($collection->getItems()),
                 'timeTakenForCollection'  => microtime(true) - $startTimestamp,
             ]
         );
+
+        if (count($collection->getItems()) === 0) {
+            $this->logger->debug(
+                '[LiveIndexing][Update][Collection Query][NoRowsReturned]',
+                [
+                    'siteId' => $siteId,
+                    'store' => $storeCode,
+                    'targetIds' => $targetIds,
+                    'query' => $collection->getSelect()->__toString(),
+                ]
+            );
+        }
 
         $this->itemsGenerator->resetDataProviders($feedSpecification);
         $startTimestamp = microtime(true);
         $items = $this->itemsGenerator->generate($collection->getItems(), $feedSpecification);
         $this->itemsGenerator->resetDataProvidersAfterFetchItems($feedSpecification);
 
+        $payloads = iterator_to_array($items, false);
+
         $this->logger->debug(
             '[LiveIndexing][Update][ItemGeneration]',
             [
                 'siteId'                    => $siteId,
                 'store'                     => $storeCode,
+                'generatedPayloadCount'     => count($payloads),
                 'timeTakenForItemGeneration' => microtime(true) - $startTimestamp,
             ]
         );
 
-        return iterator_to_array($items, false);
+        return $payloads;
     }
 
     /**

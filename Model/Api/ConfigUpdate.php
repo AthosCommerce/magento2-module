@@ -7,6 +7,8 @@ use AthosCommerce\Feed\Api\Data\ConfigItemInterface;
 use AthosCommerce\Feed\Api\Data\ConfigUpdateResponseInterface;
 use AthosCommerce\Feed\Api\Data\ConfigUpdateResultInterface;
 use AthosCommerce\Feed\Helper\Constants;
+use AthosCommerce\Feed\Helper\EndpointUrlValidator;
+use AthosCommerce\Feed\Helper\SensitiveDataMasker;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Config\ConfigMap;
 use AthosCommerce\Feed\Api\Data\ConfigUpdateResponseInterfaceFactory;
@@ -23,15 +25,6 @@ class ConfigUpdate implements ConfigUpdateInterface
     public const MODULE_PREFIX = 'athoscommerce/';
 
     public const ALLOWED_INDEXING_VALUES = ['0', '1'];
-
-    /**
-     * Endpoint must end with one of these domain suffixes (case-insensitive).
-     * This acts as an allowlist to prevent SSRF — the module only communicates
-     * with AthosCommerce-owned infrastructure.
-     */
-    public const ALLOWED_ENDPOINT_SUFFIXES = [
-        '.athoscommerce.net',
-    ];
 
     /**
      * @var WriterInterface
@@ -128,6 +121,7 @@ class ConfigUpdate implements ConfigUpdateInterface
         $taskPayload = [];
 
         $data = $payload->toArray();
+        $sanitizedData = SensitiveDataMasker::mask($data);
         foreach (ConfigMap::MAP as $requestKey => $config) {
 
             if (!array_key_exists($requestKey, $data)) {
@@ -136,7 +130,7 @@ class ConfigUpdate implements ConfigUpdateInterface
                     [
                         'storeCode' => $storeCode,
                         'requestKey' => $requestKey,
-                        'data' => $data
+                        'data' => $sanitizedData
                     ]
                 );
                 continue;
@@ -248,7 +242,7 @@ class ConfigUpdate implements ConfigUpdateInterface
                     'storeCode' => $storeCode,
                     'config' => $config,
                     'result' => $configUpdateResultRow->toArray(),
-                    'data' => $data
+                    'data' => $sanitizedData
                 ]
             );
         }
@@ -280,8 +274,8 @@ class ConfigUpdate implements ConfigUpdateInterface
                 '[ConfigUpdateAPI] Task Payload: ',
                 [
                     'storeCode' => $storeCode,
-                    'taskPayload' => $taskPayload,
-                    'data' => $data
+                    'taskPayload' => SensitiveDataMasker::mask($taskPayload),
+                    'data' => $sanitizedData
                 ]
             );
             $this->configWriter->save(
@@ -304,7 +298,7 @@ class ConfigUpdate implements ConfigUpdateInterface
             [
                 'storeCode' => $storeCode,
                 'results' => $results,
-                'data' => $data
+                'data' => $sanitizedData
             ],
         );
         return $response;
@@ -379,40 +373,18 @@ class ConfigUpdate implements ConfigUpdateInterface
         if (null === $endpoint) {
             return;
         }
-        $urlToValidate = 'https://' . $endpoint;
-        if (!filter_var($urlToValidate, FILTER_VALIDATE_URL)) {
+        if (EndpointUrlValidator::normalizeAndValidate($endpoint) === null) {
+            $this->logger->info(
+                '[ConfigUpdate] Endpoint rejected — not an allowed domain.',
+                ['endpoint' => $endpoint]
+            );
             throw new LocalizedException(
                 __(
-                    'Supplied Endpoint URL is invalid. Received %1',
+                    'Supplied Endpoint URL is invalid or not allowed. Received %1',
                     $endpoint,
                 ),
             );
         }
-
-        $host = parse_url($urlToValidate, PHP_URL_HOST); // phpcs:ignore Magento2.Functions.DiscouragedFunction
-        if (!$host) {
-            throw new LocalizedException(
-                __(
-                    'Supplied Endpoint URL is invalid. Received %1',
-                    $endpoint,
-                ),
-            );
-        }
-
-        $hostLower = strtolower($host);
-        foreach (self::ALLOWED_ENDPOINT_SUFFIXES as $suffix) {
-            $suffix = strtolower($suffix);
-            if (substr($hostLower, -strlen($suffix)) === $suffix) {
-                return;
-            }
-        }
-
-        throw new LocalizedException(
-            __(
-                'Supplied Endpoint URL must belong to an allowed domain. Received %1',
-                $endpoint,
-            ),
-        );
     }
 
     /**
@@ -475,10 +447,10 @@ class ConfigUpdate implements ConfigUpdateInterface
             );
         }
 
-        //5 characters minimum, to avoid overly simple keys
-        if (strlen($value) < 5) {
+        //25 characters minimum, to avoid overly simple keys
+        if (strlen($value) < 25) {
             throw new LocalizedException(
-                __('Secret Key must be at least 5 characters long.')
+                __('Secret Key must be at least 25 characters long.')
             );
         }
     }

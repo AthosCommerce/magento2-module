@@ -166,6 +166,14 @@
                 type="AthosCommerce\Feed\Model\Data\ProductCountResponse"/>
     <preference for="AthosCommerce\Feed\Api\GetEntityStatsInterface"
                 type="AthosCommerce\Feed\Model\Api\GetEntityStats"/>
+    <preference for="AthosCommerce\Feed\Api\GetEntityListInterface"
+                type="AthosCommerce\Feed\Model\Api\GetEntityList"/>
+    <preference for="AthosCommerce\Feed\Api\GetEntityDetailInterface"
+                type="AthosCommerce\Feed\Model\Api\GetEntityDetail"/>
+    <preference for="AthosCommerce\Feed\Api\Data\EntityTrackingItemInterface"
+                type="AthosCommerce\Feed\Model\Data\EntityTrackingItem"/>
+    <preference for="AthosCommerce\Feed\Api\Data\EntityTrackingListResponseInterface"
+                type="AthosCommerce\Feed\Model\Data\EntityTrackingListResponse"/>
 
     <preference for="AthosCommerce\Feed\Api\Data\ProductOptionsResponseInterface"
                 type="AthosCommerce\Feed\Model\Data\ProductOptionsResponse"/>

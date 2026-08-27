@@ -74,11 +74,38 @@ class DeleteProcessor
      */
     public function execute(array $deleteRecords, string $siteId, string $storeCode): int
     {
+        $this->logger->debug(
+            '[LiveIndexing][Delete][Execute]',
+            [
+                'siteId' => $siteId,
+                'store' => $storeCode,
+                'deleteRecordCount' => count($deleteRecords),
+            ]
+        );
+
         $items = $this->buildDeleteItems($deleteRecords);
 
         if (empty($items)) {
+            $this->logger->debug(
+                '[LiveIndexing][Delete][Execute][NoDeleteItems]',
+                [
+                    'siteId' => $siteId,
+                    'store' => $storeCode,
+                    'deleteRecordCount' => count($deleteRecords),
+                ]
+            );
+
             return 0;
         }
+
+        $this->logger->debug(
+            '[LiveIndexing][Delete][BuildItems]',
+            [
+                'siteId' => $siteId,
+                'store' => $storeCode,
+                'items' => $items,
+            ]
+        );
 
         [$successApiIds, $failedApiIds, $successIndexingEntityIds] =
             $this->sendDeleteRequests($items, $siteId, $storeCode);

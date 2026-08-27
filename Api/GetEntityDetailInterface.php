@@ -16,22 +16,24 @@
 
 declare(strict_types=1);
 
-namespace AthosCommerce\Feed\Model\Task\Webapi;
+namespace AthosCommerce\Feed\Api;
 
-use AthosCommerce\Feed\Api\Data\TaskInterface;
-use AthosCommerce\Feed\Helper\SensitiveDataMasker;
+use AthosCommerce\Feed\Api\Data\EntityTrackingItemInterface;
 
-class TaskOutputProcessor
+interface GetEntityDetailInterface
 {
     /**
-     * @param TaskInterface $task
-     * @param array $outputData
-     * @return array
+     * Get the latest tracked record detail by entity type and entity id.
+     *
+     * @param string $entityType
+     * @param int $targetId
+     * @param int $targetParentId
+     *
+     * @return \AthosCommerce\Feed\Api\Data\EntityTrackingItemInterface
      */
-    public function execute(TaskInterface $task, array $outputData) : array
-    {
-        $payload = SensitiveDataMasker::mask($task->getPayload());
-        $outputData[TaskInterface::PAYLOAD] = $payload;
-        return $outputData;
-    }
+    public function get(
+        string $entityType,
+        int    $targetId,
+        int    $targetParentId = 0
+    ): EntityTrackingItemInterface;
 }

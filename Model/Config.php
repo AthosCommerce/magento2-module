@@ -40,8 +40,7 @@ class Config
     public function __construct(
         ScopeConfigInterface $scopeConfig,
         EncryptorInterface   $encryptor
-    )
-    {
+    ) {
         $this->scopeConfig = $scopeConfig;
         $this->encryptor = $encryptor;
     }
@@ -81,16 +80,22 @@ class Config
      */
     public function getEndpointByStoreId(?int $storeId = null): string
     {
-        $value = (string)$this->scopeConfig->getValue(
+        $value = trim((string)$this->scopeConfig->getValue(
             Constants::XML_PATH_CONFIG_ENDPOINT,
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
             $storeId
-        );
-        if (strpos($value, 'https://') === false) {
+        ));
+
+        if ($value === '') {
+            return '';
+        }
+
+        // Normalise scheme only — domain allowlist is enforced at write time in ConfigUpdate.
+        if (parse_url($value, PHP_URL_SCHEME) === null) { // phpcs:ignore Magento2.Functions.DiscouragedFunction
             $value = 'https://' . $value;
         }
 
-        return $value;
+        return rtrim($value, '/');
     }
 
     /**

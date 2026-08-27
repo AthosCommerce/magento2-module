@@ -23,12 +23,19 @@ use AthosCommerce\Feed\Api\Data\StoreConfigInterface;
 class StoreConfigApiMapper
 {
     /**
+     * Fields intentionally hidden from public API responses.
+     */
+    private const PUBLIC_API_IGNORE_LIST = [
+        'secretKey',
+    ];
+
+    /**
      * @param StoreConfigInterface $store
      * @return array
      */
     public function map(StoreConfigInterface $store): array
     {
-        return [
+        $payload = [
             'storeId' => $store->getStoreId(),
             'storeCode' => $store->getStoreCode(),
             'siteId' => $store->getSiteId(),
@@ -40,5 +47,11 @@ class StoreConfigApiMapper
             'chunkSize' => $store->getChunkSize(),
             'taskPayload' => $store->getTaskPayload(),
         ];
+
+        foreach (self::PUBLIC_API_IGNORE_LIST as $field) {
+            unset($payload[$field]);
+        }
+
+        return $payload;
     }
 }

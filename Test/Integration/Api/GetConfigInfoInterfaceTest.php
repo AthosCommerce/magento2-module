@@ -66,6 +66,7 @@ class GetConfigInfoInterfaceTest extends TestCase
         $this->assertArrayHasKey('storeId', $store);
         $this->assertArrayHasKey('storeCode', $store);
         $this->assertArrayHasKey('enableLiveIndexing', $store);
+        $this->assertArrayNotHasKey('secretKey', $store);
 
         $this->assertArrayNotHasKey('store_id', $store);
         $this->assertArrayNotHasKey('enable_live_indexing', $store);

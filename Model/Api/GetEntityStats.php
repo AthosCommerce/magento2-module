@@ -25,6 +25,7 @@ use AthosCommerce\Feed\Api\IndexingEntityRepositoryInterface;
 use AthosCommerce\Feed\Api\Data\ProductCountListResponseInterface;
 use AthosCommerce\Feed\Api\Data\ProductCountListResponseInterfaceFactory;
 use AthosCommerce\Feed\Helper\Constants;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Source\Actions;
 
 class GetEntityStats implements GetEntityStatsInterface
@@ -41,21 +42,28 @@ class GetEntityStats implements GetEntityStatsInterface
      * @var ProductCountItemInterface
      */
     private $itemFactory;
+    /**
+     * @var AthosCommerceLogger
+     */
+    private $logger;
 
     /**
      * @param IndexingEntityRepositoryInterface $entityRepository
      * @param ProductCountListResponseInterfaceFactory $responseFactory
      * @param ProductCountItemInterfaceFactory $itemFactory
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
-        IndexingEntityRepositoryInterface    $entityRepository,
+        IndexingEntityRepositoryInterface        $entityRepository,
         ProductCountListResponseInterfaceFactory $responseFactory,
-        ProductCountItemInterfaceFactory     $itemFactory
+        ProductCountItemInterfaceFactory         $itemFactory,
+        AthosCommerceLogger                      $logger
     )
     {
         $this->entityRepository = $entityRepository;
         $this->responseFactory = $responseFactory;
         $this->itemFactory = $itemFactory;
+        $this->logger = $logger;
     }
 
     /**
@@ -70,6 +78,11 @@ class GetEntityStats implements GetEntityStatsInterface
             ? [$siteId]
             : $this->entityRepository->getAllSiteIds();
 
+        $this->logger->info('[EntityStatsApi] Fetching entity stats',
+            [
+                'siteIds' => $siteIds
+            ]
+        );
 
         foreach ($siteIds as $sid) {
             /** @var \AthosCommerce\Feed\Api\Data\ProductCountItemInterface $item */
@@ -95,6 +108,13 @@ class GetEntityStats implements GetEntityStatsInterface
                     $sid,
                     Actions::UPSERT
                 )
+            );
+            $this->logger->info("[EntityStatsApi] Stats count for siteId {$sid}",
+                [
+                    'totalProductCount' => $item->getTotalProductCount(),
+                    'deleteProductCount' => $item->getDeleteProductCount(),
+                    'upsertProductCount' => $item->getUpsertProductCount()
+                ]
             );
 
             $items[] = $item;
