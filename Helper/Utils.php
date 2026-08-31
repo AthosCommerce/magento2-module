@@ -29,7 +29,7 @@ class Utils
     }
 
     // Checks to see if the input parameter provided in the get request contains two strings that
-    // can be parsed into valid dates. Returns true if they can be, false otherwise.
+    // can be parsed into valid dates and, when both are present, ensures from <= to.
     public static function validateDateRange($date_param)
     {
         $dateRange = Utils::getDateRange($date_param);
@@ -43,6 +43,10 @@ class Utils
                 if (!Utils::validateDate($dateRange[1])) {
                     return false;
                 }
+            }
+
+            if (isset($dateRange[0], $dateRange[1]) && strtotime($dateRange[0]) > strtotime($dateRange[1])) {
+                return false;
             }
         }
 

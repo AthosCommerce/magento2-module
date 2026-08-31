@@ -58,6 +58,8 @@ class Customer extends AbstractHelper
         $customerCollection = $this->customerFactory->create();
 
         $this->applyDateRangeFilter($customerCollection, $dateRangeStr);
+        $this->applyBillingPhoneJoin($customerCollection);
+        $customerCollection->getSelect()->order('e.entity_id ASC');
         $customerCollection->setCurPage($currentPage);
         $customerCollection->setPageSize($pageSize);
 
@@ -65,11 +67,7 @@ class Customer extends AbstractHelper
         foreach ($items as $item) {
             $customersData = $this->customersDataFactory->create();
             $email = (string)$item->getEmail();
-            $phoneNumber = '';
-            $billingAddress = $item->getPrimaryBillingAddress();
-            if ($billingAddress) {
-                $phoneNumber = (string)$billingAddress->getTelephone();
-            }
+            $phoneNumber = (string)($item->getData('billing_telephone') ?? '');
 
             $customersData->setId($item->getId());
             $customersData->setEmail($email);
@@ -89,6 +87,7 @@ class Customer extends AbstractHelper
     {
         $customerCollection = $this->customerFactory->create();
         $this->applyDateRangeFilter($customerCollection, $dateRangeStr);
+        $customerCollection->getSelect()->order('e.entity_id ASC');
 
         return (int)$customerCollection->getSize();
     }
@@ -121,5 +120,18 @@ class Customer extends AbstractHelper
         }
 
         $select->where($condition);
+    }
+
+    /**
+     * @param Collection $customerCollection
+     * @return void
+     */
+    private function applyBillingPhoneJoin(Collection $customerCollection): void
+    {
+        $customerCollection->getSelect()->joinLeft(
+            ['billing_address' => $customerCollection->getTable('customer_address_entity')],
+            'billing_address.entity_id = e.default_billing',
+            ['billing_telephone' => 'telephone']
+        );
     }
 }

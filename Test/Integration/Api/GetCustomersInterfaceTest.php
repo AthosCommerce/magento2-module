@@ -104,4 +104,19 @@ class GetCustomersInterfaceTest extends TestCase
             $this->assertSame('11', $exception->getDetails()[0]['fieldValue']);
         }
     }
+
+    /**
+     * @magentoAppIsolation enabled
+     */
+    public function testGetListRejectsReversedDateRange(): void
+    {
+        try {
+            $this->getCustomers->getList('2026-08-31,2026-08-01', 1, 1);
+            $this->fail('Expected validation exception was not thrown.');
+        } catch (ValidationException $exception) {
+            $this->assertSame(400, $exception->getCode());
+            $this->assertSame('dateRange', $exception->getDetails()[0]['fieldName']);
+            $this->assertSame('2026-08-31,2026-08-01', $exception->getDetails()[0]['fieldValue']);
+        }
+    }
 }

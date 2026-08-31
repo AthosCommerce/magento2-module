@@ -56,6 +56,11 @@ class UtilsTest extends TestCase
         $this->assertFalse(Utils::validateDateRange('2026/08/01,2026-08-31'));
     }
 
+    public function testValidateDateRangeReturnsFalseWhenFromDateIsAfterToDate(): void
+    {
+        $this->assertFalse(Utils::validateDateRange('2026-08-31,2026-08-01'));
+    }
+
     public function testGetRowRangeReturnsFalseForAll(): void
     {
         $this->assertFalse(Utils::getRowRange('All'));
@@ -104,4 +109,3 @@ class UtilsTest extends TestCase
         $this->assertSame('2026-09-01', Utils::plusOneDay('2026-08-31', 'Y-m-d'));
     }
 }
-

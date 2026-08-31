@@ -30,9 +30,21 @@ class CustomerTest extends TestCase
     {
         $select = $this->getMockBuilder(Select::class)
             ->disableOriginalConstructor()
-            ->onlyMethods(['where'])
+            ->onlyMethods(['where', 'joinLeft', 'order'])
             ->getMock();
         $select->expects($this->once())->method('where');
+        $select->expects($this->once())
+            ->method('joinLeft')
+            ->with(
+                ['billing_address' => 'customer_address_entity'],
+                'billing_address.entity_id = e.default_billing',
+                ['billing_telephone' => 'telephone']
+            )
+            ->willReturnSelf();
+        $select->expects($this->once())
+            ->method('order')
+            ->with('e.entity_id ASC')
+            ->willReturnSelf();
 
         $collection = $this->createMock(Collection::class);
         $bindCalls = 0;
@@ -51,23 +63,12 @@ class CustomerTest extends TestCase
                 }
             );
         $collection->method('getSelect')->willReturn($select);
+        $collection->expects($this->once())->method('getTable')->with('customer_address_entity')
+            ->willReturn('customer_address_entity');
         $collection->expects($this->once())->method('setCurPage')->with(1)->willReturnSelf();
         $collection->expects($this->once())->method('setPageSize')->with(2)->willReturnSelf();
 
-        $address = new class {
-            public function getTelephone(): string
-            {
-                return '12345';
-            }
-        };
-        $itemWithPhone = new class($address) {
-            private $address;
-
-            public function __construct($address)
-            {
-                $this->address = $address;
-            }
-
+        $itemWithPhone = new class {
             public function getId(): int
             {
                 return 1;
@@ -78,9 +79,13 @@ class CustomerTest extends TestCase
                 return 'a@test.com';
             }
 
-            public function getPrimaryBillingAddress()
+            public function getData(string $key)
             {
-                return $this->address;
+                if ($key === 'billing_telephone') {
+                    return '12345';
+                }
+
+                return null;
             }
         };
 
@@ -95,7 +100,7 @@ class CustomerTest extends TestCase
                 return 'b@test.com';
             }
 
-            public function getPrimaryBillingAddress()
+            public function getData(string $key)
             {
                 return null;
             }
@@ -128,9 +133,10 @@ class CustomerTest extends TestCase
     {
         $select = $this->getMockBuilder(Select::class)
             ->disableOriginalConstructor()
-            ->onlyMethods(['where'])
+            ->onlyMethods(['where', 'order'])
             ->getMock();
         $select->expects($this->once())->method('where');
+        $select->expects($this->once())->method('order')->with('e.entity_id ASC')->willReturnSelf();
 
         $collection = $this->createMock(Collection::class);
         $collection->expects($this->once())->method('addBindParam')->with(':from', '2026-08-01');
