@@ -60,9 +60,10 @@ class GetSales implements GetSalesInterface
     public function getList(string $dateRange, string $rowRange): SalesInterface
     {
         $maxPageSize = $this->config->getSalesApiMaxPageSizeByStoreId();
-        $rowRangeValues = Utils::getRowRange($rowRange);
         $errors = [];
         $messages = [];
+        $rowRangeValues = null;
+
         if ($dateRange === 'All' || !Utils::validateDateRange($dateRange)) {
             $messages[] = 'Invalid dateRange.';
             $errors[] = [
@@ -79,7 +80,11 @@ class GetSales implements GetSalesInterface
                 'fieldValue' => $rowRange,
                 'message' => 'rowRange must be a bounded range in start,count format with positive integers.'
             ];
-        } elseif ((int)$rowRangeValues[1] > $maxPageSize) {
+        } else {
+            $rowRangeValues = Utils::getRowRange($rowRange);
+        }
+
+        if ($rowRangeValues !== null && (int)$rowRangeValues[1] > $maxPageSize) {
             $messages[] = 'Invalid rowRange.';
             $errors[] = [
                 'fieldName' => 'rowRange',

@@ -66,6 +66,11 @@ class UtilsTest extends TestCase
         $this->assertFalse(Utils::getRowRange('All'));
     }
 
+    public function testGetRowRangeReturnsFalseForMalformedRange(): void
+    {
+        $this->assertFalse(Utils::getRowRange('1'));
+    }
+
     public function testGetRowRangeConvertsToZeroBasedOffsetAndCount(): void
     {
         $this->assertSame([0, 10], Utils::getRowRange('1,10'));

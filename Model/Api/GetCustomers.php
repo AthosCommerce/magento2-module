@@ -63,9 +63,9 @@ class GetCustomers implements GetCustomersInterface
     public function getList(string $dateRange, string $rowRange): CustomersInterface
     {
         $maxPageSize = $this->config->getCustomersApiMaxPageSizeByStoreId();
-        $rowRangeValues = Utils::getRowRange($rowRange);
         $errors = [];
         $messages = [];
+        $rowRangeValues = null;
 
         if ($dateRange === 'All' || !Utils::validateDateRange($dateRange)) {
             $messages[] = 'Invalid dateRange.';
@@ -83,7 +83,11 @@ class GetCustomers implements GetCustomersInterface
                 'fieldValue' => $rowRange,
                 'message' => 'rowRange must be a bounded range in start,count format with positive integers.'
             ];
-        } elseif ((int)$rowRangeValues[1] > $maxPageSize) {
+        } else {
+            $rowRangeValues = Utils::getRowRange($rowRange);
+        }
+
+        if ($rowRangeValues !== null && (int)$rowRangeValues[1] > $maxPageSize) {
             $messages[] = 'Invalid rowRange.';
             $errors[] = [
                 'fieldName' => 'rowRange',

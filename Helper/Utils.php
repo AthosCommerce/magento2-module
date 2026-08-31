@@ -61,15 +61,18 @@ class Utils
     // For example, &dateRange=1,3 creates a chunk starting at sale element 0 and ending at
     // sale element 2. And, &dateRange=10,3 creates a chunk starting at sale element 9
     // and ending at sale element 11.
-    public static function getRowRange($row_param){
-        if ($row_param != 'All'){
-            $result = explode(",", $row_param);
-            $result[0] = (int)$result[0] - 1;
-            $result[1] = (int)$result[1];
-            return $result;
+    public static function getRowRange($row_param)
+    {
+        if (!self::validateRowRange($row_param)) {
+            return false;
         }
 
-        return false;
+        $result = array_map('trim', explode(",", $row_param));
+
+        return [
+            (int)$result[0] - 1,
+            (int)$result[1],
+        ];
     }
 
     public static function validateRowRange($row_param) {

@@ -80,6 +80,21 @@ class GetSalesInterfaceTest extends TestCase
     /**
      * @magentoAppIsolation enabled
      */
+    public function testGetListRejectsMalformedRowRangeWithoutParsingNotices(): void
+    {
+        try {
+            $this->getSales->getList('2026-08-01', '1');
+            $this->fail('Expected validation exception was not thrown.');
+        } catch (ValidationException $exception) {
+            $this->assertSame(400, $exception->getCode());
+            $this->assertSame('rowRange', $exception->getDetails()[0]['fieldName']);
+            $this->assertSame('1', $exception->getDetails()[0]['fieldValue']);
+        }
+    }
+
+    /**
+     * @magentoAppIsolation enabled
+     */
     public function testGetListRejectsReversedDateRange(): void
     {
         try {

@@ -57,7 +57,7 @@ class GetCustomersConvertException
         try {
             return $proceed($dateRange, $rowRange);
         } catch (Throwable $exception) {
-            $this->logger->error($exception->getMessage(), ['trace' => $exception->getTraceAsString()]);
+            $this->logger->warning($exception->getMessage(), ['trace' => $exception->getTraceAsString()]);
             throw $this->exceptionConverter->convert($exception);
         }
     }

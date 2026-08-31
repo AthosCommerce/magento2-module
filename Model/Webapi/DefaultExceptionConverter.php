@@ -82,11 +82,11 @@ class DefaultExceptionConverter implements ExceptionConverterInterface
         $httpCode = $this->httpCodesMap[$exceptionType] ?? $this->defaultHttpCode;
         $code = $exception instanceof GenericException ? $exception->getCode() : GenericException::CODE;
         $details = [];
-        $errors = null;
+        $errors = [];
 
         if ($exception instanceof ValidationException) {
             $details = $exception->getDetails();
-            $errors = $exception->getErrors();
+            $errors = $exception->getErrors() ?? [];
         }
 
         $newException = new Exception(
