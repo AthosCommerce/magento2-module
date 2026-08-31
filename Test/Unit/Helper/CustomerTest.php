@@ -6,10 +6,8 @@ namespace AthosCommerce\Feed\Test\Unit\Helper;
 use AthosCommerce\Feed\Api\Data\CustomersDataInterface;
 use AthosCommerce\Feed\Api\Data\CustomersDataInterfaceFactory;
 use AthosCommerce\Feed\Helper\Customer;
-use Magento\Customer\Model\Address;
 use Magento\Customer\Model\ResourceModel\Customer\Collection;
 use Magento\Customer\Model\ResourceModel\Customer\CollectionFactory;
-use Magento\Customer\Model\Customer as CustomerModel;
 use Magento\Framework\DB\Select;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -28,33 +26,80 @@ class CustomerTest extends TestCase
         $this->customersDataFactory = $this->createMock(CustomersDataInterfaceFactory::class);
     }
 
-    public function testGetCustomersAppliesDateAndRowRangeAndMapsPhoneSafely(): void
+    public function testGetCustomersAppliesDateAndPagingAndMapsPhoneSafely(): void
     {
         $select = $this->getMockBuilder(Select::class)
             ->disableOriginalConstructor()
-            ->onlyMethods(['where', 'limit'])
+            ->onlyMethods(['where'])
             ->getMock();
         $select->expects($this->once())->method('where');
-        $select->expects($this->once())->method('limit')->with(2, 0);
 
         $collection = $this->createMock(Collection::class);
+        $bindCalls = 0;
         $collection->expects($this->exactly(2))
             ->method('addBindParam')
-            ->withConsecutive([':from', '2026-08-01'], [':to', '2026-08-11']);
+            ->willReturnCallback(
+                function (string $key, string $value) use (&$bindCalls): void {
+                    if ($bindCalls === 0) {
+                        $this->assertSame(':from', $key);
+                        $this->assertSame('2026-08-01', $value);
+                    } else {
+                        $this->assertSame(':to', $key);
+                        $this->assertSame('2026-08-11', $value);
+                    }
+                    $bindCalls++;
+                }
+            );
         $collection->method('getSelect')->willReturn($select);
+        $collection->expects($this->once())->method('setCurPage')->with(1)->willReturnSelf();
+        $collection->expects($this->once())->method('setPageSize')->with(2)->willReturnSelf();
 
-        $itemWithPhone = $this->createConfiguredMock(CustomerModel::class, [
-            'getId' => 1,
-            'getEmail' => 'a@test.com',
-        ]);
-        $address = $this->createConfiguredMock(Address::class, ['getTelephone' => '12345']);
-        $itemWithPhone->method('getPrimaryBillingAddress')->willReturn($address);
+        $address = new class {
+            public function getTelephone(): string
+            {
+                return '12345';
+            }
+        };
+        $itemWithPhone = new class($address) {
+            private $address;
 
-        $itemWithoutPhone = $this->createConfiguredMock(CustomerModel::class, [
-            'getId' => 2,
-            'getEmail' => 'b@test.com',
-        ]);
-        $itemWithoutPhone->method('getPrimaryBillingAddress')->willReturn(null);
+            public function __construct($address)
+            {
+                $this->address = $address;
+            }
+
+            public function getId(): int
+            {
+                return 1;
+            }
+
+            public function getEmail(): string
+            {
+                return 'a@test.com';
+            }
+
+            public function getPrimaryBillingAddress()
+            {
+                return $this->address;
+            }
+        };
+
+        $itemWithoutPhone = new class {
+            public function getId(): int
+            {
+                return 2;
+            }
+
+            public function getEmail(): string
+            {
+                return 'b@test.com';
+            }
+
+            public function getPrimaryBillingAddress()
+            {
+                return null;
+            }
+        };
 
         $collection->method('getItems')->willReturn([$itemWithPhone, $itemWithoutPhone]);
         $this->collectionFactory->method('create')->willReturn($collection);
@@ -74,7 +119,7 @@ class CustomerTest extends TestCase
             ->willReturnOnConsecutiveCalls($data1, $data2);
 
         $helper = new Customer($this->collectionFactory, $this->customersDataFactory);
-        $result = $helper->getCustomers('2026-08-01,2026-08-10', '1,2');
+        $result = $helper->getCustomers('2026-08-01,2026-08-10', 1, 2);
 
         $this->assertCount(2, $result);
     }
@@ -99,4 +144,3 @@ class CustomerTest extends TestCase
         $this->assertSame(42, $total);
     }
 }
-

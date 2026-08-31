@@ -25,11 +25,16 @@ interface GetCustomersInterface
 {
     /**
      * @param string $dateRange
-     * @param string $rowRange
+     * @param int $currentPage
+     * @param int $pageSize
      *
      * @return AthosCommerce\Feed\Api\Data\CustomersInterface
      *
      * @throws LocalizedException
      */
-    public function getList(string $dateRange = "All", string $rowRange = "All"): CustomersInterface;
+    public function getList(
+        string $dateRange = "All",
+        int $currentPage = 1,
+        int $pageSize = 100
+    ): CustomersInterface;
 }

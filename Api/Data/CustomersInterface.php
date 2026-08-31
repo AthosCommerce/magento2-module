@@ -18,22 +18,33 @@ interface CustomersInterface
     /**
      * @return int
      */
-    public function getTotal(): int;
+    public function getTotalCount(): int;
 
     /**
-     * @param int $total
+     * @param int $totalCount
      * @return void
      */
-    public function setTotal(int $total): void;
+    public function setTotalCount(int $totalCount): void;
 
     /**
      * @return int
      */
-    public function getReturnedCount(): int;
+    public function getCurrentSize(): int;
 
     /**
-     * @param int $returnedCount
+     * @param int $currentSize
      * @return void
      */
-    public function setReturnedCount(int $returnedCount): void;
+    public function setCurrentSize(int $currentSize): void;
+
+    /**
+     * @return int
+     */
+    public function getPageSize(): int;
+
+    /**
+     * @param int $pageSize
+     * @return void
+     */
+    public function setPageSize(int $pageSize): void;
 }

@@ -25,8 +25,6 @@ use Magento\Framework\App\Helper\AbstractHelper;
 
 class Customer extends AbstractHelper
 {
-    public const MAX_PAGE_SIZE = 500;
-
     protected $customerFactory;
     protected $customersDataFactory;
 
@@ -45,36 +43,36 @@ class Customer extends AbstractHelper
 
     /**
      * @param string $dateRangeStr
-     * @param string $rowRangeStr
+     * @param int $currentPage
+     * @param int $pageSize
      *
      * @return CustomersDataInterface[]
      */
-    public function getCustomers(string $dateRangeStr, string $rowRangeStr): array
+    public function getCustomers(
+        string $dateRangeStr,
+        int $currentPage,
+        int $pageSize
+    ): array
     {
         $result = [];
         $customerCollection = $this->customerFactory->create();
 
-        $select = $customerCollection->getSelect();
-
         $this->applyDateRangeFilter($customerCollection, $dateRangeStr);
-
-        // Chunk customers with row range.
-        $rowRange = Utils::getRowRange($rowRangeStr);
-        if (isset($rowRange[0]) && isset($rowRange[1])) {
-            $select->limit((int)$rowRange[1], (int)$rowRange[0]);
-        }
+        $customerCollection->setCurPage($currentPage);
+        $customerCollection->setPageSize($pageSize);
 
         $items = $customerCollection->getItems(); // Make query
         foreach ($items as $item) {
             $customersData = $this->customersDataFactory->create();
-
-            $customersData->setId($item->getId());
-            $customersData->setEmail($item->getEmail());
+            $email = (string)$item->getEmail();
             $phoneNumber = '';
             $billingAddress = $item->getPrimaryBillingAddress();
             if ($billingAddress) {
                 $phoneNumber = (string)$billingAddress->getTelephone();
             }
+
+            $customersData->setId($item->getId());
+            $customersData->setEmail($email);
             $customersData->setPhoneNumber($phoneNumber);
 
             $result[] = $customersData;
@@ -117,13 +115,9 @@ class Customer extends AbstractHelper
         if (isset($dateRange[1])) {
             $plusOneDay = Utils::plusOneDay($dateRange[1], 'Y-m-d');
             $customerCollection->addBindParam(':to', $plusOneDay);
-            $condition = <<<SQL
-                (
-                    (e.created_at >= :from AND e.created_at <= :to)
-                    OR
-                    (e.updated_at >= :from AND e.updated_at <= :to)
-                )
-            SQL;
+            $condition = '((e.created_at >= :from AND e.created_at <= :to)'
+                . ' OR '
+                . '(e.updated_at >= :from AND e.updated_at <= :to))';
         }
 
         $select->where($condition);

@@ -24,8 +24,9 @@ use AthosCommerce\Feed\Api\Data\CustomersInterface;
 class Customers implements CustomersInterface
 {
     private $customers;
-    private $total = 0;
-    private $returnedCount = 0;
+    private $totalCount = 0;
+    private $currentSize = 0;
+    private $pageSize = 0;
 
     /**
      * @return CustomersDataInterface[]
@@ -43,23 +44,33 @@ class Customers implements CustomersInterface
         $this->customers = $value;
     }
 
-    public function getTotal(): int
+    public function getTotalCount(): int
     {
-        return $this->total;
+        return $this->totalCount;
     }
 
-    public function setTotal(int $total): void
+    public function setTotalCount(int $totalCount): void
     {
-        $this->total = $total;
+        $this->totalCount = $totalCount;
     }
 
-    public function getReturnedCount(): int
+    public function getCurrentSize(): int
     {
-        return $this->returnedCount;
+        return $this->currentSize;
     }
 
-    public function setReturnedCount(int $returnedCount): void
+    public function setCurrentSize(int $currentSize): void
     {
-        $this->returnedCount = $returnedCount;
+        $this->currentSize = $currentSize;
+    }
+
+    public function getPageSize(): int
+    {
+        return $this->pageSize;
+    }
+
+    public function setPageSize(int $pageSize): void
+    {
+        $this->pageSize = $pageSize;
     }
 }
