@@ -14,4 +14,26 @@ interface CustomersInterface
      * @return null
      */
     public function setCustomers(array $value);
+
+    /**
+     * @return int
+     */
+    public function getTotal(): int;
+
+    /**
+     * @param int $total
+     * @return void
+     */
+    public function setTotal(int $total): void;
+
+    /**
+     * @return int
+     */
+    public function getReturnedCount(): int;
+
+    /**
+     * @param int $returnedCount
+     * @return void
+     */
+    public function setReturnedCount(int $returnedCount): void;
 }

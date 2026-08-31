@@ -24,6 +24,8 @@ use AthosCommerce\Feed\Api\Data\CustomersInterface;
 class Customers implements CustomersInterface
 {
     private $customers;
+    private $total = 0;
+    private $returnedCount = 0;
 
     /**
      * @return CustomersDataInterface[]
@@ -39,5 +41,25 @@ class Customers implements CustomersInterface
     public function setCustomers(array $value)
     {
         $this->customers = $value;
+    }
+
+    public function getTotal(): int
+    {
+        return $this->total;
+    }
+
+    public function setTotal(int $total): void
+    {
+        $this->total = $total;
+    }
+
+    public function getReturnedCount(): int
+    {
+        return $this->returnedCount;
+    }
+
+    public function setReturnedCount(int $returnedCount): void
+    {
+        $this->returnedCount = $returnedCount;
     }
 }

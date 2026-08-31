@@ -7,11 +7,11 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 declare(strict_types=1);
@@ -54,20 +54,28 @@ class GetCustomers implements GetCustomersInterface
     public function getList(string $dateRange = "All", string $rowRange = "All"): CustomersInterface
     {
         $errors = [];
-        if (!Utils::validateDateRange($dateRange)){
+        if ($dateRange === 'All' || !Utils::validateDateRange($dateRange)) {
             $errors[] = "Invalid date range $dateRange";
         }
 
-        if (!Utils::validateRowRange($rowRange)){
+        if (!Utils::validateRowRange($rowRange)) {
             $errors[] = "Invalid row range $rowRange";
+        } else {
+            $range = Utils::getRowRange($rowRange);
+            if (!isset($range[1]) || (int)$range[1] > Customer::MAX_PAGE_SIZE) {
+                $errors[] = "rowRange count exceeds max limit of " . Customer::MAX_PAGE_SIZE;
+            }
         }
 
-        if (!empty($errors)){
+        if (!empty($errors)) {
             throw new ValidationException($errors, 400);
         }
 
         $customers = $this->customersFactory->create();
-        $customers->setCustomers($this->helper->getCustomers($dateRange, $rowRange));
+        $customerItems = $this->helper->getCustomers($dateRange, $rowRange);
+        $customers->setCustomers($customerItems);
+        $customers->setTotal($this->helper->getCustomersTotalCount($dateRange));
+        $customers->setReturnedCount(count($customerItems));
 
         return $customers;
     }

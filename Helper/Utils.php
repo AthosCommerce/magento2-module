@@ -69,27 +69,26 @@ class Utils
     }
 
     public static function validateRowRange($row_param) {
-        $isValidRowRange = true;
-        if ($row_param != 'All') {
-            $result = explode(",", $row_param);
-            if (count($result) != 2) {
-                $isValidRowRange = false;
-            }
-
-            if (isset($result[0])) {
-                $result[0] = (int) $result[0];
-                if ($result[0] <= 0) {
-                    $isValidRowRange = false;
-                }
-            }
-            if (isset($result[1])) {
-                $result[1] = (int) $result[1];
-                if ($result[1] <= 0) {
-                    $isValidRowRange = false;
-                }
-            }
+        if ($row_param === 'All') {
+            return false;
         }
-        return $isValidRowRange;
+
+        $result = explode(",", $row_param);
+        if (count($result) !== 2) {
+            return false;
+        }
+
+        $start = trim($result[0]);
+        $count = trim($result[1]);
+        if (!ctype_digit($start) || !ctype_digit($count)) {
+            return false;
+        }
+
+        if ((int)$start <= 0 || (int)$count <= 0) {
+            return false;
+        }
+
+        return true;
     }
 
     public static function plusOneDay($date, $format = 'Y-m-d')
