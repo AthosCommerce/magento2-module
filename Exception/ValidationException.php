@@ -49,10 +49,7 @@ class ValidationException extends GenericException
         ?Throwable $previous = null,
         array $details = []
     ) {
-        $message = '';
-        foreach ($messages as $error) {
-            $message .= $error . PHP_EOL;
-        }
+        $message = implode(PHP_EOL, $messages);
 
         $this->details = $details;
         $this->errors = array_map(

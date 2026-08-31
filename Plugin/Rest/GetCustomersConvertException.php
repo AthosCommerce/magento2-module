@@ -51,7 +51,7 @@ class GetCustomersConvertException
     public function aroundGetList(
         GetCustomersInterface $subject,
         callable $proceed,
-        string $dateRange = 'All',
+        string $dateRange,
         int $currentPage = 1,
         int $pageSize = 100
     ): CustomersInterface {

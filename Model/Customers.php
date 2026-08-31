@@ -23,7 +23,7 @@ use AthosCommerce\Feed\Api\Data\CustomersInterface;
 
 class Customers implements CustomersInterface
 {
-    private $customers;
+    private $customers = [];
     private $totalCount = 0;
     private $currentSize = 0;
     private $pageSize = 0;

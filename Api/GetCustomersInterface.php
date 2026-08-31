@@ -33,7 +33,7 @@ interface GetCustomersInterface
      * @throws LocalizedException
      */
     public function getList(
-        string $dateRange = "All",
+        string $dateRange,
         int $currentPage = 1,
         int $pageSize = 100
     ): CustomersInterface;
