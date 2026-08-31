@@ -54,19 +54,16 @@ class GetCustomers implements GetCustomersInterface
 
     /**
      * @param string $dateRange
-     * @param int $currentPage
-     * @param int $pageSize
+     * @param string $rowRange
      *
      * @return CustomersInterface
      *
      * @throws ValidationException
      */
-    public function getList(
-        string $dateRange,
-        int $currentPage = 1,
-        int $pageSize = 100
-    ): CustomersInterface {
+    public function getList(string $dateRange, string $rowRange): CustomersInterface
+    {
         $maxPageSize = $this->config->getCustomersApiMaxPageSizeByStoreId();
+        $rowRangeValues = Utils::getRowRange($rowRange);
         $errors = [];
         $messages = [];
 
@@ -79,28 +76,19 @@ class GetCustomers implements GetCustomersInterface
             ];
         }
 
-        if ($currentPage <= 0) {
-            $messages[] = 'Invalid currentPage.';
+        if ($rowRange === 'All' || !Utils::validateRowRange($rowRange)) {
+            $messages[] = 'Invalid rowRange.';
             $errors[] = [
-                'fieldName' => 'currentPage',
-                'fieldValue' => (string)$currentPage,
-                'message' => 'currentPage must be greater than 0.'
+                'fieldName' => 'rowRange',
+                'fieldValue' => $rowRange,
+                'message' => 'rowRange must be a bounded range in start,count format with positive integers.'
             ];
-        }
-
-        if ($pageSize <= 0) {
-            $messages[] = 'Invalid pageSize.';
+        } elseif ((int)$rowRangeValues[1] > $maxPageSize) {
+            $messages[] = 'Invalid rowRange.';
             $errors[] = [
-                'fieldName' => 'pageSize',
-                'fieldValue' => (string)$pageSize,
-                'message' => 'pageSize must be greater than 0.'
-            ];
-        } elseif ($pageSize > $maxPageSize) {
-            $messages[] = 'Invalid pageSize.';
-            $errors[] = [
-                'fieldName' => 'pageSize',
-                'fieldValue' => (string)$pageSize,
-                'message' => 'pageSize exceeds the configured maximum of ' . $maxPageSize . '.'
+                'fieldName' => 'rowRange',
+                'fieldValue' => $rowRange,
+                'message' => 'rowRange count exceeds the configured maximum of ' . $maxPageSize . '.'
             ];
         }
 
@@ -109,10 +97,11 @@ class GetCustomers implements GetCustomersInterface
         }
 
         $totalCount = $this->helper->getCustomersTotalCount($dateRange);
-        $offset = ($currentPage - 1) * $pageSize;
+        $offset = (int)$rowRangeValues[0];
+        $pageSize = (int)$rowRangeValues[1];
         $customers = $this->customersFactory->create();
         $customerItems = $offset < $totalCount
-            ? $this->helper->getCustomers($dateRange, $currentPage, $pageSize)
+            ? $this->helper->getCustomers($dateRange, $rowRange)
             : [];
         $customers->setCustomers($customerItems);
         $customers->setPageSize($pageSize);

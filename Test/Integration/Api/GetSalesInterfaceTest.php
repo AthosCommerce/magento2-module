@@ -18,7 +18,7 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Test\Integration\Api;
 
-use AthosCommerce\Feed\Api\GetCustomersInterface;
+use AthosCommerce\Feed\Api\GetSalesInterface;
 use AthosCommerce\Feed\Exception\ValidationException;
 use Magento\Framework\ObjectManagerInterface;
 use Magento\TestFramework\Helper\Bootstrap;
@@ -27,7 +27,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * @magentoDbIsolation enabled
  */
-class GetCustomersInterfaceTest extends TestCase
+class GetSalesInterfaceTest extends TestCase
 {
     /**
      * @var ObjectManagerInterface
@@ -35,52 +35,24 @@ class GetCustomersInterfaceTest extends TestCase
     private $objectManager;
 
     /**
-     * @var GetCustomersInterface
+     * @var GetSalesInterface
      */
-    private $getCustomers;
+    private $getSales;
 
     protected function setUp(): void
     {
         parent::setUp();
         $this->objectManager = Bootstrap::getObjectManager();
-        $this->getCustomers = $this->objectManager->get(GetCustomersInterface::class);
-    }
-
-    /**
-     * @magentoAppIsolation enabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/customer.php
-     */
-    public function testGetListReturnsPagedCustomersWithMetadata(): void
-    {
-        $result = $this->getCustomers->getList('2000-01-01', '1,1');
-
-        $this->assertCount(1, $result->getCustomers());
-        $this->assertSame(1, $result->getCurrentSize());
-        $this->assertSame(1, $result->getPageSize());
-        $this->assertSame(1, $result->getTotalCount());
-    }
-
-    /**
-     * @magentoAppIsolation enabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/customer.php
-     */
-    public function testGetListReturnsEmptyPageWhenRequestedPageIsOutOfRange(): void
-    {
-        $result = $this->getCustomers->getList('2000-01-01', '2,1');
-
-        $this->assertSame([], $result->getCustomers());
-        $this->assertSame(0, $result->getCurrentSize());
-        $this->assertSame(1, $result->getPageSize());
-        $this->assertSame(1, $result->getTotalCount());
+        $this->getSales = $this->objectManager->get(GetSalesInterface::class);
     }
 
     /**
      * @magentoAppIsolation enabled
      */
-    public function testGetListRejectsInvalidDateRangeWithFieldDetails(): void
+    public function testGetListRejectsAllDateRange(): void
     {
         try {
-            $this->getCustomers->getList('All', '1,1');
+            $this->getSales->getList('All', '1,10');
             $this->fail('Expected validation exception was not thrown.');
         } catch (ValidationException $exception) {
             $this->assertSame(400, $exception->getCode());
@@ -91,12 +63,12 @@ class GetCustomersInterfaceTest extends TestCase
 
     /**
      * @magentoAppIsolation enabled
-     * @magentoConfigFixture current_store athoscommerce/indexing/api_customers_max_page_size 10
+     * @magentoConfigFixture current_store athoscommerce/indexing/api_sales_max_page_size 10
      */
     public function testGetListRejectsRowRangeOverConfiguredMaximum(): void
     {
         try {
-            $this->getCustomers->getList('2000-01-01', '1,11');
+            $this->getSales->getList('2026-08-01', '1,11');
             $this->fail('Expected validation exception was not thrown.');
         } catch (ValidationException $exception) {
             $this->assertSame(400, $exception->getCode());
@@ -111,7 +83,7 @@ class GetCustomersInterfaceTest extends TestCase
     public function testGetListRejectsReversedDateRange(): void
     {
         try {
-            $this->getCustomers->getList('2026-08-31,2026-08-01', '1,1');
+            $this->getSales->getList('2026-08-31,2026-08-01', '1,10');
             $this->fail('Expected validation exception was not thrown.');
         } catch (ValidationException $exception) {
             $this->assertSame(400, $exception->getCode());

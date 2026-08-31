@@ -26,11 +26,11 @@ class CustomerTest extends TestCase
         $this->customersDataFactory = $this->createMock(CustomersDataInterfaceFactory::class);
     }
 
-    public function testGetCustomersAppliesDateAndPagingAndMapsPhoneSafely(): void
+    public function testGetCustomersAppliesDateAndRowRangeAndMapsPhoneSafely(): void
     {
         $select = $this->getMockBuilder(Select::class)
             ->disableOriginalConstructor()
-            ->onlyMethods(['where', 'joinLeft', 'order'])
+            ->onlyMethods(['where', 'joinLeft', 'order', 'limit'])
             ->getMock();
         $select->expects($this->once())->method('where');
         $select->expects($this->once())
@@ -44,6 +44,10 @@ class CustomerTest extends TestCase
         $select->expects($this->once())
             ->method('order')
             ->with('e.entity_id ASC')
+            ->willReturnSelf();
+        $select->expects($this->once())
+            ->method('limit')
+            ->with(2, 0)
             ->willReturnSelf();
 
         $collection = $this->createMock(Collection::class);
@@ -65,8 +69,6 @@ class CustomerTest extends TestCase
         $collection->method('getSelect')->willReturn($select);
         $collection->expects($this->once())->method('getTable')->with('customer_address_entity')
             ->willReturn('customer_address_entity');
-        $collection->expects($this->once())->method('setCurPage')->with(1)->willReturnSelf();
-        $collection->expects($this->once())->method('setPageSize')->with(2)->willReturnSelf();
 
         $itemWithPhone = new class {
             public function getId(): int
@@ -124,7 +126,7 @@ class CustomerTest extends TestCase
             ->willReturnOnConsecutiveCalls($data1, $data2);
 
         $helper = new Customer($this->collectionFactory, $this->customersDataFactory);
-        $result = $helper->getCustomers('2026-08-01,2026-08-10', 1, 2);
+        $result = $helper->getCustomers('2026-08-01,2026-08-10', '1,2');
 
         $this->assertCount(2, $result);
     }

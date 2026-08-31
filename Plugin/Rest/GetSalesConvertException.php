@@ -18,14 +18,14 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Plugin\Rest;
 
-use AthosCommerce\Feed\Api\Data\CustomersInterface;
-use AthosCommerce\Feed\Api\GetCustomersInterface;
+use AthosCommerce\Feed\Api\Data\SalesInterface;
+use AthosCommerce\Feed\Api\GetSalesInterface;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Webapi\ExceptionConverterInterface;
 use Magento\Framework\Webapi\Exception;
 use Throwable;
 
-class GetCustomersConvertException
+class GetSalesConvertException
 {
     /**
      * @var ExceptionConverterInterface
@@ -49,11 +49,11 @@ class GetCustomersConvertException
      * @throws Exception
      */
     public function aroundGetList(
-        GetCustomersInterface $subject,
+        GetSalesInterface $subject,
         callable $proceed,
         string $dateRange,
         string $rowRange
-    ): CustomersInterface {
+    ): SalesInterface {
         try {
             return $proceed($dateRange, $rowRange);
         } catch (Throwable $exception) {

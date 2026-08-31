@@ -23,6 +23,7 @@ use AthosCommerce\Feed\Api\Data\SalesInterface;
 use AthosCommerce\Feed\Api\Data\SalesInterfaceFactory;
 use AthosCommerce\Feed\Exception\ValidationException;
 use AthosCommerce\Feed\Helper\Sale;
+use AthosCommerce\Feed\Model\Config;
 use AthosCommerce\Feed\Helper\Utils;
 
 class GetSales implements GetSalesInterface
@@ -33,13 +34,19 @@ class GetSales implements GetSalesInterface
     /** @var SalesInterfaceFactory */
     private $salesFactory;
 
+    /** @var Config */
+    private $config;
+
     /**
      * @param Sale $helper
+     * @param SalesInterfaceFactory $salesFactory
+     * @param Config $config
      */
-    public function __construct(Sale $helper, SalesInterfaceFactory $salesFactory)
+    public function __construct(Sale $helper, SalesInterfaceFactory $salesFactory, Config $config)
     {
         $this->helper = $helper;
         $this->salesFactory = $salesFactory;
+        $this->config = $config;
     }
 
     /**
@@ -50,23 +57,52 @@ class GetSales implements GetSalesInterface
      *
      * @throws ValidationException
      */
-    public function getList(string $dateRange = "All", string $rowRange = "All"): SalesInterface
+    public function getList(string $dateRange, string $rowRange): SalesInterface
     {
+        $maxPageSize = $this->config->getSalesApiMaxPageSizeByStoreId();
+        $rowRangeValues = Utils::getRowRange($rowRange);
         $errors = [];
-        if (!Utils::validateDateRange($dateRange)) {
-            $errors[] = "Invalid date range $dateRange";
+        $messages = [];
+        if ($dateRange === 'All' || !Utils::validateDateRange($dateRange)) {
+            $messages[] = 'Invalid dateRange.';
+            $errors[] = [
+                'fieldName' => 'dateRange',
+                'fieldValue' => $dateRange,
+                'message' => 'dateRange must be a bounded date or date range in Y-m-d or Y-m-d,Y-m-d format.'
+            ];
         }
 
-        if (!Utils::validateRowRange($rowRange)) {
-            $errors[] = "Invalid row range $rowRange";
+        if ($rowRange === 'All' || !Utils::validateRowRange($rowRange)) {
+            $messages[] = 'Invalid rowRange.';
+            $errors[] = [
+                'fieldName' => 'rowRange',
+                'fieldValue' => $rowRange,
+                'message' => 'rowRange must be a bounded range in start,count format with positive integers.'
+            ];
+        } elseif ((int)$rowRangeValues[1] > $maxPageSize) {
+            $messages[] = 'Invalid rowRange.';
+            $errors[] = [
+                'fieldName' => 'rowRange',
+                'fieldValue' => $rowRange,
+                'message' => 'rowRange count exceeds the configured maximum of ' . $maxPageSize . '.'
+            ];
         }
 
         if (!empty($errors)) {
-            throw new ValidationException($errors, 400);
+            throw new ValidationException($messages, 400, null, $errors);
         }
 
+        $totalCount = $this->helper->getSalesTotalCount($dateRange);
+        $offset = (int)$rowRangeValues[0];
+        $pageSize = (int)$rowRangeValues[1];
         $sales = $this->salesFactory->create();
-        $sales->setSales($this->helper->getSales($dateRange, $rowRange));
+        $items = $offset < $totalCount
+            ? $this->helper->getSales($dateRange, $rowRange)
+            : [];
+        $sales->setSales($items);
+        $sales->setPageSize($pageSize);
+        $sales->setCurrentSize(count($items));
+        $sales->setTotalCount($totalCount);
 
         return $sales;
     }

@@ -43,25 +43,22 @@ class Customer extends AbstractHelper
 
     /**
      * @param string $dateRangeStr
-     * @param int $currentPage
-     * @param int $pageSize
+     * @param string $rowRangeStr
      *
      * @return CustomersDataInterface[]
      */
-    public function getCustomers(
-        string $dateRangeStr,
-        int $currentPage,
-        int $pageSize
-    ): array
+    public function getCustomers(string $dateRangeStr, string $rowRangeStr): array
     {
         $result = [];
         $customerCollection = $this->customerFactory->create();
+        $rowRange = Utils::getRowRange($rowRangeStr);
 
         $this->applyDateRangeFilter($customerCollection, $dateRangeStr);
         $this->applyBillingPhoneJoin($customerCollection);
         $customerCollection->getSelect()->order('e.entity_id ASC');
-        $customerCollection->setCurPage($currentPage);
-        $customerCollection->setPageSize($pageSize);
+        if (isset($rowRange[0], $rowRange[1])) {
+            $customerCollection->getSelect()->limit((int)$rowRange[1], (int)$rowRange[0]);
+        }
 
         $items = $customerCollection->getItems(); // Make query
         foreach ($items as $item) {

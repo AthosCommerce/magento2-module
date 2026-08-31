@@ -33,6 +33,10 @@
         <plugin name="AthosCommerce_Feed::getcustomers_exceptions" type="AthosCommerce\Feed\Plugin\Rest\GetCustomersConvertException"/>
     </type>
 
+    <type name="AthosCommerce\Feed\Api\GetSalesInterface">
+        <plugin name="AthosCommerce_Feed::getsales_exceptions" type="AthosCommerce\Feed\Plugin\Rest\GetSalesConvertException"/>
+    </type>
+
     <type name="AthosCommerce\Feed\Plugin\Rest\CreateTaskConvertException">
         <arguments>
             <argument name="logger" xsi:type="object">AthosCommerce\Feed\Logger\AthosCommerceLogger</argument>
@@ -52,6 +56,12 @@
     </type>
 
     <type name="AthosCommerce\Feed\Plugin\Rest\GetCustomersConvertException">
+        <arguments>
+            <argument name="logger" xsi:type="object">AthosCommerce\Feed\Logger\AthosCommerceLogger</argument>
+        </arguments>
+    </type>
+
+    <type name="AthosCommerce\Feed\Plugin\Rest\GetSalesConvertException">
         <arguments>
             <argument name="logger" xsi:type="object">AthosCommerce\Feed\Logger\AthosCommerceLogger</argument>
         </arguments>
