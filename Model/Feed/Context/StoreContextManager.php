@@ -20,6 +20,7 @@ namespace AthosCommerce\Feed\Model\Feed\Context;
 
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use Magento\Framework\App\Area;
+use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Store\Model\App\Emulation;
 use Magento\Store\Model\Store;
 use Magento\Store\Model\StoreManagerInterface;
@@ -133,7 +134,12 @@ class StoreContextManager implements ContextManagerInterface
     public function getStoreFromContext(): ?Store
     {
         if (null === $this->currentStore) {
-            return $this->storeManager->getStore();
+            try {
+                return $this->storeManager->getStore();
+            } catch (NoSuchEntityException $exception) {
+                $this->logger->error($exception->getMessage());
+                return null;
+            }
         }
 
         return $this->currentStore;
@@ -146,7 +152,11 @@ class StoreContextManager implements ContextManagerInterface
      */
     public function resetContext(): void
     {
-        $this->emulation->stopEnvironmentEmulation();
+        try {
+            $this->emulation->stopEnvironmentEmulation();
+        } catch (\Throwable $exception) {
+            $this->logger->error($exception->getMessage());
+        }
         $this->currentStore = null;
     }
 }

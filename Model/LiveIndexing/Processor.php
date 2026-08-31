@@ -26,12 +26,14 @@ use AthosCommerce\Feed\Model\Source\Actions;
 use AthosCommerce\Feed\Service\Provider\IndexingEntityProvider;
 use Magento\Framework\Serialize\SerializerInterface;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
+use Magento\Store\Model\StoreManagerInterface;
+use Magento\Store\Api\Data\StoreInterface;
 
 /**
  * Orchestrates the live-indexing run for a single store.
  *
  * Responsibilities:
- *  1. Validate and deserialise store configuration.
+ *  1. Validate and deserialise store configuration safely.
  *  2. Build the feed specification and set the request context.
  *  3. Fetch pending DELETE and UPSERT records, respecting the per-minute rate window.
  *  4. Delegate processing to DeleteProcessor and UpdateProcessor.
@@ -43,34 +45,46 @@ class Processor
      * @var IndexingEntityProvider
      */
     private $indexingEntityProvider;
+
     /**
      * @var ConfigModel
      */
     private $config;
+
     /**
      * @var SpecificationBuilderInterface
      */
     private $specificationBuilder;
+
     /**
      * @var SerializerInterface
      */
     private $serializer;
+
     /**
      * @var ContextManagerInterface
      */
     private $contextManager;
+
     /**
      * @var DeleteProcessor
      */
     private $deleteProcessor;
+
     /**
      * @var UpdateProcessor
      */
     private $updateProcessor;
+
     /**
      * @var AthosCommerceLogger
      */
     private $logger;
+
+    /**
+     * @var StoreManagerInterface
+     */
+    private $storeManager;
 
     /**
      * @param IndexingEntityProvider $indexingEntityProvider
@@ -81,6 +95,7 @@ class Processor
      * @param DeleteProcessor $deleteProcessor
      * @param UpdateProcessor $updateProcessor
      * @param AthosCommerceLogger $logger
+     * @param StoreManagerInterface $storeManager
      */
     public function __construct(
         IndexingEntityProvider        $indexingEntityProvider,
@@ -90,9 +105,9 @@ class Processor
         ContextManagerInterface       $contextManager,
         DeleteProcessor               $deleteProcessor,
         UpdateProcessor               $updateProcessor,
-        AthosCommerceLogger           $logger
-    )
-    {
+        AthosCommerceLogger           $logger,
+        StoreManagerInterface         $storeManager
+    ) {
         $this->indexingEntityProvider = $indexingEntityProvider;
         $this->config = $config;
         $this->specificationBuilder = $specificationBuilder;
@@ -101,16 +116,32 @@ class Processor
         $this->deleteProcessor = $deleteProcessor;
         $this->updateProcessor = $updateProcessor;
         $this->logger = $logger;
+        $this->storeManager = $storeManager;
     }
 
     /**
-     * @param \Magento\Store\Api\Data\StoreInterface $store
+     * @param StoreInterface|mixed $store
      * @param string $siteId
      *
-     * @return int  Total number of successfully processed entities (deletes + upserts)
+     * @return int Total number of successfully processed entities (deletes + upserts)
      */
     public function execute($store, string $siteId): int
     {
+        // 1. Guard against uninitialized or missing store instance during deployment setup
+        if (!$store || !$store->getId()) {
+            $this->logger->error('[LiveIndexing] Invalid or uninitialized store instance provided.');
+            return 0;
+        }
+
+        try {
+            $this->storeManager->getStore($store->getId());
+        } catch (\Exception $e) {
+            $this->logger->error(
+                sprintf('[LiveIndexing] Store ID %s is not defined in current deployment context: %s', $store->getId(), $e->getMessage())
+            );
+            return 0;
+        }
+
         $storeId = (int)$store->getId();
         $storeCode = $store->getCode();
 
@@ -131,8 +162,10 @@ class Processor
             sprintf('[LiveIndexing] Context set for store:%s | siteId:%s', $storeCode, $siteId)
         );
 
-        $perMinute = $this->config->getRequestPerMinuteByStoreId($storeId);
-        $maxLimit = (int)$perMinute * 2; // 2-minute window to avoid rate-limiting at the receiving end
+        // 3. Fallback to a non-zero integer if the store configuration is zero or empty
+        $configuredPerMinute = $this->config->getRequestPerMinuteByStoreId($storeId);
+        $perMinute = max(1, (int)$configuredPerMinute);
+        $maxLimit = $perMinute * 2; // 2-minute window to avoid rate-limiting at the receiving end
 
         $this->logger->info(
             sprintf(
@@ -283,8 +316,23 @@ class Processor
             return null;
         }
 
+        // 2. Safe Payload Unserialization with Catch Guards
         if (is_string($payloadConfig)) {
-            $payloadConfig = $this->serializer->unserialize($payloadConfig);
+            try {
+                $payloadConfig = $this->serializer->unserialize($payloadConfig);
+            } catch (\InvalidArgumentException $e) {
+                $this->logger->error(
+                    'Failed to unserialize payload config due to invalid string format',
+                    ['store' => $storeCode, 'error' => $e->getMessage()]
+                );
+                return null;
+            } catch (\Throwable $e) {
+                $this->logger->error(
+                    'Unexpected error during payload config unserialization',
+                    ['store' => $storeCode, 'error' => $e->getMessage()]
+                );
+                return null;
+            }
         }
 
         if (!is_array($payloadConfig)) {
