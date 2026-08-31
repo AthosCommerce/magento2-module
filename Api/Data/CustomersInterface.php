@@ -10,8 +10,8 @@ interface CustomersInterface
     public function getCustomers(): array;
 
     /**
-     * @param $value \AthosCommerce\Feed\Api\Data\CustomersDataInterface[]
-     * @return null
+     * @param \AthosCommerce\Feed\Api\Data\CustomersDataInterface[] $value
+     * @return void
      */
     public function setCustomers(array $value);
 

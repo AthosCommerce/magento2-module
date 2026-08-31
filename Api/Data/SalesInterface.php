@@ -10,8 +10,8 @@ interface SalesInterface
     public function getSales(): array;
 
     /**
-     * @param $value \AthosCommerce\Feed\Api\Data\SalesDataInterface[]
-     * @return null
+     * @param \AthosCommerce\Feed\Api\Data\SalesDataInterface[] $value
+     * @return void
      */
     public function setSales(array $value);
 
