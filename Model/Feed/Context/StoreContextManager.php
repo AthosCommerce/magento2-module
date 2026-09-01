@@ -134,12 +134,8 @@ class StoreContextManager implements ContextManagerInterface
     public function getStoreFromContext(): ?Store
     {
         if (null === $this->currentStore) {
-            try {
-                return $this->storeManager->getStore();
-            } catch (NoSuchEntityException $exception) {
-                $this->logger->error($exception->getMessage());
-                return null;
-            }
+            $this->logger->error('StoreContextManager: No current store set in context.');
+            return null;
         }
 
         return $this->currentStore;

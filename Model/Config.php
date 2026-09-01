@@ -40,7 +40,8 @@ class Config
     public function __construct(
         ScopeConfigInterface $scopeConfig,
         EncryptorInterface   $encryptor
-    ) {
+    )
+    {
         $this->scopeConfig = $scopeConfig;
         $this->encryptor = $encryptor;
     }
@@ -203,6 +204,6 @@ class Config
             Constants::XML_PATH_DEBUG_LOG_ENABLED,
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
             $storeId
-        );
+        ) ?? false;
     }
 }
