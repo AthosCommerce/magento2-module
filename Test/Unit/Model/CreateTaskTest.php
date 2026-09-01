@@ -14,6 +14,25 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+namespace AthosCommerce\Feed\Api\Data;
+
+if (!class_exists(TaskInterfaceFactory::class, false)) {
+    class TaskInterfaceFactory
+    {
+        private $instance;
+
+        public function __construct($instance = null)
+        {
+            $this->instance = $instance;
+        }
+
+        public function create(array $data = [])
+        {
+            return $this->instance;
+        }
+    }
+}
+
 namespace AthosCommerce\Feed\Test\Unit\Model;
 
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
@@ -71,13 +90,16 @@ class CreateTaskTest extends \PHPUnit\Framework\TestCase
     public function setUp(): void
     {
         $this->taskRepositoryMock = $this->createMock(TaskRepositoryInterface::class);
-        $this->taskFactoryMock = $this->createMock(TaskInterfaceFactory::class);
         $this->validatorPoolMock = $this->createMock(ValidatorPool::class);
         $this->typeListMock = $this->createMock(TypeList::class);
         $this->uniqueCheckerPoolMock = $this->createMock(UniqueCheckerPool::class);
         $this->moduleManagerPoolMock = $this->createMock(Manager::class);
         $this->loggerMock = $this->createMock(AthosCommerceLogger::class);
         $this->eventManagerMock = $this->createMock(\Magento\Framework\Event\ManagerInterface::class);
+        $this->taskFactoryMock = $this->getMockBuilder(TaskInterfaceFactory::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['create'])
+            ->getMock();
 
         $this->createTask = new CreateTask(
             $this->taskRepositoryMock,

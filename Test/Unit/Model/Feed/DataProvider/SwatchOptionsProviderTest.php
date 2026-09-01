@@ -224,4 +224,123 @@ class SwatchOptionsProviderTest extends TestCase
 
         $this->assertSame($result[0][SwatchOptionsProvider::FIELD_KEY], $result[1][SwatchOptionsProvider::FIELD_KEY]);
     }
+
+    public function testGetDataUsesRowSpecificParentForSameSimpleProduct(): void
+    {
+        $productModelMock = $this->createMock(Product::class);
+        $productModelMock->method('getTypeId')->willReturn('simple');
+        $productModelMock->method('getId')->willReturn(101);
+        $productModelMock->method('getSku')->willReturn('sku-101');
+        $productModelMock->method('getAttributeText')->willReturnMap([
+            ['flavour_visual_swatch_attribute', 'Option 1'],
+            ['size_swatch', 'Medium'],
+        ]);
+        $productModelMock->method('getData')->willReturnMap([
+            ['flavour_visual_swatch_attribute', 123],
+            ['size_swatch', 456],
+        ]);
+
+        $firstParentProductMock = $this->createMock(Product::class);
+        $firstParentProductMock->method('getId')->willReturn(777);
+        $firstParentProductMock->method('getTypeId')->willReturn(Constant::CONFIGURABLE_TYPE);
+        $firstTypeInstanceMock = $this->getMockBuilder(\stdClass::class)
+            ->addMethods(['getConfigurableAttributes'])
+            ->getMock();
+        $firstParentProductMock->method('getTypeInstance')->willReturn($firstTypeInstanceMock);
+
+        $secondParentProductMock = $this->createMock(Product::class);
+        $secondParentProductMock->method('getId')->willReturn(778);
+        $secondParentProductMock->method('getTypeId')->willReturn(Constant::CONFIGURABLE_TYPE);
+        $secondTypeInstanceMock = $this->getMockBuilder(\stdClass::class)
+            ->addMethods(['getConfigurableAttributes'])
+            ->getMock();
+        $secondParentProductMock->method('getTypeInstance')->willReturn($secondTypeInstanceMock);
+
+        $firstTypeInstanceMock->expects($this->once())
+            ->method('getConfigurableAttributes')
+            ->with($firstParentProductMock)
+            ->willReturn([
+                new DataObject([
+                    'product_attribute' => new DataObject([
+                        'attribute_code' => 'flavour_visual_swatch_attribute',
+                        'store_label' => 'Flavour Visual swatch attribute',
+                        'default_value' => '',
+                    ]),
+                ]),
+            ]);
+
+        $secondTypeInstanceMock->expects($this->once())
+            ->method('getConfigurableAttributes')
+            ->with($secondParentProductMock)
+            ->willReturn([
+                new DataObject([
+                    'product_attribute' => new DataObject([
+                        'attribute_code' => 'size_swatch',
+                        'store_label' => 'Size swatch',
+                        'default_value' => 'M',
+                    ]),
+                ]),
+            ]);
+
+        $feedSpecificationMock = $this->getMockForAbstractClass(FeedSpecificationInterface::class);
+        $feedSpecificationMock->method('getIgnoreFields')->willReturn([]);
+        $feedSpecificationMock->method('getSwatchOptionFieldsNames')->willReturn([
+            'flavour_visual_swatch_attribute',
+            'size_swatch',
+        ]);
+
+        $rows = [
+            [
+                'product_model' => $productModelMock,
+                Constant::IS_STANDALONE_PRODUCT_KEY => false,
+                Constant::RESOLVED_PARENT_ID_KEY => 777,
+                Constant::RESOLVED_PARENT_SKU_KEY => 'parent-one',
+            ],
+            [
+                'product_model' => $productModelMock,
+                Constant::IS_STANDALONE_PRODUCT_KEY => false,
+                Constant::RESOLVED_PARENT_ID_KEY => 778,
+                Constant::RESOLVED_PARENT_SKU_KEY => 'parent-two',
+            ],
+        ];
+
+        $resolverCall = 0;
+        $this->parentVariantResolverMock->expects($this->exactly(2))
+            ->method('resolveParentProductForRow')
+            ->willReturnCallback(function (array $row, Product $product) use (
+                &$resolverCall,
+                $rows,
+                $productModelMock,
+                $firstParentProductMock,
+                $secondParentProductMock
+            ) {
+                $this->assertSame($productModelMock, $product);
+                $this->assertSame($rows[$resolverCall], $row);
+
+                return $resolverCall++ === 0 ? $firstParentProductMock : $secondParentProductMock;
+            });
+
+        $result = $this->provider->getData($rows, $feedSpecificationMock);
+
+        $this->assertSame(
+            [
+                'flavour_visual_swatch_attribute' => [
+                    'label' => 'Flavour Visual swatch attribute',
+                    'value' => 'Option 1',
+                    'default' => '',
+                ],
+            ],
+            $result[0][SwatchOptionsProvider::FIELD_KEY]
+        );
+        $this->assertSame(
+            [
+                'size_swatch' => [
+                    'label' => 'Size swatch',
+                    'value' => 'Medium',
+                    'default' => 'M',
+                ],
+            ],
+            $result[1][SwatchOptionsProvider::FIELD_KEY]
+        );
+    }
 }

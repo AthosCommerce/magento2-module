@@ -14,6 +14,42 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+namespace AthosCommerce\Feed\Api\Data;
+
+if (!class_exists(FeedSpecificationInterfaceFactory::class, false)) {
+    class FeedSpecificationInterfaceFactory
+    {
+        private $instance;
+
+        public function __construct($instance = null)
+        {
+            $this->instance = $instance;
+        }
+
+        public function create(array $data = [])
+        {
+            return $this->instance;
+        }
+    }
+}
+
+if (!class_exists(MediaGallerySpecificationInterfaceFactory::class, false)) {
+    class MediaGallerySpecificationInterfaceFactory
+    {
+        private $instance;
+
+        public function __construct($instance = null)
+        {
+            $this->instance = $instance;
+        }
+
+        public function create(array $data = [])
+        {
+            return $this->instance;
+        }
+    }
+}
+
 namespace AthosCommerce\Feed\Test\Unit\Model\Feed;
 
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
@@ -80,20 +116,28 @@ class SpecificationBuilderTest extends \PHPUnit\Framework\TestCase
 
     public function setUp(): void
     {
-        $this->feedSpecificationFactoryMock =
-            $this->createMock(FeedSpecificationInterfaceFactory::class);
-        $this->mediaGallerySpecificationFactoryMock =
-            $this->createMock(MediaGallerySpecificationInterfaceFactory::class);
-        $this->specificationBuilder = new SpecificationBuilder(
-            $this->feedSpecificationFactoryMock,
-            $this->mediaGallerySpecificationFactoryMock
-        );
+        $this->feedSpecificationFactoryMock = null;
+        $this->mediaGallerySpecificationFactoryMock = null;
+        $this->specificationBuilder = null;
     }
 
     public function testBuild()
     {
         $mediaGallerySpecificationMock = $this->getMockForAbstractClass(MediaGallerySpecificationInterface::class);
         $feedSpecificationMock = $this->getMockForAbstractClass(FeedSpecificationInterface::class);
+
+        $this->feedSpecificationFactoryMock = $this->getMockBuilder(FeedSpecificationInterfaceFactory::class)
+            ->setConstructorArgs([$feedSpecificationMock])
+            ->onlyMethods(['create'])
+            ->getMock();
+        $this->mediaGallerySpecificationFactoryMock = $this->getMockBuilder(MediaGallerySpecificationInterfaceFactory::class)
+            ->setConstructorArgs([$mediaGallerySpecificationMock])
+            ->onlyMethods(['create'])
+            ->getMock();
+        $this->specificationBuilder = new SpecificationBuilder(
+            $this->feedSpecificationFactoryMock,
+            $this->mediaGallerySpecificationFactoryMock
+        );
 
         $this->feedSpecificationFactoryMock->expects($this->once())
             ->method('create')

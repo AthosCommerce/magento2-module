@@ -14,6 +14,25 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+namespace Magento\Catalog\Model\ResourceModel\Product;
+
+if (!class_exists(CollectionFactory::class, false)) {
+    class CollectionFactory
+    {
+        private $collection;
+
+        public function __construct($collection = null)
+        {
+            $this->collection = $collection;
+        }
+
+        public function create()
+        {
+            return $this->collection;
+        }
+    }
+}
+
 namespace AthosCommerce\Feed\Test\Unit\Model\Feed;
 
 use Magento\Catalog\Model\ResourceModel\Product\Collection;
@@ -49,6 +68,7 @@ class CollectionProviderTest extends \PHPUnit\Framework\TestCase
         $this->stockModifierMock = $this->createMock(StockModifier::class);
         $this->attributesModifierMock = $this->createMock(AttributesModifier::class);
         $this->pricesModifierMock = $this->createMock(PricesModifier::class);
+        $collectionMock = $this->createMock(Collection::class);
 
         $modifiers = [
             'store' => [
@@ -72,7 +92,7 @@ class CollectionProviderTest extends \PHPUnit\Framework\TestCase
                 'sortOrder' => 600
             ]
         ];
-        $this->collectionFactoryMock = $this->createMock(CollectionFactory::class);
+        $this->collectionFactoryMock = new CollectionFactory($collectionMock);
         $this->collectionProvider = new CollectionProvider(
             $this->collectionFactoryMock,
             $modifiers
@@ -81,11 +101,9 @@ class CollectionProviderTest extends \PHPUnit\Framework\TestCase
 
     public function testGetCollection()
     {
-        $collectionMock = $this->createMock(Collection::class);
-        $this->collectionFactoryMock->expects($this->once())
-            ->method('create')
-            ->willReturn($collectionMock);
         $feedSpecificationMock = $this->getMockForAbstractClass(FeedSpecificationInterface::class);
+        $feedSpecificationMock->method('getIgnoreFields')->willReturn([]);
+        $collectionMock = $this->collectionFactoryMock->create();
         $this->storeModifierMock->expects($this->once())
             ->method('modify')
             ->with($collectionMock, $feedSpecificationMock)

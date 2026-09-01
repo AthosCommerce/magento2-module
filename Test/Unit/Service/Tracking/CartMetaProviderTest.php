@@ -87,34 +87,74 @@ class CartMetaProviderTest extends TestCase
             ->method('getQuote')
             ->willReturn($quote);
 
-        $cartItemOne->method('getDataUsingMethod')->willReturnMap(array(
-            array('qty', 1.0),
-            array('price', 0.0),
-        ));
+        $cartItemOne->method('getDataUsingMethod')->willReturnCallback(function ($field) {
+            return match ($field) {
+                'qty' => 1.0,
+                'price' => 0.0,
+                default => null,
+            };
+        });
         $cartItemOne->method('getProductType')->willReturn('simple');
 
-        $cartItemTwo->method('getDataUsingMethod')->willReturnMap(array(
-            array('qty', 2.0),
-            array('price', 0.0),
-        ));
+        $cartItemTwo->method('getDataUsingMethod')->willReturnCallback(function ($field) {
+            return match ($field) {
+                'qty' => 2.0,
+                'price' => 0.0,
+                default => null,
+            };
+        });
         $cartItemTwo->method('getProductType')->willReturn('configurable');
 
+        $uidCalls = array();
         $this->trackingMetaResolverMock->expects($this->exactly(2))
             ->method('getUid')
-            ->withConsecutive(array($cartItemOne), array($cartItemTwo))
-            ->willReturnOnConsecutiveCalls('17', '9');
+            ->willReturnCallback(function ($cartItem) use ($cartItemOne, $cartItemTwo, &$uidCalls) {
+                $uidCalls[] = $cartItem;
+                if ($cartItem === $cartItemOne) {
+                    return '17';
+                }
+                if ($cartItem === $cartItemTwo) {
+                    return '9';
+                }
 
+                return '';
+            });
+
+        $parentIdCalls = array();
         $this->trackingMetaResolverMock->expects($this->exactly(2))
             ->method('getParentId')
-            ->withConsecutive(array($cartItemOne), array($cartItemTwo))
-            ->willReturnOnConsecutiveCalls('17', '12');
+            ->willReturnCallback(function ($cartItem) use ($cartItemOne, $cartItemTwo, &$parentIdCalls) {
+                $parentIdCalls[] = $cartItem;
+                if ($cartItem === $cartItemOne) {
+                    return '17';
+                }
+                if ($cartItem === $cartItemTwo) {
+                    return '12';
+                }
 
+                return '';
+            });
+
+        $skuCalls = array();
         $this->trackingMetaResolverMock->expects($this->exactly(2))
             ->method('getSku')
-            ->withConsecutive(array($cartItemOne), array($cartItemTwo))
-            ->willReturnOnConsecutiveCalls('simple-sku', 'child-sku');
+            ->willReturnCallback(function ($cartItem) use ($cartItemOne, $cartItemTwo, &$skuCalls) {
+                $skuCalls[] = $cartItem;
+                if ($cartItem === $cartItemOne) {
+                    return 'simple-sku';
+                }
+                if ($cartItem === $cartItemTwo) {
+                    return 'child-sku';
+                }
+
+                return '';
+            });
 
         $result = $provider->get();
+
+        $this->assertSame(array($cartItemOne, $cartItemTwo), $uidCalls);
+        $this->assertSame(array($cartItemOne, $cartItemTwo), $parentIdCalls);
+        $this->assertSame(array($cartItemOne, $cartItemTwo), $skuCalls);
 
         $this->assertSame(
             array(
@@ -129,8 +169,8 @@ class CartMetaProviderTest extends TestCase
                         'productType' => 'simple',
                     ),
                     array(
-                        'key' => '12::::9',
-                        'uid' => '9',
+                        'key' => '12::::12_9',
+                        'uid' => '12_9',
                         'parentId' => '12',
                         'sku' => 'child-sku',
                         'qty' => 2.0,
@@ -156,10 +196,13 @@ class CartMetaProviderTest extends TestCase
             ->method('getQuote')
             ->willReturn($quote);
 
-        $cartItem->method('getDataUsingMethod')->willReturnMap(array(
-            array('qty', 3.0),
-            array('price', 45.5),
-        ));
+        $cartItem->method('getDataUsingMethod')->willReturnCallback(function ($field) {
+            return match ($field) {
+                'qty' => 3.0,
+                'price' => 45.5,
+                default => null,
+            };
+        });
         $cartItem->method('getProductType')->willReturn('simple');
 
         $this->trackingMetaResolverMock->expects($this->once())

@@ -14,6 +14,25 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+namespace AthosCommerce\Feed\Api\Data;
+
+if (!class_exists(TaskErrorInterfaceFactory::class, false)) {
+    class TaskErrorInterfaceFactory
+    {
+        private $instance;
+
+        public function __construct($instance = null)
+        {
+            $this->instance = $instance;
+        }
+
+        public function create(array $data = [])
+        {
+            return $this->instance;
+        }
+    }
+}
+
 namespace AthosCommerce\Feed\Test\Unit\Model;
 
 use Magento\Framework\Stdlib\DateTime\DateTime;

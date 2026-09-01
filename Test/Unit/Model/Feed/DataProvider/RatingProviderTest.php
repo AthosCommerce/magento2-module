@@ -16,7 +16,26 @@
 
 declare(strict_types=1);
 
-namespace AthosCommerce\Feed\Test\Unit\Model\Feed\DataProvider;
+namespace Magento\Review\Model\ResourceModel\Review\Summary {
+    if (!class_exists(CollectionFactory::class, false)) {
+        class CollectionFactory
+        {
+            private $collection;
+
+            public function __construct($collection = null)
+            {
+                $this->collection = $collection;
+            }
+
+            public function create()
+            {
+                return $this->collection;
+            }
+        }
+    }
+}
+
+namespace AthosCommerce\Feed\Test\Unit\Model\Feed\DataProvider {
 
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
@@ -37,14 +56,16 @@ class RatingProviderTest extends TestCase
     private $storeManagerMock;
     private $parentVariantResolverMock;
     private $loggerMock;
+    private $collectionMock;
     private $ratingProvider;
 
     protected function setUp(): void
     {
-        $this->collectionFactoryMock = $this->createMock(SummaryCollectionFactory::class);
         $this->storeManagerMock = $this->createMock(StoreManagerInterface::class);
         $this->parentVariantResolverMock = $this->createMock(ParentVariantResolver::class);
         $this->loggerMock = $this->createMock(AthosCommerceLogger::class);
+        $this->collectionMock = $this->createMock(SummaryCollection::class);
+        $this->collectionFactoryMock = new SummaryCollectionFactory($this->collectionMock);
 
         $this->ratingProvider = new RatingProvider(
             $this->collectionFactoryMock,
@@ -59,7 +80,6 @@ class RatingProviderTest extends TestCase
         $summaryMock = $this->createMock(Summary::class);
         $abstractDbMock = $this->createMock(AbstractDb::class);
         $selectMock = $this->createMock(Select::class);
-        $collectionMock = $this->createMock(SummaryCollection::class);
         $storeMock = $this->createMock(Store::class);
 
         $products = [
@@ -67,10 +87,6 @@ class RatingProviderTest extends TestCase
                 'entity_id' => 1,
             ],
         ];
-
-        $this->collectionFactoryMock->expects($this->once())
-            ->method('create')
-            ->willReturn($collectionMock);
 
         $feedSpecificationMock = $this->createMock(FeedSpecificationInterface::class);
         $feedSpecificationMock->expects($this->once())
@@ -90,16 +106,16 @@ class RatingProviderTest extends TestCase
             ->method('getId')
             ->willReturn(1);
 
-        $collectionMock->expects($this->once())
+        $this->collectionMock->expects($this->once())
             ->method('addStoreFilter')
             ->with(1)
             ->willReturnSelf();
 
-        $collectionMock->expects($this->once())
+        $this->collectionMock->expects($this->once())
             ->method('getSelect')
             ->willReturn($selectMock);
 
-        $collectionMock->expects($this->once())
+        $this->collectionMock->expects($this->once())
             ->method('getResource')
             ->willReturn($abstractDbMock);
 
@@ -118,7 +134,7 @@ class RatingProviderTest extends TestCase
             ->withAnyParameters()
             ->willReturnSelf();
 
-        $collectionMock->expects($this->once())
+        $this->collectionMock->expects($this->once())
             ->method('getItems')
             ->willReturn([$summaryMock]);
 
@@ -145,4 +161,5 @@ class RatingProviderTest extends TestCase
             $this->ratingProvider->getData($products, $feedSpecificationMock)
         );
     }
+}
 }

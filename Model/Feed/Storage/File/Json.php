@@ -77,10 +77,14 @@ class Json extends FileAbstract
         $this->openFile();
         $file = $this->getFile();
 
+        if ($this->isAssociativeRow($data)) {
+            $data = [$data];
+        }
+
         // Loop through each item and write each item on a new line
         foreach ($data as $item) {
-            if (!empty($item['__catalog']) && is_array($item['__catalog'])) {
-                $catalogData[] = $item['__catalog'];
+            if (!is_array($item)) {
+                continue;
             }
 
             // Remove catalog data from default feed
@@ -88,8 +92,15 @@ class Json extends FileAbstract
             // Serialize each object individually and add a newline after it
             $serializedItem = $this->jsonSerializer->serialize($item) . PHP_EOL;
             $file->write($serializedItem);
-            $serializedItem = [];
+        }
+    }
+
+    private function isAssociativeRow(array $data): bool
+    {
+        if ($data === []) {
+            return false;
         }
 
+        return array_keys($data) !== range(0, count($data) - 1);
     }
 }

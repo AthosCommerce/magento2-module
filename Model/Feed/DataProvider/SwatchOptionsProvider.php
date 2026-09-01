@@ -64,7 +64,7 @@ class SwatchOptionsProvider implements DataProviderInterface
     private $productRepository;
 
     /**
-     * @var array<int, Product|null>
+     * @var array<string, Product|null>
      */
     private $parentProductCache = [];
 
@@ -225,18 +225,34 @@ class SwatchOptionsProvider implements DataProviderInterface
      */
     private function resolveParentProduct(array $product, Product $productModel): ?Product
     {
-        $productId = (int)$productModel->getId();
-        if (!array_key_exists($productId, $this->parentProductCache)) {
+        $cacheKey = $this->getParentResolutionCacheKey($product, $productModel);
+        if (!array_key_exists($cacheKey, $this->parentProductCache)) {
             $parentProduct = $this->parentVariantResolver->resolveParentProductForRow($product, $productModel);
 
             if (!$parentProduct instanceof Product) {
                 $parentProduct = $this->getParentProductFromRow($product);
             }
 
-            $this->parentProductCache[$productId] = $parentProduct instanceof Product ? $parentProduct : null;
+            $this->parentProductCache[$cacheKey] = $parentProduct instanceof Product ? $parentProduct : null;
         }
 
-        return $this->parentProductCache[$productId];
+        return $this->parentProductCache[$cacheKey];
+    }
+
+    /**
+     * @param array $row
+     * @param Product $productModel
+     * @return string
+     */
+    private function getParentResolutionCacheKey(array $row, Product $productModel): string
+    {
+        return implode(':', [
+            (string)$productModel->getId(),
+            (string)($row[Constant::RESOLVED_PARENT_ID_KEY] ?? ''),
+            (string)($row[Constant::RESOLVED_PARENT_SKU_KEY] ?? ''),
+            (string)($row[Constant::RESOLVED_PARENT_TYPE_KEY] ?? ''),
+            (string)($row[Constant::RESOLVED_PARENT_ROW_SOURCE_KEY] ?? ''),
+        ]);
     }
 
     /**

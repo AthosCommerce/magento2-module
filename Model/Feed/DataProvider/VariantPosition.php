@@ -51,7 +51,7 @@ class VariantPosition implements DataProviderInterface
     protected $logger;
 
     /**
-     * @var array<int, Product|null>
+     * @var array<string, Product|null>
      */
     private $resolvedParentCache = [];
 
@@ -213,12 +213,19 @@ class VariantPosition implements DataProviderInterface
      */
     private function resolveParentProductForRow(array $row, Product $productModel): ?Product
     {
-        $productId = (int)$productModel->getId();
-        if (!array_key_exists($productId, $this->resolvedParentCache)) {
-            $this->resolvedParentCache[$productId] = $this->parentVariantResolver->resolveParentProductForRow($row, $productModel);
+        $cacheKey = implode(':', [
+            (string)$productModel->getId(),
+            (string)($row[Constant::RESOLVED_PARENT_ID_KEY] ?? ''),
+            (string)($row[Constant::RESOLVED_PARENT_SKU_KEY] ?? ''),
+            (string)($row[Constant::RESOLVED_PARENT_TYPE_KEY] ?? ''),
+            (string)($row[Constant::RESOLVED_PARENT_ROW_SOURCE_KEY] ?? ''),
+        ]);
+
+        if (!array_key_exists($cacheKey, $this->resolvedParentCache)) {
+            $this->resolvedParentCache[$cacheKey] = $this->parentVariantResolver->resolveParentProductForRow($row, $productModel);
         }
 
-        return $this->resolvedParentCache[$productId];
+        return $this->resolvedParentCache[$cacheKey];
     }
 
     /**

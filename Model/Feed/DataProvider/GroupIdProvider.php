@@ -38,7 +38,7 @@ class GroupIdProvider implements DataProviderInterface
     private $logger;
 
     /**
-     * @var array<int, Product|null>
+     * @var array<string, Product|null>
      */
     private $resolvedParentCache = [];
 
@@ -191,12 +191,28 @@ class GroupIdProvider implements DataProviderInterface
      */
     private function resolveParentProductForRow(array $row, Product $productModel): ?Product
     {
-        $productId = (int)$productModel->getId();
-        if (!array_key_exists($productId, $this->resolvedParentCache)) {
-            $this->resolvedParentCache[$productId] = $this->parentVariantResolver->resolveParentProductForRow($row, $productModel);
+        $cacheKey = $this->getParentResolutionCacheKey($row, $productModel);
+        if (!array_key_exists($cacheKey, $this->resolvedParentCache)) {
+            $this->resolvedParentCache[$cacheKey] = $this->parentVariantResolver->resolveParentProductForRow($row, $productModel);
         }
 
-        return $this->resolvedParentCache[$productId];
+        return $this->resolvedParentCache[$cacheKey];
+    }
+
+    /**
+     * @param array $row
+     * @param Product $productModel
+     * @return string
+     */
+    private function getParentResolutionCacheKey(array $row, Product $productModel): string
+    {
+        return implode(':', [
+            (string)$productModel->getId(),
+            (string)($row[Constant::RESOLVED_PARENT_ID_KEY] ?? ''),
+            (string)($row[Constant::RESOLVED_PARENT_SKU_KEY] ?? ''),
+            (string)($row[Constant::RESOLVED_PARENT_TYPE_KEY] ?? ''),
+            (string)($row[Constant::RESOLVED_PARENT_ROW_SOURCE_KEY] ?? ''),
+        ]);
     }
 
     /**

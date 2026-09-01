@@ -14,6 +14,63 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+namespace AthosCommerce\Feed\Model;
+
+if (!class_exists(TaskFactory::class, false)) {
+    class TaskFactory
+    {
+        private $instance;
+
+        public function __construct($instance = null)
+        {
+            $this->instance = $instance;
+        }
+
+        public function create(array $data = [])
+        {
+            return $this->instance;
+        }
+    }
+}
+
+namespace AthosCommerce\Feed\Api\Data;
+
+if (!class_exists(TaskSearchResultsInterfaceFactory::class, false)) {
+    class TaskSearchResultsInterfaceFactory
+    {
+        private $instance;
+
+        public function __construct($instance = null)
+        {
+            $this->instance = $instance;
+        }
+
+        public function create(array $data = [])
+        {
+            return $this->instance;
+        }
+    }
+}
+
+namespace AthosCommerce\Feed\Model\ResourceModel\Task;
+
+if (!class_exists(CollectionFactory::class, false)) {
+    class CollectionFactory
+    {
+        private $instance;
+
+        public function __construct($instance = null)
+        {
+            $this->instance = $instance;
+        }
+
+        public function create(array $data = [])
+        {
+            return $this->instance;
+        }
+    }
+}
+
 namespace AthosCommerce\Feed\Test\Unit\Model;
 
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;

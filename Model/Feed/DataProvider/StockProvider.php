@@ -21,6 +21,7 @@ namespace AthosCommerce\Feed\Model\Feed\DataProvider;
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Feed\Context\StoreContextManager;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\Constant;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\ParentVariantResolver;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Stock\StockResolverInterface;
 use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
@@ -46,7 +47,7 @@ class StockProvider implements DataProviderInterface
     private $logger;
 
     /**
-     * @var array<int, Product|null>
+     * @var array<string, Product|null>
      */
     private $resolvedParentCache = [];
 
@@ -91,7 +92,7 @@ class StockProvider implements DataProviderInterface
 
         $productIds = [];
         $parentIds = [];
-        $resolvedParentIdsByProductId = [];
+        $resolvedParentIdsByRowKey = [];
 
         foreach ($products as $row) {
             $productId = isset($row['entity_id']) ? (int)$row['entity_id'] : 0;
@@ -109,7 +110,8 @@ class StockProvider implements DataProviderInterface
                 $parentId = (int)$parentProduct->getId();
                 $parentIds[$parentId] = $parentId;
                 if ($productId > 0) {
-                    $resolvedParentIdsByProductId[$productId] = $parentId;
+                    $rowCacheKey = $this->getParentResolutionCacheKey($row, $productModel);
+                    $resolvedParentIdsByRowKey[$rowCacheKey] = $parentId;
                 }
             }
         }
@@ -149,11 +151,16 @@ class StockProvider implements DataProviderInterface
                 continue;
             }
 
-            if ($productId <= 0 || !isset($resolvedParentIdsByProductId[$productId])) {
+            if ($productId <= 0) {
                 continue;
             }
 
-            $parentId = $resolvedParentIdsByProductId[$productId];
+            $rowCacheKey = $this->getParentResolutionCacheKey($product, $productModel);
+            if (!isset($resolvedParentIdsByRowKey[$rowCacheKey])) {
+                continue;
+            }
+
+            $parentId = $resolvedParentIdsByRowKey[$rowCacheKey];
             if (!isset($parentStockData[$parentId])) {
                 continue;
             }
@@ -186,11 +193,27 @@ class StockProvider implements DataProviderInterface
      */
     private function resolveParentProductForRow(array $row, Product $productModel): ?Product
     {
-        $productId = (int)$productModel->getId();
-        if (!array_key_exists($productId, $this->resolvedParentCache)) {
-            $this->resolvedParentCache[$productId] = $this->parentVariantResolver->resolveParentProductForRow($row, $productModel);
+        $cacheKey = $this->getParentResolutionCacheKey($row, $productModel);
+        if (!array_key_exists($cacheKey, $this->resolvedParentCache)) {
+            $this->resolvedParentCache[$cacheKey] = $this->parentVariantResolver->resolveParentProductForRow($row, $productModel);
         }
 
-        return $this->resolvedParentCache[$productId];
+        return $this->resolvedParentCache[$cacheKey];
+    }
+
+    /**
+     * @param array $row
+     * @param Product $productModel
+     * @return string
+     */
+    private function getParentResolutionCacheKey(array $row, Product $productModel): string
+    {
+        return implode(':', [
+            (string)$productModel->getId(),
+            (string)($row[Constant::RESOLVED_PARENT_ID_KEY] ?? ''),
+            (string)($row[Constant::RESOLVED_PARENT_SKU_KEY] ?? ''),
+            (string)($row[Constant::RESOLVED_PARENT_TYPE_KEY] ?? ''),
+            (string)($row[Constant::RESOLVED_PARENT_ROW_SOURCE_KEY] ?? ''),
+        ]);
     }
 }

@@ -14,6 +14,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+namespace AthosCommerce\Feed\Api\Data;
+
+if (!interface_exists(FeedSpecificationExtensionInterface::class, false)) {
+    interface FeedSpecificationExtensionInterface extends \Magento\Framework\Api\ExtensionAttributesInterface
+    {
+    }
+}
+
 namespace AthosCommerce\Feed\Test\Unit\Model\Feed\Specification;
 
 use AthosCommerce\Feed\Api\Data\FeedSpecificationExtensionInterface;
@@ -675,7 +683,7 @@ class FeedTest extends \PHPUnit\Framework\TestCase
     public function testGetVariantAdditionalDataLimitReturnsDefaultWhenNull()
     {
         $specification = $this->createSpecification();
-        $this->assertNull($specification->getVariantAdditionalDataLimit());
+        $this->assertSame(200, $specification->getVariantAdditionalDataLimit());
 
     }
 
