@@ -53,6 +53,11 @@ class PricesProvider implements DataProviderInterface
     private $logger;
 
     /**
+     * @var array<int, Product|null>
+     */
+    private $resolvedParentCache = [];
+
+    /**
      * @param Json $json
      * @param ProviderResolverInterface $priceProviderResolver
      * @param ParentVariantResolver $parentVariantResolver
@@ -93,7 +98,7 @@ class PricesProvider implements DataProviderInterface
             $priceProvider = $this->priceProviderResolver->resolve($productModel);
             $isStandaloneProduct = (bool)($product[Constant::IS_STANDALONE_PRODUCT_KEY] ?? false);
             if (false === $isStandaloneProduct) {
-                $resolvedParent = $this->parentVariantResolver->resolveParentProductForRow($product, $productModel);
+                $resolvedParent = $this->resolveParentProductForRow($product, $productModel);
             }
             $product = array_merge(
                 $product,
@@ -113,7 +118,7 @@ class PricesProvider implements DataProviderInterface
      */
     public function reset(): void
     {
-        // do nothing
+        $this->resolvedParentCache = [];
     }
 
     /**
@@ -121,6 +126,21 @@ class PricesProvider implements DataProviderInterface
      */
     public function resetAfterFetchItems(): void
     {
-        // do nothing
+        $this->reset();
+    }
+
+    /**
+     * @param array $row
+     * @param Product $productModel
+     * @return Product|null
+     */
+    private function resolveParentProductForRow(array $row, Product $productModel): ?Product
+    {
+        $productId = (int)$productModel->getId();
+        if (!array_key_exists($productId, $this->resolvedParentCache)) {
+            $this->resolvedParentCache[$productId] = $this->parentVariantResolver->resolveParentProductForRow($row, $productModel);
+        }
+
+        return $this->resolvedParentCache[$productId];
     }
 }

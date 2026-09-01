@@ -64,6 +64,26 @@ class SwatchOptionsProvider implements DataProviderInterface
     private $productRepository;
 
     /**
+     * @var array<int, Product|null>
+     */
+    private $parentProductCache = [];
+
+    /**
+     * @var array<string, array>
+     */
+    private $swatchOptionsCache = [];
+
+    /**
+     * @var array<int, array>
+     */
+    private $swatchMetadataCache = [];
+
+    /**
+     * @var string|null
+     */
+    private $mediaBaseUrl;
+
+    /**
      * @param DataProvider $provider
      * @param AthosCommerceLogger $logger
      * @param SwatchHelper $swatchHelper
@@ -119,7 +139,7 @@ class SwatchOptionsProvider implements DataProviderInterface
             if (!$productModel) {
                 continue;
             }
-            $sku = $productModel->getSku();
+            $sku = (string)$productModel->getSku();
 
             // Only SIMPLE products get SwatchOptionsProvider
             if ($productModel->getTypeId() !== 'simple') {
@@ -135,87 +155,18 @@ class SwatchOptionsProvider implements DataProviderInterface
                 continue;
             }
 
-            $parentProduct = $this->parentVariantResolver->resolveParentProductForRow($product, $productModel);
+            $parentProduct = $this->resolveParentProduct($product, $productModel);
 
             if (!$parentProduct) {
-                $parentProduct = $this->getParentProductFromRow($product);
-            }
-
-            if (!$parentProduct || $parentProduct->getTypeId() !== Constant::CONFIGURABLE_TYPE) {
                 $product[self::FIELD_KEY] = [];
                 continue;
             }
-            // todo  performance check pending
-            if (is_array($parentProduct)) {
-                $parentProduct = $parentProduct[0] ?? null;
+
+            if ($parentProduct->getTypeId() !== Constant::CONFIGURABLE_TYPE) {
+                $product[self::FIELD_KEY] = [];
+                continue;
             }
-
-            if ($parentProduct instanceof \Magento\Catalog\Model\Product) {
-                $configurableAttributes = $parentProduct->getTypeInstance()->getConfigurableAttributes($parentProduct);
-
-                $swatchOptions = [];
-
-                foreach ($configurableAttributes as $attribute) {
-                    $attr = $attribute->getProductAttribute();
-                    if (!$attr) {
-                        continue;
-                    }
-
-                    $attrCode = $attr->getAttributeCode();
-                    $attrLabel = $attr->getStoreLabel();
-                    $defaultValue = $attribute->getProductAttribute()->getDefaultValue();
-                    $simpleValue = $productModel->getAttributeText($attrCode);
-
-                    $optionId = $productModel->getData($attrCode);
-
-                    $this->logger->debug(
-                        '[SwatchOptionsProvider] Processing attribute', [
-                        'sku' => $sku,
-                        'attr_code' => $attrCode,
-                        'simple_value' => $simpleValue,
-                        'option_id' => $optionId
-                    ]);
-
-                    if (!$simpleValue) {
-                        continue;
-                    }
-
-                    // Check against feedSpecification array
-                    if (!in_array($attrCode, $swatch)) {
-                        $this->logger->debug(
-                            '[SwatchOptionsProvider] Skipping attribute because it is not in swatch array', [
-                            'sku' => $sku,
-                            'attr_code' => $attrCode
-                        ]);
-                        continue;
-                    }
-
-                    $entry = [
-                        'label' => $attrLabel,
-                        'value' => $simpleValue,
-                        'default' => $defaultValue
-                    ];
-
-                    if ($optionId) {
-                        $swatchInfo = $this->swatchHelper->getSwatchesByOptionsId([$optionId]);
-                        $swatchDetail = $swatchInfo[$optionId] ?? [];
-
-                        if ($swatchDetail) {
-                            $entry['id'] = $optionId;
-                            $entry['colors'] = isset($swatchDetail['value']) ? [$swatchDetail['value']] : [];
-                            $entry['image'] = isset($swatchDetail['thumbnail'])
-                                ? $this->storeManager->getStore()->getBaseUrl(
-                                    \Magento\Framework\UrlInterface::URL_TYPE_MEDIA
-                                ) . 'attribute/swatch/' . $swatchDetail['thumbnail']
-                                : null;
-                        }
-                    }
-
-                    $swatchOptions[$attrCode] = $entry;
-                }
-
-                $product[self::FIELD_KEY] = $swatchOptions;
-            }
+            $product[self::FIELD_KEY] = $this->getSwatchOptions($productModel, $parentProduct, $swatch, $sku);
         }
         $this->logger->info("[SwatchOptionsProvider] Completed");
 
@@ -253,7 +204,10 @@ class SwatchOptionsProvider implements DataProviderInterface
      */
     public function reset(): void
     {
-        //
+        $this->parentProductCache = [];
+        $this->swatchOptionsCache = [];
+        $this->swatchMetadataCache = [];
+        $this->mediaBaseUrl = null;
     }
 
     /**
@@ -261,6 +215,125 @@ class SwatchOptionsProvider implements DataProviderInterface
      */
     public function resetAfterFetchItems(): void
     {
-        //
+        $this->reset();
+    }
+
+    /**
+     * @param array $product
+     * @param Product $productModel
+     * @return Product|null
+     */
+    private function resolveParentProduct(array $product, Product $productModel): ?Product
+    {
+        $productId = (int)$productModel->getId();
+        if (!array_key_exists($productId, $this->parentProductCache)) {
+            $parentProduct = $this->parentVariantResolver->resolveParentProductForRow($product, $productModel);
+
+            if (!$parentProduct instanceof Product) {
+                $parentProduct = $this->getParentProductFromRow($product);
+            }
+
+            $this->parentProductCache[$productId] = $parentProduct instanceof Product ? $parentProduct : null;
+        }
+
+        return $this->parentProductCache[$productId];
+    }
+
+    /**
+     * @param Product $productModel
+     * @param Product $parentProduct
+     * @param array $swatch
+     * @param string $sku
+     * @return array
+     */
+    private function getSwatchOptions(Product $productModel, Product $parentProduct, array $swatch, string $sku): array
+    {
+        $cacheKey = implode(':', [
+            (string)$parentProduct->getId(),
+            (string)$productModel->getId(),
+            md5((string)json_encode(array_values($swatch))),
+        ]);
+        if (isset($this->swatchOptionsCache[$cacheKey])) {
+            return $this->swatchOptionsCache[$cacheKey];
+        }
+
+        $configurableAttributes = $parentProduct->getTypeInstance()->getConfigurableAttributes($parentProduct);
+        $swatchOptions = [];
+
+        foreach ($configurableAttributes as $attribute) {
+            $attr = $attribute->getProductAttribute();
+            if (!$attr) {
+                continue;
+            }
+
+            $attrCode = $attr->getAttributeCode();
+            $attrLabel = $attr->getStoreLabel();
+            $defaultValue = $attribute->getProductAttribute()->getDefaultValue();
+            $simpleValue = $productModel->getAttributeText($attrCode);
+            $optionId = $productModel->getData($attrCode);
+
+            $this->logger->debug(
+                '[SwatchOptionsProvider] Processing attribute', [
+                'sku' => $sku,
+                'attr_code' => $attrCode,
+                'simple_value' => $simpleValue,
+                'option_id' => $optionId
+            ]);
+
+            if (!$simpleValue || !in_array($attrCode, $swatch, true)) {
+                continue;
+            }
+
+            $entry = [
+                'label' => $attrLabel,
+                'value' => $simpleValue,
+                'default' => $defaultValue
+            ];
+
+            if ($optionId) {
+                $swatchDetail = $this->getSwatchDetail((int)$optionId);
+                if ($swatchDetail !== []) {
+                    $entry['id'] = $optionId;
+                    $entry['colors'] = isset($swatchDetail['value']) ? [$swatchDetail['value']] : [];
+                    $entry['image'] = isset($swatchDetail['thumbnail'])
+                        ? $this->getMediaBaseUrl() . 'attribute/swatch/' . $swatchDetail['thumbnail']
+                        : null;
+                }
+            }
+
+            $swatchOptions[$attrCode] = $entry;
+        }
+
+        $this->swatchOptionsCache[$cacheKey] = $swatchOptions;
+
+        return $this->swatchOptionsCache[$cacheKey];
+    }
+
+    /**
+     * @param int $optionId
+     * @return array
+     */
+    private function getSwatchDetail(int $optionId): array
+    {
+        if (!isset($this->swatchMetadataCache[$optionId])) {
+            $swatchInfo = $this->swatchHelper->getSwatchesByOptionsId([$optionId]);
+            $this->swatchMetadataCache[$optionId] = $swatchInfo[$optionId] ?? [];
+        }
+
+        return $this->swatchMetadataCache[$optionId];
+    }
+
+    /**
+     * @return string
+     */
+    private function getMediaBaseUrl(): string
+    {
+        if ($this->mediaBaseUrl === null) {
+            $this->mediaBaseUrl = (string)$this->storeManager->getStore()->getBaseUrl(
+                \Magento\Framework\UrlInterface::URL_TYPE_MEDIA
+            );
+        }
+
+        return $this->mediaBaseUrl;
     }
 }

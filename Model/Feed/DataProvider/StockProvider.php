@@ -46,6 +46,11 @@ class StockProvider implements DataProviderInterface
     private $logger;
 
     /**
+     * @var array<int, Product|null>
+     */
+    private $resolvedParentCache = [];
+
+    /**
      * @param StockResolverInterface $stockResolver
      * @param StoreContextManager $storeContextManager
      * @param ParentVariantResolver $parentVariantResolver
@@ -86,6 +91,7 @@ class StockProvider implements DataProviderInterface
 
         $productIds = [];
         $parentIds = [];
+        $resolvedParentIdsByProductId = [];
 
         foreach ($products as $row) {
             $productId = isset($row['entity_id']) ? (int)$row['entity_id'] : 0;
@@ -98,9 +104,13 @@ class StockProvider implements DataProviderInterface
                 continue;
             }
 
-            $parentProduct = $this->parentVariantResolver->resolveParentProductForRow($row, $productModel);
+            $parentProduct = $this->resolveParentProductForRow($row, $productModel);
             if ($parentProduct instanceof Product) {
-                $parentIds[(int)$parentProduct->getId()] = (int)$parentProduct->getId();
+                $parentId = (int)$parentProduct->getId();
+                $parentIds[$parentId] = $parentId;
+                if ($productId > 0) {
+                    $resolvedParentIdsByProductId[$productId] = $parentId;
+                }
             }
         }
 
@@ -109,7 +119,6 @@ class StockProvider implements DataProviderInterface
         }
 
         $stockProvider = $this->stockResolver->resolve($feedSpecification->getIsMsiEnabled());
-        $storeId = (int)$this->storeContextManager->getStoreFromContext()->getId();
 
         $childStockData = $stockProvider->getStock(array_values($productIds));
         $parentStockData = !empty($parentIds)
@@ -140,12 +149,11 @@ class StockProvider implements DataProviderInterface
                 continue;
             }
 
-            $parentProduct = $this->parentVariantResolver->resolveParentProductForRow($product, $productModel);
-            if (!$parentProduct instanceof Product) {
+            if ($productId <= 0 || !isset($resolvedParentIdsByProductId[$productId])) {
                 continue;
             }
 
-            $parentId = (int)$parentProduct->getId();
+            $parentId = $resolvedParentIdsByProductId[$productId];
             if (!isset($parentStockData[$parentId])) {
                 continue;
             }
@@ -163,11 +171,26 @@ class StockProvider implements DataProviderInterface
 
     public function reset(): void
     {
-        // do nothing
+        $this->resolvedParentCache = [];
     }
 
     public function resetAfterFetchItems(): void
     {
-        // do nothing
+        $this->reset();
+    }
+
+    /**
+     * @param array $row
+     * @param Product $productModel
+     * @return Product|null
+     */
+    private function resolveParentProductForRow(array $row, Product $productModel): ?Product
+    {
+        $productId = (int)$productModel->getId();
+        if (!array_key_exists($productId, $this->resolvedParentCache)) {
+            $this->resolvedParentCache[$productId] = $this->parentVariantResolver->resolveParentProductForRow($row, $productModel);
+        }
+
+        return $this->resolvedParentCache[$productId];
     }
 }

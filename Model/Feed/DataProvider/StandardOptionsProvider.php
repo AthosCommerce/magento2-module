@@ -76,6 +76,16 @@ class StandardOptionsProvider implements DataProviderInterface
     private $optionNames = [];
 
     /**
+     * @var array<int, Product|null>
+     */
+    private $parentProductCache = [];
+
+    /**
+     * @var array<int, array>
+     */
+    private $standardOptionsCache = [];
+
+    /**
      * @param ConfigurableDataProvider $provider
      * @param AthosCommerceLogger $logger
      * @param WriterInterface $configWriter
@@ -130,13 +140,14 @@ class StandardOptionsProvider implements DataProviderInterface
                 continue;
             }
 
-            $parentProduct = $this->parentVariantResolver->resolveParentProductForRow($product, $productModel);
+            $parentProduct = $this->resolveParentProduct($product, $productModel);
 
             if (!$parentProduct) {
-                $parentProduct = $this->getParentProductFromRow($product);
+                $product[self::FIELD_KEY_STANDARD_OPTIONS] = [];
+                continue;
             }
 
-            if (!$parentProduct || $parentProduct->getTypeId() !== Constant::CONFIGURABLE_TYPE) {
+            if ($parentProduct->getTypeId() !== Constant::CONFIGURABLE_TYPE) {
                 $product[self::FIELD_KEY_STANDARD_OPTIONS] = [];
                 $this->logger->warning(
                     '[StandardOptions] Parent product missing in context',
@@ -148,37 +159,8 @@ class StandardOptionsProvider implements DataProviderInterface
                 );
                 continue;
             }
-            // todo  performance check pending
-            if (is_array($parentProduct)) {
-                $parentProduct = $parentProduct[0] ?? null;
-            }
 
-            if ($parentProduct instanceof \Magento\Catalog\Model\Product) {
-                $configurableAttributes = $parentProduct->getTypeInstance()->getConfigurableAttributes($parentProduct);
-
-                $standardOptions = [];
-
-                foreach ($configurableAttributes as $attribute) {
-                    $attr = $attribute->getProductAttribute();
-                    if (!$attr) {
-                        continue;
-                    }
-                    $attrCode = $attr->getAttributeCode();
-                    $attrLabel = $attr->getStoreLabel();
-                    // Selected value for this simple product
-                    $value = $productModel->getAttributeText($attrCode);
-                    if (!$value) {
-                        continue;
-                    }
-
-                    $standardOptions[$attrCode] = [
-                        'label' => $attrLabel,
-                        'value' => $value
-                    ];
-                    $this->optionNames[$attrLabel] = $attrLabel;
-                }
-                $product[self::FIELD_KEY_STANDARD_OPTIONS] = $standardOptions;
-            }
+            $product[self::FIELD_KEY_STANDARD_OPTIONS] = $this->getStandardOptions($productModel, $parentProduct);
 
         }
 
@@ -266,7 +248,9 @@ class StandardOptionsProvider implements DataProviderInterface
      */
     public function reset(): void
     {
-        //
+        $this->optionNames = [];
+        $this->parentProductCache = [];
+        $this->standardOptionsCache = [];
     }
 
     /**
@@ -274,6 +258,66 @@ class StandardOptionsProvider implements DataProviderInterface
      */
     public function resetAfterFetchItems(): void
     {
-        //
+        $this->reset();
+    }
+
+    /**
+     * @param array $product
+     * @param Product $productModel
+     * @return Product|null
+     */
+    private function resolveParentProduct(array $product, Product $productModel): ?Product
+    {
+        $productId = (int)$productModel->getId();
+        if (!array_key_exists($productId, $this->parentProductCache)) {
+            $parentProduct = $this->parentVariantResolver->resolveParentProductForRow($product, $productModel);
+
+            if (!$parentProduct instanceof Product) {
+                $parentProduct = $this->getParentProductFromRow($product);
+            }
+
+            $this->parentProductCache[$productId] = $parentProduct instanceof Product ? $parentProduct : null;
+        }
+
+        return $this->parentProductCache[$productId];
+    }
+
+    /**
+     * @param Product $productModel
+     * @param Product $parentProduct
+     * @return array
+     */
+    private function getStandardOptions(Product $productModel, Product $parentProduct): array
+    {
+        $cacheKey = (int)$parentProduct->getId() . ':' . (int)$productModel->getId();
+        if (isset($this->standardOptionsCache[$cacheKey])) {
+            return $this->standardOptionsCache[$cacheKey];
+        }
+
+        $configurableAttributes = $parentProduct->getTypeInstance()->getConfigurableAttributes($parentProduct);
+        $standardOptions = [];
+
+        foreach ($configurableAttributes as $attribute) {
+            $attr = $attribute->getProductAttribute();
+            if (!$attr) {
+                continue;
+            }
+            $attrCode = $attr->getAttributeCode();
+            $attrLabel = $attr->getStoreLabel();
+            $value = $productModel->getAttributeText($attrCode);
+            if (!$value) {
+                continue;
+            }
+
+            $standardOptions[$attrCode] = [
+                'label' => $attrLabel,
+                'value' => $value
+            ];
+            $this->optionNames[$attrLabel] = $attrLabel;
+        }
+
+        $this->standardOptionsCache[$cacheKey] = $standardOptions;
+
+        return $this->standardOptionsCache[$cacheKey];
     }
 }

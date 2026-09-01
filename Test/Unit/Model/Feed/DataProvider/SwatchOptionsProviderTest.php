@@ -155,4 +155,73 @@ class SwatchOptionsProviderTest extends TestCase
             $result[0][SwatchOptionsProvider::FIELD_KEY]
         );
     }
+
+    public function testGetDataCachesResolvedParentAndSwatchLookupForRepeatedRows(): void
+    {
+        $productModelMock = $this->createMock(Product::class);
+        $productModelMock->method('getTypeId')->willReturn('simple');
+        $productModelMock->method('getId')->willReturn(101);
+        $productModelMock->method('getSku')->willReturn('sku-101');
+        $productModelMock->method('getAttributeText')->willReturn('Option 1');
+        $productModelMock->method('getData')->with('flavour_visual_swatch_attribute')->willReturn(123);
+
+        $parentProductMock = $this->createMock(Product::class);
+        $parentProductMock->method('getId')->willReturn(777);
+        $parentProductMock->method('getTypeId')->willReturn(Constant::CONFIGURABLE_TYPE);
+        $typeInstanceMock = $this->getMockBuilder(\stdClass::class)
+            ->addMethods(['getConfigurableAttributes'])
+            ->getMock();
+        $parentProductMock->method('getTypeInstance')->willReturn($typeInstanceMock);
+
+        $typeInstanceMock->expects($this->once())
+            ->method('getConfigurableAttributes')
+            ->with($parentProductMock)
+            ->willReturn([
+                new DataObject([
+                    'product_attribute' => new DataObject([
+                        'attribute_code' => 'flavour_visual_swatch_attribute',
+                        'store_label' => 'Flavour Visual swatch attribute',
+                        'default_value' => '',
+                    ]),
+                ]),
+            ]);
+
+        $storeMock = $this->createMock(Store::class);
+        $storeMock->expects($this->once())
+            ->method('getBaseUrl')
+            ->with(\Magento\Framework\UrlInterface::URL_TYPE_MEDIA)
+            ->willReturn('https://example.test/media/');
+
+        $feedSpecificationMock = $this->getMockForAbstractClass(FeedSpecificationInterface::class);
+        $feedSpecificationMock->method('getIgnoreFields')->willReturn([]);
+        $feedSpecificationMock->method('getSwatchOptionFieldsNames')->willReturn(['flavour_visual_swatch_attribute']);
+
+        $row = [
+            'product_model' => $productModelMock,
+            Constant::IS_STANDALONE_PRODUCT_KEY => false,
+        ];
+
+        $this->parentVariantResolverMock->expects($this->once())
+            ->method('resolveParentProductForRow')
+            ->with($row, $productModelMock)
+            ->willReturn($parentProductMock);
+
+        $this->swatchHelperMock->expects($this->once())
+            ->method('getSwatchesByOptionsId')
+            ->with([123])
+            ->willReturn([
+                123 => [
+                    'value' => '#555555',
+                    'thumbnail' => 'option-1.png',
+                ],
+            ]);
+
+        $this->storeManagerMock->expects($this->once())
+            ->method('getStore')
+            ->willReturn($storeMock);
+
+        $result = $this->provider->getData([$row, $row], $feedSpecificationMock);
+
+        $this->assertSame($result[0][SwatchOptionsProvider::FIELD_KEY], $result[1][SwatchOptionsProvider::FIELD_KEY]);
+    }
 }

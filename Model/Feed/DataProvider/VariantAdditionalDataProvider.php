@@ -49,6 +49,11 @@ class VariantAdditionalDataProvider implements DataProviderInterface
     private $logger;
 
     /**
+     * @var array<string, array>
+     */
+    private $variantRowsCache = [];
+
+    /**
      * @param ParentVariantResolver $parentVariantResolver
      * @param MetadataPool $metadataPool
      * @param AthosCommerceLogger $logger
@@ -199,15 +204,23 @@ class VariantAdditionalDataProvider implements DataProviderInterface
         int $variantLimit
     ): array {
         $result = [];
+        $cacheKey = $this->getVariantCacheKey($parentProduct, $linkField, $additionalFields, $variantLimit);
+        if (isset($this->variantRowsCache[$cacheKey])) {
+            return $this->variantRowsCache[$cacheKey];
+        }
 
         $childProducts = $this->parentVariantResolver->getChildProducts($parentProduct);
-        $childProducts = array_slice($childProducts, 0, $variantLimit);
+        if (count($childProducts) > $variantLimit) {
+            $childProducts = array_slice($childProducts, 0, $variantLimit);
+        }
 
         foreach ($childProducts as $childProduct) {
             if ($childProduct instanceof Product) {
                 $result[] = $this->buildChildRow($childProduct, $parentProduct, $linkField, $additionalFields);
             }
         }
+
+        $this->variantRowsCache[$cacheKey] = $result;
 
         return $result;
     }
@@ -320,10 +333,31 @@ class VariantAdditionalDataProvider implements DataProviderInterface
     }
 
     public function reset(): void {
-
+        $this->variantRowsCache = [];
     }
 
     public function resetAfterFetchItems(): void {
+        $this->reset();
+    }
 
+    /**
+     * @param Product $parentProduct
+     * @param string $linkField
+     * @param array $additionalFields
+     * @param int $variantLimit
+     * @return string
+     */
+    private function getVariantCacheKey(
+        Product $parentProduct,
+        string $linkField,
+        array $additionalFields,
+        int $variantLimit
+    ): string {
+        return implode(':', [
+            (string)$parentProduct->getId(),
+            $linkField,
+            (string)$variantLimit,
+            md5((string)json_encode(array_values($additionalFields))),
+        ]);
     }
 }

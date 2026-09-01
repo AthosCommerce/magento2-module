@@ -19,11 +19,14 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Test\Unit\Model\Feed\DataProvider;
 
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
+use AthosCommerce\Feed\Model\Feed\Context\StoreContextManager;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\ParentVariantResolver;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Stock\StockProviderInterface;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Stock\StockResolverInterface;
 use AthosCommerce\Feed\Model\Feed\DataProvider\StockProvider;
 use Magento\Catalog\Model\Product;
+use Magento\Store\Model\Store;
 use PHPUnit\Framework\TestCase;
 
 class StockProviderTest extends TestCase
@@ -37,6 +40,8 @@ class StockProviderTest extends TestCase
      * @var ParentVariantResolver|\PHPUnit\Framework\MockObject\MockObject
      */
     private $parentVariantResolverMock;
+    private $storeContextManagerMock;
+    private $loggerMock;
 
     /**
      * @var StockProvider
@@ -49,10 +54,18 @@ class StockProviderTest extends TestCase
 
         $this->stockResolverMock = $this->createMock(StockResolverInterface::class);
         $this->parentVariantResolverMock = $this->createMock(ParentVariantResolver::class);
+        $this->storeContextManagerMock = $this->createMock(StoreContextManager::class);
+        $this->loggerMock = $this->createMock(AthosCommerceLogger::class);
+
+        $storeMock = $this->createMock(Store::class);
+        $storeMock->method('getId')->willReturn(1);
+        $this->storeContextManagerMock->method('getStoreFromContext')->willReturn($storeMock);
 
         $this->stockProvider = new StockProvider(
             $this->stockResolverMock,
-            $this->parentVariantResolverMock
+            $this->storeContextManagerMock,
+            $this->parentVariantResolverMock,
+            $this->loggerMock
         );
     }
 
@@ -126,11 +139,11 @@ class StockProviderTest extends TestCase
             '__is_belong_to_parent' => true,
         ]];
 
-        $parentProductMock->expects($this->exactly(2))
+        $parentProductMock->expects($this->once())
             ->method('getId')
             ->willReturn(10);
 
-        $this->parentVariantResolverMock->expects($this->exactly(2))
+        $this->parentVariantResolverMock->expects($this->once())
             ->method('resolveParentProductForRow')
             ->with($products[0], $productModelMock)
             ->willReturn($parentProductMock);
@@ -179,5 +192,46 @@ class StockProviderTest extends TestCase
             'parent_stock_qty' => 22.0,
             'parent_is_stock_managed' => 1,
         ]], $result);
+    }
+
+    public function testGetDataResolvesParentOnlyOncePerRepeatedChildRow(): void
+    {
+        $providerMock = $this->createMock(StockProviderInterface::class);
+        $feedSpecificationMock = $this->getMockForAbstractClass(FeedSpecificationInterface::class);
+        $productModelMock = $this->createMock(Product::class);
+        $parentProductMock = $this->createMock(Product::class);
+
+        $feedSpecificationMock->method('getIgnoreFields')->willReturn([]);
+        $feedSpecificationMock->method('getIsMsiEnabled')->willReturn(false);
+
+        $products = [
+            ['entity_id' => 1, 'product_model' => $productModelMock],
+            ['entity_id' => 1, 'product_model' => $productModelMock],
+        ];
+
+        $productModelMock->method('getId')->willReturn(1);
+        $parentProductMock->method('getId')->willReturn(10);
+
+        $this->parentVariantResolverMock->expects($this->once())
+            ->method('resolveParentProductForRow')
+            ->with($products[0], $productModelMock)
+            ->willReturn($parentProductMock);
+
+        $this->stockResolverMock->expects($this->once())
+            ->method('resolve')
+            ->with(false)
+            ->willReturn($providerMock);
+
+        $providerMock->expects($this->exactly(2))
+            ->method('getStock')
+            ->willReturnMap([
+                [[1], [1 => ['in_stock' => 1, 'qty' => 5, 'is_stock_managed' => 1]]],
+                [[10], [10 => ['in_stock' => 1, 'qty' => 22, 'is_stock_managed' => 1]]],
+            ]);
+
+        $result = $this->stockProvider->getData($products, $feedSpecificationMock);
+
+        $this->assertSame(22.0, $result[0]['parent_stock_qty']);
+        $this->assertSame(22.0, $result[1]['parent_stock_qty']);
     }
 }

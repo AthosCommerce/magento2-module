@@ -38,6 +38,16 @@ class GroupIdProvider implements DataProviderInterface
     private $logger;
 
     /**
+     * @var array<int, Product|null>
+     */
+    private $resolvedParentCache = [];
+
+    /**
+     * @var array<string, string>
+     */
+    private $groupIdCache = [];
+
+    /**
      * @param ParentVariantResolver $parentVariantResolver
      * @param AthosCommerceLogger $logger
      */
@@ -81,7 +91,7 @@ class GroupIdProvider implements DataProviderInterface
             }
 
             $isBelongToParent = (bool)($product[Constant::IS_BELONG_TO_PARENT_KEY] ?? false);
-            $parentProduct = $this->parentVariantResolver->resolveParentProductForRow($product, $productModel);
+            $parentProduct = $this->resolveParentProductForRow($product, $productModel);
 
             if (!$parentProduct instanceof Product) {
                 $product['__group_id'] = (string)$productModel->getId();
@@ -114,11 +124,9 @@ class GroupIdProvider implements DataProviderInterface
                     continue;
                 }
 
-                $variantOptions = $this->parentVariantResolver->getVariantOptions($parentProduct, $productModel);
-
-                $product['__group_id'] = $this->buildGroupId(
+                $product['__group_id'] = $this->getConfigurableGroupId(
                     $parentProduct,
-                    $variantOptions,
+                    $productModel,
                     $groupBySourceFieldName
                 );
 
@@ -167,9 +175,56 @@ class GroupIdProvider implements DataProviderInterface
 
     public function reset(): void
     {
+        $this->resolvedParentCache = [];
+        $this->groupIdCache = [];
     }
 
     public function resetAfterFetchItems(): void
     {
+        $this->reset();
+    }
+
+    /**
+     * @param array $row
+     * @param Product $productModel
+     * @return Product|null
+     */
+    private function resolveParentProductForRow(array $row, Product $productModel): ?Product
+    {
+        $productId = (int)$productModel->getId();
+        if (!array_key_exists($productId, $this->resolvedParentCache)) {
+            $this->resolvedParentCache[$productId] = $this->parentVariantResolver->resolveParentProductForRow($row, $productModel);
+        }
+
+        return $this->resolvedParentCache[$productId];
+    }
+
+    /**
+     * @param Product $parentProduct
+     * @param Product $productModel
+     * @param string|null $groupBySourceFieldName
+     * @return string
+     */
+    private function getConfigurableGroupId(
+        Product $parentProduct,
+        Product $productModel,
+        ?string $groupBySourceFieldName
+    ): string {
+        $cacheKey = implode(':', [
+            (string)$parentProduct->getId(),
+            (string)$productModel->getId(),
+            (string)$groupBySourceFieldName,
+        ]);
+
+        if (!isset($this->groupIdCache[$cacheKey])) {
+            $variantOptions = $this->parentVariantResolver->getVariantOptions($parentProduct, $productModel);
+            $this->groupIdCache[$cacheKey] = $this->buildGroupId(
+                $parentProduct,
+                $variantOptions,
+                $groupBySourceFieldName
+            );
+        }
+
+        return $this->groupIdCache[$cacheKey];
     }
 }

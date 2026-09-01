@@ -169,4 +169,67 @@ class StandardOptionsProviderTest extends TestCase
             $result[0][StandardOptionsProvider::FIELD_KEY_STANDARD_OPTIONS]
         );
     }
+
+    public function testGetDataCachesResolvedParentAndOptionsForRepeatedRows(): void
+    {
+        $productModelMock = $this->createMock(Product::class);
+        $productModelMock->method('getTypeId')->willReturn('simple');
+        $productModelMock->method('getId')->willReturn(101);
+        $productModelMock->method('getAttributeText')->willReturn('Red');
+
+        $parentProductMock = $this->createMock(Product::class);
+        $parentProductMock->method('getId')->willReturn(501);
+        $parentProductMock->method('getTypeId')->willReturn(Constant::CONFIGURABLE_TYPE);
+        $typeInstanceMock = $this->getMockBuilder(\stdClass::class)
+            ->addMethods(['getConfigurableAttributes'])
+            ->getMock();
+        $parentProductMock->method('getTypeInstance')->willReturn($typeInstanceMock);
+
+        $typeInstanceMock->expects($this->once())
+            ->method('getConfigurableAttributes')
+            ->with($parentProductMock)
+            ->willReturn([
+                new DataObject([
+                    'product_attribute' => new DataObject([
+                        'attribute_code' => 'athos_color',
+                        'store_label' => 'Athos Color Label',
+                    ]),
+                ]),
+            ]);
+
+        $storeMock = $this->createMock(StoreInterface::class);
+        $storeMock->method('getId')->willReturn(1);
+
+        $feedSpecificationMock = $this->getMockForAbstractClass(FeedSpecificationInterface::class);
+        $feedSpecificationMock->method('getStoreCode')->willReturn('default');
+
+        $this->storeProviderMock->expects($this->once())
+            ->method('getStore')
+            ->with('default')
+            ->willReturn($storeMock);
+
+        $this->jsonMock->expects($this->once())
+            ->method('serialize')
+            ->willReturn('{"Athos Color Label":"Athos Color Label"}');
+
+        $this->configWriterMock->expects($this->once())
+            ->method('save');
+
+        $row = [
+            'product_model' => $productModelMock,
+            Constant::IS_STANDALONE_PRODUCT_KEY => false,
+        ];
+
+        $this->parentVariantResolverMock->expects($this->once())
+            ->method('resolveParentProductForRow')
+            ->with($row, $productModelMock)
+            ->willReturn($parentProductMock);
+
+        $result = $this->provider->getData([$row, $row], $feedSpecificationMock);
+
+        $this->assertSame(
+            $result[0][StandardOptionsProvider::FIELD_KEY_STANDARD_OPTIONS],
+            $result[1][StandardOptionsProvider::FIELD_KEY_STANDARD_OPTIONS]
+        );
+    }
 }

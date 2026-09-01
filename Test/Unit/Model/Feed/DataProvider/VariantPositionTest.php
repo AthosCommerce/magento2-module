@@ -358,4 +358,48 @@ class VariantPositionTest extends TestCase
         $this->variantPosition->resetAfterFetchItems();
         $this->addToAssertionCount(1);
     }
+
+    public function testGetDataCachesParentDataForRepeatedRows(): void
+    {
+        $simpleProductMock = $this->createConfiguredMock(Product::class, [
+            'getId' => 20,
+        ]);
+
+        $parentProductMock = $this->createConfiguredMock(Product::class, [
+            'getId' => 200,
+            'getTypeId' => Constant::CONFIGURABLE_TYPE,
+        ]);
+
+        $products = [
+            ['product_model' => $simpleProductMock],
+            ['product_model' => $simpleProductMock],
+        ];
+
+        $feedSpecificationMock = $this->createMock(FeedSpecificationInterface::class);
+        $feedSpecificationMock->method('getIgnoreFields')->willReturn([]);
+
+        $this->parentVariantResolverMock->expects($this->once())
+            ->method('resolveParentProductForRow')
+            ->with($products[0], $simpleProductMock)
+            ->willReturn($parentProductMock);
+
+        $this->configurableTypeMock->expects($this->once())
+            ->method('getUsedProducts')
+            ->with($parentProductMock)
+            ->willReturn([]);
+
+        $this->configurableHelperMock->expects($this->once())
+            ->method('getOptions')
+            ->with($parentProductMock, [])
+            ->willReturn([
+                'index' => [
+                    '20' => [],
+                ],
+            ]);
+
+        $result = $this->variantPosition->getData($products, $feedSpecificationMock);
+
+        $this->assertSame(1, $result[0]['__variant_position']);
+        $this->assertSame(1, $result[1]['__variant_position']);
+    }
 }
