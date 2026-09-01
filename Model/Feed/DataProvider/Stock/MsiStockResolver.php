@@ -72,7 +72,7 @@ class MsiStockResolver implements StockResolverInterface
         $this->legacyStockProvider = $legacyStockProvider;
         $this->logger = $logger;
         if (!empty($moduleList)) {
-            $this->moduleList = array_values(array_unique($moduleList));
+            $this->moduleList = array_values(array_unique(array_merge($this->moduleList, $moduleList)));
         }
     }
 
