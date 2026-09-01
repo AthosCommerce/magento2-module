@@ -14,26 +14,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-namespace AthosCommerce\Feed\Api\Data;
-
-if (!class_exists(TaskInterfaceFactory::class, false)) {
-    class TaskInterfaceFactory
-    {
-        private $instance;
-
-        public function __construct($instance = null)
-        {
-            $this->instance = $instance;
-        }
-
-        public function create(array $data = [])
-        {
-            return $this->instance;
-        }
-    }
-}
-
 namespace AthosCommerce\Feed\Test\Unit\Model;
+
+require_once __DIR__ . '/../_files/bootstrap-stubs.php';
 
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use Magento\Framework\Exception\CouldNotSaveException;

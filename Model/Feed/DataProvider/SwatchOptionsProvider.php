@@ -267,7 +267,7 @@ class SwatchOptionsProvider implements DataProviderInterface
         $cacheKey = implode(':', [
             (string)$parentProduct->getId(),
             (string)$productModel->getId(),
-            md5((string)json_encode(array_values($swatch))),
+            hash('sha256', (string)json_encode(array_values($swatch))),
         ]);
         if (isset($this->swatchOptionsCache[$cacheKey])) {
             return $this->swatchOptionsCache[$cacheKey];

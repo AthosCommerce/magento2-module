@@ -14,15 +14,9 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-namespace AthosCommerce\Feed\Api\Data;
-
-if (!interface_exists(MediaGallerySpecificationExtensionInterface::class, false)) {
-    interface MediaGallerySpecificationExtensionInterface extends \Magento\Framework\Api\ExtensionAttributesInterface
-    {
-    }
-}
-
 namespace AthosCommerce\Feed\Test\Unit\Model\Feed\Specification;
+
+require_once dirname(__DIR__, 3) . '/_files/bootstrap-stubs.php';
 
 use AthosCommerce\Feed\Api\Data\MediaGallerySpecificationExtensionInterface;
 use AthosCommerce\Feed\Api\Data\MediaGallerySpecificationInterface;

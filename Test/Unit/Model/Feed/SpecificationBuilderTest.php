@@ -14,43 +14,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-namespace AthosCommerce\Feed\Api\Data;
-
-if (!class_exists(FeedSpecificationInterfaceFactory::class, false)) {
-    class FeedSpecificationInterfaceFactory
-    {
-        private $instance;
-
-        public function __construct($instance = null)
-        {
-            $this->instance = $instance;
-        }
-
-        public function create(array $data = [])
-        {
-            return $this->instance;
-        }
-    }
-}
-
-if (!class_exists(MediaGallerySpecificationInterfaceFactory::class, false)) {
-    class MediaGallerySpecificationInterfaceFactory
-    {
-        private $instance;
-
-        public function __construct($instance = null)
-        {
-            $this->instance = $instance;
-        }
-
-        public function create(array $data = [])
-        {
-            return $this->instance;
-        }
-    }
-}
-
 namespace AthosCommerce\Feed\Test\Unit\Model\Feed;
+
+require_once dirname(__DIR__, 2) . '/_files/bootstrap-stubs.php';
 
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterfaceFactory;

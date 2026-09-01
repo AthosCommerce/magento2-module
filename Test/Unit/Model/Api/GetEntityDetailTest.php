@@ -16,62 +16,9 @@
 
 declare(strict_types=1);
 
-namespace Magento\Framework\Api;
-
-if (!class_exists(SearchCriteriaBuilderFactory::class, false)) {
-    class SearchCriteriaBuilderFactory
-    {
-        private $instance;
-
-        public function __construct($instance = null)
-        {
-            $this->instance = $instance;
-        }
-
-        public function create(array $data = [])
-        {
-            return $this->instance;
-        }
-    }
-}
-
-if (!class_exists(SortOrderBuilderFactory::class, false)) {
-    class SortOrderBuilderFactory
-    {
-        private $instance;
-
-        public function __construct($instance = null)
-        {
-            $this->instance = $instance;
-        }
-
-        public function create(array $data = [])
-        {
-            return $this->instance;
-        }
-    }
-}
-
-namespace AthosCommerce\Feed\Api\Data;
-
-if (!class_exists(EntityTrackingItemInterfaceFactory::class, false)) {
-    class EntityTrackingItemInterfaceFactory
-    {
-        private $instance;
-
-        public function __construct($instance = null)
-        {
-            $this->instance = $instance;
-        }
-
-        public function create(array $data = [])
-        {
-            return $this->instance;
-        }
-    }
-}
-
 namespace AthosCommerce\Feed\Test\Unit\Model\Api;
+
+require_once dirname(__DIR__, 2) . '/_files/bootstrap-stubs.php';
 
 use AthosCommerce\Feed\Api\Data\EntityTrackingItemInterface;
 use AthosCommerce\Feed\Api\Data\EntityTrackingItemInterfaceFactory;

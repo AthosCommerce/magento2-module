@@ -14,19 +14,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-namespace Magento\Framework;
-
-if (!class_exists(DataObjectFactory::class, false)) {
-    class DataObjectFactory
-    {
-        public function create(array $data = [])
-        {
-            return new DataObject($data['data'] ?? []);
-        }
-    }
-}
-
 namespace AthosCommerce\Feed\Test\Unit\Model\Metric;
+
+require_once dirname(__DIR__, 2) . '/_files/bootstrap-stubs.php';
 
 use Magento\Framework\DataObject;
 use Magento\Framework\DataObjectFactory;

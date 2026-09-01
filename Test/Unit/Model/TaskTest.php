@@ -16,15 +16,9 @@
 
 declare(strict_types=1);
 
-namespace AthosCommerce\Feed\Api\Data;
-
-if (!interface_exists(TaskExtensionInterface::class, false)) {
-    interface TaskExtensionInterface extends \Magento\Framework\Api\ExtensionAttributesInterface
-    {
-    }
-}
-
 namespace AthosCommerce\Feed\Test\Unit\Model;
+
+require_once __DIR__ . '/../_files/bootstrap-stubs.php';
 
 use AthosCommerce\Feed\Api\Data\TaskErrorInterface;
 use AthosCommerce\Feed\Api\Data\TaskExtensionInterface;

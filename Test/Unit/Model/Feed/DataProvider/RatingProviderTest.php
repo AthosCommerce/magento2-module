@@ -16,26 +16,9 @@
 
 declare(strict_types=1);
 
-namespace Magento\Review\Model\ResourceModel\Review\Summary {
-    if (!class_exists(CollectionFactory::class, false)) {
-        class CollectionFactory
-        {
-            private $collection;
-
-            public function __construct($collection = null)
-            {
-                $this->collection = $collection;
-            }
-
-            public function create()
-            {
-                return $this->collection;
-            }
-        }
-    }
-}
-
 namespace AthosCommerce\Feed\Test\Unit\Model\Feed\DataProvider {
+
+require_once dirname(__DIR__, 3) . '/_files/bootstrap-stubs.php';
 
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;

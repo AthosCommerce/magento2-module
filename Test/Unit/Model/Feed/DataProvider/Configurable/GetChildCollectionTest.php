@@ -16,26 +16,9 @@
 
 declare(strict_types=1);
 
-namespace Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable\Product {
-    if (!class_exists(CollectionFactory::class, false)) {
-        class CollectionFactory
-        {
-            private $collection;
-
-            public function __construct($collection = null)
-            {
-                $this->collection = $collection;
-            }
-
-            public function create()
-            {
-                return $this->collection;
-            }
-        }
-    }
-}
-
 namespace AthosCommerce\Feed\Test\Unit\Model\Feed\DataProvider\Configurable {
+
+require_once dirname(__DIR__, 4) . '/_files/bootstrap-stubs.php';
 
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Configurable\GetChildCollection;

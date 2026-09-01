@@ -14,26 +14,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-namespace Magento\Catalog\Model\ResourceModel\Product;
-
-if (!class_exists(CollectionFactory::class, false)) {
-    class CollectionFactory
-    {
-        private $collection;
-
-        public function __construct($collection = null)
-        {
-            $this->collection = $collection;
-        }
-
-        public function create()
-        {
-            return $this->collection;
-        }
-    }
-}
-
 namespace AthosCommerce\Feed\Test\Unit\Model\Feed;
+
+require_once dirname(__DIR__, 2) . '/_files/bootstrap-stubs.php';
 
 use Magento\Catalog\Model\ResourceModel\Product\Collection;
 use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory;

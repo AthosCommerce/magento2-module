@@ -16,45 +16,9 @@
 
 declare(strict_types=1);
 
-namespace AthosCommerce\Feed\Api\Data;
-
-if (!class_exists(SalesDataInterfaceFactory::class, false)) {
-    class SalesDataInterfaceFactory
-    {
-        private $instance;
-
-        public function __construct($instance = null)
-        {
-            $this->instance = $instance;
-        }
-
-        public function create(array $data = [])
-        {
-            return $this->instance;
-        }
-    }
-}
-
-namespace Magento\Sales\Model\ResourceModel\Order\Item;
-
-if (!class_exists(CollectionFactory::class, false)) {
-    class CollectionFactory
-    {
-        private $instance;
-
-        public function __construct($instance = null)
-        {
-            $this->instance = $instance;
-        }
-
-        public function create(array $data = [])
-        {
-            return $this->instance;
-        }
-    }
-}
-
 namespace AthosCommerce\Feed\Test\Unit\Helper;
+
+require_once __DIR__ . '/../_files/bootstrap-stubs.php';
 
 use AthosCommerce\Feed\Api\Data\SalesDataInterface;
 use AthosCommerce\Feed\Api\Data\SalesDataInterfaceFactory;

@@ -16,19 +16,9 @@
 
 declare(strict_types=1);
 
-namespace Magento\Catalog\Model\ResourceModel\Product\Option {
-    if (!class_exists(CollectionFactory::class, false)) {
-        class CollectionFactory
-        {
-            public function create()
-            {
-                return null;
-            }
-        }
-    }
-}
-
 namespace AthosCommerce\Feed\Test\Unit\Model\Feed\DataProvider {
+
+require_once dirname(__DIR__, 3) . '/_files/bootstrap-stubs.php';
 
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;

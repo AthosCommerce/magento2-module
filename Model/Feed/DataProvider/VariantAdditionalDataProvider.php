@@ -357,7 +357,7 @@ class VariantAdditionalDataProvider implements DataProviderInterface
             (string)$parentProduct->getId(),
             $linkField,
             (string)$variantLimit,
-            md5((string)json_encode(array_values($additionalFields))),
+            hash('sha256', (string)json_encode(array_values($additionalFields))),
         ]);
     }
 }
