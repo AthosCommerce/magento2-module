@@ -18,6 +18,8 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Exception;
 
+use Magento\Framework\Exception\LocalizedException;
+use Magento\Framework\Phrase;
 use Throwable;
 
 class ValidationException extends GenericException
@@ -25,21 +27,56 @@ class ValidationException extends GenericException
     public const CODE = 1000;
 
     /**
+     * @var array
+     */
+    private $details;
+
+    /**
+     * @var LocalizedException[]
+     */
+    private $errors;
+
+    /**
      * ValidationException constructor.
      * @param array $messages
      * @param int $code
      * @param Throwable|null $previous
+     * @param array $details
      */
     public function __construct(
         $messages = [],
         $code = 0,
-        ?Throwable $previous = null
+        ?Throwable $previous = null,
+        array $details = []
     ) {
-        $message = '';
-        foreach ($messages as $error) {
-            $message .= $error . PHP_EOL;
-        }
+        $message = implode(PHP_EOL, $messages);
+
+        $this->details = $details;
+        $this->errors = array_map(
+            static function (array $detail): LocalizedException {
+                return new LocalizedException(
+                    new Phrase($detail['message'] ?? 'Validation error')
+                );
+            },
+            $details
+        );
 
         parent::__construct($message, $code, $previous);
+    }
+
+    /**
+     * @return array
+     */
+    public function getDetails(): array
+    {
+        return $this->details;
+    }
+
+    /**
+     * @return LocalizedException[]
+     */
+    public function getErrors(): array
+    {
+        return $this->errors;
     }
 }

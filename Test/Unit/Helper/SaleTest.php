@@ -18,9 +18,12 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Test\Unit\Helper;
 
+require_once dirname(__DIR__) . '/_files/SalesDataInterfaceFactory.php';
+
 use AthosCommerce\Feed\Api\Data\SalesDataInterface;
 use AthosCommerce\Feed\Api\Data\SalesDataInterfaceFactory;
 use AthosCommerce\Feed\Helper\Sale;
+use Magento\Sales\Model\ResourceModel\Order\Item\Collection;
 use Magento\Sales\Model\ResourceModel\Order\Item\CollectionFactory;
 use Magento\Store\Model\StoresConfig;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -33,63 +36,50 @@ class SaleTest extends TestCase
      */
     private $storesConfigMock;
 
-    /**
-     * @var SalesDataInterfaceFactory|MockObject
-     */
-    private $salesDataFactoryMock;
-
     protected function setUp(): void
     {
         $this->storesConfigMock = $this->createMock(StoresConfig::class);
-        $this->salesDataFactoryMock = $this->createMock(SalesDataInterfaceFactory::class);
     }
 
     public function testGetSalesMapsCollectionItems(): void
     {
         $selectMock = $this->getMockBuilder(\stdClass::class)
-            ->addMethods(['where', 'limit'])
+            ->addMethods(['where', 'joinLeft', 'order', 'limit'])
             ->getMock();
+        $selectMock->expects($this->once())->method('where');
+        $selectMock->expects($this->once())
+            ->method('joinLeft')
+            ->with(
+                ['order_table' => 'sales_order'],
+                'order_table.entity_id = main_table.order_id',
+                ['order_customer_id' => 'customer_id', 'order_customer_email' => 'customer_email']
+            )
+            ->willReturnSelf();
+        $selectMock->expects($this->once())
+            ->method('order')
+            ->with('main_table.item_id ASC')
+            ->willReturnSelf();
+        $selectMock->expects($this->once())
+            ->method('limit')
+            ->with(10, 0)
+            ->willReturnSelf();
 
-        $selectMock->expects($this->never())->method('where');
-        $selectMock->expects($this->never())->method('limit');
-
-        $collectionBaseMock = $this->getMockBuilder(\stdClass::class)
-            ->addMethods(['getSelect', 'addBindParam'])
+        $collectionBaseMock = $this->getMockBuilder(Collection::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['getSelect', 'addBindParam', 'getTable', 'getItems'])
             ->getMock();
-
-        $collectionBaseMock->expects($this->once())
-            ->method('getSelect')
-            ->willReturn($selectMock);
-
-        $collectionBaseMock->expects($this->never())
-            ->method('addBindParam');
-
-        $orderMock = $this->getMockBuilder(\stdClass::class)
-            ->addMethods(['getData'])
-            ->getMock();
+        $collectionBaseMock->expects($this->exactly(4))->method('getSelect')->willReturn($selectMock);
+        $collectionBaseMock->expects($this->once())->method('addBindParam')->with(':from', '2000-01-01');
+        $collectionBaseMock->expects($this->once())->method('getTable')->with('sales_order')->willReturn('sales_order');
 
         $itemMock = $this->getMockBuilder(\stdClass::class)
-            ->addMethods(['getOrderID', 'getOrder', 'getData'])
+            ->addMethods(['getData'])
             ->getMock();
-
-        $salesDataMock = $this->createMock(SalesDataInterface::class);
-
-        $orderMock->method('getData')
-            ->willReturnMap([
-                ['customer_id', null],
-                ['customer_email', 'guest@example.com'],
-            ]);
-
-        $itemMock->expects($this->once())
-            ->method('getOrderID')
-            ->willReturn(123);
-
-        $itemMock->expects($this->once())
-            ->method('getOrder')
-            ->willReturn($orderMock);
-
         $itemMock->method('getData')
             ->willReturnMap([
+                ['order_id', 123],
+                ['order_customer_id', null],
+                ['order_customer_email', 'guest@example.com'],
                 ['product_id', 456],
                 ['qty_ordered', 5],
                 ['qty_canceled', 1],
@@ -98,58 +88,27 @@ class SaleTest extends TestCase
                 ['store_id', ''],
                 ['created_at', '2026-07-06 10:00:00'],
             ]);
+        $collectionBaseMock->expects($this->once())->method('getItems')->willReturn([$itemMock]);
 
-        $this->salesDataFactoryMock->expects($this->once())
-            ->method('create')
-            ->willReturn($salesDataMock);
-
-        $salesDataMock->expects($this->once())->method('setOrderId')->with(123);
+        $salesDataMock = $this->createMock(SalesDataInterface::class);
+        $salesDataMock->expects($this->once())->method('setOrderId')->with('123');
         $salesDataMock->expects($this->once())->method('setCustomerId')->with('guest@example.com');
-        $salesDataMock->expects($this->once())->method('setProductId')->with(456);
+        $salesDataMock->expects($this->once())->method('setProductId')->with('456');
         $salesDataMock->expects($this->once())->method('setQuantity')->with('3');
-        $salesDataMock->expects($this->once())->method('setPrice')->with(99.99);
+        $salesDataMock->expects($this->once())->method('setPrice')->with('99.99');
         $salesDataMock->expects($this->once())
             ->method('setCreatedAt')
             ->with($this->matchesRegularExpression('/^2026-07-06 10:00:00[+\-]\d{2}:\d{2}$/'));
 
-        $collectionIterable = new class($collectionBaseMock, [$itemMock]) implements \IteratorAggregate {
-            private $collectionBaseMock;
-            private $items;
-
-            public function __construct($collectionBaseMock, array $items)
-            {
-                $this->collectionBaseMock = $collectionBaseMock;
-                $this->items = $items;
-            }
-
-            public function getSelect()
-            {
-                return $this->collectionBaseMock->getSelect();
-            }
-
-            public function addBindParam($key, $value)
-            {
-                return $this->collectionBaseMock->addBindParam($key, $value);
-            }
-
-            public function getIterator(): \Traversable
-            {
-                return new \ArrayIterator($this->items);
-            }
-        };
-
         $saleFactoryMock = $this->createMock(CollectionFactory::class);
-        $saleFactoryMock->expects($this->once())
-            ->method('create')
-            ->willReturn($collectionIterable);
+        $saleFactoryMock->expects($this->once())->method('create')->willReturn($collectionBaseMock);
 
         $saleHelper = new Sale(
             $this->storesConfigMock,
             $saleFactoryMock,
-            $this->salesDataFactoryMock
+            new SalesDataInterfaceFactory($salesDataMock)
         );
-
-        $result = $saleHelper->getSales('All', 'All');
+        $result = $saleHelper->getSales('2000-01-01', '1,10');
 
         $this->assertCount(1, $result);
         $this->assertSame($salesDataMock, $result[0]);
@@ -158,35 +117,29 @@ class SaleTest extends TestCase
     public function testGetSalesUsesStoreTimezoneWhenStoreIdExists(): void
     {
         $selectMock = $this->getMockBuilder(\stdClass::class)
-            ->addMethods(['where', 'limit'])
+            ->addMethods(['where', 'joinLeft', 'order', 'limit'])
             ->getMock();
+        $selectMock->expects($this->once())->method('where');
+        $selectMock->expects($this->once())->method('joinLeft')->willReturnSelf();
+        $selectMock->expects($this->once())->method('order')->with('main_table.item_id ASC')->willReturnSelf();
+        $selectMock->expects($this->once())->method('limit')->with(10, 0)->willReturnSelf();
 
-        $collectionBaseMock = $this->getMockBuilder(\stdClass::class)
-            ->addMethods(['getSelect', 'addBindParam'])
+        $collectionBaseMock = $this->getMockBuilder(Collection::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['getSelect', 'addBindParam', 'getTable', 'getItems'])
             ->getMock();
-
-        $collectionBaseMock->method('getSelect')->willReturn($selectMock);
-
-        $orderMock = $this->getMockBuilder(\stdClass::class)
-            ->addMethods(['getData'])
-            ->getMock();
+        $collectionBaseMock->expects($this->exactly(4))->method('getSelect')->willReturn($selectMock);
+        $collectionBaseMock->expects($this->once())->method('addBindParam')->with(':from', '2000-01-01');
+        $collectionBaseMock->expects($this->once())->method('getTable')->with('sales_order')->willReturn('sales_order');
 
         $itemMock = $this->getMockBuilder(\stdClass::class)
-            ->addMethods(['getOrderID', 'getOrder', 'getData'])
+            ->addMethods(['getData'])
             ->getMock();
-
-        $salesDataMock = $this->createMock(SalesDataInterface::class);
-
-        $orderMock->method('getData')
-            ->willReturnMap([
-                ['customer_id', 99],
-                ['customer_email', 'fallback@example.com'],
-            ]);
-
-        $itemMock->method('getOrderID')->willReturn(321);
-        $itemMock->method('getOrder')->willReturn($orderMock);
         $itemMock->method('getData')
             ->willReturnMap([
+                ['order_id', 321],
+                ['order_customer_id', 99],
+                ['order_customer_email', 'fallback@example.com'],
                 ['product_id', 654],
                 ['qty_ordered', 2],
                 ['qty_canceled', 0],
@@ -195,58 +148,53 @@ class SaleTest extends TestCase
                 ['store_id', '0'],
                 ['created_at', '2026-07-06 10:00:00'],
             ]);
+        $collectionBaseMock->expects($this->once())->method('getItems')->willReturn([$itemMock]);
 
         $this->storesConfigMock->expects($this->once())
             ->method('getStoresConfigByPath')
-            ->willReturn([
-                '0' => 'UTC',
-            ]);
+            ->willReturn(['0' => 'UTC']);
 
-        $this->salesDataFactoryMock->expects($this->once())
-            ->method('create')
-            ->willReturn($salesDataMock);
-
-        $salesDataMock->expects($this->once())->method('setCustomerId')->with(99);
+        $salesDataMock = $this->createMock(SalesDataInterface::class);
+        $salesDataMock->expects($this->once())->method('setCustomerId')->with('99');
         $salesDataMock->expects($this->once())->method('setCreatedAt')->with('2026-07-06 10:00:00+00:00');
 
-        $collectionIterable = new class($collectionBaseMock, [$itemMock]) implements \IteratorAggregate {
-            private $collectionBaseMock;
-            private $items;
-
-            public function __construct($collectionBaseMock, array $items)
-            {
-                $this->collectionBaseMock = $collectionBaseMock;
-                $this->items = $items;
-            }
-
-            public function getSelect()
-            {
-                return $this->collectionBaseMock->getSelect();
-            }
-
-            public function addBindParam($key, $value)
-            {
-                return $this->collectionBaseMock->addBindParam($key, $value);
-            }
-
-            public function getIterator(): \Traversable
-            {
-                return new \ArrayIterator($this->items);
-            }
-        };
-
         $saleFactoryMock = $this->createMock(CollectionFactory::class);
-        $saleFactoryMock->expects($this->once())
-            ->method('create')
-            ->willReturn($collectionIterable);
+        $saleFactoryMock->expects($this->once())->method('create')->willReturn($collectionBaseMock);
 
         $saleHelper = new Sale(
             $this->storesConfigMock,
             $saleFactoryMock,
-            $this->salesDataFactoryMock
+            new SalesDataInterfaceFactory($salesDataMock)
+        );
+        $saleHelper->getSales('2000-01-01', '1,10');
+
+        $this->addToAssertionCount(1);
+    }
+
+    public function testGetSalesTotalCountAppliesDateRangeAndReturnsSize(): void
+    {
+        $selectMock = $this->getMockBuilder(\stdClass::class)
+            ->addMethods(['where'])
+            ->getMock();
+        $selectMock->expects($this->once())->method('where');
+
+        $collectionBaseMock = $this->getMockBuilder(Collection::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['getSelect', 'addBindParam', 'getSize'])
+            ->getMock();
+        $collectionBaseMock->expects($this->once())->method('getSelect')->willReturn($selectMock);
+        $collectionBaseMock->expects($this->once())->method('addBindParam')->with(':from', '2000-01-01');
+        $collectionBaseMock->expects($this->once())->method('getSize')->willReturn(42);
+
+        $saleFactoryMock = $this->createMock(CollectionFactory::class);
+        $saleFactoryMock->expects($this->once())->method('create')->willReturn($collectionBaseMock);
+
+        $saleHelper = new Sale(
+            $this->storesConfigMock,
+            $saleFactoryMock,
+            new SalesDataInterfaceFactory()
         );
 
-        $saleHelper->getSales('All', 'All');
-        $this->addToAssertionCount(1);
+        $this->assertSame(42, $saleHelper->getSalesTotalCount('2000-01-01'));
     }
 }

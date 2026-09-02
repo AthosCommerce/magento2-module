@@ -22,7 +22,10 @@ use AthosCommerce\Feed\Api\Data\SalesInterface;
 
 class Sales implements SalesInterface
 {
-    private $sales;
+    private $sales = [];
+    private $totalCount = 0;
+    private $currentSize = 0;
+    private $pageSize = 0;
 
     /**
      * @return SalesDataInterface[]
@@ -38,5 +41,35 @@ class Sales implements SalesInterface
     public function setSales(array $value)
     {
         $this->sales = $value;
+    }
+
+    public function getTotalCount(): int
+    {
+        return $this->totalCount;
+    }
+
+    public function setTotalCount(int $totalCount): void
+    {
+        $this->totalCount = $totalCount;
+    }
+
+    public function getCurrentSize(): int
+    {
+        return $this->currentSize;
+    }
+
+    public function setCurrentSize(int $currentSize): void
+    {
+        $this->currentSize = $currentSize;
+    }
+
+    public function getPageSize(): int
+    {
+        return $this->pageSize;
+    }
+
+    public function setPageSize(int $pageSize): void
+    {
+        $this->pageSize = $pageSize;
     }
 }
