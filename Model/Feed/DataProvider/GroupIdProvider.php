@@ -21,6 +21,7 @@ namespace AthosCommerce\Feed\Model\Feed\DataProvider;
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\Constant;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\ParentIdSourceFieldEvaluator;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\ParentVariantResolver;
 use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
 use Magento\Catalog\Model\Product;
@@ -38,19 +39,30 @@ class GroupIdProvider implements DataProviderInterface
     private $logger;
 
     /**
+     * @var ParentIdSourceFieldEvaluator
+     */
+    private $parentIdSourceFieldEvaluator;
+
+    /**
+     * Initialize dependencies.
+     *
      * @param ParentVariantResolver $parentVariantResolver
      * @param AthosCommerceLogger $logger
+     * @param ParentIdSourceFieldEvaluator $parentIdSourceFieldEvaluator
      */
     public function __construct(
         ParentVariantResolver $parentVariantResolver,
-        AthosCommerceLogger   $logger
-    )
-    {
+        AthosCommerceLogger $logger,
+        ParentIdSourceFieldEvaluator $parentIdSourceFieldEvaluator
+    ) {
         $this->parentVariantResolver = $parentVariantResolver;
         $this->logger = $logger;
+        $this->parentIdSourceFieldEvaluator = $parentIdSourceFieldEvaluator;
     }
 
     /**
+     * Enrich export rows with __group_id values.
+     *
      * @param array $products
      * @param FeedSpecificationInterface $feedSpecification
      * @return array
@@ -58,11 +70,11 @@ class GroupIdProvider implements DataProviderInterface
     public function getData(
         array                      $products,
         FeedSpecificationInterface $feedSpecification
-    ): array
-    {
+    ): array {
         $this->logger->info("[GroupIdProvider] Started");
         $ignoredFields = $feedSpecification->getIgnoreFields();
         $groupBySourceFieldName = $feedSpecification->getGroupBySourceFieldName();
+        $parentIdSourceFieldName = $feedSpecification->getParentIdSourceFieldName();
 
         if (in_array('__group_id', $ignoredFields, true)) {
             return $products;
@@ -84,14 +96,19 @@ class GroupIdProvider implements DataProviderInterface
             $parentProduct = $this->parentVariantResolver->resolveParentProductForRow($product, $productModel);
 
             if (!$parentProduct instanceof Product) {
-                $product['__group_id'] = (string)$productModel->getId();
+                $product['__group_id'] = $this->resolveConfiguredGroupBaseId(
+                    $productModel,
+                    $parentIdSourceFieldName
+                );
                 continue;
             }
 
             if ($parentProduct->getTypeId() === Constant::GROUPED_TYPE) {
-                $product['__group_id'] = $isBelongToParent
-                    ? (string)$parentProduct->getId()
-                    : (string)$productModel->getId();
+                $groupBaseProduct = $isBelongToParent ? $parentProduct : $productModel;
+                $product['__group_id'] = $this->resolveConfiguredGroupBaseId(
+                    $groupBaseProduct,
+                    $parentIdSourceFieldName
+                );
 
                 $this->logger->debug(
                     sprintf(
@@ -107,19 +124,16 @@ class GroupIdProvider implements DataProviderInterface
             }
 
             if ($parentProduct->getTypeId() === Constant::CONFIGURABLE_TYPE) {
-
-                //To handle the child product having non NVI
-                if (!$isBelongToParent) {
-                    $product['__group_id'] = (string)$productModel->getId();
-                    continue;
-                }
-
                 $variantOptions = $this->parentVariantResolver->getVariantOptions($parentProduct, $productModel);
+                $groupBaseProduct = $groupBySourceFieldName
+                    ? $parentProduct
+                    : ($isBelongToParent ? $parentProduct : $productModel);
 
                 $product['__group_id'] = $this->buildGroupId(
-                    $parentProduct,
+                    $groupBaseProduct,
                     $variantOptions,
-                    $groupBySourceFieldName
+                    $groupBySourceFieldName,
+                    $parentIdSourceFieldName
                 );
 
                 $this->logger->debug(
@@ -139,18 +153,21 @@ class GroupIdProvider implements DataProviderInterface
     }
 
     /**
+     * Build the final group identifier for a row.
+     *
      * @param Product $parentProduct
      * @param array $variantOptions
      * @param string|null $groupByAttribute
+     * @param string|null $parentIdIdentifier
      * @return string
      */
     private function buildGroupId(
         Product $parentProduct,
         array   $variantOptions,
-        ?string $groupByAttribute = null
-    ): string
-    {
-        $parentId = (string)$parentProduct->getId();
+        ?string $groupByAttribute = null,
+        ?string $parentIdIdentifier = null
+    ): string {
+        $parentId = $this->resolveConfiguredGroupBaseId($parentProduct, $parentIdIdentifier);
 
         if (!$groupByAttribute) {
             return $parentId;
@@ -165,10 +182,40 @@ class GroupIdProvider implements DataProviderInterface
         return $parentId . '::' . $groupIdValue;
     }
 
+    /**
+     * Resolve the configured base identifier used to build __group_id.
+     *
+     * @param Product $product
+     * @param string|null $parentIdIdentifier
+     * @return string
+     */
+    private function resolveConfiguredGroupBaseId(Product $product, ?string $parentIdIdentifier): string
+    {
+        $resolvedValue = $this->parentIdSourceFieldEvaluator->execute($product, $parentIdIdentifier);
+
+        if ($resolvedValue !== null && $resolvedValue !== '') {
+            return $resolvedValue;
+        }
+
+        return (string)$product->getId();
+    }
+
+    /**
+     * Reset internal state.
+     *
+     * @return void
+     */
+    // phpcs:ignore Magento2.CodeAnalysis.EmptyBlock.DetectedFunction
     public function reset(): void
     {
     }
 
+    /**
+     * Reset state after fetching items.
+     *
+     * @return void
+     */
+    // phpcs:ignore Magento2.CodeAnalysis.EmptyBlock.DetectedFunction
     public function resetAfterFetchItems(): void
     {
     }
