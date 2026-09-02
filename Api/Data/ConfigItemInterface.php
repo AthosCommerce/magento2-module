@@ -341,6 +341,17 @@ interface ConfigItemInterface
     public function getParentIdSourceFieldName(): ?string;
 
     /**
+     * @param string|null $value
+     * @return ConfigItemInterface
+     */
+    public function setGroupBySourceFieldName(?string $value): ConfigItemInterface;
+
+    /**
+     * @return string|null
+     */
+    public function getGroupBySourceFieldName(): ?string;
+
+    /**
      * @return string[]
      */
     public function getVariantAdditionalFields();

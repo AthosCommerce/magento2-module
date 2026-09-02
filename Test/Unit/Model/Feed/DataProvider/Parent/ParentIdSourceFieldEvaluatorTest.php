@@ -21,6 +21,8 @@ namespace AthosCommerce\Feed\Test\Unit\Model\Feed\DataProvider\Parent;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\ParentIdSourceFieldEvaluator;
 use Magento\Catalog\Model\Product;
+use Magento\Catalog\Model\ResourceModel\Eav\Attribute;
+use Magento\Catalog\Model\ResourceModel\Product as ProductResource;
 use PHPUnit\Framework\TestCase;
 
 class ParentIdSourceFieldEvaluatorTest extends TestCase
@@ -64,5 +66,37 @@ class ParentIdSourceFieldEvaluatorTest extends TestCase
         $result = $evaluator->execute($product, '   ');
 
         $this->assertSame('112763', $result);
+    }
+
+    public function testExecuteReturnsConfiguredTextAttributeValue(): void
+    {
+        $logger = $this->createMock(AthosCommerceLogger::class);
+        $product = $this->createMock(Product::class);
+        $resource = $this->createMock(ProductResource::class);
+        $attribute = $this->createMock(Attribute::class);
+
+        $product->expects($this->once())
+            ->method('getResource')
+            ->willReturn($resource);
+        $resource->expects($this->once())
+            ->method('getAttribute')
+            ->with('test_parent_group_code')
+            ->willReturn($attribute);
+        $attribute->expects($this->once())
+            ->method('getFrontendInput')
+            ->willReturn('text');
+        $product->expects($this->once())
+            ->method('getAttributeText')
+            ->with('test_parent_group_code')
+            ->willReturn(false);
+        $product->expects($this->once())
+            ->method('getDataUsingMethod')
+            ->with('test_parent_group_code')
+            ->willReturn('TEST_PARENT_GROUP_001');
+
+        $evaluator = new ParentIdSourceFieldEvaluator($logger);
+        $result = $evaluator->execute($product, 'test_parent_group_code');
+
+        $this->assertSame('TEST_PARENT_GROUP_001', $result);
     }
 }

@@ -169,6 +169,12 @@ class ConfigMap
             'group' => 'taskPayload',
             'validator' => 'validateString'
         ],
+        'groupBySourceFieldName' => [
+            'path' => Constants::XML_PATH_LIVE_INDEXING_TASK_PAYLOAD,
+            'type' => 'string',
+            'group' => 'taskPayload',
+            'validator' => 'validateString'
+        ],
         'enableDebugLog' => [
             'path' => Constants::XML_PATH_DEBUG_LOG_ENABLED,
             'type' => 'bool',
