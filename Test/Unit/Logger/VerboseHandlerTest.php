@@ -21,8 +21,7 @@ namespace AthosCommerce\Feed\Test\Unit\Logger;
 use AthosCommerce\Feed\Logger\VerboseHandler;
 use AthosCommerce\Feed\Model\Config as ConfigModel;
 use Magento\Framework\Filesystem\Driver\File;
-use Monolog\Level;
-use Monolog\LogRecord;
+use Monolog\Logger;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -37,13 +36,13 @@ class VerboseHandlerTest extends TestCase
     {
         $handler = $this->createHandler(false);
 
-        $this->assertFalse($handler->isHandling($this->createRecord(Level::Debug, 'debug message')));
+        $this->assertFalse($handler->isHandling($this->createRecord(Logger::DEBUG, 'debug message')));
     }
 
     public function testHandleWritesDebugRecordsWhenDebugIsEnabled(): void
     {
         $handler = $this->createHandler(true);
-        $record = $this->createRecord(Level::Debug, 'debug message');
+        $record = $this->createRecord(Logger::DEBUG, 'debug message');
 
         $this->assertTrue($handler->isHandling($record));
         $this->assertFalse($handler->handle($record));
@@ -55,7 +54,7 @@ class VerboseHandlerTest extends TestCase
     public function testHandleSkipsInfoRecordsEvenWhenDebugIsEnabled(): void
     {
         $handler = $this->createHandler(true);
-        $record = $this->createRecord(Level::Info, 'info message');
+        $record = $this->createRecord(Logger::INFO, 'info message');
 
         $this->assertFalse($handler->handle($record));
         $handler->_resetState();
@@ -87,14 +86,31 @@ class VerboseHandlerTest extends TestCase
         return new VerboseHandler($configModel, new File(), $filePath, $fileName);
     }
 
-    private function createRecord(Level $level, string $message): LogRecord
+    /**
+     * @param int $level
+     * @param string $message
+     * @return array|\Monolog\LogRecord
+     */
+    private function createRecord(int $level, string $message)
     {
-        return new LogRecord(
-            new \DateTimeImmutable(),
-            'athos-test',
-            $level,
-            $message
-        );
+        if (class_exists(\Monolog\LogRecord::class)) {
+            return new \Monolog\LogRecord(
+                new \DateTimeImmutable(),
+                'athos-test',
+                Logger::toMonologLevel($level),
+                $message
+            );
+        }
+
+        return [
+            'message' => $message,
+            'context' => [],
+            'level' => $level,
+            'level_name' => Logger::getLevelName($level),
+            'channel' => 'athos-test',
+            'datetime' => new \DateTimeImmutable(),
+            'extra' => [],
+        ];
     }
 
     private function readLogFile(VerboseHandler $handler): string

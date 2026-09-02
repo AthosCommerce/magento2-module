@@ -20,8 +20,7 @@ namespace AthosCommerce\Feed\Test\Unit\Logger;
 
 use AthosCommerce\Feed\Logger\Handler;
 use Magento\Framework\Filesystem\Driver\File;
-use Monolog\Level;
-use Monolog\LogRecord;
+use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
 
 class HandlerTest extends TestCase
@@ -34,7 +33,7 @@ class HandlerTest extends TestCase
     public function testHandleWritesInfoRecords(): void
     {
         $handler = $this->createHandler();
-        $record = $this->createRecord(Level::Info, 'info message');
+        $record = $this->createRecord(Logger::INFO, 'info message');
 
         $this->assertTrue($handler->isHandling($record));
         $this->assertFalse($handler->handle($record));
@@ -46,7 +45,7 @@ class HandlerTest extends TestCase
     public function testHandleSkipsDebugRecords(): void
     {
         $handler = $this->createHandler();
-        $record = $this->createRecord(Level::Debug, 'debug message');
+        $record = $this->createRecord(Logger::DEBUG, 'debug message');
 
         $this->assertFalse($handler->handle($record));
         $handler->_resetState();
@@ -56,7 +55,7 @@ class HandlerTest extends TestCase
     public function testHandleSkipsErrorRecords(): void
     {
         $handler = $this->createHandler();
-        $record = $this->createRecord(Level::Error, 'error message');
+        $record = $this->createRecord(Logger::ERROR, 'error message');
 
         $this->assertFalse($handler->handle($record));
         $handler->_resetState();
@@ -84,14 +83,31 @@ class HandlerTest extends TestCase
         return new Handler(new File(), $filePath, $fileName);
     }
 
-    private function createRecord(Level $level, string $message): LogRecord
+    /**
+     * @param int $level
+     * @param string $message
+     * @return array|\Monolog\LogRecord
+     */
+    private function createRecord(int $level, string $message)
     {
-        return new LogRecord(
-            new \DateTimeImmutable(),
-            'athos-test',
-            $level,
-            $message
-        );
+        if (class_exists(\Monolog\LogRecord::class)) {
+            return new \Monolog\LogRecord(
+                new \DateTimeImmutable(),
+                'athos-test',
+                Logger::toMonologLevel($level),
+                $message
+            );
+        }
+
+        return [
+            'message' => $message,
+            'context' => [],
+            'level' => $level,
+            'level_name' => Logger::getLevelName($level),
+            'channel' => 'athos-test',
+            'datetime' => new \DateTimeImmutable(),
+            'extra' => [],
+        ];
     }
 
     private function readLogFile(Handler $handler): string
