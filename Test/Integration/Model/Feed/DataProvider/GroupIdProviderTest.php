@@ -350,9 +350,9 @@ class GroupIdProviderTest extends TestCase
     private function generateFeedData(array $specificationData): array
     {
         $specification = $this->specificationBuilder->build($specificationData);
-        $this->contextManager->setContextFromSpecification($specification);
 
         try {
+            $this->contextManager->setContextFromSpecification($specification);
             $products = $this->getProducts->get($specification);
             $childIds = $this->getChildIds($products);
             $this->parentRelationsContext->buildContext($childIds, $specification);
