@@ -93,11 +93,15 @@ class GroupIdProvider implements DataProviderInterface
             }
 
             $isBelongToParent = (bool)($product[Constant::IS_BELONG_TO_PARENT_KEY] ?? false);
+            $isStandaloneProduct = (bool)($product[Constant::IS_STANDALONE_PRODUCT_KEY] ?? false);
             $parentProduct = $this->parentVariantResolver->resolveParentProductForRow($product, $productModel);
 
             if (!$parentProduct instanceof Product) {
-                $product[Constant::GROUP_ID] = $this->resolveConfiguredGroupBaseId(
+                $product[Constant::GROUP_ID] = $this->buildGroupId(
                     $productModel,
+                    $productModel,
+                    [],
+                    $groupBySourceFieldName,
                     $parentIdSourceFieldName
                 );
                 continue;
@@ -105,8 +109,11 @@ class GroupIdProvider implements DataProviderInterface
 
             if ($parentProduct->getTypeId() === Constant::GROUPED_TYPE) {
                 $groupBaseProduct = $isBelongToParent ? $parentProduct : $productModel;
-                $product[Constant::GROUP_ID] = $this->resolveConfiguredGroupBaseId(
+                $product[Constant::GROUP_ID] = $this->buildGroupId(
                     $groupBaseProduct,
+                    $productModel,
+                    [],
+                    $groupBySourceFieldName,
                     $parentIdSourceFieldName
                 );
 
@@ -125,12 +132,13 @@ class GroupIdProvider implements DataProviderInterface
 
             if ($parentProduct->getTypeId() === Constant::CONFIGURABLE_TYPE) {
                 $variantOptions = $this->parentVariantResolver->getVariantOptions($parentProduct, $productModel);
-                $groupBaseProduct = $groupBySourceFieldName
+                $groupBaseProduct = $isBelongToParent && !$isStandaloneProduct
                     ? $parentProduct
-                    : ($isBelongToParent ? $parentProduct : $productModel);
+                    : $productModel;
 
                 $product[Constant::GROUP_ID] = $this->buildGroupId(
                     $groupBaseProduct,
+                    $productModel,
                     $variantOptions,
                     $groupBySourceFieldName,
                     $parentIdSourceFieldName
@@ -148,32 +156,38 @@ class GroupIdProvider implements DataProviderInterface
             }
         }
         unset($product);
-        $this->logger->info("[GroupIdProvider] Completed");
+        $this->logger->info("[GroupIdProvider] Completed $groupBySourceFieldName");
         return $products;
     }
 
     /**
      * Build the final group identifier for a row.
      *
-     * @param Product $parentProduct
+     * @param Product $baseProduct
+     * @param Product $groupValueProduct
      * @param array $variantOptions
      * @param string|null $groupByAttribute
      * @param string|null $parentIdIdentifier
      * @return string
      */
     private function buildGroupId(
-        Product $parentProduct,
-        array   $variantOptions,
+        Product $baseProduct,
+        Product $groupValueProduct,
+        array $variantOptions,
         ?string $groupByAttribute = null,
         ?string $parentIdIdentifier = null
     ): string {
-        $parentId = $this->resolveConfiguredGroupBaseId($parentProduct, $parentIdIdentifier);
+        $parentId = $this->resolveConfiguredGroupBaseId($baseProduct, $parentIdIdentifier);
 
         if (!$groupByAttribute) {
             return $parentId;
         }
 
-        $groupIdValue = $variantOptions[$groupByAttribute]['value'] ?? '';
+        $groupIdValue = $variantOptions[$groupByAttribute]['value'] ?? null;
+
+        if ($groupIdValue === null || $groupIdValue === '') {
+            $groupIdValue = $this->parentIdSourceFieldEvaluator->execute($groupValueProduct, $groupByAttribute);
+        }
 
         if ($groupIdValue === '' || $groupIdValue === null) {
             return $parentId;

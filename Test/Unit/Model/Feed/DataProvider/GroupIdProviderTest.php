@@ -195,6 +195,115 @@ class GroupIdProviderTest extends TestCase
         $this->assertSame('TEST_PARENT_GROUP_001::Blue', $result[0][Constant::GROUP_ID]);
     }
 
+    public function testGetDataUsesChildBaseForStandaloneConfigurableRowsWhenGroupingByVariantAttribute(): void
+    {
+        $childProduct = $this->createSimpleProductMock(101);
+        $parentProduct = $this->createParentProductMock(501, Constant::CONFIGURABLE_TYPE);
+        $feedSpecification = $this->createFeedSpecificationMock(null, 'athos_color');
+        $products = [[
+            'product_model' => $childProduct,
+            Constant::IS_BELONG_TO_PARENT_KEY => false,
+            Constant::IS_STANDALONE_PRODUCT_KEY => true,
+        ]];
+
+        $this->parentVariantResolverMock->expects($this->once())
+            ->method('resolveParentProductForRow')
+            ->with($products[0], $childProduct)
+            ->willReturn($parentProduct);
+        $this->parentVariantResolverMock->expects($this->once())
+            ->method('getVariantOptions')
+            ->with($parentProduct, $childProduct)
+            ->willReturn([
+                'athos_color' => ['value' => 'Red'],
+            ]);
+
+        $this->parentIdSourceFieldEvaluatorMock->expects($this->once())
+            ->method('execute')
+            ->with($childProduct, null)
+            ->willReturn('101');
+
+        $result = $this->provider->getData($products, $feedSpecification);
+
+        $this->assertSame('101::Red', $result[0][Constant::GROUP_ID]);
+    }
+
+    public function testGetDataUsesGenericMagentoAttributeWhenGroupByIsNotAVariantOption(): void
+    {
+        $childProduct = $this->createSimpleProductMock(101, 'child-sku-101');
+        $parentProduct = $this->createParentProductMock(501, Constant::CONFIGURABLE_TYPE);
+        $feedSpecification = $this->createFeedSpecificationMock(null, 'sku');
+        $products = [[
+            'product_model' => $childProduct,
+            Constant::IS_BELONG_TO_PARENT_KEY => true,
+        ]];
+
+        $this->parentVariantResolverMock->expects($this->once())
+            ->method('resolveParentProductForRow')
+            ->with($products[0], $childProduct)
+            ->willReturn($parentProduct);
+        $this->parentVariantResolverMock->expects($this->once())
+            ->method('getVariantOptions')
+            ->with($parentProduct, $childProduct)
+            ->willReturn([]);
+
+        $this->parentIdSourceFieldEvaluatorMock->expects($this->exactly(2))
+            ->method('execute')
+            ->willReturnCallback(static function (Product $product, ?string $identifier): ?string {
+                if ($product->getId() === 501 && $identifier === null) {
+                    return '501';
+                }
+
+                if ($product->getId() === 101 && $identifier === 'sku') {
+                    return 'child-sku-101';
+                }
+
+                return null;
+            });
+
+        $result = $this->provider->getData($products, $feedSpecification);
+
+        $this->assertSame('501::child-sku-101', $result[0][Constant::GROUP_ID]);
+    }
+
+    public function testGetDataUsesChildBaseForStandaloneConfigurableRowsWhenGroupingByGenericAttribute(): void
+    {
+        $childProduct = $this->createSimpleProductMock(101, 'child-sku-101');
+        $parentProduct = $this->createParentProductMock(501, Constant::CONFIGURABLE_TYPE);
+        $feedSpecification = $this->createFeedSpecificationMock(null, 'sku');
+        $products = [[
+            'product_model' => $childProduct,
+            Constant::IS_BELONG_TO_PARENT_KEY => false,
+            Constant::IS_STANDALONE_PRODUCT_KEY => true,
+        ]];
+
+        $this->parentVariantResolverMock->expects($this->once())
+            ->method('resolveParentProductForRow')
+            ->with($products[0], $childProduct)
+            ->willReturn($parentProduct);
+        $this->parentVariantResolverMock->expects($this->once())
+            ->method('getVariantOptions')
+            ->with($parentProduct, $childProduct)
+            ->willReturn([]);
+
+        $this->parentIdSourceFieldEvaluatorMock->expects($this->exactly(2))
+            ->method('execute')
+            ->willReturnCallback(static function (Product $product, ?string $identifier): ?string {
+                if ($product->getId() === 101 && $identifier === null) {
+                    return '101';
+                }
+
+                if ($product->getId() === 101 && $identifier === 'sku') {
+                    return 'child-sku-101';
+                }
+
+                return null;
+            });
+
+        $result = $this->provider->getData($products, $feedSpecification);
+
+        $this->assertSame('101::child-sku-101', $result[0][Constant::GROUP_ID]);
+    }
+
     public function testGetDataFallsBackToProductIdWhenConfiguredIdentifierIsMissing(): void
     {
         $childProduct = $this->createSimpleProductMock(101);
@@ -218,6 +327,38 @@ class GroupIdProviderTest extends TestCase
         $this->assertSame('101', $result[0][Constant::GROUP_ID]);
     }
 
+    public function testGetDataUsesGenericMagentoAttributeForStandaloneRowsWhenGroupByIsConfigured(): void
+    {
+        $childProduct = $this->createSimpleProductMock(101, 'child-sku-101');
+        $feedSpecification = $this->createFeedSpecificationMock(null, 'sku');
+        $products = [[
+            'product_model' => $childProduct,
+        ]];
+
+        $this->parentVariantResolverMock->expects($this->once())
+            ->method('resolveParentProductForRow')
+            ->with($products[0], $childProduct)
+            ->willReturn(null);
+
+        $this->parentIdSourceFieldEvaluatorMock->expects($this->exactly(2))
+            ->method('execute')
+            ->willReturnCallback(static function (Product $product, ?string $identifier): ?string {
+                if ($product->getId() === 101 && $identifier === null) {
+                    return '101';
+                }
+
+                if ($product->getId() === 101 && $identifier === 'sku') {
+                    return 'child-sku-101';
+                }
+
+                return null;
+            });
+
+        $result = $this->provider->getData($products, $feedSpecification);
+
+        $this->assertSame('101::child-sku-101', $result[0][Constant::GROUP_ID]);
+    }
+
     private function createFeedSpecificationMock(
         ?string $parentIdSourceFieldName,
         ?string $groupBySourceFieldName
@@ -230,11 +371,12 @@ class GroupIdProviderTest extends TestCase
         return $feedSpecification;
     }
 
-    private function createSimpleProductMock(int $id): Product
+    private function createSimpleProductMock(int $id, string $sku = 'test-simple-sku'): Product
     {
         return $this->createConfiguredMock(Product::class, [
             'getId' => $id,
             'getTypeId' => 'simple',
+            'getSku' => $sku,
         ]);
     }
 

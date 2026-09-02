@@ -141,6 +141,36 @@ class GroupIdProviderTest extends TestCase
     /**
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable/configurable_products_visibility_any_child_visibility_any.php
+     */
+    public function testGenerateUsesChildEntityIdForStandaloneRowsWhenGroupingByVariantAttribute(): void
+    {
+        $data = $this->generateFeedData([
+            'groupBySourceFieldName' => 'test_configurable_first',
+        ]);
+        $rowsBySku = $this->getRowsByChildSku($data, [
+            'athos_config_test_simple_100',
+            'athos_config_test_simple_200',
+        ]);
+
+        foreach (['athos_config_test_simple_100', 'athos_config_test_simple_200'] as $childSku) {
+            $standaloneRow = $this->assertSingleRowForContext($rowsBySku, $childSku, 'standalone');
+            /** @var Product $productModel */
+            $productModel = $standaloneRow['product_model'];
+            $expectedGroupId = (string)$standaloneRow['entity_id']
+                . '::'
+                . (string)$productModel->getAttributeText('test_configurable_first');
+
+            $this->assertSame(
+                $expectedGroupId,
+                (string)$standaloneRow[Constant::GROUP_ID]
+            );
+        }
+    }
+
+    /**
+     * @magentoAppIsolation enabled
+     * @magentoDbIsolation disabled
      * @magentoDataFixture AthosCommerce_Feed::Test/_files/product_parent_grouping_key_attribute.php
      * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable/entity_id_provider_configurable_products.php
      * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable/entity_id_provider_parent_grouping_key.php
@@ -194,6 +224,36 @@ class GroupIdProviderTest extends TestCase
     /**
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable/configurable_products_visibility_any_child_visibility_any.php
+     */
+    public function testGenerateUsesGenericMagentoAttributeWhenGroupByIsConfigured(): void
+    {
+        $data = $this->generateFeedData([
+            'groupBySourceFieldName' => 'sku',
+        ]);
+        $rowsBySku = $this->getRowsByChildSku($data, [
+            'athos_config_test_simple_100',
+            'athos_config_test_simple_200',
+        ]);
+
+        foreach (['athos_config_test_simple_100', 'athos_config_test_simple_200'] as $childSku) {
+            $parentRow = $this->assertSingleRowForContext($rowsBySku, $childSku, 'parent');
+            $standaloneRow = $this->assertSingleRowForContext($rowsBySku, $childSku, 'standalone');
+
+            $this->assertSame(
+                (string)$parentRow[Constant::RESOLVED_PARENT_ID_KEY] . '::' . $childSku,
+                (string)$parentRow[Constant::GROUP_ID]
+            );
+            $this->assertSame(
+                (string)$standaloneRow['entity_id'] . '::' . $childSku,
+                (string)$standaloneRow[Constant::GROUP_ID]
+            );
+        }
+    }
+
+    /**
+     * @magentoAppIsolation enabled
+     * @magentoDbIsolation disabled
      * @magentoDataFixture AthosCommerce_Feed::Test/_files/product_color_attribute_select.php
      * @magentoDataFixture AthosCommerce_Feed::Test/_files/product_size_attribute_select.php
      * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products_for_selected_options.php
@@ -238,7 +298,46 @@ class GroupIdProviderTest extends TestCase
                 continue;
             }
 
-            $this->assertSame((string)$productModel->getId(), (string)$row[Constant::GROUP_ID]);
+            $this->assertSame(
+                (string)$productModel->getId() . '::' . (string)$productModel->getAttributeText('athos_color'),
+                (string)$row[Constant::GROUP_ID]
+            );
+        }
+
+        $this->groupIdProvider->reset();
+    }
+
+    /**
+     * @magentoAppIsolation enabled
+     * @magentoDbIsolation disabled
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/product_color_attribute_select.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/product_size_attribute_select.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products_for_selected_options.php
+     */
+    public function testGenerateUsesGenericMagentoAttributeForStandaloneRowsWithoutParentRelation(): void
+    {
+        $specification = $this->specificationBuilder->build([
+            'groupBySourceFieldName' => 'sku',
+        ]);
+        $products = $this->getProducts->get($specification);
+        $data = $this->groupIdProvider->getData($products, $specification);
+
+        foreach ($data as $row) {
+            /** @var Product|null $productModel */
+            $productModel = $row['product_model'] ?? null;
+
+            if (!$productModel instanceof Product) {
+                continue;
+            }
+
+            if (!in_array($productModel->getSku(), ['simple-red-m', 'simple-blue-s'], true)) {
+                continue;
+            }
+
+            $this->assertSame(
+                (string)$productModel->getId() . '::' . $productModel->getSku(),
+                (string)$row[Constant::GROUP_ID]
+            );
         }
 
         $this->groupIdProvider->reset();
