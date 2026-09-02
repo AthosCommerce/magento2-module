@@ -85,7 +85,7 @@ class GroupIdProviderTest extends TestCase
 
         $result = $this->provider->getData($products, $feedSpecification);
 
-        $this->assertSame('501', $result[0]['__group_id']);
+        $this->assertSame('501', $result[0][Constant::GROUP_ID]);
     }
 
     public function testGetDataUsesMagentoParentIdAndOptionValueWhenGroupingByVariantAttribute(): void
@@ -116,7 +116,7 @@ class GroupIdProviderTest extends TestCase
 
         $result = $this->provider->getData($products, $feedSpecification);
 
-        $this->assertSame('501::Red', $result[0]['__group_id']);
+        $this->assertSame('501::Red', $result[0][Constant::GROUP_ID]);
     }
 
     public function testGetDataUsesConfiguredParentIdentifierWhenGroupByIsBlank(): void
@@ -157,8 +157,8 @@ class GroupIdProviderTest extends TestCase
 
         $result = $this->provider->getData($products, $feedSpecification);
 
-        $this->assertSame('TEST_PARENT_GROUP_001', $result[0]['__group_id']);
-        $this->assertSame('TEST_PARENT_GROUP_001', $result[1]['__group_id']);
+        $this->assertSame('TEST_PARENT_GROUP_001', $result[0][Constant::GROUP_ID]);
+        $this->assertSame('TEST_PARENT_GROUP_001', $result[1][Constant::GROUP_ID]);
     }
 
     public function testGetDataUsesConfiguredParentIdentifierPrefixWhenBothConfigurationFieldsAreSet(): void
@@ -192,7 +192,7 @@ class GroupIdProviderTest extends TestCase
 
         $result = $this->provider->getData($products, $feedSpecification);
 
-        $this->assertSame('TEST_PARENT_GROUP_001::Blue', $result[0]['__group_id']);
+        $this->assertSame('TEST_PARENT_GROUP_001::Blue', $result[0][Constant::GROUP_ID]);
     }
 
     public function testGetDataFallsBackToProductIdWhenConfiguredIdentifierIsMissing(): void
@@ -215,7 +215,7 @@ class GroupIdProviderTest extends TestCase
 
         $result = $this->provider->getData($products, $feedSpecification);
 
-        $this->assertSame('101', $result[0]['__group_id']);
+        $this->assertSame('101', $result[0][Constant::GROUP_ID]);
     }
 
     private function createFeedSpecificationMock(

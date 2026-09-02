@@ -102,7 +102,7 @@ class GroupIdProviderTest extends TestCase
             );
             $this->assertSame(
                 (string)$parentRow[Constant::PARENT_ID],
-                (string)$parentRow['__group_id']
+                (string)$parentRow[Constant::GROUP_ID]
             );
         }
     }
@@ -134,7 +134,7 @@ class GroupIdProviderTest extends TestCase
                 (string)$parentRow[Constant::RESOLVED_PARENT_ID_KEY],
                 (string)$parentRow[Constant::PARENT_ID]
             );
-            $this->assertSame($expectedParentGroupId, (string)$parentRow['__group_id']);
+            $this->assertSame($expectedParentGroupId, (string)$parentRow[Constant::GROUP_ID]);
         }
     }
 
@@ -156,7 +156,7 @@ class GroupIdProviderTest extends TestCase
             $parentRow = $this->assertSingleRowForContext($rowsBySku, $childSku, 'parent');
 
             $this->assertSame(self::CUSTOM_PARENT_GROUPING_KEY, (string)$parentRow[Constant::PARENT_ID]);
-            $this->assertSame(self::CUSTOM_PARENT_GROUPING_KEY, (string)$parentRow['__group_id']);
+            $this->assertSame(self::CUSTOM_PARENT_GROUPING_KEY, (string)$parentRow[Constant::GROUP_ID]);
         }
     }
 
@@ -187,7 +187,7 @@ class GroupIdProviderTest extends TestCase
                 . (string)$productModel->getAttributeText('test_configurable_first');
 
             $this->assertSame(self::CUSTOM_PARENT_GROUPING_KEY, (string)$parentRow[Constant::PARENT_ID]);
-            $this->assertSame($expectedGroupId, (string)$parentRow['__group_id']);
+            $this->assertSame($expectedGroupId, (string)$parentRow[Constant::GROUP_ID]);
         }
     }
 
@@ -203,11 +203,11 @@ class GroupIdProviderTest extends TestCase
     {
         $data = $this->generateFeedData([
             'groupBySourceFieldName' => 'athos_color',
-            'ignoreFields' => ['__group_id'],
+            'ignoreFields' => [Constant::GROUP_ID],
         ]);
 
         foreach ($data as $item) {
-            $this->assertArrayNotHasKey('__group_id', $item);
+            $this->assertArrayNotHasKey(Constant::GROUP_ID, $item);
         }
     }
 
@@ -238,7 +238,7 @@ class GroupIdProviderTest extends TestCase
                 continue;
             }
 
-            $this->assertSame((string)$productModel->getId(), (string)$row['__group_id']);
+            $this->assertSame((string)$productModel->getId(), (string)$row[Constant::GROUP_ID]);
         }
 
         $this->groupIdProvider->reset();

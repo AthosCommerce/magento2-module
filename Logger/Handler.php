@@ -32,15 +32,28 @@ class Handler extends Base
         DriverInterface $filesystem,
         ?string         $filePath = null,
         ?string         $fileName = null
-    )
-    {
+    ) {
         $this->configModel = $configModel;
 
-        $this->loggerType = $this->isDebug()
-            ? Logger::DEBUG
-            : Logger::INFO;
+        // Default to INFO level during instantiation to avoid store calls in __construct
+        $this->loggerType = Logger::INFO;
 
         parent::__construct($filesystem, $filePath, $fileName);
+    }
+
+    /**
+     * Check if the record should be handled, evaluating debug mode lazily
+     *
+     * @param array|\Monolog\LogRecord $record
+     * @return bool
+     */
+    public function isHandling($record): bool
+    {
+        if (!$this->isDebug()) {
+            return false;
+        }
+
+        return parent::isHandling($record);
     }
 
     /**
@@ -52,7 +65,7 @@ class Handler extends Base
     }
 
     /**
-     * @param $record
+     * @param array|\Monolog\LogRecord $record
      * @return bool
      */
     public function handle($record): bool

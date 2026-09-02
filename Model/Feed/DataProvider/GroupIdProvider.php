@@ -61,7 +61,7 @@ class GroupIdProvider implements DataProviderInterface
     }
 
     /**
-     * Enrich export rows with __group_id values.
+     * Enrich export rows with the group id field.
      *
      * @param array $products
      * @param FeedSpecificationInterface $feedSpecification
@@ -76,7 +76,7 @@ class GroupIdProvider implements DataProviderInterface
         $groupBySourceFieldName = $feedSpecification->getGroupBySourceFieldName();
         $parentIdSourceFieldName = $feedSpecification->getParentIdSourceFieldName();
 
-        if (in_array('__group_id', $ignoredFields, true)) {
+        if (in_array(Constant::GROUP_ID, $ignoredFields, true)) {
             return $products;
         }
 
@@ -96,7 +96,7 @@ class GroupIdProvider implements DataProviderInterface
             $parentProduct = $this->parentVariantResolver->resolveParentProductForRow($product, $productModel);
 
             if (!$parentProduct instanceof Product) {
-                $product['__group_id'] = $this->resolveConfiguredGroupBaseId(
+                $product[Constant::GROUP_ID] = $this->resolveConfiguredGroupBaseId(
                     $productModel,
                     $parentIdSourceFieldName
                 );
@@ -105,7 +105,7 @@ class GroupIdProvider implements DataProviderInterface
 
             if ($parentProduct->getTypeId() === Constant::GROUPED_TYPE) {
                 $groupBaseProduct = $isBelongToParent ? $parentProduct : $productModel;
-                $product['__group_id'] = $this->resolveConfiguredGroupBaseId(
+                $product[Constant::GROUP_ID] = $this->resolveConfiguredGroupBaseId(
                     $groupBaseProduct,
                     $parentIdSourceFieldName
                 );
@@ -113,7 +113,7 @@ class GroupIdProvider implements DataProviderInterface
                 $this->logger->debug(
                     sprintf(
                         '[GroupId]Assigned groupID:[%s] to PID:[%d] using parent PID:[%d] (isBelongToParent=%s).',
-                        $product['__group_id'],
+                        $product[Constant::GROUP_ID],
                         (int)$productModel->getId(),
                         (int)$parentProduct->getId(),
                         $isBelongToParent ? 'true' : 'false'
@@ -129,7 +129,7 @@ class GroupIdProvider implements DataProviderInterface
                     ? $parentProduct
                     : ($isBelongToParent ? $parentProduct : $productModel);
 
-                $product['__group_id'] = $this->buildGroupId(
+                $product[Constant::GROUP_ID] = $this->buildGroupId(
                     $groupBaseProduct,
                     $variantOptions,
                     $groupBySourceFieldName,
@@ -139,7 +139,7 @@ class GroupIdProvider implements DataProviderInterface
                 $this->logger->debug(
                     sprintf(
                         '[GroupId]Assigned groupID:[%s] to PID:[%d] based on ParentPID [%d] and groupByAttribute [%s].',
-                        $product['__group_id'],
+                        $product[Constant::GROUP_ID],
                         (int)$productModel->getId(),
                         (int)$parentProduct->getId(),
                         $groupBySourceFieldName !== null ? $groupBySourceFieldName : 'N/A'
@@ -183,7 +183,7 @@ class GroupIdProvider implements DataProviderInterface
     }
 
     /**
-     * Resolve the configured base identifier used to build __group_id.
+     * Resolve the configured base identifier used to build the group id field.
      *
      * @param Product $product
      * @param string|null $parentIdIdentifier
