@@ -105,7 +105,6 @@ class GroupIdProvider implements DataProviderInterface
             $isBelongToParent = (bool)($product[Constant::IS_BELONG_TO_PARENT_KEY] ?? false);
             $parentProduct = $this->resolveParentProductForRow($product, $productModel);
             $isStandaloneProduct = (bool)($product[Constant::IS_STANDALONE_PRODUCT_KEY] ?? false);
-            //$parentProduct = $this->parentVariantResolver->resolveParentProductForRow($product, $productModel);
 
             if (!$parentProduct instanceof Product) {
                 $product[Constant::GROUP_ID] = $this->buildGroupId(
@@ -145,14 +144,10 @@ class GroupIdProvider implements DataProviderInterface
 
                 //To handle the child product having non NVI
                 if (!$isBelongToParent) {
-                    $product['__group_id'] = (string)$productModel->getId();
+                    $product[Constant::GROUP_ID] = (string)$productModel->getId();
                     continue;
                 }
 
-                $product['__group_id'] = $this->getConfigurableGroupId(
-                    $parentProduct,
-                    $productModel,
-                    $groupBySourceFieldName
                 $variantOptions = $this->parentVariantResolver->getVariantOptions($parentProduct, $productModel);
                 $groupBaseProduct = $isBelongToParent && !$isStandaloneProduct
                     ? $parentProduct
