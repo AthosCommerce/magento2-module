@@ -19,6 +19,7 @@ namespace AthosCommerce\Feed\Test\Unit\Model\Aws;
 use PHPUnit\Framework\TestCase;
 use AthosCommerce\Feed\Api\AppConfigInterface;
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Aws\Client\ClientInterface;
 use AthosCommerce\Feed\Model\Aws\Client\ResponseInterface;
 use AthosCommerce\Feed\Model\Aws\PreSignedUrl;
@@ -29,15 +30,19 @@ class PreSignedUrlTest extends TestCase
 
     private $appConfigMock;
 
+    private $loggerMock;
+
     private $preSignedUrl;
 
     public function setUp(): void
     {
         $this->clientMock = $this->createMock(ClientInterface::class);
         $this->appConfigMock = $this->createMock(AppConfigInterface::class);
+        $this->loggerMock = $this->createMock(AthosCommerceLogger::class);
         $this->preSignedUrl = new PreSignedUrl(
             $this->clientMock,
             $this->appConfigMock,
+            $this->loggerMock,
             [],
             [],
             5,

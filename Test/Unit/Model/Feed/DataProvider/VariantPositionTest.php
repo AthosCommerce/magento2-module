@@ -358,4 +358,148 @@ class VariantPositionTest extends TestCase
         $this->variantPosition->resetAfterFetchItems();
         $this->addToAssertionCount(1);
     }
+
+    public function testGetDataCachesParentDataForRepeatedRows(): void
+    {
+        $simpleProductMock = $this->createConfiguredMock(Product::class, [
+            'getId' => 20,
+        ]);
+
+        $parentProductMock = $this->createConfiguredMock(Product::class, [
+            'getId' => 200,
+            'getTypeId' => Constant::CONFIGURABLE_TYPE,
+        ]);
+
+        $products = [
+            ['product_model' => $simpleProductMock],
+            ['product_model' => $simpleProductMock],
+        ];
+
+        $feedSpecificationMock = $this->createMock(FeedSpecificationInterface::class);
+        $feedSpecificationMock->method('getIgnoreFields')->willReturn([]);
+
+        $this->parentVariantResolverMock->expects($this->once())
+            ->method('resolveParentProductForRow')
+            ->with($products[0], $simpleProductMock)
+            ->willReturn($parentProductMock);
+
+        $this->configurableTypeMock->expects($this->once())
+            ->method('getUsedProducts')
+            ->with($parentProductMock)
+            ->willReturn([]);
+
+        $this->configurableHelperMock->expects($this->once())
+            ->method('getOptions')
+            ->with($parentProductMock, [])
+            ->willReturn([
+                'index' => [
+                    '20' => [],
+                ],
+            ]);
+
+        $result = $this->variantPosition->getData($products, $feedSpecificationMock);
+
+        $this->assertSame(1, $result[0]['__variant_position']);
+        $this->assertSame(1, $result[1]['__variant_position']);
+    }
+
+    public function testGetDataResolvesParentsPerRowContextForSameSimpleProduct(): void
+    {
+        $simpleProductMock = $this->createConfiguredMock(Product::class, [
+            'getId' => 20,
+        ]);
+
+        $firstParentProductMock = $this->createConfiguredMock(Product::class, [
+            'getId' => 200,
+            'getTypeId' => Constant::CONFIGURABLE_TYPE,
+        ]);
+        $secondParentProductMock = $this->createConfiguredMock(Product::class, [
+            'getId' => 201,
+            'getTypeId' => Constant::CONFIGURABLE_TYPE,
+        ]);
+
+        $products = [
+            [
+                'product_model' => $simpleProductMock,
+                Constant::RESOLVED_PARENT_ID_KEY => 200,
+                Constant::RESOLVED_PARENT_SKU_KEY => 'parent-one',
+            ],
+            [
+                'product_model' => $simpleProductMock,
+                Constant::RESOLVED_PARENT_ID_KEY => 201,
+                Constant::RESOLVED_PARENT_SKU_KEY => 'parent-two',
+            ],
+        ];
+
+        $feedSpecificationMock = $this->createMock(FeedSpecificationInterface::class);
+        $feedSpecificationMock->method('getIgnoreFields')->willReturn([]);
+
+        $resolverCall = 0;
+        $this->parentVariantResolverMock->expects($this->exactly(2))
+            ->method('resolveParentProductForRow')
+            ->willReturnCallback(function (array $row, Product $product) use (
+                &$resolverCall,
+                $products,
+                $simpleProductMock,
+                $firstParentProductMock,
+                $secondParentProductMock
+            ) {
+                $this->assertSame($simpleProductMock, $product);
+                $this->assertSame($products[$resolverCall], $row);
+
+                return $resolverCall++ === 0 ? $firstParentProductMock : $secondParentProductMock;
+            });
+
+        $usedProductsCall = 0;
+        $this->configurableTypeMock->expects($this->exactly(2))
+            ->method('getUsedProducts')
+            ->willReturnCallback(function (Product $parentProduct) use (
+                &$usedProductsCall,
+                $firstParentProductMock,
+                $secondParentProductMock
+            ) {
+                $this->assertSame(
+                    $usedProductsCall++ === 0 ? $firstParentProductMock : $secondParentProductMock,
+                    $parentProduct
+                );
+
+                return [];
+            });
+
+        $optionsCall = 0;
+        $this->configurableHelperMock->expects($this->exactly(2))
+            ->method('getOptions')
+            ->willReturnCallback(function (Product $parentProduct, array $allowedProducts) use (
+                &$optionsCall,
+                $firstParentProductMock,
+                $secondParentProductMock
+            ) {
+                $this->assertSame([], $allowedProducts);
+
+                if ($optionsCall++ === 0) {
+                    $this->assertSame($firstParentProductMock, $parentProduct);
+
+                    return [
+                        'index' => [
+                            '20' => [],
+                            '35' => [],
+                        ],
+                    ];
+                }
+
+                $this->assertSame($secondParentProductMock, $parentProduct);
+
+                return [
+                    'index' => [
+                        '11' => [],
+                        '20' => [],
+                    ],
+                ];
+            });
+
+        $result = $this->variantPosition->getData($products, $feedSpecificationMock);
+
+        $this->assertSame(1, $result[0]['__variant_position']);
+        $this->assertSame(2, $result[1]['__variant_position']);
+    }
 }

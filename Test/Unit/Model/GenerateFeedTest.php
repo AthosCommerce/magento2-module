@@ -185,7 +185,7 @@ class GenerateFeedTest extends TestCase
 
         $this->storageMock->expects($this->once())->method('isSupportedFormat')->with('json')->willReturn(true);
         $this->storageMock->expects($this->once())->method('initiate')->with($feedSpecificationMock);
-        $this->catalogStorageMock->expects($this->once())->method('initiate')->with($feedSpecificationMock);
+        $this->catalogStorageMock->expects($this->never())->method('initiate');
 
         $this->collectionProcessorMock->expects($this->once())->method('getCollection')->willReturn($collectionMock);
         $this->collectionConfigMock->expects($this->once())->method('getPageSize')->willReturn(10);
@@ -234,10 +234,11 @@ class GenerateFeedTest extends TestCase
         $feedSpecificationMock->method('getFormat')->willReturn('json');
         $feedSpecificationMock->expects($this->once())->method('getPreSignedUrl')->willReturn('https://example.com/feed.json');
         $feedSpecificationMock->expects($this->once())->method('setFormat')->with('json')->willReturnSelf();
+        $feedSpecificationMock->method('getCatalogPreSignedUrl')->willReturn('');
 
         $this->storageMock->expects($this->once())->method('isSupportedFormat')->willReturn(true);
         $this->storageMock->expects($this->once())->method('initiate');
-        $this->catalogStorageMock->expects($this->once())->method('initiate');
+        $this->catalogStorageMock->expects($this->never())->method('initiate');
 
         $this->collectionProcessorMock->expects($this->once())->method('getCollection')->willReturn($collectionMock);
         $this->collectionConfigMock->expects($this->once())->method('getPageSize')->willReturn(10);

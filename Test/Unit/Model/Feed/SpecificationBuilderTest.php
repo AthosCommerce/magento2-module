@@ -16,6 +16,8 @@
 
 namespace AthosCommerce\Feed\Test\Unit\Model\Feed;
 
+require_once dirname(__DIR__, 2) . '/_files/bootstrap-stubs.php';
+
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterfaceFactory;
 use AthosCommerce\Feed\Api\Data\MediaGallerySpecificationInterface;
@@ -81,20 +83,28 @@ class SpecificationBuilderTest extends \PHPUnit\Framework\TestCase
 
     public function setUp(): void
     {
-        $this->feedSpecificationFactoryMock =
-            $this->createMock(FeedSpecificationInterfaceFactory::class);
-        $this->mediaGallerySpecificationFactoryMock =
-            $this->createMock(MediaGallerySpecificationInterfaceFactory::class);
-        $this->specificationBuilder = new SpecificationBuilder(
-            $this->feedSpecificationFactoryMock,
-            $this->mediaGallerySpecificationFactoryMock
-        );
+        $this->feedSpecificationFactoryMock = null;
+        $this->mediaGallerySpecificationFactoryMock = null;
+        $this->specificationBuilder = null;
     }
 
     public function testBuild()
     {
         $mediaGallerySpecificationMock = $this->getMockForAbstractClass(MediaGallerySpecificationInterface::class);
         $feedSpecificationMock = $this->getMockForAbstractClass(FeedSpecificationInterface::class);
+
+        $this->feedSpecificationFactoryMock = $this->getMockBuilder(FeedSpecificationInterfaceFactory::class)
+            ->setConstructorArgs([$feedSpecificationMock])
+            ->onlyMethods(['create'])
+            ->getMock();
+        $this->mediaGallerySpecificationFactoryMock = $this->getMockBuilder(MediaGallerySpecificationInterfaceFactory::class)
+            ->setConstructorArgs([$mediaGallerySpecificationMock])
+            ->onlyMethods(['create'])
+            ->getMock();
+        $this->specificationBuilder = new SpecificationBuilder(
+            $this->feedSpecificationFactoryMock,
+            $this->mediaGallerySpecificationFactoryMock
+        );
 
         $this->feedSpecificationFactoryMock->expects($this->once())
             ->method('create')

@@ -16,6 +16,8 @@
 
 namespace AthosCommerce\Feed\Test\Unit\Model\Metric;
 
+require_once dirname(__DIR__, 2) . '/_files/bootstrap-stubs.php';
+
 use Magento\Framework\DataObject;
 use Magento\Framework\DataObjectFactory;
 use Magento\Framework\Event\ManagerInterface;
@@ -83,7 +85,7 @@ class CollectorTest extends \PHPUnit\Framework\TestCase
 
     public function testCollect()
     {
-        $dataObjectMock = $this->createMock(DataObject::class);
+        $dataObject = new DataObject(['result' => true]);
         $data = [
             'data' => [
                 'collector' => $this->collector,
@@ -97,14 +99,10 @@ class CollectorTest extends \PHPUnit\Framework\TestCase
         $this->dataObjectFactoryMock->expects($this->once())
             ->method('create')
             ->with($data)
-            ->willReturn($dataObjectMock);
+            ->willReturn($dataObject);
         $this->eventManagerMock->expects($this->once())
             ->method('dispatch')
-            ->with('athoscommerce_feed_is_metric_allowed', ['container' => $dataObjectMock]);
-        $dataObjectMock->expects($this->once())
-            ->method('__call')
-            ->with('getResult')
-            ->willReturn(true);
+            ->with('athoscommerce_feed_is_metric_allowed', ['container' => $dataObject]);
         $this->metricProviderMock->expects($this->once())
             ->method('getMetrics')
             ->with(['additional_data'], [])
@@ -116,7 +114,7 @@ class CollectorTest extends \PHPUnit\Framework\TestCase
 
     public function testCollectExceptionCase()
     {
-        $dataObjectMock = $this->createMock(DataObject::class);
+        $dataObject = new DataObject(['result' => true]);
         $data = [
             'data' => [
                 'collector' => $this->collector,
@@ -130,14 +128,10 @@ class CollectorTest extends \PHPUnit\Framework\TestCase
         $this->dataObjectFactoryMock->expects($this->once())
             ->method('create')
             ->with($data)
-            ->willReturn($dataObjectMock);
+            ->willReturn($dataObject);
         $this->eventManagerMock->expects($this->once())
             ->method('dispatch')
-            ->with('athoscommerce_feed_is_metric_allowed', ['container' => $dataObjectMock]);
-        $dataObjectMock->expects($this->once())
-            ->method('__call')
-            ->with('getResult')
-            ->willReturn(true);
+            ->with('athoscommerce_feed_is_metric_allowed', ['container' => $dataObject]);
         $this->metricProviderMock->expects($this->once())
             ->method('getMetrics')
             ->with(['additional_data'], [])
@@ -151,7 +145,7 @@ class CollectorTest extends \PHPUnit\Framework\TestCase
 
     public function testPrint()
     {
-        $dataObjectMock = $this->createMock(DataObject::class);
+        $dataObject = new DataObject(['result' => true]);
         $data = [
             'data' => [
                 'collector' => $this->collector,
@@ -165,14 +159,10 @@ class CollectorTest extends \PHPUnit\Framework\TestCase
         $this->dataObjectFactoryMock->expects($this->once())
             ->method('create')
             ->with($data)
-            ->willReturn($dataObjectMock);
+            ->willReturn($dataObject);
         $this->eventManagerMock->expects($this->once())
             ->method('dispatch')
-            ->with('athoscommerce_feed_is_metric_allowed', ['container' => $dataObjectMock]);
-        $dataObjectMock->expects($this->once())
-            ->method('__call')
-            ->with('getResult')
-            ->willReturn(true);
+            ->with('athoscommerce_feed_is_metric_allowed', ['container' => $dataObject]);
 
         $this->formatterMock->expects($this->once())
             ->method('format')
@@ -191,7 +181,7 @@ class CollectorTest extends \PHPUnit\Framework\TestCase
 
     public function testPrintExceptionCase()
     {
-        $dataObjectMock = $this->createMock(DataObject::class);
+        $dataObject = new DataObject(['result' => true]);
         $data = [
             'data' => [
                 'collector' => $this->collector,
@@ -205,14 +195,10 @@ class CollectorTest extends \PHPUnit\Framework\TestCase
         $this->dataObjectFactoryMock->expects($this->once())
             ->method('create')
             ->with($data)
-            ->willReturn($dataObjectMock);
+            ->willReturn($dataObject);
         $this->eventManagerMock->expects($this->once())
             ->method('dispatch')
-            ->with('athoscommerce_feed_is_metric_allowed', ['container' => $dataObjectMock]);
-        $dataObjectMock->expects($this->once())
-            ->method('__call')
-            ->with('getResult')
-            ->willReturn(true);
+            ->with('athoscommerce_feed_is_metric_allowed', ['container' => $dataObject]);
 
         $this->formatterMock->expects($this->once())
             ->method('format')

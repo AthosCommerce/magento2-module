@@ -16,6 +16,8 @@
 
 namespace AthosCommerce\Feed\Test\Unit\Model\Feed\Specification;
 
+require_once dirname(__DIR__, 3) . '/_files/bootstrap-stubs.php';
+
 use AthosCommerce\Feed\Api\Data\FeedSpecificationExtensionInterface;
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Api\Data\MediaGallerySpecificationInterface;
@@ -675,7 +677,7 @@ class FeedTest extends \PHPUnit\Framework\TestCase
     public function testGetVariantAdditionalDataLimitReturnsDefaultWhenNull()
     {
         $specification = $this->createSpecification();
-        $this->assertNull($specification->getVariantAdditionalDataLimit());
+        $this->assertSame(200, $specification->getVariantAdditionalDataLimit());
 
     }
 

@@ -51,6 +51,21 @@ class VariantPosition implements DataProviderInterface
     protected $logger;
 
     /**
+     * @var array<string, Product|null>
+     */
+    private $resolvedParentCache = [];
+
+    /**
+     * @var array<int, array>
+     */
+    private $configurableOptionsCache = [];
+
+    /**
+     * @var array<int, array<int, int>>
+     */
+    private $groupedPositionsCache = [];
+
+    /**
      * @param ConfigurableHelper $configurableHelper
      * @param ConfigurableType $configurableType
      * @param ParentVariantResolver $parentVariantResolver
@@ -98,7 +113,7 @@ class VariantPosition implements DataProviderInterface
             }
 
             try {
-                $parentProduct = $this->parentVariantResolver->resolveParentProductForRow($product, $simpleProduct);
+                $parentProduct = $this->resolveParentProductForRow($product, $simpleProduct);
 
                 if (!$parentProduct instanceof Product) {
                     $product['__variant_position'] = null;
@@ -106,19 +121,16 @@ class VariantPosition implements DataProviderInterface
                 }
 
                 if ($parentProduct->getTypeId() === Constant::CONFIGURABLE_TYPE) {
-                    $allowedProducts = $this->configurableType->getUsedProducts($parentProduct);
-                    $options = $this->configurableHelper->getOptions($parentProduct, $allowedProducts);
                     $product['__variant_position'] = $this->getPositionFromConfigurableIndex(
-                        $options['index'] ?? [],
+                        $this->getConfigurableIndex($parentProduct),
                         (int)$simpleProduct->getId()
                     );
                     continue;
                 }
 
                 if ($parentProduct->getTypeId() === Constant::GROUPED_TYPE) {
-                    $children = $this->parentVariantResolver->getChildProducts($parentProduct);
-                    $product['__variant_position'] = $this->getPositionFromChildren(
-                        $children,
+                    $product['__variant_position'] = $this->getPositionFromGroupedParent(
+                        $parentProduct,
                         (int)$simpleProduct->getId()
                     );
                     continue;
@@ -140,7 +152,9 @@ class VariantPosition implements DataProviderInterface
      */
     public function reset(): void
     {
-        // do nothing
+        $this->resolvedParentCache = [];
+        $this->configurableOptionsCache = [];
+        $this->groupedPositionsCache = [];
     }
 
     /**
@@ -148,7 +162,7 @@ class VariantPosition implements DataProviderInterface
      */
     public function resetAfterFetchItems(): void
     {
-        // do nothing
+        $this->reset();
     }
 
     /**
@@ -190,5 +204,67 @@ class VariantPosition implements DataProviderInterface
         }
 
         return null;
+    }
+
+    /**
+     * @param array $row
+     * @param Product $productModel
+     * @return Product|null
+     */
+    private function resolveParentProductForRow(array $row, Product $productModel): ?Product
+    {
+        $cacheKey = implode(':', [
+            (string)$productModel->getId(),
+            (string)($row[Constant::RESOLVED_PARENT_ID_KEY] ?? ''),
+            (string)($row[Constant::RESOLVED_PARENT_SKU_KEY] ?? ''),
+            (string)($row[Constant::RESOLVED_PARENT_TYPE_KEY] ?? ''),
+            (string)($row[Constant::RESOLVED_PARENT_ROW_SOURCE_KEY] ?? ''),
+        ]);
+
+        if (!array_key_exists($cacheKey, $this->resolvedParentCache)) {
+            $this->resolvedParentCache[$cacheKey] = $this->parentVariantResolver->resolveParentProductForRow($row, $productModel);
+        }
+
+        return $this->resolvedParentCache[$cacheKey];
+    }
+
+    /**
+     * @param Product $parentProduct
+     * @return array
+     */
+    private function getConfigurableIndex(Product $parentProduct): array
+    {
+        $parentId = (int)$parentProduct->getId();
+        if (!isset($this->configurableOptionsCache[$parentId])) {
+            $allowedProducts = $this->configurableType->getUsedProducts($parentProduct);
+            $options = $this->configurableHelper->getOptions($parentProduct, $allowedProducts);
+            $this->configurableOptionsCache[$parentId] = $options['index'] ?? [];
+        }
+
+        return $this->configurableOptionsCache[$parentId];
+    }
+
+    /**
+     * @param Product $parentProduct
+     * @param int $simpleId
+     * @return int|null
+     */
+    private function getPositionFromGroupedParent(Product $parentProduct, int $simpleId): ?int
+    {
+        $parentId = (int)$parentProduct->getId();
+        if (!isset($this->groupedPositionsCache[$parentId])) {
+            $positions = [];
+            foreach (array_values($this->parentVariantResolver->getChildProducts($parentProduct)) as $index => $childProduct) {
+                if (!$childProduct instanceof Product) {
+                    continue;
+                }
+
+                $positions[(int)$childProduct->getId()] = $index + 1;
+            }
+
+            $this->groupedPositionsCache[$parentId] = $positions;
+        }
+
+        return $this->groupedPositionsCache[$parentId][$simpleId] ?? null;
     }
 }
