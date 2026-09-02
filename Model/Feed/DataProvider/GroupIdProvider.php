@@ -21,6 +21,7 @@ namespace AthosCommerce\Feed\Model\Feed\DataProvider;
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\Constant;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\ParentIdSourceFieldEvaluator;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\ParentVariantResolver;
 use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
 use Magento\Catalog\Model\Product;
@@ -48,19 +49,30 @@ class GroupIdProvider implements DataProviderInterface
     private $groupIdCache = [];
 
     /**
+     * @var ParentIdSourceFieldEvaluator
+     */
+    private $parentIdSourceFieldEvaluator;
+
+    /**
+     * Initialize dependencies.
+     *
      * @param ParentVariantResolver $parentVariantResolver
      * @param AthosCommerceLogger $logger
+     * @param ParentIdSourceFieldEvaluator $parentIdSourceFieldEvaluator
      */
     public function __construct(
         ParentVariantResolver $parentVariantResolver,
-        AthosCommerceLogger   $logger
-    )
-    {
+        AthosCommerceLogger $logger,
+        ParentIdSourceFieldEvaluator $parentIdSourceFieldEvaluator
+    ) {
         $this->parentVariantResolver = $parentVariantResolver;
         $this->logger = $logger;
+        $this->parentIdSourceFieldEvaluator = $parentIdSourceFieldEvaluator;
     }
 
     /**
+     * Enrich export rows with the group id field.
+     *
      * @param array $products
      * @param FeedSpecificationInterface $feedSpecification
      * @return array
@@ -68,13 +80,13 @@ class GroupIdProvider implements DataProviderInterface
     public function getData(
         array                      $products,
         FeedSpecificationInterface $feedSpecification
-    ): array
-    {
+    ): array {
         $this->logger->info("[GroupIdProvider] Started");
         $ignoredFields = $feedSpecification->getIgnoreFields();
         $groupBySourceFieldName = $feedSpecification->getGroupBySourceFieldName();
+        $parentIdSourceFieldName = $feedSpecification->getParentIdSourceFieldName();
 
-        if (in_array('__group_id', $ignoredFields, true)) {
+        if (in_array(Constant::GROUP_ID, $ignoredFields, true)) {
             return $products;
         }
 
@@ -92,21 +104,34 @@ class GroupIdProvider implements DataProviderInterface
 
             $isBelongToParent = (bool)($product[Constant::IS_BELONG_TO_PARENT_KEY] ?? false);
             $parentProduct = $this->resolveParentProductForRow($product, $productModel);
+            $isStandaloneProduct = (bool)($product[Constant::IS_STANDALONE_PRODUCT_KEY] ?? false);
+            //$parentProduct = $this->parentVariantResolver->resolveParentProductForRow($product, $productModel);
 
             if (!$parentProduct instanceof Product) {
-                $product['__group_id'] = (string)$productModel->getId();
+                $product[Constant::GROUP_ID] = $this->buildGroupId(
+                    $productModel,
+                    $productModel,
+                    [],
+                    $groupBySourceFieldName,
+                    $parentIdSourceFieldName
+                );
                 continue;
             }
 
             if ($parentProduct->getTypeId() === Constant::GROUPED_TYPE) {
-                $product['__group_id'] = $isBelongToParent
-                    ? (string)$parentProduct->getId()
-                    : (string)$productModel->getId();
+                $groupBaseProduct = $isBelongToParent ? $parentProduct : $productModel;
+                $product[Constant::GROUP_ID] = $this->buildGroupId(
+                    $groupBaseProduct,
+                    $productModel,
+                    [],
+                    $groupBySourceFieldName,
+                    $parentIdSourceFieldName
+                );
 
                 $this->logger->debug(
                     sprintf(
                         '[GroupId]Assigned groupID:[%s] to PID:[%d] using parent PID:[%d] (isBelongToParent=%s).',
-                        $product['__group_id'],
+                        $product[Constant::GROUP_ID],
                         (int)$productModel->getId(),
                         (int)$parentProduct->getId(),
                         $isBelongToParent ? 'true' : 'false'
@@ -128,12 +153,23 @@ class GroupIdProvider implements DataProviderInterface
                     $parentProduct,
                     $productModel,
                     $groupBySourceFieldName
+                $variantOptions = $this->parentVariantResolver->getVariantOptions($parentProduct, $productModel);
+                $groupBaseProduct = $isBelongToParent && !$isStandaloneProduct
+                    ? $parentProduct
+                    : $productModel;
+
+                $product[Constant::GROUP_ID] = $this->buildGroupId(
+                    $groupBaseProduct,
+                    $productModel,
+                    $variantOptions,
+                    $groupBySourceFieldName,
+                    $parentIdSourceFieldName
                 );
 
                 $this->logger->debug(
                     sprintf(
                         '[GroupId]Assigned groupID:[%s] to PID:[%d] based on ParentPID [%d] and groupByAttribute [%s].',
-                        $product['__group_id'],
+                        $product[Constant::GROUP_ID],
                         (int)$productModel->getId(),
                         (int)$parentProduct->getId(),
                         $groupBySourceFieldName !== null ? $groupBySourceFieldName : 'N/A'
@@ -142,29 +178,38 @@ class GroupIdProvider implements DataProviderInterface
             }
         }
         unset($product);
-        $this->logger->info("[GroupIdProvider] Completed");
+        $this->logger->info("[GroupIdProvider] Completed $groupBySourceFieldName");
         return $products;
     }
 
     /**
-     * @param Product $parentProduct
+     * Build the final group identifier for a row.
+     *
+     * @param Product $baseProduct
+     * @param Product $groupValueProduct
      * @param array $variantOptions
      * @param string|null $groupByAttribute
+     * @param string|null $parentIdIdentifier
      * @return string
      */
     private function buildGroupId(
-        Product $parentProduct,
-        array   $variantOptions,
-        ?string $groupByAttribute = null
-    ): string
-    {
-        $parentId = (string)$parentProduct->getId();
+        Product $baseProduct,
+        Product $groupValueProduct,
+        array $variantOptions,
+        ?string $groupByAttribute = null,
+        ?string $parentIdIdentifier = null
+    ): string {
+        $parentId = $this->resolveConfiguredGroupBaseId($baseProduct, $parentIdIdentifier);
 
         if (!$groupByAttribute) {
             return $parentId;
         }
 
-        $groupIdValue = $variantOptions[$groupByAttribute]['value'] ?? '';
+        $groupIdValue = $variantOptions[$groupByAttribute]['value'] ?? null;
+
+        if ($groupIdValue === null || $groupIdValue === '') {
+            $groupIdValue = $this->parentIdSourceFieldEvaluator->execute($groupValueProduct, $groupByAttribute);
+        }
 
         if ($groupIdValue === '' || $groupIdValue === null) {
             return $parentId;
@@ -173,12 +218,42 @@ class GroupIdProvider implements DataProviderInterface
         return $parentId . '::' . $groupIdValue;
     }
 
+    /**
+     * Resolve the configured base identifier used to build the group id field.
+     *
+     * @param Product $product
+     * @param string|null $parentIdIdentifier
+     * @return string
+     */
+    private function resolveConfiguredGroupBaseId(Product $product, ?string $parentIdIdentifier): string
+    {
+        $resolvedValue = $this->parentIdSourceFieldEvaluator->execute($product, $parentIdIdentifier);
+
+        if ($resolvedValue !== null && $resolvedValue !== '') {
+            return $resolvedValue;
+        }
+
+        return (string)$product->getId();
+    }
+
+    /**
+     * Reset internal state.
+     *
+     * @return void
+     */
+    // phpcs:ignore Magento2.CodeAnalysis.EmptyBlock.DetectedFunction
     public function reset(): void
     {
         $this->resolvedParentCache = [];
         $this->groupIdCache = [];
     }
 
+    /**
+     * Reset state after fetching items.
+     *
+     * @return void
+     */
+    // phpcs:ignore Magento2.CodeAnalysis.EmptyBlock.DetectedFunction
     public function resetAfterFetchItems(): void
     {
         $this->reset();
