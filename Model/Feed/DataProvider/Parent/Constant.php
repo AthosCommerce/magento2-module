@@ -31,6 +31,7 @@ class Constant
     public const CONFIGURABLE_TYPE = 'configurable';
     public const GROUPED_TYPE = 'grouped';
 
+    public const GROUP_ID = '__group_id';
     public const PARENT_ID = '__parent_id';
     public const PARENT_SKU = '__parent_sku';
     public const PARENT_TITLE = '__parent_title';
