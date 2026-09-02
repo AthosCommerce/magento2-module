@@ -21,6 +21,7 @@ namespace AthosCommerce\Feed\Model\Feed\DataProvider;
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Feed\Context\StoreContextManager;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\Constant;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\ParentVariantResolver;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Stock\StockResolverInterface;
 use AthosCommerce\Feed\Model\Feed\DataProviderInterface;
@@ -44,6 +45,11 @@ class StockProvider implements DataProviderInterface
      * @var AthosCommerceLogger
      */
     private $logger;
+
+    /**
+     * @var array<string, Product|null>
+     */
+    private $resolvedParentCache = [];
 
     /**
      * @param StockResolverInterface $stockResolver
@@ -86,6 +92,7 @@ class StockProvider implements DataProviderInterface
 
         $productIds = [];
         $parentIds = [];
+        $resolvedParentIdsByRowKey = [];
 
         foreach ($products as $row) {
             $productId = isset($row['entity_id']) ? (int)$row['entity_id'] : 0;
@@ -98,9 +105,14 @@ class StockProvider implements DataProviderInterface
                 continue;
             }
 
-            $parentProduct = $this->parentVariantResolver->resolveParentProductForRow($row, $productModel);
+            $parentProduct = $this->resolveParentProductForRow($row, $productModel);
             if ($parentProduct instanceof Product) {
-                $parentIds[(int)$parentProduct->getId()] = (int)$parentProduct->getId();
+                $parentId = (int)$parentProduct->getId();
+                $parentIds[$parentId] = $parentId;
+                if ($productId > 0) {
+                    $rowCacheKey = $this->getParentResolutionCacheKey($row, $productModel);
+                    $resolvedParentIdsByRowKey[$rowCacheKey] = $parentId;
+                }
             }
         }
 
@@ -109,7 +121,6 @@ class StockProvider implements DataProviderInterface
         }
 
         $stockProvider = $this->stockResolver->resolve($feedSpecification->getIsMsiEnabled());
-        $storeId = (int)$this->storeContextManager->getStoreFromContext()->getId();
 
         $childStockData = $stockProvider->getStock(array_values($productIds));
         $parentStockData = !empty($parentIds)
@@ -140,12 +151,16 @@ class StockProvider implements DataProviderInterface
                 continue;
             }
 
-            $parentProduct = $this->parentVariantResolver->resolveParentProductForRow($product, $productModel);
-            if (!$parentProduct instanceof Product) {
+            if ($productId <= 0) {
                 continue;
             }
 
-            $parentId = (int)$parentProduct->getId();
+            $rowCacheKey = $this->getParentResolutionCacheKey($product, $productModel);
+            if (!isset($resolvedParentIdsByRowKey[$rowCacheKey])) {
+                continue;
+            }
+
+            $parentId = $resolvedParentIdsByRowKey[$rowCacheKey];
             if (!isset($parentStockData[$parentId])) {
                 continue;
             }
@@ -163,11 +178,42 @@ class StockProvider implements DataProviderInterface
 
     public function reset(): void
     {
-        // do nothing
+        $this->resolvedParentCache = [];
     }
 
     public function resetAfterFetchItems(): void
     {
-        // do nothing
+        $this->reset();
+    }
+
+    /**
+     * @param array $row
+     * @param Product $productModel
+     * @return Product|null
+     */
+    private function resolveParentProductForRow(array $row, Product $productModel): ?Product
+    {
+        $cacheKey = $this->getParentResolutionCacheKey($row, $productModel);
+        if (!array_key_exists($cacheKey, $this->resolvedParentCache)) {
+            $this->resolvedParentCache[$cacheKey] = $this->parentVariantResolver->resolveParentProductForRow($row, $productModel);
+        }
+
+        return $this->resolvedParentCache[$cacheKey];
+    }
+
+    /**
+     * @param array $row
+     * @param Product $productModel
+     * @return string
+     */
+    private function getParentResolutionCacheKey(array $row, Product $productModel): string
+    {
+        return implode(':', [
+            (string)$productModel->getId(),
+            (string)($row[Constant::RESOLVED_PARENT_ID_KEY] ?? ''),
+            (string)($row[Constant::RESOLVED_PARENT_SKU_KEY] ?? ''),
+            (string)($row[Constant::RESOLVED_PARENT_TYPE_KEY] ?? ''),
+            (string)($row[Constant::RESOLVED_PARENT_ROW_SOURCE_KEY] ?? ''),
+        ]);
     }
 }

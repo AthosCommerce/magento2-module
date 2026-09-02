@@ -71,7 +71,9 @@ class MsiStockResolver implements StockResolverInterface
         $this->msiStockProvider = $msiStockProvider;
         $this->legacyStockProvider = $legacyStockProvider;
         $this->logger = $logger;
-        $this->moduleList = array_merge($this->moduleList, $moduleList);
+        if (!empty($moduleList)) {
+            $this->moduleList = array_values(array_unique(array_merge($this->moduleList, $moduleList)));
+        }
     }
 
     /**
@@ -82,6 +84,18 @@ class MsiStockResolver implements StockResolverInterface
      */
     public function resolve(bool $isMsiEnabled): StockProviderInterface
     {
+        if (!$isMsiEnabled) {
+            $this->logger->info(
+                'MSI Check',
+                [
+                    'method' => __METHOD__,
+                    'isInventoryModulesEnabled' => false,
+                    'message' => 'MSI payload disabled. Using LegacyStockProvider for stock resolution.'
+                ]
+            );
+            return $this->legacyStockProvider;
+        }
+
         $isInventoryModulesEnabled = $this->isInventoryModulesEnabled();
         if ($isInventoryModulesEnabled) {
             $this->logger->info(
