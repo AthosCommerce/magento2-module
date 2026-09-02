@@ -512,6 +512,23 @@ class ConfigItem extends AbstractExtensibleObject implements ConfigItemInterface
     }
 
     /**
+     * @return string|null
+     */
+    public function getGroupBySourceFieldName(): ?string
+    {
+        return $this->_get(FeedSpecificationInterface::GROUP_ID_SOURCE_FIELD);
+    }
+
+    /**
+     * @param string|null $value
+     * @return ConfigItemInterface
+     */
+    public function setGroupBySourceFieldName(?string $value): ConfigItemInterface
+    {
+        return $this->setData(FeedSpecificationInterface::GROUP_ID_SOURCE_FIELD, $value);
+    }
+
+    /**
      * @return string[]
      */
     public function getVariantAdditionalFields()
@@ -581,6 +598,7 @@ class ConfigItem extends AbstractExtensibleObject implements ConfigItemInterface
             'excludedProductIds' => $this->getExcludedProductIds(),
             'includeAllVariants' => $this->getIncludeAllVariants(),
             'parentIdSourceFieldName' => $this->getParentIdSourceFieldName(),
+            'groupBySourceFieldName' => $this->getGroupBySourceFieldName(),
             'variantAdditionalFields' => $this->getVariantAdditionalFields(),
             'variantAdditionalDataLimit' => $this->getVariantAdditionalDataLimit(),
         ];

@@ -18,8 +18,11 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Test\Integration\Model\Feed\DataProvider;
 
+use AthosCommerce\Feed\Model\Feed\ContextManagerInterface;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentRelationsContext;
 use AthosCommerce\Feed\Model\Feed\DataProvider\GroupIdProvider;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\Constant;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\ConfigurableDataProvider;
 use AthosCommerce\Feed\Model\Feed\SpecificationBuilderInterface;
 use Magento\Catalog\Model\Product;
 use Magento\TestFramework\Helper\Bootstrap;
@@ -31,6 +34,8 @@ use PHPUnit\Framework\TestCase;
  */
 class GroupIdProviderTest extends TestCase
 {
+    private const CUSTOM_PARENT_GROUPING_KEY = 'TEST_PARENT_GROUP_001';
+
     /**
      * @var \Magento\Framework\ObjectManagerInterface
      */
@@ -47,6 +52,16 @@ class GroupIdProviderTest extends TestCase
     private $getProducts;
 
     /**
+     * @var ConfigurableDataProvider
+     */
+    private $configurableDataProvider;
+
+    /**
+     * @var ContextManagerInterface
+     */
+    private $contextManager;
+
+    /**
      * @var GroupIdProvider
      */
     private $groupIdProvider;
@@ -61,6 +76,8 @@ class GroupIdProviderTest extends TestCase
         $this->objectManager = Bootstrap::getObjectManager();
         $this->specificationBuilder = $this->objectManager->get(SpecificationBuilderInterface::class);
         $this->getProducts = $this->objectManager->get(GetProducts::class);
+        $this->configurableDataProvider = $this->objectManager->get(ConfigurableDataProvider::class);
+        $this->contextManager = $this->objectManager->get(ContextManagerInterface::class);
         $this->groupIdProvider = $this->objectManager->get(GroupIdProvider::class);
         $this->parentRelationsContext = $this->objectManager->get(ParentRelationsContext::class);
 
@@ -70,196 +87,168 @@ class GroupIdProviderTest extends TestCase
     /**
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/product_color_attribute_select.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/product_size_attribute_select.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products_for_selected_options.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable_product_for_selected_options.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable/entity_id_provider_configurable_products.php
      */
-    public function testGetDataForConfigurableProductsUsingColor(): void
+    public function testGenerateUsesMagentoParentEntityIdByDefault(): void
     {
-        $specification = $this->specificationBuilder->build([
-            'groupBySourceFieldName' => 'athos_color'
-        ]);
+        $data = $this->generateFeedData([]);
+        $rowsBySku = $this->getRowsByChildSku($data, ['athos_entity_simple_1', 'athos_entity_simple_2']);
 
-        $products = $this->getProducts->get($specification);
-
-        $childIds = [];
-        foreach ($products as $product) {
-            /** @var Product|null $productModel */
-            $productModel = $product['product_model'] ?? null;
-
-            if ($productModel && in_array($productModel->getTypeId(), ['simple', 'virtual'], true)) {
-                $childIds[] = (int)$productModel->getId();
-            }
-        }
-
-        $this->parentRelationsContext->buildContext($childIds, $specification);
-
-        $data = $this->groupIdProvider->getData($products, $specification);
-
-        $this->assertNotEmpty($data);
-
-        $expectedBySku = [
-            'simple-red-m' => 'Red',
-            'simple-blue-s' => 'Blue',
-        ];
-
-        $asserted = 0;
-
-        foreach ($data as $row) {
-            /** @var Product|null $productModel */
-            $productModel = $row['product_model'] ?? null;
-
-            if (!$productModel || $productModel->getTypeId() !== 'simple') {
-                continue;
-            }
-
-            $sku = $productModel->getSku();
-
-            if (!isset($expectedBySku[$sku])) {
-                continue;
-            }
-
-            $this->assertArrayHasKey('__group_id', $row, 'Missing __group_id for SKU: ' . $sku);
-            $this->assertIsString($row['__group_id']);
-            $this->assertNotSame('', $row['__group_id']);
-
-            $groupId = $row['__group_id'];
-
-            $this->assertMatchesRegularExpression(
-                '/^\d+(::.+)?$/',
-                $groupId,
-                'Unexpected __group_id format for SKU: ' . $sku
+        foreach (['athos_entity_simple_1', 'athos_entity_simple_2'] as $childSku) {
+            $parentRow = $this->assertSingleRowForContext($rowsBySku, $childSku, 'parent');
+            $this->assertSame(
+                (string)$parentRow[Constant::RESOLVED_PARENT_ID_KEY],
+                (string)$parentRow[Constant::PARENT_ID]
             );
-
-            if (strpos($groupId, '::') !== false) {
-                [$parentId, $groupValue] = explode('::', $groupId, 2);
-
-                $this->assertNotSame('', $parentId, 'Parent id part should not be empty for SKU: ' . $sku);
-                $this->assertSame($expectedBySku[$sku], $groupValue, 'Unexpected grouped value for SKU: ' . $sku);
-            }
-
-            $asserted++;
+            $this->assertSame(
+                (string)$parentRow[Constant::PARENT_ID],
+                (string)$parentRow[Constant::GROUP_ID]
+            );
         }
-
-        $this->assertGreaterThan(0, $asserted, 'Expected at least one configurable child with __group_id asserted.');
-
-        $this->groupIdProvider->reset();
-        $this->parentRelationsContext->reset();
     }
 
     /**
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/product_text_swatch_attribute.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/product_visual_swatch_attribute.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable/configurable_product_two_swatches_attributes.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable/entity_id_provider_configurable_products.php
      */
-    public function testGetDataForConfigurableProductsUsingTextSwatchAttribute(): void
+    public function testGenerateUsesMagentoParentEntityIdAndOptionValueWhenGroupByIsConfigured(): void
     {
-        $specification = $this->specificationBuilder->build([
-            'groupBySourceFieldName' => 'text_swatch_attribute'
+        $data = $this->generateFeedData([
+            'groupBySourceFieldName' => 'test_configurable_first',
+        ]);
+        $rowsBySku = $this->getRowsByChildSku($data, [
+            'athos_entity_simple_1',
+            'athos_entity_simple_2',
         ]);
 
-        $products = $this->getProducts->get($specification);
+        foreach (['athos_entity_simple_1', 'athos_entity_simple_2'] as $childSku) {
+            $parentRow = $this->assertSingleRowForContext($rowsBySku, $childSku, 'parent');
+            /** @var Product $productModel */
+            $productModel = $parentRow['product_model'];
+            $expectedParentGroupId = (string)$parentRow[Constant::RESOLVED_PARENT_ID_KEY]
+                . '::'
+                . (string)$productModel->getAttributeText('test_configurable_first');
 
-        $childIds = [];
-        foreach ($products as $product) {
-            /** @var Product|null $productModel */
-            $productModel = $product['product_model'] ?? null;
-
-            if ($productModel && in_array($productModel->getTypeId(), ['simple', 'virtual'], true)) {
-                $childIds[] = (int)$productModel->getId();
-            }
-        }
-
-        $this->parentRelationsContext->buildContext($childIds, $specification);
-
-        $data = $this->groupIdProvider->getData($products, $specification);
-
-        $this->assertNotEmpty($data);
-
-        $asserted = 0;
-
-        foreach ($data as $row) {
-            /** @var Product|null $productModel */
-            $productModel = $row['product_model'] ?? null;
-
-            if (!$productModel || $productModel->getTypeId() !== 'simple') {
-                continue;
-            }
-
-            $sku = $productModel->getSku();
-
-            if (strpos($sku, 'simple_') !== 0) {
-                continue;
-            }
-
-            $this->assertArrayHasKey('__group_id', $row, 'Missing __group_id for SKU: ' . $sku);
-            $this->assertIsString($row['__group_id']);
-            $this->assertNotSame('', $row['__group_id']);
-
-            $groupId = $row['__group_id'];
-
-            // Valid formats:
-            //   parentId
-            //   parentId::Option 1
-            $this->assertStringContainsString('::', $groupId, 'Expected __group_id to contain "::" for SKU: ' . $sku);
-            $this->assertMatchesRegularExpression(
-                '/^\d+(::.+)?$/',
-                $groupId,
-                'Unexpected __group_id format for SKU: ' . $sku
+            $this->assertSame(
+                (string)$parentRow[Constant::RESOLVED_PARENT_ID_KEY],
+                (string)$parentRow[Constant::PARENT_ID]
             );
-
-            $label = $productModel->getAttributeText('text_swatch_attribute');
-            if (!empty($label) && strpos($groupId, '::') !== false) {
-                [$parentId, $groupValue] = explode('::', $groupId, 2);
-
-                $this->assertNotSame('', $parentId, 'Parent id part should not be empty for SKU: ' . $sku);
-                $this->assertSame($label, $groupValue, 'Unexpected group value for SKU: ' . $sku);
-            }
-
-            $asserted++;
+            $this->assertSame($expectedParentGroupId, (string)$parentRow[Constant::GROUP_ID]);
         }
-
-        $this->assertGreaterThan(0, $asserted, 'Expected at least one simple child product to be asserted.');
-
-        $this->groupIdProvider->reset();
-        $this->parentRelationsContext->reset();
     }
 
     /**
      * @magentoAppIsolation enabled
      * @magentoDbIsolation disabled
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/product_color_attribute_select.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/product_size_attribute_select.php
-     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products_for_selected_options.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable/configurable_products_visibility_any_child_visibility_any.php
      */
-    public function testGetDataWithoutParents(): void
+    public function testGenerateUsesChildEntityIdForStandaloneRowsWhenGroupingByVariantAttribute(): void
     {
-        $specification = $this->specificationBuilder->build([
-            'groupBySourceFieldName' => 'athos_color'
+        $data = $this->generateFeedData([
+            'groupBySourceFieldName' => 'test_configurable_first',
+        ]);
+        $rowsBySku = $this->getRowsByChildSku($data, [
+            'athos_config_test_simple_100',
+            'athos_config_test_simple_200',
         ]);
 
-        $products = $this->getProducts->get($specification);
+        foreach (['athos_config_test_simple_100', 'athos_config_test_simple_200'] as $childSku) {
+            $standaloneRow = $this->assertSingleRowForContext($rowsBySku, $childSku, 'standalone');
+            /** @var Product $productModel */
+            $productModel = $standaloneRow['product_model'];
+            $expectedGroupId = (string)$standaloneRow['entity_id']
+                . '::'
+                . (string)$productModel->getAttributeText('test_configurable_first');
 
-        $data = $this->groupIdProvider->getData($products, $specification);
-
-        $this->assertNotEmpty($data);
-
-        foreach ($data as $row) {
-            /** @var Product|null $productModel */
-            $productModel = $row['product_model'] ?? null;
-
-            if (!$productModel || $productModel->getTypeId() !== 'simple') {
-                continue;
-            }
-
-            $this->assertArrayHasKey('__group_id', $row, 'Missing __group_id for SKU: ' . $productModel->getSku());
-            $this->assertSame((string)$productModel->getId(), $row['__group_id']);
+            $this->assertSame(
+                $expectedGroupId,
+                (string)$standaloneRow[Constant::GROUP_ID]
+            );
         }
+    }
 
-        $this->groupIdProvider->reset();
+    /**
+     * @magentoAppIsolation enabled
+     * @magentoDbIsolation disabled
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/product_parent_grouping_key_attribute.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable/entity_id_provider_configurable_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable/entity_id_provider_parent_grouping_key.php
+     */
+    public function testGenerateUsesConfiguredParentIdentifierWhenGroupByIsBlank(): void
+    {
+        $data = $this->generateFeedData([
+            'parentIdSourceFieldName' => 'test_parent_group_code',
+        ]);
+        $rowsBySku = $this->getRowsByChildSku($data, ['athos_entity_simple_1', 'athos_entity_simple_2']);
+
+        foreach (['athos_entity_simple_1', 'athos_entity_simple_2'] as $childSku) {
+            $parentRow = $this->assertSingleRowForContext($rowsBySku, $childSku, 'parent');
+
+            $this->assertSame(self::CUSTOM_PARENT_GROUPING_KEY, (string)$parentRow[Constant::PARENT_ID]);
+            $this->assertSame(self::CUSTOM_PARENT_GROUPING_KEY, (string)$parentRow[Constant::GROUP_ID]);
+        }
+    }
+
+    /**
+     * @magentoAppIsolation enabled
+     * @magentoDbIsolation disabled
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/product_parent_grouping_key_attribute.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable/entity_id_provider_configurable_products.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable/entity_id_provider_parent_grouping_key.php
+     */
+    public function testGenerateUsesConfiguredParentIdentifierAndOptionValueWhenBothFieldsAreSet(): void
+    {
+        $data = $this->generateFeedData([
+            'parentIdSourceFieldName' => 'test_parent_group_code',
+            'groupBySourceFieldName' => 'test_configurable_first',
+        ]);
+        $rowsBySku = $this->getRowsByChildSku($data, [
+            'athos_entity_simple_1',
+            'athos_entity_simple_2',
+        ]);
+
+        foreach (['athos_entity_simple_1', 'athos_entity_simple_2'] as $childSku) {
+            $parentRow = $this->assertSingleRowForContext($rowsBySku, $childSku, 'parent');
+            /** @var Product $productModel */
+            $productModel = $parentRow['product_model'];
+            $expectedGroupId = self::CUSTOM_PARENT_GROUPING_KEY
+                . '::'
+                . (string)$productModel->getAttributeText('test_configurable_first');
+
+            $this->assertSame(self::CUSTOM_PARENT_GROUPING_KEY, (string)$parentRow[Constant::PARENT_ID]);
+            $this->assertSame($expectedGroupId, (string)$parentRow[Constant::GROUP_ID]);
+        }
+    }
+
+    /**
+     * @magentoAppIsolation enabled
+     * @magentoDbIsolation disabled
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/configurable/configurable_products_visibility_any_child_visibility_any.php
+     */
+    public function testGenerateUsesGenericMagentoAttributeWhenGroupByIsConfigured(): void
+    {
+        $data = $this->generateFeedData([
+            'groupBySourceFieldName' => 'sku',
+        ]);
+        $rowsBySku = $this->getRowsByChildSku($data, [
+            'athos_config_test_simple_100',
+            'athos_config_test_simple_200',
+        ]);
+
+        foreach (['athos_config_test_simple_100', 'athos_config_test_simple_200'] as $childSku) {
+            $parentRow = $this->assertSingleRowForContext($rowsBySku, $childSku, 'parent');
+            $standaloneRow = $this->assertSingleRowForContext($rowsBySku, $childSku, 'standalone');
+
+            $this->assertSame(
+                (string)$parentRow[Constant::RESOLVED_PARENT_ID_KEY] . '::' . $childSku,
+                (string)$parentRow[Constant::GROUP_ID]
+            );
+            $this->assertSame(
+                (string)$standaloneRow['entity_id'] . '::' . $childSku,
+                (string)$standaloneRow[Constant::GROUP_ID]
+            );
+        }
     }
 
     /**
@@ -272,32 +261,197 @@ class GroupIdProviderTest extends TestCase
      */
     public function testIgnoreField(): void
     {
-        $specification = $this->specificationBuilder->build([
+        $data = $this->generateFeedData([
             'groupBySourceFieldName' => 'athos_color',
-            'ignoreFields' => ['__group_id'],
+            'ignoreFields' => [Constant::GROUP_ID],
         ]);
 
-        $products = $this->getProducts->get($specification);
+        foreach ($data as $item) {
+            $this->assertArrayNotHasKey(Constant::GROUP_ID, $item);
+        }
+    }
 
+    /**
+     * @magentoAppIsolation enabled
+     * @magentoDbIsolation disabled
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/product_color_attribute_select.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/product_size_attribute_select.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products_for_selected_options.php
+     */
+    public function testGenerateFallsBackToChildIdWhenNoParentRelationExists(): void
+    {
+        $specification = $this->specificationBuilder->build([
+            'groupBySourceFieldName' => 'athos_color',
+        ]);
+        $products = $this->getProducts->get($specification);
+        $data = $this->groupIdProvider->getData($products, $specification);
+
+        foreach ($data as $row) {
+            /** @var Product|null $productModel */
+            $productModel = $row['product_model'] ?? null;
+
+            if (!$productModel instanceof Product) {
+                continue;
+            }
+
+            if (!in_array($productModel->getSku(), ['simple-red-m', 'simple-blue-s'], true)) {
+                continue;
+            }
+
+            $this->assertSame(
+                (string)$productModel->getId() . '::' . (string)$productModel->getAttributeText('athos_color'),
+                (string)$row[Constant::GROUP_ID]
+            );
+        }
+
+        $this->groupIdProvider->reset();
+    }
+
+    /**
+     * @magentoAppIsolation enabled
+     * @magentoDbIsolation disabled
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/product_color_attribute_select.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/product_size_attribute_select.php
+     * @magentoDataFixture AthosCommerce_Feed::Test/_files/simple_products_for_selected_options.php
+     */
+    public function testGenerateUsesGenericMagentoAttributeForStandaloneRowsWithoutParentRelation(): void
+    {
+        $specification = $this->specificationBuilder->build([
+            'groupBySourceFieldName' => 'sku',
+        ]);
+        $products = $this->getProducts->get($specification);
+        $data = $this->groupIdProvider->getData($products, $specification);
+
+        foreach ($data as $row) {
+            /** @var Product|null $productModel */
+            $productModel = $row['product_model'] ?? null;
+
+            if (!$productModel instanceof Product) {
+                continue;
+            }
+
+            if (!in_array($productModel->getSku(), ['simple-red-m', 'simple-blue-s'], true)) {
+                continue;
+            }
+
+            $this->assertSame(
+                (string)$productModel->getId() . '::' . $productModel->getSku(),
+                (string)$row[Constant::GROUP_ID]
+            );
+        }
+
+        $this->groupIdProvider->reset();
+    }
+
+    /**
+     * @param array $specificationData
+     * @return array
+     */
+    private function generateFeedData(array $specificationData): array
+    {
+        $specification = $this->specificationBuilder->build($specificationData);
+
+        try {
+            $this->contextManager->setContextFromSpecification($specification);
+            $products = $this->getProducts->get($specification);
+            $childIds = $this->getChildIds($products);
+            $this->parentRelationsContext->buildContext($childIds, $specification);
+            $data = $this->configurableDataProvider->getData($products, $specification);
+            $data = $this->groupIdProvider->getData($data, $specification);
+
+            return $data;
+        } finally {
+            $this->groupIdProvider->reset();
+            $this->configurableDataProvider->reset();
+            $this->parentRelationsContext->reset();
+            $this->contextManager->resetContext();
+        }
+    }
+
+    /**
+     * @param array $products
+     * @return int[]
+     */
+    private function getChildIds(array $products): array
+    {
         $childIds = [];
+
         foreach ($products as $product) {
             /** @var Product|null $productModel */
             $productModel = $product['product_model'] ?? null;
 
-            if ($productModel && in_array($productModel->getTypeId(), ['simple', 'virtual'], true)) {
-                $childIds[] = (int)$productModel->getId();
+            if (!$productModel instanceof Product) {
+                continue;
             }
+
+            if (!in_array($productModel->getTypeId(), ['simple', 'virtual'], true)) {
+                continue;
+            }
+
+            $childIds[] = (int)$productModel->getId();
         }
 
-        $this->parentRelationsContext->buildContext($childIds, $specification);
+        return $childIds;
+    }
 
-        $result = $this->groupIdProvider->getData($products, $specification);
+    /**
+     * @param array $rows
+     * @param array $expectedBySku
+     * @return array
+     */
+    private function getRowsByChildSku(array $rows, array $expectedBySku): array
+    {
+        $expectedSkus = array_keys($expectedBySku) === range(0, count($expectedBySku) - 1)
+            ? $expectedBySku
+            : array_keys($expectedBySku);
 
-        foreach ($result as $item) {
-            $this->assertArrayNotHasKey('__group_id', $item);
+        $result = [];
+        foreach ($rows as $row) {
+            $childSku = (string)($row['child_sku'] ?? $row['sku'] ?? '');
+            if (!in_array($childSku, $expectedSkus, true)) {
+                continue;
+            }
+
+            $context = $this->getRowContext($row);
+            $result[$childSku][$context][] = $row;
         }
 
-        $this->groupIdProvider->reset();
-        $this->parentRelationsContext->reset();
+        return $result;
+    }
+
+    /**
+     * @param array $rowsBySku
+     * @param string $childSku
+     * @param string $context
+     * @return array
+     */
+    private function assertSingleRowForContext(array $rowsBySku, string $childSku, string $context): array
+    {
+        $rows = $rowsBySku[$childSku][$context] ?? [];
+
+        $this->assertCount(
+            1,
+            $rows,
+            sprintf('Expected exactly one %s row for SKU %s', $context, $childSku)
+        );
+
+        return $rows[0];
+    }
+
+    /**
+     * @param array $row
+     * @return string
+     */
+    private function getRowContext(array $row): string
+    {
+        if (($row[Constant::IS_BELONG_TO_PARENT_KEY] ?? false) === true) {
+            return 'parent';
+        }
+
+        if (($row[Constant::IS_STANDALONE_PRODUCT_KEY] ?? false) === true) {
+            return 'standalone';
+        }
+
+        return 'other';
     }
 }

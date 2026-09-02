@@ -11,7 +11,7 @@ use AthosCommerce\Feed\Model\Config as ConfigModel;
 class VerboseHandler extends Base
 {
     /**
-     * File name
+     * Target log file path.
      * @var string
      */
     protected $fileName = '/var/log/athoscommerce_feed_debug.log';
@@ -32,8 +32,7 @@ class VerboseHandler extends Base
         DriverInterface $filesystem,
         ?string         $filePath = null,
         ?string         $fileName = null
-    )
-    {
+    ) {
         $this->configModel = $configModel;
         $this->loggerType = Logger::DEBUG;
 
@@ -41,7 +40,9 @@ class VerboseHandler extends Base
     }
 
     /**
-     * @param $record
+     * Handle DEBUG-level records only.
+     *
+     * @param array|\Monolog\LogRecord $record
      * @return bool
      */
     public function handle($record): bool
@@ -58,5 +59,29 @@ class VerboseHandler extends Base
 
         return parent::handle($record);
     }
-}
 
+    /**
+     * Check if the record should be handled, evaluating debug mode lazily
+     *
+     * @param array|\Monolog\LogRecord $record
+     * @return bool
+     */
+    public function isHandling($record): bool
+    {
+        if (!$this->isDebug()) {
+            return false;
+        }
+
+        return parent::isHandling($record);
+    }
+
+    /**
+     * Check whether debug logging is enabled.
+     *
+     * @return bool
+     */
+    private function isDebug(): bool
+    {
+        return (bool)$this->configModel->isDebugLogEnabled();
+    }
+}
