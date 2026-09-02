@@ -168,6 +168,38 @@ class Config
     /**
      * @param int|null $storeId
      *
+     * @return int
+     */
+    public function getCustomersApiMaxPageSizeByStoreId(?int $storeId = null): int
+    {
+        $value = (int)$this->scopeConfig->getValue(
+            Constants::XML_PATH_CUSTOMERS_API_MAX_PAGE_SIZE,
+            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+
+        return $value > 0 ? $value : 500;
+    }
+
+    /**
+     * @param int|null $storeId
+     *
+     * @return int
+     */
+    public function getSalesApiMaxPageSizeByStoreId(?int $storeId = null): int
+    {
+        $value = (int)$this->scopeConfig->getValue(
+            Constants::XML_PATH_SALES_API_MAX_PAGE_SIZE,
+            \Magento\Store\Model\ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+
+        return $value > 0 ? $value : 500;
+    }
+
+    /**
+     * @param int|null $storeId
+     *
      * @return string
      */
     public function getPayloadByStoreId(?int $storeId = null): string

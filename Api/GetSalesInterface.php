@@ -18,12 +18,7 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Api;
 
-use Magento\Framework\Api\SearchCriteriaInterface;
-use Magento\Framework\Exception\CouldNotDeleteException;
-use Magento\Framework\Exception\CouldNotSaveException;
 use Magento\Framework\Exception\LocalizedException;
-use Magento\Framework\Exception\NoSuchEntityException;
-use AthosCommerce\Feed\Api\Data\CustomerResultsInterface;
 use AthosCommerce\Feed\Api\Data\SalesInterface;
 
 interface GetSalesInterface
@@ -36,5 +31,5 @@ interface GetSalesInterface
      *
      * @throws LocalizedException
      */
-    public function getList(string $dateRange = "All", string $rowRange = "All"): SalesInterface;
+    public function getList(string $dateRange, string $rowRange): SalesInterface;
 }

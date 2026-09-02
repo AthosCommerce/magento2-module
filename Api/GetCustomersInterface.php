@@ -11,7 +11,7 @@
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 declare(strict_types=1);
@@ -31,5 +31,5 @@ interface GetCustomersInterface
      *
      * @throws LocalizedException
      */
-    public function getList(string $dateRange = "All", string $rowRange = "All"): CustomersInterface;
+    public function getList(string $dateRange, string $rowRange): CustomersInterface;
 }
