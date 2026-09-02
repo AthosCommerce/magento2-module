@@ -67,6 +67,7 @@ class SpecificationBuilderTest extends \PHPUnit\Framework\TestCase
             FeedSpecificationInterface::EXCLUDE_PRODUCT_IDS => [],
             FeedSpecificationInterface::INCLUDE_ALL_VARIANTS => false,
             FeedSpecificationInterface::PARENT_ID_SOURCE_FIELD => null,
+            FeedSpecificationInterface::GROUP_ID_SOURCE_FIELD => null,
             FeedSpecificationInterface::VARIANT_ADDITIONAL_DATA_LIMIT => 200,
         ],
         'media_gallery' => [
@@ -111,5 +112,37 @@ class SpecificationBuilderTest extends \PHPUnit\Framework\TestCase
             ->willReturnSelf();
 
         $this->assertSame($feedSpecificationMock, $this->specificationBuilder->build([]));
+    }
+
+    public function testBuildMapsGroupBySourceFieldName(): void
+    {
+        $mediaGallerySpecificationMock = $this->getMockForAbstractClass(MediaGallerySpecificationInterface::class);
+        $feedSpecificationMock = $this->getMockForAbstractClass(FeedSpecificationInterface::class);
+        $expectedFeedData = $this->defaultValues['feed'];
+        $expectedMediaGalleryData = $this->defaultValues['media_gallery'];
+        $expectedFeedData[FeedSpecificationInterface::GROUP_ID_SOURCE_FIELD] = 'test_configurable_first';
+        $expectedMediaGalleryData[FeedSpecificationInterface::GROUP_ID_SOURCE_FIELD] = 'test_configurable_first';
+
+        $this->feedSpecificationFactoryMock->expects($this->once())
+            ->method('create')
+            ->with(['data' => $expectedFeedData])
+            ->willReturn($feedSpecificationMock);
+
+        $this->mediaGallerySpecificationFactoryMock->expects($this->once())
+            ->method('create')
+            ->with(['data' => $expectedMediaGalleryData])
+            ->willReturn($mediaGallerySpecificationMock);
+
+        $feedSpecificationMock->expects($this->once())
+            ->method('setMediaGallerySpecification')
+            ->with($mediaGallerySpecificationMock)
+            ->willReturnSelf();
+
+        $this->assertSame(
+            $feedSpecificationMock,
+            $this->specificationBuilder->build([
+                'groupBySourceFieldName' => 'test_configurable_first'
+            ])
+        );
     }
 }

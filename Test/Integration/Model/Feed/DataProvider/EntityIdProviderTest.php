@@ -324,7 +324,7 @@ class EntityIdProviderTest extends TestCase
             }
 
             $this->assertArrayHasKey('entity_id', $item, print_r($item, true));
-            $this->assertArrayHasKey('__group_id', $item, print_r($item, true));
+            $this->assertArrayHasKey(Constant::GROUP_ID, $item, print_r($item, true));
 
             $this->assertSame(
                 $expectedBelongsToParent,
@@ -338,7 +338,7 @@ class EntityIdProviderTest extends TestCase
             );
 
             $this->assertSame(
-                (string)$item['__group_id'],
+                (string)$item[Constant::GROUP_ID],
                 (string)$item['entity_id'],
                 print_r($item, true)
             );
