@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Model;
 
+use Magento\Framework\App\ObjectManager;
 use Magento\Framework\Api\SearchCriteriaBuilder;
 use Magento\Framework\Exception\LocalizedException;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
@@ -25,7 +26,10 @@ use AthosCommerce\Feed\Api\Data\TaskInterface;
 use AthosCommerce\Feed\Api\ExecutePendingTasksInterface;
 use AthosCommerce\Feed\Api\ExecuteTaskInterface;
 use AthosCommerce\Feed\Api\MetadataInterface;
+use AthosCommerce\Feed\Api\StoreExecutionLockInterface;
 use AthosCommerce\Feed\Api\TaskRepositoryInterface;
+use AthosCommerce\Feed\Model\ResourceModel\Task as TaskResource;
+use AthosCommerce\Feed\Model\Task\StoreExecutionLock;
 
 class ExecutePendingTasks implements ExecutePendingTasksInterface
 {
@@ -45,6 +49,14 @@ class ExecutePendingTasks implements ExecutePendingTasksInterface
      * @var AthosCommerceLogger
      */
     private $logger;
+    /**
+     * @var TaskResource
+     */
+    private $taskResource;
+    /**
+     * @var StoreExecutionLockInterface
+     */
+    private $storeExecutionLock;
 
     /**
      * ExecutePendingTasks constructor.
@@ -53,17 +65,25 @@ class ExecutePendingTasks implements ExecutePendingTasksInterface
      * @param SearchCriteriaBuilder $searchCriteriaBuilder
      * @param ExecuteTaskInterface $executeTask
      * @param AthosCommerceLogger $logger
+     * @param TaskResource $taskResource
+     * @param StoreExecutionLockInterface|null $storeExecutionLock
      */
     public function __construct(
         TaskRepositoryInterface $taskRepository,
         SearchCriteriaBuilder $searchCriteriaBuilder,
         ExecuteTaskInterface $executeTask,
-        AthosCommerceLogger $logger
+        AthosCommerceLogger $logger,
+        ?TaskResource $taskResource = null,
+        ?StoreExecutionLockInterface $storeExecutionLock = null
     ) {
         $this->taskRepository = $taskRepository;
         $this->searchCriteriaBuilder = $searchCriteriaBuilder;
         $this->executeTask = $executeTask;
         $this->logger = $logger;
+        $this->taskResource = $taskResource ?: ObjectManager::getInstance()->get(TaskResource::class);
+        $this->storeExecutionLock = $storeExecutionLock ?: ObjectManager::getInstance()->get(
+            StoreExecutionLock::class
+        );
     }
 
     /**
@@ -100,11 +120,106 @@ class ExecutePendingTasks implements ExecutePendingTasksInterface
         $taskItems = $taskList->getItems();
         $this->logger->info('TaskExecution: Total pending tasks count: ' . $taskList->getTotalCount());
 
+        $result = $this->processTasks($taskItems, $storeCode, $executionMode);
+        $this->logger->info(
+            'TaskExecution: Pending tasks execution completed.',
+            ['store' => $storeCode, 'executionMode' => $executionMode]
+        );
+
+        return $result;
+    }
+
+    /**
+     * @param string $storeCode
+     * @param string $executionMode
+     * @return array
+     * @throws LocalizedException
+     */
+    public function executeForStoreWorker(
+        string $storeCode,
+        string $executionMode = ExecutePendingTasksInterface::EXECUTION_MODE_UNKNOWN
+    ): array {
+        $storeCode = trim($storeCode);
+        if ($storeCode === '') {
+            return [];
+        }
+
+        if (!$this->storeExecutionLock->acquire($storeCode)) {
+            $this->logger->info(
+                'TaskExecution: Store worker skipped because another worker already holds the store lock.',
+                ['store' => $storeCode, 'executionMode' => $executionMode]
+            );
+            return [];
+        }
+
+        try {
+            $claimedTaskIds = $this->taskResource->claimPendingTasksForStore($storeCode);
+            if ($claimedTaskIds === []) {
+                return [];
+            }
+
+            $searchCriteria = $this->searchCriteriaBuilder
+                ->addFilter(TaskInterface::ENTITY_ID, $claimedTaskIds, 'in')
+                ->create();
+            $taskItems = $this->taskRepository->getList($searchCriteria)->getItems();
+            $taskMap = [];
+            foreach ($taskItems as $taskItem) {
+                $taskMap[(int) $taskItem->getEntityId()] = $taskItem;
+            }
+
+            $orderedTasks = [];
+            foreach ($claimedTaskIds as $claimedTaskId) {
+                if (!isset($taskMap[$claimedTaskId])) {
+                    continue;
+                }
+
+                $orderedTasks[] = $taskMap[$claimedTaskId];
+            }
+
+            return $this->processTasks($orderedTasks, $storeCode, $executionMode, false);
+        } finally {
+            $this->storeExecutionLock->release($storeCode);
+        }
+    }
+
+    /**
+     * @param TaskInterface $task
+     * @param string|null $storeCode
+     * @return bool
+     */
+    private function canProcessTask(TaskInterface $task, ?string $storeCode): bool
+    {
+        if ($storeCode === null) {
+            return true;
+        }
+
+        $payload = $task->getPayload();
+        if (!isset($payload['store']) || !is_string($payload['store'])) {
+            return false;
+        }
+
+        return $payload['store'] === $storeCode;
+    }
+
+    /**
+     * @param TaskInterface[] $taskItems
+     * @param string|null $storeCode
+     * @param string $executionMode
+     * @param bool $filterByStore
+     * @return array
+     */
+    private function processTasks(
+        array $taskItems,
+        ?string $storeCode,
+        string $executionMode,
+        bool $filterByStore = true
+    ): array {
         $result = [];
         foreach ($taskItems as $task) {
-            if (!$this->canProcessTask($task, $storeCode)) {
+            if ($filterByStore && !$this->canProcessTask($task, $storeCode)) {
                 continue;
             }
+
             $taskId = $task->getEntityId();
             try {
                 $this->logger->info(
@@ -131,30 +246,7 @@ class ExecutePendingTasks implements ExecutePendingTasksInterface
                 $result[$taskId] = 'ERROR';
             }
         }
-        $this->logger->info(
-            'TaskExecution: Pending tasks execution completed.',
-            ['store' => $storeCode, 'executionMode' => $executionMode]
-        );
 
         return $result;
-    }
-
-    /**
-     * @param TaskInterface $task
-     * @param string|null $storeCode
-     * @return bool
-     */
-    private function canProcessTask(TaskInterface $task, ?string $storeCode): bool
-    {
-        if ($storeCode === null) {
-            return true;
-        }
-
-        $payload = $task->getPayload();
-        if (!isset($payload['store']) || !is_string($payload['store'])) {
-            return false;
-        }
-
-        return $payload['store'] === $storeCode;
     }
 }
