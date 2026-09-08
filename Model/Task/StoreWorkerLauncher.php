@@ -71,8 +71,25 @@ class StoreWorkerLauncher
      */
     public function spawnPendingStoreWorkers(?string $storeCode = null): array
     {
+        return $this->spawnStoreWorkers($this->getPendingStoreCodes($storeCode));
+    }
+
+    /**
+     * @param string[] $pendingStoreCodes
+     * @return string[]
+     */
+    public function spawnStoreWorkers(array $pendingStoreCodes): array
+    {
         $spawnedStoreCodes = [];
-        foreach ($this->getPendingStoreCodes($storeCode) as $pendingStoreCode) {
+        foreach ($pendingStoreCodes as $pendingStoreCode) {
+            $pendingStoreCode = trim($pendingStoreCode);
+            if ($pendingStoreCode === '' || !preg_match('/^[A-Za-z0-9_-]+$/', $pendingStoreCode)) {
+                $this->logger->warning(
+                    'Skipping worker spawn because store code is invalid.',
+                    ['store' => $pendingStoreCode]
+                );
+                continue;
+            }
             if ($this->storeExecutionLock->isLocked($pendingStoreCode)) {
                 $this->logger->info(
                     'Skipping worker spawn because store execution is already locked.',

@@ -96,12 +96,12 @@ class ExecuteTasksCron
 
         try {
             if ($parallelEnabled) {
-                $pendingStoreCount = count($this->storeWorkerLauncher->getPendingStoreCodes());
-                $spawnedStores = $this->storeWorkerLauncher->spawnPendingStoreWorkers();
+                $pendingStoreCodes = $this->storeWorkerLauncher->getPendingStoreCodes();
+                $spawnedStores = $this->storeWorkerLauncher->spawnStoreWorkers($pendingStoreCodes);
                 $this->collectMetrics('Cron Parallel Dispatch', [
                     'execution_mode' => ExecutePendingTasksInterface::EXECUTION_MODE_CRON,
                     'parallel_enabled' => '1',
-                    'pending_store_count' => $pendingStoreCount,
+                    'pending_store_count' => count($pendingStoreCodes),
                     'spawned_store_count' => count($spawnedStores),
                 ]);
                 $this->metricCollector->print(

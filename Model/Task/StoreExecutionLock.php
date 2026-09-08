@@ -19,15 +19,32 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Model\Task;
 
 use AthosCommerce\Feed\Api\StoreExecutionLockInterface;
+use Magento\Framework\App\ObjectManager;
+use Magento\Framework\Lock\LockManagerInterface;
 
 class StoreExecutionLock implements StoreExecutionLockInterface
 {
+    private const LOCK_NAME_PREFIX = 'athoscommerce_task_store_';
+
+    /**
+     * @var LockManagerInterface
+     */
+    private $lockManager;
+
+    /**
+     * @param LockManagerInterface|null $lockManager
+     */
+    public function __construct(?LockManagerInterface $lockManager = null)
+    {
+        $this->lockManager = $lockManager ?: ObjectManager::getInstance()->get(LockManagerInterface::class);
+    }
+
     /**
      * @inheritDoc
      */
     public function isLocked(string $storeCode): bool
     {
-        return false;
+        return $this->lockManager->isLocked($this->getLockName($storeCode));
     }
 
     /**
@@ -35,7 +52,7 @@ class StoreExecutionLock implements StoreExecutionLockInterface
      */
     public function acquire(string $storeCode): bool
     {
-        return true;
+        return $this->lockManager->lock($this->getLockName($storeCode), 0);
     }
 
     /**
@@ -43,6 +60,15 @@ class StoreExecutionLock implements StoreExecutionLockInterface
      */
     public function release(string $storeCode): void
     {
-        return;
+        $this->lockManager->unlock($this->getLockName($storeCode));
+    }
+
+    /**
+     * @param string $storeCode
+     * @return string
+     */
+    private function getLockName(string $storeCode): string
+    {
+        return self::LOCK_NAME_PREFIX . substr(hash('sha256', trim($storeCode)), 0, 32);
     }
 }

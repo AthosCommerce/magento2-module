@@ -18,30 +18,46 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Test\Unit\Model\Task;
 
+use Magento\Framework\Lock\LockManagerInterface;
 use AthosCommerce\Feed\Model\Task\StoreExecutionLock;
 
 class StoreExecutionLockTest extends \PHPUnit\Framework\TestCase
 {
-    public function testDefaultLockIsNeverLocked(): void
+    public function testIsLockedDelegatesToLockManager(): void
     {
-        $lock = new StoreExecutionLock();
+        $lockManagerMock = $this->createMock(LockManagerInterface::class);
+        $lock = new StoreExecutionLock($lockManagerMock);
 
-        $this->assertFalse($lock->isLocked('default'));
+        $lockManagerMock->expects($this->once())
+            ->method('isLocked')
+            ->with('athoscommerce_task_store_37a8eec1ce19687d132fe29051dca629')
+            ->willReturn(true);
+
+        $this->assertTrue($lock->isLocked('default'));
     }
 
-    public function testDefaultLockAlwaysAcquires(): void
+    public function testAcquireDelegatesToLockManagerWithNoWait(): void
     {
-        $lock = new StoreExecutionLock();
+        $lockManagerMock = $this->createMock(LockManagerInterface::class);
+        $lock = new StoreExecutionLock($lockManagerMock);
+
+        $lockManagerMock->expects($this->once())
+            ->method('lock')
+            ->with('athoscommerce_task_store_37a8eec1ce19687d132fe29051dca629', 0)
+            ->willReturn(true);
 
         $this->assertTrue($lock->acquire('default'));
     }
 
-    public function testDefaultLockReleaseIsNoOp(): void
+    public function testReleaseDelegatesToLockManager(): void
     {
-        $lock = new StoreExecutionLock();
+        $lockManagerMock = $this->createMock(LockManagerInterface::class);
+        $lock = new StoreExecutionLock($lockManagerMock);
 
+        $lockManagerMock->expects($this->once())
+            ->method('unlock')
+            ->with('athoscommerce_task_store_37a8eec1ce19687d132fe29051dca629')
+            ->willReturn(true);
         $lock->release('default');
-
-        $this->assertTrue(true);
     }
 }

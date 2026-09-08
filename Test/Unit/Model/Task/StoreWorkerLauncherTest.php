@@ -79,7 +79,6 @@ class StoreWorkerLauncherTest extends \PHPUnit\Framework\TestCase
                 ['default', false],
                 ['french', true],
             ]);
-
         $this->shellFactoryMock->expects($this->once())
             ->method('create')
             ->willReturn($shellMock);
@@ -91,6 +90,31 @@ class StoreWorkerLauncherTest extends \PHPUnit\Framework\TestCase
             );
 
         $this->assertSame(['default'], $this->launcher->spawnPendingStoreWorkers());
+    }
+
+    public function testSpawnStoreWorkersUsesProvidedStoreCodes(): void
+    {
+        $shellMock = $this->createMock(Shell::class);
+
+        $this->taskResourceMock->expects($this->never())
+            ->method('getPendingStoreCodes');
+        $this->storeExecutionLockMock->expects($this->exactly(2))
+            ->method('isLocked')
+            ->willReturnMap([
+                ['default', false],
+                ['french', true],
+            ]);
+        $this->shellFactoryMock->expects($this->once())
+            ->method('create')
+            ->willReturn($shellMock);
+        $shellMock->expects($this->once())
+            ->method('execute')
+            ->with(
+                'cd %s && %s %s ' . StoreWorkerLauncher::WORKER_COMMAND_NAME . ' --store=%s > /dev/null 2>&1 &',
+                [BP, PHP_BINARY, 'bin/magento', 'default']
+            );
+
+        $this->assertSame(['default'], $this->launcher->spawnStoreWorkers(['default', 'french']));
     }
 
     public function testGetPendingStoreCodesPassesStoreFilterToResource(): void

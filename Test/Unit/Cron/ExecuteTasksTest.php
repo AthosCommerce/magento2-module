@@ -131,8 +131,8 @@ class ExecuteTasksTest extends \PHPUnit\Framework\TestCase
             ->with(null)
             ->willReturn(['default', 'french']);
         $this->storeWorkerLauncherMock->expects($this->once())
-            ->method('spawnPendingStoreWorkers')
-            ->with()
+            ->method('spawnStoreWorkers')
+            ->with(['default', 'french'])
             ->willReturn(['default']);
         $parallelCollectCalls = 0;
         $this->metricCollectorMock->expects($this->exactly(2))
