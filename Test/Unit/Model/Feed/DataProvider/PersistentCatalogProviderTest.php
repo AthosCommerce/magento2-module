@@ -102,7 +102,7 @@ class PersistentCatalogProviderTest extends TestCase
             ['entity_id' => 2, 'product_model' => new \stdClass()],
         ];
 
-        $this->parentVariantResolverMock->expects($this->never())->method('getParentProduct');
+        $this->parentVariantResolverMock->expects($this->never())->method('resolveParentProductForRow');
 
         $this->assertSame($products, $this->provider->getData($products, $feedSpecificationMock));
     }
@@ -127,9 +127,9 @@ class PersistentCatalogProviderTest extends TestCase
                 ['thumbnail', '/s/i/simple-thumb.jpg'],
             ]);
 
-        $this->parentVariantResolverMock->expects($this->once())
-            ->method('getParentProduct')
-            ->with($productMock)
+        $this->parentVariantResolverMock->expects($this->exactly(2))
+            ->method('resolveParentProductForRow')
+            ->with(['product_model' => $productMock], $productMock)
             ->willReturn(null);
 
         $result = $this->provider->getData(
@@ -199,9 +199,9 @@ class PersistentCatalogProviderTest extends TestCase
             ['thumbnail', '/c/h/child-3-thumb.jpg'],
         ]);
 
-        $this->parentVariantResolverMock->expects($this->once())
-            ->method('getParentProduct')
-            ->with($inputChildMock)
+        $this->parentVariantResolverMock->expects($this->exactly(2))
+            ->method('resolveParentProductForRow')
+            ->with(['product_model' => $inputChildMock], $inputChildMock)
             ->willReturn($parentMock);
         $this->parentVariantResolverMock->expects($this->once())
             ->method('getChildProducts')
@@ -240,9 +240,9 @@ class PersistentCatalogProviderTest extends TestCase
             ['thumbnail', null],
         ]);
 
-        $this->parentVariantResolverMock->expects($this->once())
-            ->method('getParentProduct')
-            ->with($productMock)
+        $this->parentVariantResolverMock->expects($this->exactly(2))
+            ->method('resolveParentProductForRow')
+            ->with(['product_model' => $productMock], $productMock)
             ->willReturn(null);
 
         $result = $this->provider->getData(
@@ -261,6 +261,68 @@ class PersistentCatalogProviderTest extends TestCase
 
         $this->assertTrue(true);
     }
-}
 
+    public function testGetDataBuildsCatalogOnlyOncePerResolvedParent(): void
+    {
+        $feedSpecificationMock = $this->createMock(FeedSpecificationInterface::class);
+        $feedSpecificationMock->method('getIgnoreFields')->willReturn([]);
+        $feedSpecificationMock->method('getCatalogPreSignedUrl')->willReturn('https://example.com/catalog.csv');
+
+        $childOne = $this->createConfiguredMock(Product::class, [
+            'getId' => 10,
+            'getTypeId' => 'simple',
+        ]);
+        $childTwo = $this->createConfiguredMock(Product::class, [
+            'getId' => 11,
+            'getTypeId' => 'simple',
+        ]);
+
+        $parentMock = $this->createConfiguredMock(Product::class, [
+            'getId' => 1,
+            'getSku' => 'PARENT-1',
+            'getName' => 'Parent Product',
+            'getPrice' => 99.0,
+            'getProductUrl' => 'https://store.example/parent',
+            'getImage' => '/p/a/parent.jpg',
+        ]);
+        $parentMock->method('getData')->willReturnMap([
+            ['thumbnail', '/p/a/parent-thumb.jpg'],
+        ]);
+
+        $variantMock = $this->createConfiguredMock(Product::class, [
+            'getId' => 2,
+            'getSku' => 'CHILD-2',
+            'getName' => 'Child 2',
+            'getPrice' => 12.0,
+            'getProductUrl' => 'https://store.example/child-2',
+            'getImage' => '/c/h/child-2.jpg',
+        ]);
+        $variantMock->method('getData')->willReturnMap([
+            ['thumbnail', '/c/h/child-2-thumb.jpg'],
+        ]);
+
+        $this->parentVariantResolverMock->expects($this->exactly(3))
+            ->method('resolveParentProductForRow')
+            ->willReturnMap([
+                [['product_model' => $childOne], $childOne, $parentMock],
+                [['product_model' => $childOne], $childOne, $parentMock],
+                [['product_model' => $childTwo], $childTwo, $parentMock],
+            ]);
+        $this->parentVariantResolverMock->expects($this->once())
+            ->method('getChildProducts')
+            ->with($parentMock)
+            ->willReturn([$variantMock]);
+
+        $result = $this->provider->getData(
+            [
+                ['product_model' => $childOne],
+                ['product_model' => $childTwo],
+            ],
+            $feedSpecificationMock
+        );
+
+        $this->assertNotEmpty($result[0]['__catalog']);
+        $this->assertSame([], $result[1]['__catalog']);
+    }
+}
 
