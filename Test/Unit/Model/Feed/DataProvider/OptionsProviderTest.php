@@ -16,10 +16,14 @@
 
 declare(strict_types=1);
 
-namespace AthosCommerce\Feed\Test\Unit\Model\Feed\DataProvider;
+namespace AthosCommerce\Feed\Test\Unit\Model\Feed\DataProvider {
+
+require_once dirname(__DIR__, 3) . '/_files/bootstrap-stubs.php';
 
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Feed\DataProvider\OptionsProvider;
+use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Framework\EntityManager\MetadataPool;
 use Magento\Catalog\Model\ResourceModel\Product\Option\CollectionFactory as OptionCollectionFactory;
 use Magento\Store\Model\StoreManagerInterface;
@@ -30,6 +34,7 @@ class OptionsProviderTest extends TestCase
     private $metadataPoolMock;
     private $optionCollectionFactoryMock;
     private $storeManagerMock;
+    private $loggerMock;
     private $optionsProvider;
 
     protected function setUp(): void
@@ -37,11 +42,13 @@ class OptionsProviderTest extends TestCase
         $this->metadataPoolMock = $this->createMock(MetadataPool::class);
         $this->optionCollectionFactoryMock = $this->createMock(OptionCollectionFactory::class);
         $this->storeManagerMock = $this->createMock(StoreManagerInterface::class);
+        $this->loggerMock = $this->createMock(AthosCommerceLogger::class);
 
         $this->optionsProvider = new OptionsProvider(
             $this->metadataPoolMock,
             $this->optionCollectionFactoryMock,
-            $this->storeManagerMock
+            $this->storeManagerMock,
+            $this->loggerMock
         );
     }
 
@@ -54,17 +61,26 @@ class OptionsProviderTest extends TestCase
             ['product_model' => null],
         ];
 
+        $metadataMock = $this->getMockBuilder(\stdClass::class)
+            ->addMethods(['getLinkField'])
+            ->getMock();
+
         $this->metadataPoolMock->expects($this->once())
             ->method('getMetadata')
-            ->willThrowException(new \Exception('Not needed if no valid product models are processed'));
+            ->with(ProductInterface::class)
+            ->willReturn($metadataMock);
 
-        try {
-            $this->optionsProvider->getData($products, $feedSpecificationMock);
-        } catch (\Exception $e) {
-            $this->assertSame('Not needed if no valid product models are processed', $e->getMessage());
-        }
+        $metadataMock->expects($this->once())
+            ->method('getLinkField')
+            ->willReturn('row_id');
 
-        $this->addToAssertionCount(1);
+        $this->optionCollectionFactoryMock->expects($this->never())
+            ->method('create');
+
+        $this->storeManagerMock->expects($this->never())
+            ->method('getStore');
+
+        $this->assertSame($products, $this->optionsProvider->getData($products, $feedSpecificationMock));
     }
 
     public function testResetDoesNothing(): void
@@ -78,4 +94,5 @@ class OptionsProviderTest extends TestCase
         $this->optionsProvider->resetAfterFetchItems();
         $this->addToAssertionCount(1);
     }
+}
 }
