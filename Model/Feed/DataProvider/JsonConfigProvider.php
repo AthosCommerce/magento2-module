@@ -125,6 +125,9 @@ class JsonConfigProvider implements DataProviderInterface
     public function getData(array $products, FeedSpecificationInterface $feedSpecification): array
     {
         $this->logger->info("[JsonConfigProvider] Started");
+        if (!$feedSpecification->getIncludeJSONConfig()) {
+            return $products;
+        }
 
         $ignoredFields = $feedSpecification->getIgnoreFields();
         if (in_array(self::FIELD_KEY_JSON_CONFIG, $ignoredFields)
