@@ -79,6 +79,7 @@ class JsonTest extends \PHPUnit\Framework\TestCase
         $testData = [
             'test' => 'data'
         ];
+        $rows = [$testData];
         $feedSpecificationMock = $this->getMockForAbstractClass(FeedSpecificationInterface::class);
         $writeFileMock = $this->createMock(Filesystem\File\WriteInterface::class);
         $writeDirectoryMock = $this->createMock(Filesystem\Directory\WriteInterface::class);
@@ -102,8 +103,11 @@ class JsonTest extends \PHPUnit\Framework\TestCase
             ->method('serialize')
             ->with($testData)
             ->willReturn(json_encode($testData));
+        $writeFileMock->expects($this->once())
+            ->method('write')
+            ->with(json_encode($testData) . PHP_EOL);
 
         $this->json->initialize('test', $feedSpecificationMock);
-        $this->json->appendData($testData);
+        $this->json->appendData($rows);
     }
 }

@@ -28,6 +28,10 @@ use Magento\Store\Model\StoreManagerInterface;
 
 class PersistentCatalogProvider implements DataProviderInterface
 {
+    private const SUPPORTED_STANDALONE_TYPES = ['simple', 'virtual'];
+
+    private const SUPPORTED_PARENT_TYPES = ['configurable', 'grouped'];
+
     /**
      * @var AthosCommerceLogger
      */
@@ -43,6 +47,21 @@ class PersistentCatalogProvider implements DataProviderInterface
      * @var StoreManagerInterface
      */
     private $storeManager;
+
+    /**
+     * @var array<string, array>
+     */
+    private $catalogRowsByKey = [];
+
+    /**
+     * @var array<string, bool>
+     */
+    private $emittedCatalogKeys = [];
+
+    /**
+     * @var string|null
+     */
+    private $mediaBaseUrl;
 
     /**
      * @param AthosCommerceLogger $logger
@@ -85,7 +104,23 @@ class PersistentCatalogProvider implements DataProviderInterface
                 continue;
             }
 
-            $product['__catalog'] = $this->buildCatalog($productModel);
+            $catalogKey = $this->getCatalogKey($product, $productModel);
+            if ($catalogKey === null) {
+                $product['__catalog'] = [];
+                continue;
+            }
+
+            if (isset($this->emittedCatalogKeys[$catalogKey])) {
+                $product['__catalog'] = [];
+                continue;
+            }
+
+            if (!isset($this->catalogRowsByKey[$catalogKey])) {
+                $this->catalogRowsByKey[$catalogKey] = $this->buildCatalog($product, $productModel);
+            }
+
+            $product['__catalog'] = $this->catalogRowsByKey[$catalogKey];
+            $this->emittedCatalogKeys[$catalogKey] = true;
         }
 
         unset($product);
@@ -94,11 +129,13 @@ class PersistentCatalogProvider implements DataProviderInterface
     }
 
     /**
-     * Build catalog rows for a product.
+     * @param array $row
+     * @param Product $product
+     * @return array|array[]
      */
-    private function buildCatalog(Product $product): array
+    private function buildCatalog(array $row, Product $product): array
     {
-        $parent = $this->parentVariantResolver->getParentProduct($product);
+        $parent = $this->parentVariantResolver->resolveParentProductForRow($row, $product);
 
         // Child product
         if ($parent) {
@@ -107,11 +144,11 @@ class PersistentCatalogProvider implements DataProviderInterface
 
         $type = $product->getTypeId();
 
-        if (in_array($type, ['simple', 'virtual'], true)) {
+        if (in_array($type, self::SUPPORTED_STANDALONE_TYPES, true)) {
             return [$this->buildProductRow($product)];
         }
 
-        if (in_array($type, ['configurable', 'grouped'], true)) {
+        if (in_array($type, self::SUPPORTED_PARENT_TYPES, true)) {
             return $this->buildParentWithVariants($product);
         }
 
@@ -119,7 +156,31 @@ class PersistentCatalogProvider implements DataProviderInterface
     }
 
     /**
-     * Parent + all variants.
+     * @param array $row
+     * @param Product $product
+     * @return string|null
+     */
+    private function getCatalogKey(array $row, Product $product): ?string
+    {
+        $parent = $this->parentVariantResolver->resolveParentProductForRow($row, $product);
+        if ($parent) {
+            return 'parent_' . (string)$parent->getId();
+        }
+
+        $type = $product->getTypeId();
+        if (
+            in_array($type, self::SUPPORTED_STANDALONE_TYPES, true)
+            || in_array($type, self::SUPPORTED_PARENT_TYPES, true)
+        ) {
+            return 'product_' . (string)$product->getId();
+        }
+
+        return null;
+    }
+
+    /**
+     * @param Product $parent
+     * @return array
      */
     private function buildParentWithVariants(Product $parent): array
     {
@@ -135,7 +196,8 @@ class PersistentCatalogProvider implements DataProviderInterface
     }
 
     /**
-     * Parent / Standalone row.
+     * @param Product $product
+     * @return array
      */
     private function buildProductRow(Product $product): array
     {
@@ -147,7 +209,9 @@ class PersistentCatalogProvider implements DataProviderInterface
     }
 
     /**
-     * Variant row.
+     * @param Product $parent
+     * @param Product $child
+     * @return array
      */
     private function buildVariantRow(
         Product $parent,
@@ -162,7 +226,10 @@ class PersistentCatalogProvider implements DataProviderInterface
     }
 
     /**
-     * Creates one persistent catalog row.
+     * @param string $uid
+     * @param string $parentUid
+     * @param Product $product
+     * @return array
      */
     private function createRow(
         string $uid,
@@ -187,7 +254,8 @@ class PersistentCatalogProvider implements DataProviderInterface
     }
 
     /**
-     * Generate record hash.
+     * @param array $row
+     * @return string
      */
     private function generateRecordHash(array $row): string
     {
@@ -195,7 +263,8 @@ class PersistentCatalogProvider implements DataProviderInterface
     }
 
     /**
-     * Build full media URL.
+     * @param string|null $image
+     * @return string
      */
     private function getImageUrl(?string $image): string
     {
@@ -203,16 +272,34 @@ class PersistentCatalogProvider implements DataProviderInterface
             return '';
         }
 
-        return $this->storeManager
-                ->getStore()
-                ->getBaseUrl(\Magento\Framework\UrlInterface::URL_TYPE_MEDIA)
+        return $this->getMediaBaseUrl()
             . 'catalog/product'
             . $image;
     }
 
+    /**
+     * @return string
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     */
+    private function getMediaBaseUrl(): string
+    {
+        if ($this->mediaBaseUrl === null) {
+            $this->mediaBaseUrl = $this->storeManager
+                ->getStore()
+                ->getBaseUrl(\Magento\Framework\UrlInterface::URL_TYPE_MEDIA);
+        }
+
+        return $this->mediaBaseUrl;
+    }
+
+    /**
+     * @return void
+     */
     public function reset(): void
     {
-        // No state
+        $this->catalogRowsByKey = [];
+        $this->emittedCatalogKeys = [];
+        $this->mediaBaseUrl = null;
     }
 
     public function resetAfterFetchItems(): void

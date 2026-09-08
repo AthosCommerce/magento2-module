@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Model\Feed\DataProvider\Context;
 
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\RelationsProvider;
 use Magento\Catalog\Api\Data\ProductInterface;
 
@@ -20,6 +21,11 @@ class ParentRelationsContext
     private $parentDataContextManager;
 
     /**
+     * @var AthosCommerceLogger
+     */
+    private $logger;
+
+    /**
      * Cache: [childId => [parentIds]]
      *
      * @var array<int, int[]>
@@ -27,16 +33,26 @@ class ParentRelationsContext
     private $childToParentMap = [];
 
     /**
+     * Cache for detailed relation rows: [childId => array<int, array<string, int|string>>]
+     *
+     * @var array<int, array<int, array<string, int|string>>>
+     */
+    private $childToParentRelations = [];
+
+    /**
      * @param RelationsProvider $relationsProvider
      * @param ParentDataContextManager $parentDataContextManager
+     * @param AthosCommerceLogger $logger
      */
     public function __construct(
         RelationsProvider        $relationsProvider,
-        ParentDataContextManager $parentDataContextManager
+        ParentDataContextManager $parentDataContextManager,
+        AthosCommerceLogger      $logger
     )
     {
         $this->relationsProvider = $relationsProvider;
         $this->parentDataContextManager = $parentDataContextManager;
+        $this->logger = $logger;
     }
 
     /**
@@ -142,6 +158,7 @@ class ParentRelationsContext
 
         foreach ($missingChildIds as $childId) {
             $this->childToParentMap[$childId] = [];
+            $this->childToParentRelations[$childId] = [];
         }
 
         $configurableRelations = $this->relationsProvider->getConfigurableRelationIds($missingChildIds);
@@ -154,7 +171,9 @@ class ParentRelationsContext
 
             $childId = (int)$row['product_id'];
             $parentId = (int)$row['parent_id'];
+
             $this->childToParentMap[$childId][] = $parentId;
+            $this->childToParentRelations[$childId][] = $row;
         }
 
         foreach ($this->childToParentMap as $childId => $parentIds) {
@@ -164,12 +183,6 @@ class ParentRelationsContext
 
     /**
      * Resolve exact parent by child + parentSku + productType.
-     *
-     * Matching order:
-     * 1. childId + parentSku + productType
-     * 2. childId + parentSku
-     * 3. childId + productType
-     * 4. first available parent
      *
      * @param int $childId
      * @param string|null $parentSku
@@ -197,11 +210,11 @@ class ParentRelationsContext
                 break;
             }
 
-            if ((string)$relation['parent_sku'] !== $normalizedParentSku) {
+            if ((string)($relation['parent_sku'] ?? '') !== $normalizedParentSku) {
                 continue;
             }
 
-            if ((string)$relation['parent_type_id'] !== $normalizedProductType) {
+            if ((string)($relation['parent_type_id'] ?? '') !== $normalizedProductType) {
                 continue;
             }
 
@@ -216,7 +229,7 @@ class ParentRelationsContext
                 break;
             }
 
-            if ((string)$relation['parent_sku'] !== $normalizedParentSku) {
+            if ((string)($relation['parent_sku'] ?? '') !== $normalizedParentSku) {
                 continue;
             }
 
@@ -231,7 +244,7 @@ class ParentRelationsContext
                 break;
             }
 
-            if ((string)$relation['parent_type_id'] !== $normalizedProductType) {
+            if ((string)($relation['parent_type_id'] ?? '') !== $normalizedProductType) {
                 continue;
             }
 
@@ -254,13 +267,13 @@ class ParentRelationsContext
         return $this->childToParentRelations[$childId] ?? [];
     }
 
-
     /**
      * @return void
      */
     public function reset(): void
     {
         $this->childToParentMap = [];
+        $this->childToParentRelations = [];
         $this->parentDataContextManager->resetContext();
     }
 }
