@@ -44,11 +44,6 @@ class GroupIdProvider implements DataProviderInterface
     private $resolvedParentCache = [];
 
     /**
-     * @var array<string, string>
-     */
-    private $groupIdCache = [];
-
-    /**
      * @var ParentIdSourceFieldEvaluator
      */
     private $parentIdSourceFieldEvaluator;
@@ -105,7 +100,6 @@ class GroupIdProvider implements DataProviderInterface
             $isBelongToParent = (bool)($product[Constant::IS_BELONG_TO_PARENT_KEY] ?? false);
             $parentProduct = $this->resolveParentProductForRow($product, $productModel);
             $isStandaloneProduct = (bool)($product[Constant::IS_STANDALONE_PRODUCT_KEY] ?? false);
-            //$parentProduct = $this->parentVariantResolver->resolveParentProductForRow($product, $productModel);
 
             if (!$parentProduct instanceof Product) {
                 $product[Constant::GROUP_ID] = $this->buildGroupId(
@@ -143,16 +137,6 @@ class GroupIdProvider implements DataProviderInterface
 
             if ($parentProduct->getTypeId() === Constant::CONFIGURABLE_TYPE) {
 
-                //To handle the child product having non NVI
-                if (!$isBelongToParent) {
-                    $product['__group_id'] = (string)$productModel->getId();
-                    continue;
-                }
-
-                $product['__group_id'] = $this->getConfigurableGroupId(
-                    $parentProduct,
-                    $productModel,
-                    $groupBySourceFieldName
                 $variantOptions = $this->parentVariantResolver->getVariantOptions($parentProduct, $productModel);
                 $groupBaseProduct = $isBelongToParent && !$isStandaloneProduct
                     ? $parentProduct
@@ -245,7 +229,6 @@ class GroupIdProvider implements DataProviderInterface
     public function reset(): void
     {
         $this->resolvedParentCache = [];
-        $this->groupIdCache = [];
     }
 
     /**
@@ -260,6 +243,8 @@ class GroupIdProvider implements DataProviderInterface
     }
 
     /**
+     * Resolve the parent product for the current row with per-row caching.
+     *
      * @param array $row
      * @param Product $productModel
      * @return Product|null
@@ -268,13 +253,16 @@ class GroupIdProvider implements DataProviderInterface
     {
         $cacheKey = $this->getParentResolutionCacheKey($row, $productModel);
         if (!array_key_exists($cacheKey, $this->resolvedParentCache)) {
-            $this->resolvedParentCache[$cacheKey] = $this->parentVariantResolver->resolveParentProductForRow($row, $productModel);
+            $this->resolvedParentCache[$cacheKey] = $this->parentVariantResolver
+                ->resolveParentProductForRow($row, $productModel);
         }
 
         return $this->resolvedParentCache[$cacheKey];
     }
 
     /**
+     * Build the cache key for row-specific parent resolution.
+     *
      * @param array $row
      * @param Product $productModel
      * @return string
@@ -288,34 +276,5 @@ class GroupIdProvider implements DataProviderInterface
             (string)($row[Constant::RESOLVED_PARENT_TYPE_KEY] ?? ''),
             (string)($row[Constant::RESOLVED_PARENT_ROW_SOURCE_KEY] ?? ''),
         ]);
-    }
-
-    /**
-     * @param Product $parentProduct
-     * @param Product $productModel
-     * @param string|null $groupBySourceFieldName
-     * @return string
-     */
-    private function getConfigurableGroupId(
-        Product $parentProduct,
-        Product $productModel,
-        ?string $groupBySourceFieldName
-    ): string {
-        $cacheKey = implode(':', [
-            (string)$parentProduct->getId(),
-            (string)$productModel->getId(),
-            (string)$groupBySourceFieldName,
-        ]);
-
-        if (!isset($this->groupIdCache[$cacheKey])) {
-            $variantOptions = $this->parentVariantResolver->getVariantOptions($parentProduct, $productModel);
-            $this->groupIdCache[$cacheKey] = $this->buildGroupId(
-                $parentProduct,
-                $variantOptions,
-                $groupBySourceFieldName
-            );
-        }
-
-        return $this->groupIdCache[$cacheKey];
     }
 }
