@@ -16,6 +16,8 @@
 
 namespace AthosCommerce\Feed\Test\Unit\Model\Feed\Specification;
 
+require_once dirname(__DIR__, 3) . '/_files/bootstrap-stubs.php';
+
 use AthosCommerce\Feed\Api\Data\MediaGallerySpecificationExtensionInterface;
 use AthosCommerce\Feed\Api\Data\MediaGallerySpecificationInterface;
 use AthosCommerce\Feed\Model\Feed\Specification\MediaGallery;

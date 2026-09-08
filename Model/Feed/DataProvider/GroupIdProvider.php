@@ -39,6 +39,11 @@ class GroupIdProvider implements DataProviderInterface
     private $logger;
 
     /**
+     * @var array<string, Product|null>
+     */
+    private $resolvedParentCache = [];
+
+    /**
      * @var ParentIdSourceFieldEvaluator
      */
     private $parentIdSourceFieldEvaluator;
@@ -93,8 +98,8 @@ class GroupIdProvider implements DataProviderInterface
             }
 
             $isBelongToParent = (bool)($product[Constant::IS_BELONG_TO_PARENT_KEY] ?? false);
+            $parentProduct = $this->resolveParentProductForRow($product, $productModel);
             $isStandaloneProduct = (bool)($product[Constant::IS_STANDALONE_PRODUCT_KEY] ?? false);
-            $parentProduct = $this->parentVariantResolver->resolveParentProductForRow($product, $productModel);
 
             if (!$parentProduct instanceof Product) {
                 $product[Constant::GROUP_ID] = $this->buildGroupId(
@@ -131,6 +136,7 @@ class GroupIdProvider implements DataProviderInterface
             }
 
             if ($parentProduct->getTypeId() === Constant::CONFIGURABLE_TYPE) {
+
                 $variantOptions = $this->parentVariantResolver->getVariantOptions($parentProduct, $productModel);
                 $groupBaseProduct = $isBelongToParent && !$isStandaloneProduct
                     ? $parentProduct
@@ -222,6 +228,7 @@ class GroupIdProvider implements DataProviderInterface
     // phpcs:ignore Magento2.CodeAnalysis.EmptyBlock.DetectedFunction
     public function reset(): void
     {
+        $this->resolvedParentCache = [];
     }
 
     /**
@@ -232,5 +239,42 @@ class GroupIdProvider implements DataProviderInterface
     // phpcs:ignore Magento2.CodeAnalysis.EmptyBlock.DetectedFunction
     public function resetAfterFetchItems(): void
     {
+        $this->reset();
+    }
+
+    /**
+     * Resolve the parent product for the current row with per-row caching.
+     *
+     * @param array $row
+     * @param Product $productModel
+     * @return Product|null
+     */
+    private function resolveParentProductForRow(array $row, Product $productModel): ?Product
+    {
+        $cacheKey = $this->getParentResolutionCacheKey($row, $productModel);
+        if (!array_key_exists($cacheKey, $this->resolvedParentCache)) {
+            $this->resolvedParentCache[$cacheKey] = $this->parentVariantResolver
+                ->resolveParentProductForRow($row, $productModel);
+        }
+
+        return $this->resolvedParentCache[$cacheKey];
+    }
+
+    /**
+     * Build the cache key for row-specific parent resolution.
+     *
+     * @param array $row
+     * @param Product $productModel
+     * @return string
+     */
+    private function getParentResolutionCacheKey(array $row, Product $productModel): string
+    {
+        return implode(':', [
+            (string)$productModel->getId(),
+            (string)($row[Constant::RESOLVED_PARENT_ID_KEY] ?? ''),
+            (string)($row[Constant::RESOLVED_PARENT_SKU_KEY] ?? ''),
+            (string)($row[Constant::RESOLVED_PARENT_TYPE_KEY] ?? ''),
+            (string)($row[Constant::RESOLVED_PARENT_ROW_SOURCE_KEY] ?? ''),
+        ]);
     }
 }

@@ -16,6 +16,7 @@
 
 namespace AthosCommerce\Feed\Test\Unit\Model\Feed\DataProvider;
 
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use Magento\Catalog\Model\Product;
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Model\Feed\DataProvider\UrlProvider;
@@ -26,7 +27,7 @@ class UrlProviderTest extends \PHPUnit\Framework\TestCase
 
     public function setUp(): void
     {
-        $this->urlProvider = new UrlProvider();
+        $this->urlProvider = new UrlProvider($this->createMock(AthosCommerceLogger::class));
     }
 
     public function testGetData()

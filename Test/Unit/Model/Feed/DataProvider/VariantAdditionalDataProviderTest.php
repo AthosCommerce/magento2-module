@@ -356,6 +356,36 @@ class VariantAdditionalDataProviderTest extends TestCase
         $this->assertArrayNotHasKey(VariantAdditionalDataProvider::FIELD_KEY, $result[0]);
     }
 
+    public function testGetDataCachesVariantRowsForRowsSharingSameParent(): void
+    {
+        $parentProductMock = $this->createProductMock(800, 8800, Constant::CONFIGURABLE_TYPE, 'parent-cached');
+        $childProductMock = $this->createChildProductMock(81, 8081, 'child-cached', true, ['price' => '99.00']);
+
+        $this->parentVariantResolverMock->expects($this->once())
+            ->method('getChildProducts')
+            ->with($parentProductMock)
+            ->willReturn([$childProductMock]);
+
+        $this->parentVariantResolverMock->expects($this->once())
+            ->method('getVariantOptions')
+            ->with($parentProductMock, $childProductMock)
+            ->willReturn(['color' => ['value' => 'Green']]);
+
+        $specificationMock = $this->createSpecificationMock([], ['price'], 200);
+
+        $products = [
+            ['product_model' => $parentProductMock],
+            ['product_model' => $parentProductMock],
+        ];
+
+        $result = $this->provider->getData($products, $specificationMock);
+
+        $this->assertSame(
+            $result[0][VariantAdditionalDataProvider::FIELD_KEY],
+            $result[1][VariantAdditionalDataProvider::FIELD_KEY]
+        );
+    }
+
     /**
      * @param array $ignoreFields
      * @param array $additionalFields

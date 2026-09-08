@@ -40,8 +40,9 @@ class ParentVariantResolver
      */
     public function __construct(
         ParentRelationsContext $parentRelationsContext,
-        AthosCommerceLogger $logger
-    ) {
+        AthosCommerceLogger    $logger
+    )
+    {
         $this->parentRelationsContext = $parentRelationsContext;
         $this->logger = $logger;
     }
@@ -72,10 +73,6 @@ class ParentVariantResolver
 
     /**
      * Resolve the correct parent product for the current export row.
-     *
-     * This is required when one child product belongs to multiple parents
-     * (for example multiple grouped products) and the correct parent must
-     * be selected from row context.
      *
      * Resolution order:
      * 1. explicit parent ID fields on the row
@@ -131,11 +128,13 @@ class ParentVariantResolver
      */
     public function getChildProducts(Product $parentProduct): array
     {
-        if ($parentProduct->getTypeId() === Constant::CONFIGURABLE_TYPE) {
+        $typeId = $parentProduct->getTypeId();
+
+        if ($typeId === Constant::CONFIGURABLE_TYPE) {
             return $parentProduct->getTypeInstance()->getUsedProducts($parentProduct);
         }
 
-        if ($parentProduct->getTypeId() === Constant::GROUPED_TYPE) {
+        if ($typeId === Constant::GROUPED_TYPE) {
             return $parentProduct->getTypeInstance()->getAssociatedProducts($parentProduct);
         }
 
@@ -143,6 +142,8 @@ class ParentVariantResolver
     }
 
     /**
+     * Optimized variant option extraction using in-memory data before falling back to EAV text queries.
+     *
      * @param Product $parentProduct
      * @param Product $childProduct
      * @return array
@@ -164,10 +165,21 @@ class ParentVariantResolver
             }
 
             $attrCode = $attr->getAttributeCode();
-            $value = $childProduct->getAttributeText($attrCode);
+
+            // Try fast in-memory raw data array first
+            $value = $childProduct->getData($attrCode . '_value')
+                ?? $childProduct->getData($attrCode);
+
+            // Fall back to EAV text resolution if the value is an option ID or missing text
+            if ($value !== null && is_numeric($value)) {
+                $valueText = $attr->getSource() ? $attr->getSource()->getOptionText($value) : null;
+                $value = $valueText !== false && $valueText !== null ? $valueText : $childProduct->getAttributeText($attrCode);
+            } elseif ($value === null) {
+                $value = $childProduct->getAttributeText($attrCode);
+            }
 
             if ($value) {
-                $variantOptions[$attrCode] = ['value' => $value];
+                $variantOptions[$attrCode] = ['value' => (string)$value];
             }
         }
 
@@ -176,10 +188,6 @@ class ParentVariantResolver
 
     /**
      * Try to resolve parent ID from row data.
-     *
-     * Only uses the stable resolver constants — generic keys like parent_id / __parent_id
-     * are intentionally excluded because they reflect a configurable source field and
-     * cannot be relied upon to always contain the internal entity ID.
      *
      * @param array $row
      * @return int|null
@@ -197,9 +205,6 @@ class ParentVariantResolver
 
     /**
      * Try to resolve parent SKU from row data.
-     *
-     * Only uses the stable resolver constants — generic keys like parent_sku / __parent_sku
-     * are intentionally excluded because they reflect a configurable source field.
      *
      * @param array $row
      * @return string|null
@@ -221,20 +226,16 @@ class ParentVariantResolver
     /**
      * Determine whether the row was built for the given parent.
      *
-     * Only reads the stable resolver constants written by ConfigurableDataProvider
-     * and GroupedDataProvider. Generic fields like parent_sku / __parent_sku are
-     * intentionally excluded because they reflect a configurable source field.
-     *
      * @param array $row
      * @param Product $parentProduct
      * @return bool
      */
     private function isChildAssignedToParentRow(array $row, Product $parentProduct): bool
     {
-        $parentId  = (string)$parentProduct->getId();
+        $parentId = (string)$parentProduct->getId();
         $parentSku = (string)$parentProduct->getSku();
 
-        $resolvedId  = $row[Constant::RESOLVED_PARENT_ID_KEY]  ?? null;
+        $resolvedId = $row[Constant::RESOLVED_PARENT_ID_KEY] ?? null;
         $resolvedSku = $row[Constant::RESOLVED_PARENT_SKU_KEY] ?? null;
 
         if ($resolvedId !== null && $this->isNumericScalar($resolvedId)) {
