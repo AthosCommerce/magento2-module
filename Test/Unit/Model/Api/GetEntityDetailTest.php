@@ -18,6 +18,8 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Test\Unit\Model\Api;
 
+require_once dirname(__DIR__, 2) . '/_files/bootstrap-stubs.php';
+
 use AthosCommerce\Feed\Api\Data\EntityTrackingItemInterface;
 use AthosCommerce\Feed\Api\Data\EntityTrackingItemInterfaceFactory;
 use AthosCommerce\Feed\Api\Data\IndexingEntityInterface;
