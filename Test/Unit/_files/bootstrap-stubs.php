@@ -13,6 +13,7 @@ require_once __DIR__ . '/Stubs/Magento/Review/Model/ResourceModel/Review/Summary
 require_once __DIR__ . '/Stubs/Magento/Sales/Model/ResourceModel/Order/Item/CollectionFactory.php';
 require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/EntityTrackingItemInterfaceFactory.php';
 require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/EntityTrackingListResponseInterfaceFactory.php';
+require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/ApplicationLogResponseInterfaceFactory.php';
 require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/TaskInterfaceFactory.php';
 require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/TaskErrorInterfaceFactory.php';
 require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/TaskSearchResultsInterfaceFactory.php';

@@ -18,6 +18,8 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Model\Api;
 
+use AthosCommerce\Feed\Api\Data\ApplicationLogResponseInterface;
+use AthosCommerce\Feed\Api\Data\ApplicationLogResponseInterfaceFactory;
 use AthosCommerce\Feed\Api\GetApplicationLogInterface;
 use AthosCommerce\Feed\Helper\LogInfo;
 
@@ -26,12 +28,20 @@ class GetApplicationLog implements GetApplicationLogInterface
     /** @var LogInfo */
     private $helper;
 
+    /** @var ApplicationLogResponseInterfaceFactory */
+    private $responseFactory;
+
     /**
      * @param LogInfo $helper
+     * @param ApplicationLogResponseInterfaceFactory $responseFactory
      */
-    public function __construct(LogInfo $helper)
+    public function __construct(
+        LogInfo $helper,
+        ApplicationLogResponseInterfaceFactory $responseFactory
+    )
     {
         $this->helper = $helper;
+        $this->responseFactory = $responseFactory;
     }
 
     /**
@@ -42,7 +52,7 @@ class GetApplicationLog implements GetApplicationLogInterface
      * @param string $keyword
      * @param string $startDate
      * @param string $endDate
-     * @return string
+     * @return ApplicationLogResponseInterface
      */
     public function getExtensionLog(
         bool   $compressOutput = false,
@@ -52,9 +62,9 @@ class GetApplicationLog implements GetApplicationLogInterface
         string $keyword = '',
         string $startDate = '',
         string $endDate = ''
-    ): string
+    ): ApplicationLogResponseInterface
     {
-        return $this->helper->getExtensionLogFile(
+        return $this->createResponse($this->helper->getExtensionLogFile(
             $compressOutput,
             $lastLines,
             $startLine,
@@ -62,7 +72,15 @@ class GetApplicationLog implements GetApplicationLogInterface
             $keyword,
             $startDate,
             $endDate
-        );
+        ), $compressOutput);
+    }
+    
+    /**
+     * @return bool
+     */
+    public function clearExtensionInfoLog(): bool
+    {
+        return $this->helper->deleteExtensionLogFile();
     }
 
     /**
@@ -73,7 +91,7 @@ class GetApplicationLog implements GetApplicationLogInterface
      * @param string $keyword
      * @param string $startDate
      * @param string $endDate
-     * @return string
+     * @return ApplicationLogResponseInterface
      */
     public function getCronLog(
         bool   $compressOutput = false,
@@ -82,9 +100,9 @@ class GetApplicationLog implements GetApplicationLogInterface
         int    $endLine = 0,
         string $keyword = '',
         string $startDate = '',
-        string $endDate = ''): string
+        string $endDate = ''): ApplicationLogResponseInterface
     {
-        return $this->helper->getCronLogFile(
+        return $this->createResponse($this->helper->getCronLogFile(
             $compressOutput,
             $lastLines,
             $startLine,
@@ -92,7 +110,7 @@ class GetApplicationLog implements GetApplicationLogInterface
             $keyword,
             $startDate,
             $endDate
-        );
+        ), $compressOutput);
     }
 
     /**
@@ -103,7 +121,7 @@ class GetApplicationLog implements GetApplicationLogInterface
      * @param string $keyword
      * @param string $startDate
      * @param string $endDate
-     * @return string
+     * @return ApplicationLogResponseInterface
      */
     public function getExtensionErrorLog(
         bool $compressOutput = false,
@@ -113,9 +131,9 @@ class GetApplicationLog implements GetApplicationLogInterface
         string $keyword = '',
         string $startDate = '',
         string $endDate = ''
-    ): string
+    ): ApplicationLogResponseInterface
     {
-        return $this->helper->getExtensionErrorLogFile(
+        return $this->createResponse($this->helper->getExtensionErrorLogFile(
             $compressOutput,
             $lastLines,
             $startLine,
@@ -123,7 +141,7 @@ class GetApplicationLog implements GetApplicationLogInterface
             $keyword,
             $startDate,
             $endDate
-        );
+        ), $compressOutput);
     }
 
     /**
@@ -142,7 +160,7 @@ class GetApplicationLog implements GetApplicationLogInterface
      * @param string $keyword
      * @param string $startDate
      * @param string $endDate
-     * @return string
+     * @return ApplicationLogResponseInterface
      */
     public function getExtensionDebugLog(
         bool $compressOutput = false,
@@ -152,9 +170,9 @@ class GetApplicationLog implements GetApplicationLogInterface
         string $keyword = '',
         string $startDate = '',
         string $endDate = ''
-    ): string
+    ): ApplicationLogResponseInterface
     {
-        return $this->helper->getExtensionDebugLogFile(
+        return $this->createResponse($this->helper->getExtensionDebugLogFile(
             $compressOutput,
             $lastLines,
             $startLine,
@@ -162,7 +180,7 @@ class GetApplicationLog implements GetApplicationLogInterface
             $keyword,
             $startDate,
             $endDate
-        );
+        ), $compressOutput);
     }
 
     /**
@@ -171,5 +189,29 @@ class GetApplicationLog implements GetApplicationLogInterface
     public function clearExtensionDebugLog(): bool
     {
         return $this->helper->deleteExtensionDebugLogFile();
+    }
+
+    /**
+     * @param string $content
+     * @param bool $compressOutput
+     * @return ApplicationLogResponseInterface
+     */
+    private function createResponse(string $content, bool $compressOutput): ApplicationLogResponseInterface
+    {
+        /** @var ApplicationLogResponseInterface $response */
+        $response = $this->responseFactory->create();
+        $response->setCompressed($compressOutput);
+
+        if ($content === '') {
+            return $response->setLines([])->setContent(null);
+        }
+
+        if ($compressOutput) {
+            return $response->setLines([])->setContent($content);
+        }
+
+        return $response
+            ->setLines(preg_split('/\r\n|\n|\r/', $content) ?: [])
+            ->setContent(null);
     }
 }

@@ -180,6 +180,25 @@ class LogInfoTest extends TestCase
         $this->assertEquals($logContent, $result);
     }
 
+    public function testGetExtensionLogFileDoesNotWriteReadAuditLine(): void
+    {
+        $expectedFilePath = $this->logDirPath . '/athoscommerce_feed.log';
+        $logContent = 'sample log content';
+        file_put_contents($expectedFilePath, $logContent);
+
+        $this->fileDriverMock->expects($this->once())
+            ->method('isExists')
+            ->with($expectedFilePath)
+            ->willReturn(true);
+
+        $this->loggerMock->expects($this->never())
+            ->method('info');
+
+        $result = $this->helper->getExtensionLogFile(false);
+
+        $this->assertEquals($logContent, $result);
+    }
+
     public function testGetExtensionLogFileCompressed(): void
     {
         $expectedFilePath = $this->logDirPath . '/athoscommerce_feed.log';

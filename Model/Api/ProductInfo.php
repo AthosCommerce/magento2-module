@@ -22,6 +22,7 @@ use AthosCommerce\Feed\Api\MetadataInterface;
 use AthosCommerce\Feed\Api\ProductInfoInterface;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\CollectionProcessor;
+use AthosCommerce\Feed\Model\Feed\ContextManagerInterface;
 use AthosCommerce\Feed\Model\Feed\SpecificationBuilderInterface;
 use AthosCommerce\Feed\Model\ItemsGenerator;
 use AthosCommerce\Feed\Api\Data\ProductInfoResponseInterfaceFactory;
@@ -64,6 +65,10 @@ class ProductInfo implements ProductInfoInterface
      * @var TaskPayloadProvider
      */
     private $taskPayloadProvider;
+    /**
+     * @var ContextManagerInterface
+     */
+    private $contextManager;
 
     /**
      * @param CollectionProcessor $collectionProcessor
@@ -74,6 +79,7 @@ class ProductInfo implements ProductInfoInterface
      * @param ProductInfoResponseInterfaceFactory $responseFactory
      * @param AthosCommerceLogger $logger
      * @param TaskPayloadProvider $taskPayloadProvider
+     * @param ContextManagerInterface $contextManager
      */
     public function __construct(
         CollectionProcessor                 $collectionProcessor,
@@ -83,7 +89,8 @@ class ProductInfo implements ProductInfoInterface
         SerializerInterface                 $serializer,
         ProductInfoResponseInterfaceFactory $responseFactory,
         AthosCommerceLogger                 $logger,
-        TaskPayloadProvider                 $taskPayloadProvider
+        TaskPayloadProvider                 $taskPayloadProvider,
+        ContextManagerInterface             $contextManager,
     )
     {
         $this->collectionProcessor = $collectionProcessor;
@@ -94,6 +101,7 @@ class ProductInfo implements ProductInfoInterface
         $this->responseFactory = $responseFactory;
         $this->logger = $logger;
         $this->taskPayloadProvider = $taskPayloadProvider;
+        $this->contextManager = $contextManager;
     }
 
     /**
@@ -151,6 +159,7 @@ class ProductInfo implements ProductInfoInterface
             }
 
             $feedSpecification = $this->specificationBuilder->build($payload);
+            $this->contextManager->setContextFromSpecification($feedSpecification);
             $this->itemsGenerator->resetDataProviders($feedSpecification);
 
             $collection = $this->collectionProcessor->getCollection($feedSpecification);

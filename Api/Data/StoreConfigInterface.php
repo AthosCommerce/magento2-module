@@ -9,6 +9,7 @@ interface StoreConfigInterface
     public const SITE_ID = 'siteId';
     public const END_POINT = 'endPoint';
     public const SECRET_KEY = 'secretKey';
+    public const SECRET_KEY_LENGTH = 'secretKeyLength';
 
     public const ENABLE_LIVE_INDEXING = 'enableLiveIndexing';
     public const ENTITY_SYNC_CRON_EXPR = 'entitySyncCronExpr';
@@ -71,6 +72,17 @@ interface StoreConfigInterface
      * @return self
      */
     public function setSecretKey(?string $secretKey): self;
+
+    /**
+     * @return int|null
+     */
+    public function getSecretKeyLength(): ?int;
+
+    /**
+     * @param int|null $secretKeyLength
+     * @return self
+     */
+    public function setSecretKeyLength(?int $secretKeyLength): self;
 
     /**
      * @return int|null

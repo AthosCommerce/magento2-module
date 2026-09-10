@@ -14,6 +14,12 @@
             <resource ref="AthosCommerce_Feed::general" />
         </resources>
     </route>
+    <route url="/V1/athoscommerce/applicationlog/clear" method="POST">
+        <service class="AthosCommerce\Feed\Api\GetApplicationLogInterface" method="clearExtensionInfoLog" />
+        <resources>
+            <resource ref="AthosCommerce_Feed::general" />
+        </resources>
+    </route>
     <route url="/V1/athoscommerce/applicationlog/error" method="GET">
         <service class="AthosCommerce\Feed\Api\GetApplicationLogInterface" method="getExtensionErrorLog" />
         <resources>

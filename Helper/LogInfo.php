@@ -339,7 +339,6 @@ class LogInfo extends AbstractHelper
             $logFile = $logPath . '/' . $fileName;
 
             if ($this->fileDriver->isExists($logFile)) {
-                $this->logger->info($infoMsg . ' ' . $logPath);
                 return $this->logFileReader->read(
                     $logFile,
                     $compressOutput,

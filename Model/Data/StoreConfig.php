@@ -107,6 +107,23 @@ class StoreConfig extends AbstractExtensibleModel implements StoreConfigInterfac
     /**
      * @return int|null
      */
+    public function getSecretKeyLength(): ?int
+    {
+        $value = $this->getData(self::SECRET_KEY_LENGTH);
+        return $value === null ? null : (int)$value;
+    }
+
+    /**
+     * @param int|null $secretKeyLength
+     */
+    public function setSecretKeyLength(?int $secretKeyLength): self
+    {
+        return $this->setData(self::SECRET_KEY_LENGTH, $secretKeyLength);
+    }
+
+    /**
+     * @return int|null
+     */
     public function getEnableLiveIndexing(): ?int
     {
         return $this->getData(self::ENABLE_LIVE_INDEXING);

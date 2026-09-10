@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Api;
 
+use AthosCommerce\Feed\Api\Data\ApplicationLogResponseInterface;
 use Magento\Framework\Api\SearchCriteriaInterface;
 use Magento\Framework\Exception\CouldNotDeleteException;
 use Magento\Framework\Exception\CouldNotSaveException;
@@ -36,7 +37,7 @@ interface GetApplicationLogInterface
      * @param string $startDate ISO 8601 date/datetime to filter lines on or after (e.g. 2025-01-15 or 2025-01-15T10:00:00).
      * @param string $endDate ISO 8601 date/datetime to filter lines on or before (e.g. 2025-01-15 includes the full day).
      *
-     * @return string
+     * @return ApplicationLogResponseInterface
      *
      * @throws LocalizedException
      */
@@ -48,7 +49,14 @@ interface GetApplicationLogInterface
         string $keyword = '',
         string $startDate = '',
         string $endDate = ''
-    ): string;
+    ): ApplicationLogResponseInterface;
+    
+    /**
+     * @return bool
+     *
+     * @throws LocalizedException
+     */
+    public function clearExtensionInfoLog(): bool;
 
     /**
      * @param bool $compressOutput
@@ -59,7 +67,7 @@ interface GetApplicationLogInterface
      * @param string $startDate ISO 8601 date/datetime to filter lines on or after.
      * @param string $endDate ISO 8601 date/datetime to filter lines on or before.
      *
-     * @return string
+     * @return ApplicationLogResponseInterface
      *
      * @throws LocalizedException
      */
@@ -71,7 +79,7 @@ interface GetApplicationLogInterface
         string $keyword = '',
         string $startDate = '',
         string $endDate = ''
-    ): string;
+    ): ApplicationLogResponseInterface;
 
     /**
      * @param bool $compressOutput
@@ -82,7 +90,7 @@ interface GetApplicationLogInterface
      * @param string $startDate ISO 8601 date/datetime to filter lines on or after.
      * @param string $endDate ISO 8601 date/datetime to filter lines on or before.
      *
-     * @return string
+     * @return ApplicationLogResponseInterface
      *
      * @throws LocalizedException
      */
@@ -94,7 +102,7 @@ interface GetApplicationLogInterface
         string $keyword = '',
         string $startDate = '',
         string $endDate = ''
-    ): string;
+    ): ApplicationLogResponseInterface;
 
     /**
      * @return bool
@@ -112,7 +120,7 @@ interface GetApplicationLogInterface
      * @param string $startDate ISO 8601 date/datetime to filter lines on or after.
      * @param string $endDate ISO 8601 date/datetime to filter lines on or before.
      *
-     * @return string
+     * @return ApplicationLogResponseInterface
      *
      * @throws LocalizedException
      */
@@ -124,7 +132,7 @@ interface GetApplicationLogInterface
         string $keyword = '',
         string $startDate = '',
         string $endDate = ''
-    ): string;
+    ): ApplicationLogResponseInterface;
 
     /**
      * @return bool
