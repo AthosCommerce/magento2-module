@@ -25,7 +25,8 @@ use AthosCommerce\Feed\Model\Config\ConfigMap;
 use AthosCommerce\Feed\Model\Config\StoreConfigApiMapper;
 use AthosCommerce\Feed\Model\Data\ConfigInfoResponseFactory;
 use AthosCommerce\Feed\Model\Data\StoreConfigFactory;
-use \AthosCommerce\Feed\Model\ConfigRepository;
+use AthosCommerce\Feed\Model\ConfigRepository;
+use Magento\Framework\Encryption\EncryptorInterface;
 use Magento\Store\Model\StoreManagerInterface;
 
 class GetConfigInfo implements GetConfigInfoInterface
@@ -48,6 +49,9 @@ class GetConfigInfo implements GetConfigInfoInterface
     /** @var StoreConfigApiMapper */
     private $storeConfigApiMapper;
 
+    /** @var EncryptorInterface */
+    private $encryptor;
+
     /**
      * @param ConfigRepository $configRepository
      * @param StoreManagerInterface $storeManager
@@ -55,6 +59,7 @@ class GetConfigInfo implements GetConfigInfoInterface
      * @param ConfigInfoResponseFactory $responseFactory
      * @param StoreConfigFactory $storeConfigFactory
      * @param StoreConfigApiMapper $storeConfigApiMapper
+     * @param EncryptorInterface $encryptor
      */
     public function __construct(
         ConfigRepository          $configRepository,
@@ -62,18 +67,21 @@ class GetConfigInfo implements GetConfigInfoInterface
         AthosCommerceLogger       $logger,
         ConfigInfoResponseFactory $responseFactory,
         StoreConfigFactory        $storeConfigFactory,
-        StoreConfigApiMapper      $storeConfigApiMapper
-    )
-    {
+        StoreConfigApiMapper      $storeConfigApiMapper,
+        EncryptorInterface        $encryptor
+    ) {
         $this->configRepository = $configRepository;
         $this->storeManager = $storeManager;
         $this->logger = $logger;
         $this->responseFactory = $responseFactory;
         $this->storeConfigFactory = $storeConfigFactory;
         $this->storeConfigApiMapper = $storeConfigApiMapper;
+        $this->encryptor = $encryptor;
     }
 
     /**
+     * Get config information for all stores.
+     *
      * @return ConfigInfoResponseInterface
      */
     public function get(): ConfigInfoResponseInterface
@@ -108,6 +116,12 @@ class GetConfigInfo implements GetConfigInfoInterface
                 }
                 $value = $row['value'];
 
+                if ($meta['type'] === 'secret') {
+                    $rawValue = (string)$value;
+                    $decryptedValue = $rawValue !== '' ? $this->encryptor->decrypt($rawValue) : '';
+                    $value = $decryptedValue !== '' ? $decryptedValue : $rawValue;
+                }
+
                 if (in_array($meta['type'], ['bool', 'int'], true)) {
                     $value = (int)$value;
                 }
@@ -138,6 +152,9 @@ class GetConfigInfo implements GetConfigInfoInterface
                 $setter = 'set' . ucfirst($outputKey);
                 if (method_exists($stores[$storeId], $setter)) {
                     $stores[$storeId]->{$setter}($value);
+                    if ($outputKey === 'secretKey' && is_string($value) && $value !== '') {
+                        $stores[$storeId]->setSecretKeyLength(strlen($value));
+                    }
                 } else {
                     $this->logger->warning(
                         'Setter method not found in StoreConfig model',

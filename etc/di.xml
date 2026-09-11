@@ -7,6 +7,10 @@
                 type="AthosCommerce\Feed\Model\Task"/>
     <preference for="AthosCommerce\Feed\Api\Data\TaskErrorInterface"
                 type="AthosCommerce\Feed\Model\Data\TaskError"/>
+    <preference for="AthosCommerce\Feed\Api\Data\TaskErrorItemInterface"
+                type="AthosCommerce\Feed\Model\Data\TaskErrorItem"/>
+    <preference for="AthosCommerce\Feed\Api\Data\TaskErrorListResponseInterface"
+                type="AthosCommerce\Feed\Model\Data\TaskErrorListResponse"/>
     <preference for="AthosCommerce\Feed\Api\Data\TaskSearchResultsInterface"
                 type="AthosCommerce\Feed\Model\TaskSearchResults"/>
     <preference for="AthosCommerce\Feed\Api\Data\FeedSpecificationInterface"
@@ -43,6 +47,8 @@
                 type="AthosCommerce\Feed\Model\Api\GetVersion"/>
     <preference for="AthosCommerce\Feed\Api\GetApplicationLogInterface"
                 type="AthosCommerce\Feed\Model\Api\GetApplicationLog"/>
+    <preference for="AthosCommerce\Feed\Api\GetTaskErrorsInterface"
+                type="AthosCommerce\Feed\Model\Api\GetTaskErrors"/>
     <preference for="AthosCommerce\Feed\Api\GetCustomersInterface"
                 type="AthosCommerce\Feed\Model\Api\GetCustomers"/>
     <preference for="AthosCommerce\Feed\Api\GetSalesInterface"
@@ -174,6 +180,8 @@
                 type="AthosCommerce\Feed\Model\Data\EntityTrackingItem"/>
     <preference for="AthosCommerce\Feed\Api\Data\EntityTrackingListResponseInterface"
                 type="AthosCommerce\Feed\Model\Data\EntityTrackingListResponse"/>
+    <preference for="AthosCommerce\Feed\Api\Data\ApplicationLogResponseInterface"
+                type="AthosCommerce\Feed\Model\Data\ApplicationLogResponse"/>
 
     <preference for="AthosCommerce\Feed\Api\Data\ProductOptionsResponseInterface"
                 type="AthosCommerce\Feed\Model\Data\ProductOptionsResponse"/>
