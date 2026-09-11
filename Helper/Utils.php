@@ -29,7 +29,7 @@ class Utils
     }
 
     // Checks to see if the input parameter provided in the get request contains two strings that
-    // can be parsed into valid dates. Returns true if they can be, false otherwise.
+    // can be parsed into valid dates and, when both are present, ensures from <= to.
     public static function validateDateRange($date_param)
     {
         $dateRange = Utils::getDateRange($date_param);
@@ -44,6 +44,10 @@ class Utils
                     return false;
                 }
             }
+
+            if (isset($dateRange[0], $dateRange[1]) && strtotime($dateRange[0]) > strtotime($dateRange[1])) {
+                return false;
+            }
         }
 
         return true;
@@ -57,39 +61,41 @@ class Utils
     // For example, &dateRange=1,3 creates a chunk starting at sale element 0 and ending at
     // sale element 2. And, &dateRange=10,3 creates a chunk starting at sale element 9
     // and ending at sale element 11.
-    public static function getRowRange($row_param){
-        if ($row_param != 'All'){
-            $result = explode(",", $row_param);
-            $result[0] = (int)$result[0] - 1;
-            $result[1] = (int)$result[1];
-            return $result;
+    public static function getRowRange($row_param)
+    {
+        if (!self::validateRowRange($row_param)) {
+            return false;
         }
 
-        return false;
+        $result = array_map('trim', explode(",", $row_param));
+
+        return [
+            (int)$result[0] - 1,
+            (int)$result[1],
+        ];
     }
 
     public static function validateRowRange($row_param) {
-        $isValidRowRange = true;
-        if ($row_param != 'All') {
-            $result = explode(",", $row_param);
-            if (count($result) != 2) {
-                $isValidRowRange = false;
-            }
-
-            if (isset($result[0])) {
-                $result[0] = (int) $result[0];
-                if ($result[0] <= 0) {
-                    $isValidRowRange = false;
-                }
-            }
-            if (isset($result[1])) {
-                $result[1] = (int) $result[1];
-                if ($result[1] <= 0) {
-                    $isValidRowRange = false;
-                }
-            }
+        if ($row_param === 'All') {
+            return false;
         }
-        return $isValidRowRange;
+
+        $result = explode(",", $row_param);
+        if (count($result) !== 2) {
+            return false;
+        }
+
+        $start = trim($result[0]);
+        $count = trim($result[1]);
+        if (!ctype_digit($start) || !ctype_digit($count)) {
+            return false;
+        }
+
+        if ((int)$start <= 0 || (int)$count <= 0) {
+            return false;
+        }
+
+        return true;
     }
 
     public static function plusOneDay($date, $format = 'Y-m-d')

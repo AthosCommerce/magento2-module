@@ -7,11 +7,11 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 declare(strict_types=1);
@@ -23,6 +23,7 @@ use AthosCommerce\Feed\Api\Data\CustomersInterface;
 use AthosCommerce\Feed\Api\Data\CustomersInterfaceFactory;
 use AthosCommerce\Feed\Exception\ValidationException;
 use AthosCommerce\Feed\Helper\Customer;
+use AthosCommerce\Feed\Model\Config;
 use AthosCommerce\Feed\Helper\Utils;
 
 class GetCustomers implements GetCustomersInterface
@@ -33,14 +34,22 @@ class GetCustomers implements GetCustomersInterface
     /** @var CustomersInterfaceFactory */
     private $customersFactory;
 
+    /** @var Config */
+    private $config;
+
     /**
      * @param Customer $helper
      * @param CustomersInterfaceFactory $customersFactory
+     * @param Config $config
      */
-    public function __construct(Customer $helper, CustomersInterfaceFactory $customersFactory)
-    {
+    public function __construct(
+        Customer $helper,
+        CustomersInterfaceFactory $customersFactory,
+        Config $config
+    ) {
         $this->helper = $helper;
         $this->customersFactory = $customersFactory;
+        $this->config = $config;
     }
 
     /**
@@ -51,23 +60,57 @@ class GetCustomers implements GetCustomersInterface
      *
      * @throws ValidationException
      */
-    public function getList(string $dateRange = "All", string $rowRange = "All"): CustomersInterface
+    public function getList(string $dateRange, string $rowRange): CustomersInterface
     {
+        $maxPageSize = $this->config->getCustomersApiMaxPageSizeByStoreId();
         $errors = [];
-        if (!Utils::validateDateRange($dateRange)){
-            $errors[] = "Invalid date range $dateRange";
+        $messages = [];
+        $rowRangeValues = null;
+
+        if ($dateRange === 'All' || !Utils::validateDateRange($dateRange)) {
+            $messages[] = 'Invalid dateRange.';
+            $errors[] = [
+                'fieldName' => 'dateRange',
+                'fieldValue' => $dateRange,
+                'message' => 'dateRange must be a bounded date or date range in Y-m-d or Y-m-d,Y-m-d format.'
+            ];
         }
 
-        if (!Utils::validateRowRange($rowRange)){
-            $errors[] = "Invalid row range $rowRange";
+        if ($rowRange === 'All' || !Utils::validateRowRange($rowRange)) {
+            $messages[] = 'Invalid rowRange.';
+            $errors[] = [
+                'fieldName' => 'rowRange',
+                'fieldValue' => $rowRange,
+                'message' => 'rowRange must be a bounded range in start,count format with positive integers.'
+            ];
+        } else {
+            $rowRangeValues = Utils::getRowRange($rowRange);
         }
 
-        if (!empty($errors)){
-            throw new ValidationException($errors, 400);
+        if ($rowRangeValues !== null && (int)$rowRangeValues[1] > $maxPageSize) {
+            $messages[] = 'Invalid rowRange.';
+            $errors[] = [
+                'fieldName' => 'rowRange',
+                'fieldValue' => $rowRange,
+                'message' => 'rowRange count exceeds the configured maximum of ' . $maxPageSize . '.'
+            ];
         }
 
+        if (!empty($errors)) {
+            throw new ValidationException($messages, 400, null, $errors);
+        }
+
+        $totalCount = $this->helper->getCustomersTotalCount($dateRange);
+        $offset = (int)$rowRangeValues[0];
+        $pageSize = (int)$rowRangeValues[1];
         $customers = $this->customersFactory->create();
-        $customers->setCustomers($this->helper->getCustomers($dateRange, $rowRange));
+        $customerItems = $offset < $totalCount
+            ? $this->helper->getCustomers($dateRange, $rowRange)
+            : [];
+        $customers->setCustomers($customerItems);
+        $customers->setPageSize($pageSize);
+        $customers->setCurrentSize(count($customerItems));
+        $customers->setTotalCount($totalCount);
 
         return $customers;
     }
