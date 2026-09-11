@@ -37,16 +37,37 @@ use PHPUnit\Framework\TestCase;
 
 class ProductInfoTest extends TestCase
 {
+    /** @var CollectionProcessor|\PHPUnit\Framework\MockObject\MockObject */
     private $collectionProcessorMock;
+
+    /** @var ItemsGenerator|\PHPUnit\Framework\MockObject\MockObject */
     private $itemsGeneratorMock;
+
+    /** @var SpecificationBuilderInterface|\PHPUnit\Framework\MockObject\MockObject */
     private $specificationBuilderMock;
+
+    /** @var ScopeConfigInterface|\PHPUnit\Framework\MockObject\MockObject */
     private $scopeConfigMock;
+
+    /** @var SerializerInterface|\PHPUnit\Framework\MockObject\MockObject */
     private $serializerMock;
+
+    /** @var ProductInfoResponseInterfaceFactory|\PHPUnit\Framework\MockObject\MockObject */
     private $responseFactoryMock;
+
+    /** @var ProductInfoResponseInterface|\PHPUnit\Framework\MockObject\MockObject */
     private $responseMock;
+
+    /** @var AthosCommerceLogger|\PHPUnit\Framework\MockObject\MockObject */
     private $loggerMock;
+
+    /** @var TaskPayloadProvider|\PHPUnit\Framework\MockObject\MockObject */
     private $taskPayloadProviderMock;
+
+    /** @var ContextManagerInterface|\PHPUnit\Framework\MockObject\MockObject */
     private $contextManagerMock;
+
+    /** @var ProductInfo */
     private $model;
 
     protected function setUp(): void
@@ -94,20 +115,44 @@ class ProductInfoTest extends TestCase
             }
         };
 
-        $this->scopeConfigMock->expects($this->once())->method('getValue')->willReturn(['payload' => true]);
-        $this->specificationBuilderMock->expects($this->once())->method('build')->with(['payload' => true])->willReturn($feedSpecificationMock);
-        $this->contextManagerMock->expects($this->once())->method('setContextFromSpecification')->with($feedSpecificationMock);
+        $this->scopeConfigMock->expects($this->once())
+            ->method('getValue')
+            ->willReturn(['payload' => true]);
+        $this->specificationBuilderMock->expects($this->once())
+            ->method('build')
+            ->with(['payload' => true])
+            ->willReturn($feedSpecificationMock);
+        $this->contextManagerMock->expects($this->once())
+            ->method('setContextFromSpecification')
+            ->with($feedSpecificationMock);
         $this->contextManagerMock->expects($this->once())->method('resetContext');
-        $this->itemsGeneratorMock->expects($this->once())->method('resetDataProviders')->with($feedSpecificationMock);
-        $this->collectionProcessorMock->expects($this->once())->method('getCollection')->with($feedSpecificationMock)->willReturn($collectionMock);
-        $collectionMock->expects($this->once())->method('addFieldToFilter')->with('entity_id', ['in' => [10]])->willReturnSelf();
+        $this->itemsGeneratorMock->expects($this->once())
+            ->method('resetDataProviders')
+            ->with($feedSpecificationMock);
+        $this->collectionProcessorMock->expects($this->once())
+            ->method('getCollection')
+            ->with($feedSpecificationMock)
+            ->willReturn($collectionMock);
+        $collectionMock->expects($this->once())
+            ->method('addFieldToFilter')
+            ->with('entity_id', ['in' => [10]])
+            ->willReturnSelf();
         $collectionMock->expects($this->once())->method('load')->willReturnSelf();
-        $this->collectionProcessorMock->expects($this->once())->method('processAfterLoad')->with($collectionMock, $feedSpecificationMock);
+        $this->collectionProcessorMock->expects($this->once())
+            ->method('processAfterLoad')
+            ->with($collectionMock, $feedSpecificationMock);
         $collectionMock->expects($this->once())->method('getSize')->willReturn(1);
         $collectionMock->expects($this->once())->method('getItems')->willReturn([]);
-        $this->itemsGeneratorMock->expects($this->once())->method('generate')->with([], $feedSpecificationMock)->willReturn($itemsData);
-        $this->itemsGeneratorMock->expects($this->once())->method('resetDataProvidersAfterFetchItems')->with($feedSpecificationMock);
-        $this->collectionProcessorMock->expects($this->once())->method('processAfterFetchItems')->with($collectionMock, $feedSpecificationMock);
+        $this->itemsGeneratorMock->expects($this->once())
+            ->method('generate')
+            ->with([], $feedSpecificationMock)
+            ->willReturn($itemsData);
+        $this->itemsGeneratorMock->expects($this->once())
+            ->method('resetDataProvidersAfterFetchItems')
+            ->with($feedSpecificationMock);
+        $this->collectionProcessorMock->expects($this->once())
+            ->method('processAfterFetchItems')
+            ->with($collectionMock, $feedSpecificationMock);
         $collectionMock->expects($this->once())->method('getSelect')->willReturn($select);
         $this->responseMock->expects($this->once())->method('setProductIds')->with([10])->willReturnSelf();
         $this->responseMock->expects($this->once())->method('setProductInfo')->with($itemsData)->willReturnSelf();
@@ -128,20 +173,34 @@ class ProductInfoTest extends TestCase
             }
         };
 
-        $this->scopeConfigMock->expects($this->once())->method('getValue')->willReturn(['payload' => true]);
+        $this->scopeConfigMock->expects($this->once())
+            ->method('getValue')
+            ->willReturn(['payload' => true]);
         $this->specificationBuilderMock->expects($this->once())->method('build')->willReturn($feedSpecificationMock);
-        $this->contextManagerMock->expects($this->once())->method('setContextFromSpecification')->with($feedSpecificationMock);
+        $this->contextManagerMock->expects($this->once())
+            ->method('setContextFromSpecification')
+            ->with($feedSpecificationMock);
         $this->contextManagerMock->expects($this->once())->method('resetContext');
-        $this->itemsGeneratorMock->expects($this->once())->method('resetDataProviders')->with($feedSpecificationMock);
+        $this->itemsGeneratorMock->expects($this->once())
+            ->method('resetDataProviders')
+            ->with($feedSpecificationMock);
         $this->collectionProcessorMock->expects($this->once())->method('getCollection')->willReturn($collectionMock);
-        $collectionMock->expects($this->once())->method('addFieldToFilter')->with('entity_id', ['in' => [11]])->willReturnSelf();
+        $collectionMock->expects($this->once())
+            ->method('addFieldToFilter')
+            ->with('entity_id', ['in' => [11]])
+            ->willReturnSelf();
         $collectionMock->expects($this->once())->method('load')->willReturnSelf();
-        $this->collectionProcessorMock->expects($this->once())->method('processAfterLoad')->with($collectionMock, $feedSpecificationMock);
+        $this->collectionProcessorMock->expects($this->once())
+            ->method('processAfterLoad')
+            ->with($collectionMock, $feedSpecificationMock);
         $collectionMock->expects($this->once())->method('getSize')->willReturn(0);
         $collectionMock->expects($this->once())->method('getSelect')->willReturn($select);
         $this->responseMock->expects($this->once())->method('setProductIds')->with([11])->willReturnSelf();
         $this->responseMock->expects($this->once())->method('setProductInfo')->with([])->willReturnSelf();
-        $this->responseMock->expects($this->once())->method('setMessage')->with($this->stringContains('No products found'))->willReturnSelf();
+        $this->responseMock->expects($this->once())
+            ->method('setMessage')
+            ->with($this->stringContains('No products found'))
+            ->willReturnSelf();
 
         $result = $this->model->getInfo(11, 2);
 
@@ -153,13 +212,22 @@ class ProductInfoTest extends TestCase
         $feedSpecificationMock = $this->createMock(FeedSpecificationInterface::class);
         $collectionMock = $this->createMock(Collection::class);
 
-        $this->scopeConfigMock->expects($this->once())->method('getValue')->willReturn(['payload' => true]);
+        $this->scopeConfigMock->expects($this->once())
+            ->method('getValue')
+            ->willReturn(['payload' => true]);
         $this->specificationBuilderMock->expects($this->once())->method('build')->willReturn($feedSpecificationMock);
-        $this->contextManagerMock->expects($this->once())->method('setContextFromSpecification')->with($feedSpecificationMock);
+        $this->contextManagerMock->expects($this->once())
+            ->method('setContextFromSpecification')
+            ->with($feedSpecificationMock);
         $this->contextManagerMock->expects($this->once())->method('resetContext');
-        $this->itemsGeneratorMock->expects($this->once())->method('resetDataProviders')->with($feedSpecificationMock);
+        $this->itemsGeneratorMock->expects($this->once())
+            ->method('resetDataProviders')
+            ->with($feedSpecificationMock);
         $this->collectionProcessorMock->expects($this->once())->method('getCollection')->willReturn($collectionMock);
-        $collectionMock->expects($this->once())->method('addFieldToFilter')->with('entity_id', ['in' => [12]])->willReturnSelf();
+        $collectionMock->expects($this->once())
+            ->method('addFieldToFilter')
+            ->with('entity_id', ['in' => [12]])
+            ->willReturnSelf();
         $collectionMock->expects($this->once())->method('load')->willReturnSelf();
         $this->collectionProcessorMock->expects($this->once())
             ->method('processAfterLoad')

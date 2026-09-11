@@ -24,22 +24,30 @@ interface TaskErrorItemInterface extends TaskErrorInterface
     public const CREATED_AT = 'created_at';
 
     /**
+     * Get the task ID.
+     *
      * @return int
      */
     public function getTaskId(): int;
 
     /**
+     * Set the task ID.
+     *
      * @param int $taskId
      * @return self
      */
     public function setTaskId(int $taskId): self;
 
     /**
+     * Get the error creation timestamp.
+     *
      * @return string|null
      */
     public function getCreatedAt(): ?string;
 
     /**
+     * Set the error creation timestamp.
+     *
      * @param string|null $createdAt
      * @return self
      */

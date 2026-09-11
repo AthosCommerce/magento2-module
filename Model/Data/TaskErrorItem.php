@@ -23,6 +23,8 @@ use AthosCommerce\Feed\Api\Data\TaskErrorItemInterface;
 class TaskErrorItem extends TaskError implements TaskErrorItemInterface
 {
     /**
+     * Get the task ID.
+     *
      * @return int
      */
     public function getTaskId(): int
@@ -31,6 +33,8 @@ class TaskErrorItem extends TaskError implements TaskErrorItemInterface
     }
 
     /**
+     * Set the task ID.
+     *
      * @param int $taskId
      * @return TaskErrorItemInterface
      */
@@ -40,6 +44,8 @@ class TaskErrorItem extends TaskError implements TaskErrorItemInterface
     }
 
     /**
+     * Get the error creation timestamp.
+     *
      * @return string|null
      */
     public function getCreatedAt(): ?string
@@ -48,6 +54,8 @@ class TaskErrorItem extends TaskError implements TaskErrorItemInterface
     }
 
     /**
+     * Set the error creation timestamp.
+     *
      * @param string|null $createdAt
      * @return TaskErrorItemInterface
      */

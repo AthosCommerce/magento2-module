@@ -7,6 +7,7 @@ namespace AthosCommerce\Feed\Api\Data;
 if (!class_exists(TaskErrorItemInterfaceFactory::class, false)) {
     class TaskErrorItemInterfaceFactory
     {
+        /** @var mixed */
         private $instance;
 
         public function __construct($instance = null)

@@ -21,44 +21,60 @@ namespace AthosCommerce\Feed\Api\Data;
 interface TaskErrorListResponseInterface
 {
     /**
+     * Get task error items.
+     *
      * @return TaskErrorItemInterface[]
      */
     public function getItems(): array;
 
     /**
+     * Set task error items.
+     *
      * @param TaskErrorItemInterface[] $items
      * @return self
      */
     public function setItems(array $items): self;
 
     /**
+     * Get the total number of matching errors.
+     *
      * @return int
      */
     public function getTotal(): int;
 
     /**
+     * Set the total number of matching errors.
+     *
      * @param int $total
      * @return self
      */
     public function setTotal(int $total): self;
 
     /**
+     * Get the current page number.
+     *
      * @return int
      */
     public function getCurrentPage(): int;
 
     /**
+     * Set the current page number.
+     *
      * @param int $currentPage
      * @return self
      */
     public function setCurrentPage(int $currentPage): self;
 
     /**
+     * Get the configured page size.
+     *
      * @return int
      */
     public function getPageSize(): int;
 
     /**
+     * Set the configured page size.
+     *
      * @param int $pageSize
      * @return self
      */

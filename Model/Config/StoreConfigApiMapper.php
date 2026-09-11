@@ -30,6 +30,8 @@ class StoreConfigApiMapper
     ];
 
     /**
+     * Map store config data for the public API.
+     *
      * @param StoreConfigInterface $store
      * @return array
      */

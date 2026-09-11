@@ -33,10 +33,19 @@ use PHPUnit\Framework\TestCase;
 
 class GetTaskErrorsTest extends TestCase
 {
+    /** @var ResourceConnection|\PHPUnit\Framework\MockObject\MockObject */
     private $resourceConnectionMock;
+
+    /** @var TaskErrorItemInterfaceFactory|\PHPUnit\Framework\MockObject\MockObject */
     private $itemFactoryMock;
+
+    /** @var TaskErrorListResponseInterfaceFactory|\PHPUnit\Framework\MockObject\MockObject */
     private $responseFactoryMock;
+
+    /** @var AthosCommerceLogger|\PHPUnit\Framework\MockObject\MockObject */
     private $loggerMock;
+
+    /** @var GetTaskErrors */
     private $model;
 
     protected function setUp(): void

@@ -150,7 +150,10 @@ class GetApplicationLogTest extends TestCase
             ->willReturn($this->responseMock);
         $this->responseMock->expects($this->once())->method('setCompressed')->with(true)->willReturnSelf();
         $this->responseMock->expects($this->once())->method('setLines')->with([])->willReturnSelf();
-        $this->responseMock->expects($this->once())->method('setContent')->with('compressed-error-payload')->willReturnSelf();
+        $this->responseMock->expects($this->once())
+            ->method('setContent')
+            ->with('compressed-error-payload')
+            ->willReturnSelf();
 
         $result = $this->model->getExtensionErrorLog(true, 12, 0, 0, 'timeout');
 

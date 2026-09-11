@@ -49,7 +49,10 @@ class LogInfoTest extends TestCase
      */
     private $helper;
 
+    /** @var string */
     private string $logDirPath;
+
+    /** @var string */
     private string $logFilePath;
 
     protected function setUp(): void

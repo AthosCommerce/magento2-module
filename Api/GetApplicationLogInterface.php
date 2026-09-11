@@ -29,13 +29,15 @@ use AthosCommerce\Feed\Api\Data\CustomerResultsInterface;
 interface GetApplicationLogInterface
 {
     /**
+     * Get the main extension log.
+     *
      * @param bool $compressOutput
-     * @param int $lastLines Number of lines from the end (default 100). Ignored when startLine or endLine is provided.
-     * @param int $startLine 1-based start line (0 = beginning of file). Used with endLine for a positional range.
-     * @param int $endLine 1-based end line (0 = end of file). Used with startLine for a positional range.
+     * @param int $lastLines Number of lines from the end; ignored when startLine or endLine is provided.
+     * @param int $startLine 1-based start line; 0 means beginning of file.
+     * @param int $endLine 1-based end line; 0 means end of file.
      * @param string $keyword Plain string or regex (e.g. /pattern/i) to filter matching lines.
-     * @param string $startDate ISO 8601 date/datetime to filter lines on or after (e.g. 2025-01-15 or 2025-01-15T10:00:00).
-     * @param string $endDate ISO 8601 date/datetime to filter lines on or before (e.g. 2025-01-15 includes the full day).
+     * @param string $startDate ISO 8601 date/datetime to filter lines on or after.
+     * @param string $endDate ISO 8601 date/datetime to filter lines on or before.
      *
      * @return ApplicationLogResponseInterface
      *
@@ -52,6 +54,8 @@ interface GetApplicationLogInterface
     ): ApplicationLogResponseInterface;
     
     /**
+     * Clear the main extension log.
+     *
      * @return bool
      *
      * @throws LocalizedException
@@ -59,10 +63,12 @@ interface GetApplicationLogInterface
     public function clearExtensionInfoLog(): bool;
 
     /**
+     * Get the cron log.
+     *
      * @param bool $compressOutput
-     * @param int $lastLines Number of lines from the end (default 100). Ignored when startLine or endLine is provided.
-     * @param int $startLine 1-based start line (0 = beginning of file). Used with endLine for a positional range.
-     * @param int $endLine 1-based end line (0 = end of file). Used with startLine for a positional range.
+     * @param int $lastLines Number of lines from the end; ignored when startLine or endLine is provided.
+     * @param int $startLine 1-based start line; 0 means beginning of file.
+     * @param int $endLine 1-based end line; 0 means end of file.
      * @param string $keyword Plain string or regex (e.g. /pattern/i) to filter matching lines.
      * @param string $startDate ISO 8601 date/datetime to filter lines on or after.
      * @param string $endDate ISO 8601 date/datetime to filter lines on or before.
@@ -82,10 +88,12 @@ interface GetApplicationLogInterface
     ): ApplicationLogResponseInterface;
 
     /**
+     * Get the extension error log.
+     *
      * @param bool $compressOutput
-     * @param int $lastLines Number of lines from the end (default 100). Ignored when startLine or endLine is provided.
-     * @param int $startLine 1-based start line (0 = beginning of file). Used with endLine for a positional range.
-     * @param int $endLine 1-based end line (0 = end of file). Used with startLine for a positional range.
+     * @param int $lastLines Number of lines from the end; ignored when startLine or endLine is provided.
+     * @param int $startLine 1-based start line; 0 means beginning of file.
+     * @param int $endLine 1-based end line; 0 means end of file.
      * @param string $keyword Plain string or regex (e.g. /pattern/i) to filter matching lines.
      * @param string $startDate ISO 8601 date/datetime to filter lines on or after.
      * @param string $endDate ISO 8601 date/datetime to filter lines on or before.
@@ -105,6 +113,8 @@ interface GetApplicationLogInterface
     ): ApplicationLogResponseInterface;
 
     /**
+     * Clear the extension error log.
+     *
      * @return bool
      *
      * @throws LocalizedException
@@ -112,10 +122,12 @@ interface GetApplicationLogInterface
     public function clearExtensionErrorLog(): bool;
 
     /**
+     * Get the extension debug log.
+     *
      * @param bool $compressOutput
-     * @param int $lastLines Number of lines from the end (default 100). Ignored when startLine or endLine is provided.
-     * @param int $startLine 1-based start line (0 = beginning of file). Used with endLine for a positional range.
-     * @param int $endLine 1-based end line (0 = end of file). Used with startLine for a positional range.
+     * @param int $lastLines Number of lines from the end; ignored when startLine or endLine is provided.
+     * @param int $startLine 1-based start line; 0 means beginning of file.
+     * @param int $endLine 1-based end line; 0 means end of file.
      * @param string $keyword Plain string or regex (e.g. /pattern/i) to filter matching lines.
      * @param string $startDate ISO 8601 date/datetime to filter lines on or after.
      * @param string $endDate ISO 8601 date/datetime to filter lines on or before.
@@ -135,6 +147,8 @@ interface GetApplicationLogInterface
     ): ApplicationLogResponseInterface;
 
     /**
+     * Clear the extension debug log.
+     *
      * @return bool
      *
      * @throws LocalizedException

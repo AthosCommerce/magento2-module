@@ -91,8 +91,7 @@ class ProductInfo implements ProductInfoInterface
         AthosCommerceLogger                 $logger,
         TaskPayloadProvider                 $taskPayloadProvider,
         ContextManagerInterface             $contextManager,
-    )
-    {
+    ) {
         $this->collectionProcessor = $collectionProcessor;
         $this->itemsGenerator = $itemsGenerator;
         $this->specificationBuilder = $specificationBuilder;
@@ -105,6 +104,8 @@ class ProductInfo implements ProductInfoInterface
     }
 
     /**
+     * Get product information for a store.
+     *
      * @param int $productId
      * @param int $storeId
      *
@@ -113,8 +114,7 @@ class ProductInfo implements ProductInfoInterface
     public function getInfo(
         int $productId,
         int $storeId = 1
-    ): \AthosCommerce\Feed\Api\Data\ProductInfoResponseInterface
-    {
+    ): \AthosCommerce\Feed\Api\Data\ProductInfoResponseInterface {
         /** @var \AthosCommerce\Feed\Api\Data\ProductInfoResponseInterface $response */
         $response = $this->responseFactory->create();
         $productIds = [$productId];
@@ -142,7 +142,6 @@ class ProductInfo implements ProductInfoInterface
                     true
                 );
             }
-
 
             if (!$payload) {
                 return $response
@@ -186,7 +185,10 @@ class ProductInfo implements ProductInfoInterface
                     );
                     return $response
                         ->setProductInfo([])
-                        ->setMessage('No products found in collection for the given product IDs. Please check query (ProductInfoAPI: Query) in `athoscommerce_feed.log` file.');
+                        ->setMessage(
+                            'No products found in collection for the given product IDs. '
+                            . 'Please check query (ProductInfoAPI: Query) in `athoscommerce_feed.log` file.'
+                        );
                 }
 
                 $itemsData = $this->itemsGenerator->generate(
@@ -234,6 +236,8 @@ class ProductInfo implements ProductInfoInterface
     }
 
     /**
+     * Resolve parent and child product IDs.
+     *
      * @param int $productId
      *
      * @return array

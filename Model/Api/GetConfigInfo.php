@@ -69,8 +69,7 @@ class GetConfigInfo implements GetConfigInfoInterface
         StoreConfigFactory        $storeConfigFactory,
         StoreConfigApiMapper      $storeConfigApiMapper,
         EncryptorInterface        $encryptor
-    )
-    {
+    ) {
         $this->configRepository = $configRepository;
         $this->storeManager = $storeManager;
         $this->logger = $logger;
@@ -81,6 +80,8 @@ class GetConfigInfo implements GetConfigInfoInterface
     }
 
     /**
+     * Get config information for all stores.
+     *
      * @return ConfigInfoResponseInterface
      */
     public function get(): ConfigInfoResponseInterface

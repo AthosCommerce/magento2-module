@@ -28,6 +28,8 @@ class ApplicationLogResponse extends DataObject implements ApplicationLogRespons
     private const COMPRESSED = 'compressed';
 
     /**
+     * Get uncompressed log lines.
+     *
      * @return string[]
      */
     public function getLines(): array
@@ -36,6 +38,8 @@ class ApplicationLogResponse extends DataObject implements ApplicationLogRespons
     }
 
     /**
+     * Set uncompressed log lines.
+     *
      * @param string[] $lines
      * @return ApplicationLogResponseInterface
      */
@@ -45,6 +49,8 @@ class ApplicationLogResponse extends DataObject implements ApplicationLogRespons
     }
 
     /**
+     * Get compressed log content.
+     *
      * @return string|null
      */
     public function getContent(): ?string
@@ -53,6 +59,8 @@ class ApplicationLogResponse extends DataObject implements ApplicationLogRespons
     }
 
     /**
+     * Set compressed log content.
+     *
      * @param string|null $content
      * @return ApplicationLogResponseInterface
      */
@@ -62,6 +70,8 @@ class ApplicationLogResponse extends DataObject implements ApplicationLogRespons
     }
 
     /**
+     * Check whether the payload is compressed.
+     *
      * @return bool
      */
     public function getCompressed(): bool
@@ -70,6 +80,8 @@ class ApplicationLogResponse extends DataObject implements ApplicationLogRespons
     }
 
     /**
+     * Set whether the payload is compressed.
+     *
      * @param bool $compressed
      * @return ApplicationLogResponseInterface
      */

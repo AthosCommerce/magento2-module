@@ -23,6 +23,8 @@ use AthosCommerce\Feed\Api\Data\TaskErrorListResponseInterface;
 interface GetTaskErrorsInterface
 {
     /**
+     * Get paginated task errors.
+     *
      * @param int $currentPage
      * @param int $pageSize
      * @param int|null $taskId

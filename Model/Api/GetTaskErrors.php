@@ -68,6 +68,8 @@ class GetTaskErrors implements GetTaskErrorsInterface
     }
 
     /**
+     * Get paginated task errors.
+     *
      * @param int $currentPage
      * @param int $pageSize
      * @param int|null $taskId

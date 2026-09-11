@@ -24,6 +24,8 @@ use Magento\Framework\DataObject;
 class TaskErrorListResponse extends DataObject implements TaskErrorListResponseInterface
 {
     /**
+     * Get task error items.
+     *
      * @return array
      */
     public function getItems(): array
@@ -32,6 +34,8 @@ class TaskErrorListResponse extends DataObject implements TaskErrorListResponseI
     }
 
     /**
+     * Set task error items.
+     *
      * @param array $items
      * @return TaskErrorListResponseInterface
      */
@@ -41,6 +45,8 @@ class TaskErrorListResponse extends DataObject implements TaskErrorListResponseI
     }
 
     /**
+     * Get the total number of matching errors.
+     *
      * @return int
      */
     public function getTotal(): int
@@ -49,6 +55,8 @@ class TaskErrorListResponse extends DataObject implements TaskErrorListResponseI
     }
 
     /**
+     * Set the total number of matching errors.
+     *
      * @param int $total
      * @return TaskErrorListResponseInterface
      */
@@ -58,6 +66,8 @@ class TaskErrorListResponse extends DataObject implements TaskErrorListResponseI
     }
 
     /**
+     * Get the current page number.
+     *
      * @return int
      */
     public function getCurrentPage(): int
@@ -66,6 +76,8 @@ class TaskErrorListResponse extends DataObject implements TaskErrorListResponseI
     }
 
     /**
+     * Set the current page number.
+     *
      * @param int $currentPage
      * @return TaskErrorListResponseInterface
      */
@@ -75,6 +87,8 @@ class TaskErrorListResponse extends DataObject implements TaskErrorListResponseI
     }
 
     /**
+     * Get the configured page size.
+     *
      * @return int
      */
     public function getPageSize(): int
@@ -83,6 +97,8 @@ class TaskErrorListResponse extends DataObject implements TaskErrorListResponseI
     }
 
     /**
+     * Set the configured page size.
+     *
      * @param int $pageSize
      * @return TaskErrorListResponseInterface
      */

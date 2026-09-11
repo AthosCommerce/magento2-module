@@ -7,6 +7,7 @@ namespace AthosCommerce\Feed\Api\Data;
 if (!class_exists(ProductInfoResponseInterfaceFactory::class, false)) {
     class ProductInfoResponseInterfaceFactory
     {
+        /** @var mixed */
         private $instance;
 
         public function __construct($instance = null)
