@@ -118,9 +118,7 @@ class GetConfigInfo implements GetConfigInfoInterface
                 if ($meta['type'] === 'secret') {
                     $rawValue = (string)$value;
                     $decryptedValue = $rawValue !== '' ? $this->encryptor->decrypt($rawValue) : '';
-                    $value = $decryptedValue !== '' || strpos($rawValue, ':') !== false
-                        ? $decryptedValue
-                        : $rawValue;
+                    $value = $decryptedValue !== '' ? $decryptedValue : $rawValue;
                 }
 
                 if (in_array($meta['type'], ['bool', 'int'], true)) {

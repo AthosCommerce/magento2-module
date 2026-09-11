@@ -20,6 +20,7 @@ require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/TaskErrorItemInterfac
 require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/TaskErrorListResponseInterfaceFactory.php';
 require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/TaskSearchResultsInterfaceFactory.php';
 require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/SalesDataInterfaceFactory.php';
+require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/ProductInfoResponseInterfaceFactory.php';
 require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/FeedSpecificationInterfaceFactory.php';
 require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/MediaGallerySpecificationInterfaceFactory.php';
 require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/FeedSpecificationExtensionInterface.php';

@@ -117,6 +117,7 @@ class ProductInfo implements ProductInfoInterface
     {
         /** @var \AthosCommerce\Feed\Api\Data\ProductInfoResponseInterface $response */
         $response = $this->responseFactory->create();
+        $productIds = [$productId];
 
         try {
             $productIds = $this->getParentOrChildIds($productId);
@@ -159,51 +160,55 @@ class ProductInfo implements ProductInfoInterface
             }
 
             $feedSpecification = $this->specificationBuilder->build($payload);
-            $this->contextManager->setContextFromSpecification($feedSpecification);
-            $this->itemsGenerator->resetDataProviders($feedSpecification);
+            try {
+                $this->contextManager->setContextFromSpecification($feedSpecification);
+                $this->itemsGenerator->resetDataProviders($feedSpecification);
 
-            $collection = $this->collectionProcessor->getCollection($feedSpecification);
-            $collection->addFieldToFilter('entity_id', ['in' => $productIds]);
-            $collection->load();
+                $collection = $this->collectionProcessor->getCollection($feedSpecification);
+                $collection->addFieldToFilter('entity_id', ['in' => $productIds]);
+                $collection->load();
 
-            $this->collectionProcessor->processAfterLoad($collection, $feedSpecification);
-            $this->logger->info(
-                'ProductInfoAPI: Started fetching product info',
-                [
-                    'product_ids' => $productIds,
-                    'store_id' => $storeId
-                ]
-            );
-            if (!$collection->getSize()) {
+                $this->collectionProcessor->processAfterLoad($collection, $feedSpecification);
                 $this->logger->info(
-                    'ProductInfoAPI: Query',
+                    'ProductInfoAPI: Started fetching product info',
                     [
-                        'store_id' => $storeId,
-                        'query' => $collection->getSelect()->__toString()
+                        'product_ids' => $productIds,
+                        'store_id' => $storeId
                     ]
                 );
-                return $response
-                    ->setProductInfo([])
-                    ->setMessage('No products found in collection for the given product IDs. Please check query (ProductInfoAPI: Query) in `athoscommerce_feed.log` file.');
+                if (!$collection->getSize()) {
+                    $this->logger->info(
+                        'ProductInfoAPI: Query',
+                        [
+                            'store_id' => $storeId,
+                            'query' => $collection->getSelect()->__toString()
+                        ]
+                    );
+                    return $response
+                        ->setProductInfo([])
+                        ->setMessage('No products found in collection for the given product IDs. Please check query (ProductInfoAPI: Query) in `athoscommerce_feed.log` file.');
+                }
+
+                $itemsData = $this->itemsGenerator->generate(
+                    $collection->getItems(),
+                    $feedSpecification
+                );
+
+                $this->itemsGenerator->resetDataProvidersAfterFetchItems($feedSpecification);
+                $this->collectionProcessor->processAfterFetchItems($collection, $feedSpecification);
+
+                $this->logger->info(
+                    'ProductInfoAPI: ItemsData and Query',
+                    [
+                        'query' => $collection->getSelect()->__toString(),
+                        'items_data' => $itemsData
+                    ]
+                );
+
+                $response->setProductInfo($itemsData);
+            } finally {
+                $this->contextManager->resetContext();
             }
-
-            $itemsData = $this->itemsGenerator->generate(
-                $collection->getItems(),
-                $feedSpecification
-            );
-
-            $this->itemsGenerator->resetDataProvidersAfterFetchItems($feedSpecification);
-            $this->collectionProcessor->processAfterFetchItems($collection, $feedSpecification);
-
-            $this->logger->info(
-                'ProductInfoAPI: ItemsData and Query',
-                [
-                    'query' => $collection->getSelect()->__toString(),
-                    'items_data' => $itemsData
-                ]
-            );
-
-            $response->setProductInfo($itemsData);
         } catch (\Throwable $e) {
             $this->logger->error(
                 'ProductInfoAPI: Failed to fetch product info',

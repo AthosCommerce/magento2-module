@@ -118,4 +118,70 @@ class GetApplicationLogTest extends TestCase
 
         $this->assertSame($this->responseMock, $result);
     }
+
+    public function testGetCronLogForwardsArgumentsAndReturnsArrayOfLines(): void
+    {
+        $this->helperMock->expects($this->once())
+            ->method('getCronLogFile')
+            ->with(false, 25, 2, 5, 'ERROR', '2026-09-10', '2026-09-11')
+            ->willReturn("Line A\nLine B");
+
+        $this->responseFactoryMock->expects($this->once())
+            ->method('create')
+            ->willReturn($this->responseMock);
+        $this->responseMock->expects($this->once())->method('setCompressed')->with(false)->willReturnSelf();
+        $this->responseMock->expects($this->once())->method('setLines')->with(['Line A', 'Line B'])->willReturnSelf();
+        $this->responseMock->expects($this->once())->method('setContent')->with(null)->willReturnSelf();
+
+        $result = $this->model->getCronLog(false, 25, 2, 5, 'ERROR', '2026-09-10', '2026-09-11');
+
+        $this->assertSame($this->responseMock, $result);
+    }
+
+    public function testGetExtensionErrorLogReturnsCompressedContentInDto(): void
+    {
+        $this->helperMock->expects($this->once())
+            ->method('getExtensionErrorLogFile')
+            ->with(true, 12, 0, 0, 'timeout', '', '')
+            ->willReturn('compressed-error-payload');
+
+        $this->responseFactoryMock->expects($this->once())
+            ->method('create')
+            ->willReturn($this->responseMock);
+        $this->responseMock->expects($this->once())->method('setCompressed')->with(true)->willReturnSelf();
+        $this->responseMock->expects($this->once())->method('setLines')->with([])->willReturnSelf();
+        $this->responseMock->expects($this->once())->method('setContent')->with('compressed-error-payload')->willReturnSelf();
+
+        $result = $this->model->getExtensionErrorLog(true, 12, 0, 0, 'timeout');
+
+        $this->assertSame($this->responseMock, $result);
+    }
+
+    public function testGetExtensionDebugLogReturnsEmptyArrayForEmptyContent(): void
+    {
+        $this->helperMock->expects($this->once())
+            ->method('getExtensionDebugLogFile')
+            ->with(false, 100, 0, 0, '', '', '')
+            ->willReturn('');
+
+        $this->responseFactoryMock->expects($this->once())
+            ->method('create')
+            ->willReturn($this->responseMock);
+        $this->responseMock->expects($this->once())->method('setCompressed')->with(false)->willReturnSelf();
+        $this->responseMock->expects($this->once())->method('setLines')->with([])->willReturnSelf();
+        $this->responseMock->expects($this->once())->method('setContent')->with(null)->willReturnSelf();
+
+        $result = $this->model->getExtensionDebugLog();
+
+        $this->assertSame($this->responseMock, $result);
+    }
+
+    public function testClearExtensionInfoLogDelegatesToHelper(): void
+    {
+        $this->helperMock->expects($this->once())
+            ->method('deleteExtensionLogFile')
+            ->willReturn(true);
+
+        $this->assertTrue($this->model->clearExtensionInfoLog());
+    }
 }
