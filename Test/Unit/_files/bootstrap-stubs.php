@@ -5,14 +5,26 @@ declare(strict_types=1);
 require_once __DIR__ . '/Stubs/Magento/Framework/Api/SearchCriteriaBuilderFactory.php';
 require_once __DIR__ . '/Stubs/Magento/Framework/Api/SortOrderBuilderFactory.php';
 require_once __DIR__ . '/Stubs/Magento/Framework/DataObjectFactory.php';
+require_once __DIR__
+    . '/Stubs/Magento/Cron/Model/ResourceModel/Schedule/CollectionFactory.php';
+require_once __DIR__ . '/Stubs/Magento/Cron/Model/ResourceModel/Schedule/Collection.php';
+require_once __DIR__
+    . '/Stubs/Magento/Cron/Model/Schedule.php';
 require_once __DIR__ . '/Stubs/Magento/Catalog/Model/ResourceModel/Product/CollectionFactory.php';
 require_once __DIR__ . '/Stubs/Magento/Catalog/Model/ResourceModel/Product/Option/CollectionFactory.php';
-require_once __DIR__ . '/Stubs/Magento/ConfigurableProduct/Model/ResourceModel/Product/Type/Configurable/Product/CollectionFactory.php';
-require_once __DIR__ . '/Stubs/Magento/ConfigurableProduct/Model/ResourceModel/Product/Type/Configurable/Attribute/CollectionFactory.php';
-require_once __DIR__ . '/Stubs/Magento/Review/Model/ResourceModel/Review/Summary/CollectionFactory.php';
+require_once __DIR__
+    . '/Stubs/Magento/ConfigurableProduct/Model/ResourceModel/Product/Type/'
+    . 'Configurable/Product/CollectionFactory.php';
+require_once __DIR__
+    . '/Stubs/Magento/ConfigurableProduct/Model/ResourceModel/Product/Type/'
+    . 'Configurable/Attribute/CollectionFactory.php';
+require_once __DIR__
+    . '/Stubs/Magento/Review/Model/ResourceModel/Review/Summary/CollectionFactory.php';
 require_once __DIR__ . '/Stubs/Magento/Sales/Model/ResourceModel/Order/Item/CollectionFactory.php';
 require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/EntityTrackingItemInterfaceFactory.php';
 require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/EntityTrackingListResponseInterfaceFactory.php';
+require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/CronStatusInterfaceFactory.php';
+require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/CronStatusResponseInterfaceFactory.php';
 require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/TaskInterfaceFactory.php';
 require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/TaskErrorInterfaceFactory.php';
 require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/TaskSearchResultsInterfaceFactory.php';

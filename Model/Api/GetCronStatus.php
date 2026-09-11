@@ -18,77 +18,177 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Model\Api;
 
-use Magento\Cron\Model\ResourceModel\Schedule\CollectionFactory as ScheduleCollectionFactory;
+use AthosCommerce\Feed\Api\Data\CronStatusInterface;
+use AthosCommerce\Feed\Api\Data\CronStatusInterfaceFactory;
+use AthosCommerce\Feed\Api\Data\CronStatusResponseInterface;
+use AthosCommerce\Feed\Api\Data\CronStatusResponseInterfaceFactory;
 use AthosCommerce\Feed\Api\GetCronStatusInterface;
+use Magento\Cron\Model\ResourceModel\Schedule\Collection as ScheduleCollection;
+use Magento\Cron\Model\ResourceModel\Schedule\CollectionFactory as ScheduleCollectionFactory;
+use Magento\Cron\Model\Schedule;
+use Magento\Framework\Stdlib\DateTime\DateTime;
 
 class GetCronStatus implements GetCronStatusInterface
 {
+    private const JOB_CODES = [
+        'athoscommerce_task_execution',
+        'athoscommerce_live_indexing_discovery',
+        'athoscommerce_live_indexing_sync',
+    ];
+
+    private const RECENT_RUN_LIMIT = 3;
+
+    private const RUNNING_THRESHOLD_SECONDS = 600;
+
     /**
      * @var ScheduleCollectionFactory
      */
     private $scheduleCollectionFactory;
 
     /**
-     * @param ScheduleCollectionFactory $scheduleCollectionFactory
+     * @var CronStatusResponseInterfaceFactory
      */
-    public function __construct(
-        ScheduleCollectionFactory $scheduleCollectionFactory
-    )
-    {
-        $this->scheduleCollectionFactory = $scheduleCollectionFactory;
-    }
-
+    private $responseFactory;
 
     /**
-     * @param string $status
-     * @param int $currentPage
-     * @param int $pageSize
-     * @return mixed
+     * @var CronStatusInterfaceFactory
      */
-    public function getList(string $status = '', int $currentPage = 1, int $pageSize = 20)
+    private $cronStatusFactory;
+
+    /**
+     * @var DateTime
+     */
+    private $dateTime;
+
+    /**
+     * @param ScheduleCollectionFactory $scheduleCollectionFactory
+     * @param CronStatusResponseInterfaceFactory $responseFactory
+     * @param CronStatusInterfaceFactory $cronStatusFactory
+     * @param DateTime $dateTime
+     */
+    public function __construct(
+        ScheduleCollectionFactory $scheduleCollectionFactory,
+        CronStatusResponseInterfaceFactory $responseFactory,
+        CronStatusInterfaceFactory $cronStatusFactory,
+        DateTime $dateTime
+    ) {
+        $this->scheduleCollectionFactory = $scheduleCollectionFactory;
+        $this->responseFactory = $responseFactory;
+        $this->cronStatusFactory = $cronStatusFactory;
+        $this->dateTime = $dateTime;
+    }
+
+    /**
+     * Get the recent AthosCommerce cron status summary.
+     *
+     * @return CronStatusResponseInterface
+     */
+    public function getList(): CronStatusResponseInterface
+    {
+        /** @var CronStatusResponseInterface $response */
+        $response = $this->responseFactory->create();
+        $recentCollection = $this->getBaseCollection();
+        $recentCollection->setOrder('scheduled_at', ScheduleCollection::SORT_ORDER_DESC);
+        $recentCollection->setOrder('schedule_id', ScheduleCollection::SORT_ORDER_DESC);
+        $recentCollection->setPageSize(self::RECENT_RUN_LIMIT);
+        $recentCollection->setCurPage(1);
+
+        $cronJobs = [];
+        $lastStatus = null;
+        /** @var Schedule $scheduleItem */
+        foreach ($recentCollection->getItems() as $index => $scheduleItem) {
+            $cronJob = $this->cronStatusFactory->create();
+            $cronJob->setScheduleId((int) $scheduleItem->getScheduleId());
+            $cronJob->setJobCode((string) $scheduleItem->getJobCode());
+            $cronJob->setStatus((string) $scheduleItem->getStatus());
+            $cronJob->setMessages((string) ($scheduleItem->getMessages() ?: ''));
+            $cronJob->setCreatedAt((string) $scheduleItem->getCreatedAt());
+            $cronJob->setScheduledAt((string) $scheduleItem->getScheduledAt());
+            $cronJob->setExecutedAt((string) ($scheduleItem->getExecutedAt() ?: ''));
+            $cronJob->setFinishedAt((string) ($scheduleItem->getFinishedAt() ?: ''));
+            $cronJobs[] = $cronJob;
+
+            if ($index === 0) {
+                $lastStatus = $cronJob->getStatus();
+            }
+        }
+
+        $lastSuccessAt = $this->getLastSuccessAt();
+
+        return $response
+            ->setIsRunning($this->isRecentSuccess($lastSuccessAt))
+            ->setLastSuccessAt($lastSuccessAt)
+            ->setLastStatus($lastStatus)
+            ->setCronJobs($cronJobs);
+    }
+
+    /**
+     * Create the base collection for AthosCommerce cron jobs.
+     *
+     * @return ScheduleCollection
+     */
+    private function getBaseCollection(): ScheduleCollection
     {
         $collection = $this->scheduleCollectionFactory->create();
+        $collection->addFieldToFilter(
+            'job_code',
+            array_map(
+                static function (string $jobCode): array {
+                    return ['eq' => $jobCode];
+                },
+                self::JOB_CODES
+            )
+        );
 
-        // Filter by job code
-        $collection->addFieldToFilter('job_code', 'athoscommerce_task_execution');
+        return $collection;
+    }
 
-        // Apply status filter if provided
-        if (!empty($status)) {
-            $collection->addFieldToFilter('status', $status);
+    /**
+     * Get the latest successful AthosCommerce cron timestamp.
+     *
+     * @return string|null
+     */
+    private function getLastSuccessAt(): ?string
+    {
+        $successCollection = $this->getBaseCollection();
+        $successCollection->addFieldToFilter('status', 'success');
+        $successCollection->setOrder('scheduled_at', ScheduleCollection::SORT_ORDER_DESC);
+        $successCollection->setOrder('schedule_id', ScheduleCollection::SORT_ORDER_DESC);
+        $successCollection->setPageSize(1);
+        $successCollection->setCurPage(1);
+
+        /** @var Schedule|null $successSchedule */
+        $successSchedule = $successCollection->getFirstItem();
+        if (!$successSchedule || !$successSchedule->getId()) {
+            return null;
         }
 
-        // Default ordering - latest first
-        $collection->setOrder('scheduled_at', 'DESC');
+        return (string) (
+            $successSchedule->getFinishedAt()
+            ?: $successSchedule->getExecutedAt()
+            ?: $successSchedule->getScheduledAt()
+        );
+    }
 
-        // Get total count before applying pagination
-        $totalCount = $collection->getSize();
-
-        // Apply pagination
-        $collection->setPageSize($pageSize);
-        $collection->setCurPage($currentPage);
-
-        $cronStatusItems = [];
-        /** @var \Magento\Cron\Model\Schedule $scheduleItem */
-        foreach ($collection->getItems() as $scheduleItem) {
-            $cronStatusItems[] = [
-                'schedule_id' => (int)$scheduleItem->getScheduleId(),
-                'job_code' => $scheduleItem->getJobCode(),
-                'status' => $scheduleItem->getStatus(),
-                'messages' => $scheduleItem->getMessages() ?: '',
-                'created_at' => $scheduleItem->getCreatedAt(),
-                'scheduled_at' => $scheduleItem->getScheduledAt(),
-                'executed_at' => $scheduleItem->getExecutedAt() ?: '',
-                'finished_at' => $scheduleItem->getFinishedAt() ?: ''
-            ];
+    /**
+     * Determine whether the latest success is within the running threshold.
+     *
+     * @param string|null $lastSuccessAt
+     *
+     * @return bool
+     */
+    private function isRecentSuccess(?string $lastSuccessAt): bool
+    {
+        if ($lastSuccessAt === null || $lastSuccessAt === '') {
+            return false;
         }
 
-        return [
-            'data' => [
-                'cron_jobs' => $cronStatusItems,
-                'total' => $totalCount,
-                'currentPage' => $currentPage,
-                'pageSize' => $pageSize
-            ]
-        ];
+        $successTimestamp = strtotime($lastSuccessAt);
+        $currentTimestamp = strtotime($this->dateTime->gmtDate());
+        if ($successTimestamp === false || $currentTimestamp === false) {
+            return false;
+        }
+
+        return ($currentTimestamp - $successTimestamp) <= self::RUNNING_THRESHOLD_SECONDS;
     }
 }
