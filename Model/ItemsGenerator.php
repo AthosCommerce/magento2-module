@@ -147,11 +147,11 @@ class ItemsGenerator
             $feedSpecification->getAdditionalIgnoreFieldsByMode()
         );
         $dataProviders = $this->dataProviderPool->get($ignoreFields);
-        $this->logger->info("Found " . count($dataProviders) . " data providers for feed specification",
+        $this->logger->debug("Found " . count($dataProviders) . " data providers for feed specification",
             ['dataProviders' => array_keys($dataProviders)]
         );
         foreach ($dataProviders as $dataProvider) {
-            $this->logger->info("[DataProviderName]: " . get_class($dataProvider));
+            $this->logger->debug("[DataProviderName]: " . get_class($dataProvider));
             $data = $dataProvider->getData($data, $feedSpecification);
         }
 

@@ -90,7 +90,7 @@ class ProductInfo implements ProductInfoInterface
         ProductInfoResponseInterfaceFactory $responseFactory,
         AthosCommerceLogger                 $logger,
         TaskPayloadProvider                 $taskPayloadProvider,
-        ContextManagerInterface             $contextManager,
+        ContextManagerInterface             $contextManager
     ) {
         $this->collectionProcessor = $collectionProcessor;
         $this->itemsGenerator = $itemsGenerator;
