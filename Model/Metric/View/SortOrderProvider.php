@@ -45,6 +45,24 @@ class SortOrderProvider
             'items_data_size' => 160,
             'items_data_count' => 170,
             'date' => 1000
+        ],
+        CollectorInterface::CODE_TASK_EXECUTION => [
+            '__title__' => 10,
+            'execution_mode' => 20,
+            'parallel_enabled' => 30,
+            'pending_store_count' => 40,
+            'spawned_store_count' => 50,
+            'processed_task_count' => 60,
+            'timer' => 70,
+            'usage' => 80,
+            'usage_diff' => 90,
+            'usage_real' => 100,
+            'usage_real_diff' => 110,
+            'peak' => 120,
+            'peak_diff' => 130,
+            'peak_real' => 140,
+            'peak_real_diff' => 150,
+            'date' => 1000
         ]
     ];
 

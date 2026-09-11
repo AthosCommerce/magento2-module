@@ -89,4 +89,13 @@ class ConfigTest extends TestCase
     {
         $this->assertNull($this->config->getSiteId());
     }
+
+    /**
+     * @magentoAppIsolation enabled
+     * @magentoConfigFixture default_store athoscommerce/general/parallel_cron_enabled 1
+     */
+    public function testIsParallelCronEnabledReturnsConfiguredValue(): void
+    {
+        $this->assertTrue($this->config->isParallelCronEnabled());
+    }
 }

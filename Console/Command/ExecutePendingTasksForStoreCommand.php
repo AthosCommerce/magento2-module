@@ -7,11 +7,11 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 declare(strict_types=1);
@@ -19,7 +19,6 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Console\Command;
 
 use Magento\Framework\App\Area;
-use Magento\Framework\App\ObjectManager;
 use Magento\Framework\App\State;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Stdlib\DateTime\DateTimeFactory;
@@ -28,69 +27,64 @@ use AthosCommerce\Feed\Api\ExecutePendingTasksInterface;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Metric\CollectorInterface;
 use AthosCommerce\Feed\Model\Metric\Output\CliOutput;
-use AthosCommerce\Feed\Model\Task\StoreWorkerLauncher;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class ExecutePendingTasksCommand extends Command
+class ExecutePendingTasksForStoreCommand extends Command
 {
-    public const COMMAND_NAME = 'athoscommerce:feed:execute-pending-tasks';
+    public const COMMAND_NAME = 'athoscommerce:task:execute-pending-for-store';
     private const OPTION_STORE = 'store';
-    private const OPTION_PARALLEL = 'parallel';
+
     /**
      * @var ExecutePendingTasksInterfaceFactory
      */
     private $executePendingTasksFactory;
+
     /**
      * @var DateTimeFactory
      */
     private $dateTimeFactory;
+
     /**
      * @var State
      */
     private $state;
+
     /**
      * @var CliOutput
      */
     private $cliOutput;
+
     /**
      * @var CollectorInterface
      */
     private $metricCollector;
+
     /**
      * @var AthosCommerceLogger
      */
     private $logger;
-    /**
-     * @var StoreWorkerLauncher
-     */
-    private $storeWorkerLauncher;
 
     /**
-     * ExecutePendingTasks constructor.
-     *
      * @param ExecutePendingTasksInterfaceFactory $executePendingTasksFactory
      * @param DateTimeFactory $dateTimeFactory
      * @param State $state
      * @param CliOutput $cliOutput
      * @param CollectorInterface $metricCollector
      * @param AthosCommerceLogger $logger
-     * @param StoreWorkerLauncher $storeWorkerLauncher
      * @param string|null $name
      */
     public function __construct(
         ExecutePendingTasksInterfaceFactory $executePendingTasksFactory,
-        DateTimeFactory                     $dateTimeFactory,
-        State                               $state,
-        CliOutput                           $cliOutput,
-        CollectorInterface                  $metricCollector,
-        AthosCommerceLogger                 $logger,
-        ?StoreWorkerLauncher                $storeWorkerLauncher = null,
-        ?string                             $name = null
-    )
-    {
+        DateTimeFactory $dateTimeFactory,
+        State $state,
+        CliOutput $cliOutput,
+        CollectorInterface $metricCollector,
+        AthosCommerceLogger $logger,
+        ?string $name = null
+    ) {
         parent::__construct($name);
         $this->executePendingTasksFactory = $executePendingTasksFactory;
         $this->dateTimeFactory = $dateTimeFactory;
@@ -98,9 +92,6 @@ class ExecutePendingTasksCommand extends Command
         $this->cliOutput = $cliOutput;
         $this->metricCollector = $metricCollector;
         $this->logger = $logger;
-        $this->storeWorkerLauncher = $storeWorkerLauncher ?: ObjectManager::getInstance()->get(
-            StoreWorkerLauncher::class
-        );
     }
 
     /**
@@ -109,18 +100,12 @@ class ExecutePendingTasksCommand extends Command
     protected function configure(): void
     {
         $this->setName(self::COMMAND_NAME)
-            ->setDescription('AthosCommerce: Execute Pending Tasks aka full feed generation.')
+            ->setDescription('AthosCommerce: Execute pending tasks for a single store.')
             ->addOption(
                 self::OPTION_STORE,
-                null,
+                's',
                 InputOption::VALUE_REQUIRED,
                 'Store code to execute pending tasks for'
-            )
-            ->addOption(
-                self::OPTION_PARALLEL,
-                'p',
-                InputOption::VALUE_NONE,
-                'Spawn per-store background workers for pending tasks'
             );
 
         parent::configure();
@@ -129,96 +114,91 @@ class ExecutePendingTasksCommand extends Command
     /**
      * @param InputInterface $input
      * @param OutputInterface $output
-     *
      * @return int
-     * @throws \Magento\Framework\Exception\LocalizedException
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
+        $startedAt = microtime(true);
+        $dateTime = $this->dateTimeFactory->create();
+        $storeCode = $input->getOption(self::OPTION_STORE);
+        $storeCode = is_string($storeCode) ? trim($storeCode) : '';
+
+        if ($storeCode === '') {
+            $output->writeln('<error>The --store option is required.</error>');
+            return Command::INVALID;
+        }
+
         try {
-            // Area can already be set in some contexts (e.g., when invoked by other CLI flows)
             try {
                 $this->state->setAreaCode(Area::AREA_FRONTEND);
-            } catch (LocalizedException $e) {
+            } catch (LocalizedException $exception) {
                 $output->writeln('<info>Area code is already set.</info>');
-                // Ignore "Area code is already set" and continue
             }
 
-            $dateTime = $this->dateTimeFactory->create();
-            $storeCode = $input->getOption(self::OPTION_STORE);
-            $storeCode = is_string($storeCode) ? trim($storeCode) : null;
-            $storeCode = $storeCode !== '' ? $storeCode : null;
-            $scopeLabel = $storeCode ? sprintf(' for store "%s"', $storeCode) : '';
-            $parallel = (bool) $input->getOption(self::OPTION_PARALLEL);
-            $output->writeln('<info>Execution started' . $scopeLabel . ': ' . $dateTime->gmtDate() . '</info>');
+            $output->writeln('<info>Store worker started for "' . $storeCode . '": ' . $dateTime->gmtDate() . '</info>');
             $this->logger->info(
-                'CLI started for task execution.',
+                'CLI store worker started for task execution.',
                 [
                     'store' => $storeCode,
                     'executionMode' => ExecutePendingTasksInterface::EXECUTION_MODE_CLI,
-                    'parallel' => $parallel,
                 ]
             );
 
-            if ($parallel) {
-                $spawnedStores = $this->storeWorkerLauncher->spawnPendingStoreWorkers($storeCode);
-                if ($spawnedStores === []) {
-                    $output->writeln('<info>No pending store workers were spawned.</info>');
-                } else {
-                    foreach ($spawnedStores as $spawnedStore) {
-                        $output->writeln(sprintf('<info>Spawned worker for store "%s".</info>', $spawnedStore));
-                    }
-                }
-
-                $this->logger->info(
-                    'CLI spawned background workers for pending tasks.',
-                    [
-                        'store' => $storeCode,
-                        'spawnedStores' => $spawnedStores,
-                        'executionMode' => ExecutePendingTasksInterface::EXECUTION_MODE_CLI,
-                    ]
-                );
-                $output->writeln('<info>Execution dispatched in parallel mode.</info>');
-
-                return Command::SUCCESS;
-            }
-
             $this->cliOutput->setOutput($output);
             $this->metricCollector->setOutput($this->cliOutput);
-            $result = $this->executePendingTasksFactory->create()->execute(
+
+            $result = $this->executePendingTasksFactory->create()->executeForStoreWorker(
                 $storeCode,
                 ExecutePendingTasksInterface::EXECUTION_MODE_CLI
             );
+
             if ($result === []) {
-                $output->writeln('<info>No pending tasks found.</info>');
+                $output->writeln('<info>No pending tasks claimed for store "' . $storeCode . '".</info>');
             } else {
                 foreach ($result as $taskId => $status) {
                     $output->writeln(sprintf('<info>Task ID %d: %s</info>', $taskId, $status));
                 }
             }
 
+            $this->writeExecutionMetrics($output, $startedAt);
             $this->logger->info(
-                'CLI completed for task execution.',
+                'CLI store worker completed for task execution.',
                 [
                     'store' => $storeCode,
-                    'executionMode' => ExecutePendingTasksInterface::EXECUTION_MODE_CLI
+                    'executionMode' => ExecutePendingTasksInterface::EXECUTION_MODE_CLI,
+                    'duration' => round(microtime(true) - $startedAt, 4),
+                    'peakMemoryBytes' => memory_get_peak_usage(true),
                 ]
             );
-            $output->writeln('<info>Execution ended' . $scopeLabel . ': ' . $dateTime->gmtDate() . '</info>');
+            $output->writeln('<info>Store worker ended for "' . $storeCode . '": ' . $dateTime->gmtDate() . '</info>');
 
-            return Command::SUCCESS; // 0
-        } catch (\Throwable $e) {
+            return Command::SUCCESS;
+        } catch (\Throwable $exception) {
             $this->logger->error(
-                $e->getMessage(),
+                $exception->getMessage(),
                 [
-                    'store' => $storeCode ?? null,
-                    'trace' => $e->getTraceAsString(),
+                    'store' => $storeCode,
+                    'trace' => $exception->getTraceAsString(),
                     'executionMode' => ExecutePendingTasksInterface::EXECUTION_MODE_CLI,
                 ]
             );
-            $output->writeln('<error>' . $e->getMessage() . '</error>');
+            $output->writeln('<error>' . $exception->getMessage() . '</error>');
 
-            return Command::FAILURE; // 1
+            return Command::FAILURE;
         }
+    }
+
+    /**
+     * @param OutputInterface $output
+     * @param float $startedAt
+     * @return void
+     */
+    private function writeExecutionMetrics(OutputInterface $output, float $startedAt): void
+    {
+        $duration = round(microtime(true) - $startedAt, 4);
+        $peakMemoryInMb = round(memory_get_peak_usage(true) / 1048576, 2);
+
+        $output->writeln(sprintf('<info>Duration: %ss</info>', $duration));
+        $output->writeln(sprintf('<info>Peak memory: %s MB</info>', $peakMemoryInMb));
     }
 }

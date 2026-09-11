@@ -5,6 +5,9 @@
         xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
     <default>
         <athoscommerce>
+            <general>
+                <parallel_cron_enabled>0</parallel_cron_enabled>
+            </general>
             <configuration>
                 <siteid/>
                 <endpoint/>
