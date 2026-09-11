@@ -25,7 +25,7 @@ use AthosCommerce\Feed\Model\Config\ConfigMap;
 use AthosCommerce\Feed\Model\Config\StoreConfigApiMapper;
 use AthosCommerce\Feed\Model\Data\ConfigInfoResponseFactory;
 use AthosCommerce\Feed\Model\Data\StoreConfigFactory;
-use \AthosCommerce\Feed\Model\ConfigRepository;
+use AthosCommerce\Feed\Model\ConfigRepository;
 use Magento\Framework\Encryption\EncryptorInterface;
 use Magento\Store\Model\StoreManagerInterface;
 

@@ -16,6 +16,8 @@ require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/EntityTrackingListRes
 require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/ApplicationLogResponseInterfaceFactory.php';
 require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/TaskInterfaceFactory.php';
 require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/TaskErrorInterfaceFactory.php';
+require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/TaskErrorItemInterfaceFactory.php';
+require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/TaskErrorListResponseInterfaceFactory.php';
 require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/TaskSearchResultsInterfaceFactory.php';
 require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/SalesDataInterfaceFactory.php';
 require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/FeedSpecificationInterfaceFactory.php';

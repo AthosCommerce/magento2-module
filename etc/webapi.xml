@@ -86,6 +86,12 @@
             <resource ref="AthosCommerce_Feed::task" />
         </resources>
     </route>
+    <route url="/V1/athoscommerce/taskerrors" method="GET">
+        <service class="AthosCommerce\Feed\Api\GetTaskErrorsInterface" method="getList" />
+        <resources>
+            <resource ref="AthosCommerce_Feed::task" />
+        </resources>
+    </route>
     <route url="/V1/athoscommerce/categorylist" method="GET">
         <service class="AthosCommerce\Feed\Api\CategoryInfoInterface" method="getAllCategories"/>
         <resources>
