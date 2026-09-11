@@ -13,10 +13,14 @@ require_once __DIR__ . '/Stubs/Magento/Review/Model/ResourceModel/Review/Summary
 require_once __DIR__ . '/Stubs/Magento/Sales/Model/ResourceModel/Order/Item/CollectionFactory.php';
 require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/EntityTrackingItemInterfaceFactory.php';
 require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/EntityTrackingListResponseInterfaceFactory.php';
+require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/ApplicationLogResponseInterfaceFactory.php';
 require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/TaskInterfaceFactory.php';
 require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/TaskErrorInterfaceFactory.php';
+require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/TaskErrorItemInterfaceFactory.php';
+require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/TaskErrorListResponseInterfaceFactory.php';
 require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/TaskSearchResultsInterfaceFactory.php';
 require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/SalesDataInterfaceFactory.php';
+require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/ProductInfoResponseInterfaceFactory.php';
 require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/FeedSpecificationInterfaceFactory.php';
 require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/MediaGallerySpecificationInterfaceFactory.php';
 require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/FeedSpecificationExtensionInterface.php';
