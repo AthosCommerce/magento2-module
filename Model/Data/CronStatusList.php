@@ -16,48 +16,44 @@
 
 declare(strict_types=1);
 
-namespace AthosCommerce\Feed\Api\Data;
+namespace AthosCommerce\Feed\Model\Data;
 
-interface CronStatusResponseInterface
+use AthosCommerce\Feed\Api\Data\CronStatusListInterface;
+use Magento\Framework\DataObject;
+
+class CronStatusList extends DataObject implements CronStatusListInterface
 {
     /**
-     * Get the per-job summaries.
+     * Get the total number of matching cron rows.
      *
-     * @return \AthosCommerce\Feed\Api\Data\CronJobSummaryInterface[]
+     * @return int
      */
-    public function getJobSummaries(): array;
+    public function getTotalRecords(): int
+    {
+        return (int) $this->getData('total_records');
+    }
 
     /**
-     * Set the per-job summaries.
+     * Set the total number of matching cron rows.
      *
-     * @param \AthosCommerce\Feed\Api\Data\CronJobSummaryInterface[] $jobSummaries
+     * @param int $totalRecords
      *
      * @return self
      */
-    public function setJobSummaries(array $jobSummaries): self;
-
-    /**
-     * Get the status of the most recent cron row.
-     *
-     * @return string|null
-     */
-    public function getLastStatus(): ?string;
-
-    /**
-     * Set the status of the most recent cron row.
-     *
-     * @param string|null $lastStatus
-     *
-     * @return self
-     */
-    public function setLastStatus(?string $lastStatus): self;
+    public function setTotalRecords(int $totalRecords): self
+    {
+        return $this->setData('total_records', $totalRecords);
+    }
 
     /**
      * Get the most recent cron jobs.
      *
      * @return \AthosCommerce\Feed\Api\Data\CronStatusInterface[]
      */
-    public function getCronJobs(): array;
+    public function getCronJobs(): array
+    {
+        return $this->getData('cron_jobs') ?? [];
+    }
 
     /**
      * Set the most recent cron jobs.
@@ -66,5 +62,8 @@ interface CronStatusResponseInterface
      *
      * @return self
      */
-    public function setCronJobs(array $cronJobs): self;
+    public function setCronJobs(array $cronJobs): self
+    {
+        return $this->setData('cron_jobs', $cronJobs);
+    }
 }

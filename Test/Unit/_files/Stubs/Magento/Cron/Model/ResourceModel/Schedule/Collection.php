@@ -66,5 +66,21 @@ if (!class_exists(Collection::class, false)) {
         {
             return null;
         }
+
+        /**
+         * @return mixed
+         */
+        public function getSelect()
+        {
+            return null;
+        }
+
+        /**
+         * @return int
+         */
+        public function getSize(): int
+        {
+            return 0;
+        }
     }
 }

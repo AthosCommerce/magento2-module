@@ -18,53 +18,53 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Api\Data;
 
-interface CronStatusResponseInterface
+interface CronJobSummaryInterface
 {
     /**
-     * Get the per-job summaries.
+     * Get the cron job code.
      *
-     * @return \AthosCommerce\Feed\Api\Data\CronJobSummaryInterface[]
+     * @return string
      */
-    public function getJobSummaries(): array;
+    public function getJobCode(): string;
 
     /**
-     * Set the per-job summaries.
+     * Set the cron job code.
      *
-     * @param \AthosCommerce\Feed\Api\Data\CronJobSummaryInterface[] $jobSummaries
+     * @param string $jobCode
      *
      * @return self
      */
-    public function setJobSummaries(array $jobSummaries): self;
+    public function setJobCode(string $jobCode): self;
 
     /**
-     * Get the status of the most recent cron row.
+     * Get the latest status for the job code.
      *
-     * @return string|null
+     * @return string
      */
-    public function getLastStatus(): ?string;
+    public function getLastStatus(): string;
 
     /**
-     * Set the status of the most recent cron row.
+     * Set the latest status for the job code.
      *
-     * @param string|null $lastStatus
+     * @param string $lastStatus
      *
      * @return self
      */
-    public function setLastStatus(?string $lastStatus): self;
+    public function setLastStatus(string $lastStatus): self;
 
     /**
-     * Get the most recent cron jobs.
+     * Get the latest successful execution timestamp for the job code.
      *
-     * @return \AthosCommerce\Feed\Api\Data\CronStatusInterface[]
+     * @return string
      */
-    public function getCronJobs(): array;
+    public function getLastSuccessAt(): string;
 
     /**
-     * Set the most recent cron jobs.
+     * Set the latest successful execution timestamp for the job code.
      *
-     * @param \AthosCommerce\Feed\Api\Data\CronStatusInterface[] $cronJobs
+     * @param string $lastSuccessAt
      *
      * @return self
      */
-    public function setCronJobs(array $cronJobs): self;
+    public function setLastSuccessAt(string $lastSuccessAt): self;
 }

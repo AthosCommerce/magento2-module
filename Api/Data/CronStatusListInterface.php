@@ -18,39 +18,23 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Api\Data;
 
-interface CronStatusResponseInterface
+interface CronStatusListInterface
 {
     /**
-     * Get the per-job summaries.
+     * Get the total number of matching cron rows.
      *
-     * @return \AthosCommerce\Feed\Api\Data\CronJobSummaryInterface[]
+     * @return int
      */
-    public function getJobSummaries(): array;
+    public function getTotalRecords(): int;
 
     /**
-     * Set the per-job summaries.
+     * Set the total number of matching cron rows.
      *
-     * @param \AthosCommerce\Feed\Api\Data\CronJobSummaryInterface[] $jobSummaries
+     * @param int $totalRecords
      *
      * @return self
      */
-    public function setJobSummaries(array $jobSummaries): self;
-
-    /**
-     * Get the status of the most recent cron row.
-     *
-     * @return string|null
-     */
-    public function getLastStatus(): ?string;
-
-    /**
-     * Set the status of the most recent cron row.
-     *
-     * @param string|null $lastStatus
-     *
-     * @return self
-     */
-    public function setLastStatus(?string $lastStatus): self;
+    public function setTotalRecords(int $totalRecords): self;
 
     /**
      * Get the most recent cron jobs.

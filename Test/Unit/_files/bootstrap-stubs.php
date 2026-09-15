@@ -23,7 +23,10 @@ require_once __DIR__
 require_once __DIR__ . '/Stubs/Magento/Sales/Model/ResourceModel/Order/Item/CollectionFactory.php';
 require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/EntityTrackingItemInterfaceFactory.php';
 require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/EntityTrackingListResponseInterfaceFactory.php';
+require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/CronJobSummaryInterfaceFactory.php';
 require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/CronStatusInterfaceFactory.php';
+require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/CronStatusListInterfaceFactory.php';
+require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/CronStatusResultInterfaceFactory.php';
 require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/CronStatusResponseInterfaceFactory.php';
 require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/TaskInterfaceFactory.php';
 require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/TaskErrorInterfaceFactory.php';

@@ -22,13 +22,13 @@ require_once dirname(__DIR__, 2) . '/_files/bootstrap-stubs.php';
 
 use AthosCommerce\Feed\Api\Data\CronStatusInterface;
 use AthosCommerce\Feed\Api\Data\CronStatusInterfaceFactory;
-use AthosCommerce\Feed\Api\Data\CronStatusResponseInterface;
-use AthosCommerce\Feed\Api\Data\CronStatusResponseInterfaceFactory;
+use AthosCommerce\Feed\Api\Data\CronStatusListInterface;
+use AthosCommerce\Feed\Api\Data\CronStatusListInterfaceFactory;
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Api\GetCronStatus;
 use Magento\Cron\Model\ResourceModel\Schedule\Collection;
 use Magento\Cron\Model\ResourceModel\Schedule\CollectionFactory;
 use Magento\Cron\Model\Schedule;
-use Magento\Framework\Stdlib\DateTime\DateTime;
 use PHPUnit\Framework\TestCase;
 
 class GetCronStatusTest extends TestCase
@@ -39,7 +39,7 @@ class GetCronStatusTest extends TestCase
     private $collectionFactoryMock;
 
     /**
-     * @var CronStatusResponseInterfaceFactory|\PHPUnit\Framework\MockObject\MockObject
+     * @var CronStatusListInterfaceFactory|\PHPUnit\Framework\MockObject\MockObject
      */
     private $responseFactoryMock;
 
@@ -49,9 +49,9 @@ class GetCronStatusTest extends TestCase
     private $itemFactoryMock;
 
     /**
-     * @var DateTime|\PHPUnit\Framework\MockObject\MockObject
+     * @var AthosCommerceLogger|\PHPUnit\Framework\MockObject\MockObject
      */
-    private $dateTimeMock;
+    private $loggerMock;
 
     /**
      * @var GetCronStatus
@@ -61,229 +61,193 @@ class GetCronStatusTest extends TestCase
     protected function setUp(): void
     {
         $this->collectionFactoryMock = $this->createMock(CollectionFactory::class);
-        $this->responseFactoryMock = $this->createMock(CronStatusResponseInterfaceFactory::class);
+        $this->responseFactoryMock = $this->createMock(CronStatusListInterfaceFactory::class);
         $this->itemFactoryMock = $this->createMock(CronStatusInterfaceFactory::class);
-        $this->dateTimeMock = $this->createMock(DateTime::class);
+        $this->loggerMock = $this->createMock(AthosCommerceLogger::class);
 
         $this->model = new GetCronStatus(
             $this->collectionFactoryMock,
             $this->responseFactoryMock,
             $this->itemFactoryMock,
-            $this->dateTimeMock
+            $this->loggerMock
         );
     }
 
-    public function testGetListBuildsCronSummaryAcrossConfiguredJobs(): void
+    public function testGetListReturnsTotalRecordsAndCronJobs(): void
     {
-        $recentCollection = $this->createMock(Collection::class);
-        $successCollection = $this->createMock(Collection::class);
-        $response = $this->createMock(CronStatusResponseInterface::class);
-        $scheduleOne = $this->createConfiguredMock(
-            Schedule::class,
-            [
-                'getScheduleId' => 112815306,
-                'getJobCode' => 'athoscommerce_task_execution',
-                'getStatus' => 'pending',
-                'getMessages' => '',
-                'getCreatedAt' => '2026-07-09 08:50:07',
-                'getScheduledAt' => '2026-07-09 08:53:00',
-                'getExecutedAt' => null,
-                'getFinishedAt' => null,
-            ]
+        $collection = $this->createMock(Collection::class);
+        $response = $this->createMock(CronStatusListInterface::class);
+        $cronItemOne = $this->createConfiguredCronItem('pending');
+        $cronItemTwo = $this->createConfiguredCronItem();
+        $scheduleOne = $this->createSchedule(
+            52,
+            'athoscommerce_task_execution',
+            'pending',
+            '',
+            '2026-09-01 09:54:38',
+            '2026-09-01 09:57:00',
+            '',
+            '',
+            52
         );
-        $scheduleTwo = $this->createConfiguredMock(
-            Schedule::class,
-            [
-                'getScheduleId' => 112815305,
-                'getJobCode' => 'athoscommerce_live_indexing_sync',
-                'getStatus' => 'running',
-                'getMessages' => 'working',
-                'getCreatedAt' => '2026-07-09 08:49:07',
-                'getScheduledAt' => '2026-07-09 08:52:30',
-                'getExecutedAt' => '2026-07-09 08:52:31',
-                'getFinishedAt' => null,
-            ]
+        $scheduleTwo = $this->createSchedule(
+            51,
+            'athoscommerce_task_execution',
+            'pending',
+            '',
+            '2026-09-01 09:54:38',
+            '2026-09-01 09:56:00',
+            '',
+            '',
+            51
         );
-        $scheduleThree = $this->createConfiguredMock(
-            Schedule::class,
-            [
-                'getScheduleId' => 112814226,
-                'getJobCode' => 'athoscommerce_live_indexing_discovery',
-                'getStatus' => 'success',
-                'getMessages' => '',
-                'getCreatedAt' => '2026-07-09 08:48:09',
-                'getScheduledAt' => '2026-07-09 08:50:00',
-                'getExecutedAt' => '2026-07-09 08:51:06',
-                'getFinishedAt' => '2026-07-09 08:51:06',
-                'getId' => 112814226,
-            ]
-        );
-        $cronItemOne = $this->createMock(CronStatusInterface::class);
-        $cronItemTwo = $this->createMock(CronStatusInterface::class);
-        $cronItemThree = $this->createMock(CronStatusInterface::class);
-        $recentOrderCalls = [];
-        $successFilterCalls = [];
-        $successOrderCalls = [];
+        $orderCalls = [];
 
-        $this->collectionFactoryMock->expects($this->exactly(2))
-            ->method('create')
-            ->willReturnOnConsecutiveCalls($recentCollection, $successCollection);
+        $filterCalls = [];
 
-        $jobCodeCondition = [
-            ['eq' => 'athoscommerce_task_execution'],
-            ['eq' => 'athoscommerce_live_indexing_discovery'],
-            ['eq' => 'athoscommerce_live_indexing_sync'],
-        ];
-
-        $recentCollection->expects($this->once())
+        $this->collectionFactoryMock->expects($this->once())->method('create')->willReturn($collection);
+        $collection->expects($this->exactly(2))
             ->method('addFieldToFilter')
-            ->with('job_code', $jobCodeCondition)
-            ->willReturnSelf();
-        $recentCollection->expects($this->exactly(2))
-            ->method('setOrder')
             ->willReturnCallback(
-                function (string $field, string $direction) use (&$recentOrderCalls, $recentCollection) {
-                    $recentOrderCalls[] = [$field, $direction];
-                    return $recentCollection;
+                function (string $field, $condition) use (&$filterCalls, $collection) {
+                    $filterCalls[] = [$field, $condition];
+                    return $collection;
                 }
             );
-        $recentCollection->expects($this->once())->method('setPageSize')->with(3)->willReturnSelf();
-        $recentCollection->expects($this->once())->method('setCurPage')->with(1)->willReturnSelf();
-        $recentCollection->expects($this->once())
-            ->method('getItems')
-            ->willReturn([$scheduleOne, $scheduleTwo, $scheduleThree]);
-
-        $successCollection->expects($this->exactly(2))
-            ->method('addFieldToFilter')
-            ->willReturnCallback(function (string $field, $condition) use (&$successFilterCalls, $successCollection) {
-                $successFilterCalls[] = [$field, $condition];
-                return $successCollection;
-            });
-        $successCollection->expects($this->exactly(2))
+        $collection->expects($this->once())->method('getSelect')->willReturn($this->createSelectMock());
+        $collection->expects($this->once())->method('getSize')->willReturn(15);
+        $collection->expects($this->exactly(2))
             ->method('setOrder')
             ->willReturnCallback(
-                function (string $field, string $direction) use (&$successOrderCalls, $successCollection) {
-                    $successOrderCalls[] = [$field, $direction];
-                    return $successCollection;
+                function (string $field, string $direction) use (&$orderCalls, $collection) {
+                    $orderCalls[] = [$field, $direction];
+                    return $collection;
                 }
             );
-        $successCollection->expects($this->once())->method('setPageSize')->with(1)->willReturnSelf();
-        $successCollection->expects($this->once())->method('setCurPage')->with(1)->willReturnSelf();
-        $successCollection->expects($this->once())->method('getFirstItem')->willReturn($scheduleThree);
+        $collection->expects($this->once())->method('setPageSize')->with(15)->willReturnSelf();
+        $collection->expects($this->once())->method('setCurPage')->with(1)->willReturnSelf();
+        $collection->expects($this->once())->method('getItems')->willReturn([$scheduleOne, $scheduleTwo]);
 
-        $this->itemFactoryMock->expects($this->exactly(3))
+        $this->itemFactoryMock->expects($this->exactly(2))
             ->method('create')
-            ->willReturnOnConsecutiveCalls($cronItemOne, $cronItemTwo, $cronItemThree);
-
-        $cronItemOne->method('setScheduleId')->willReturnSelf();
-        $cronItemOne->method('setJobCode')->willReturnSelf();
-        $cronItemOne->method('setStatus')->willReturnSelf();
-        $cronItemOne->method('setMessages')->willReturnSelf();
-        $cronItemOne->method('setCreatedAt')->willReturnSelf();
-        $cronItemOne->method('setScheduledAt')->willReturnSelf();
-        $cronItemOne->method('setExecutedAt')->willReturnSelf();
-        $cronItemOne->method('setFinishedAt')->willReturnSelf();
-        $cronItemOne->expects($this->once())->method('getStatus')->willReturn('pending');
-
-        $cronItemTwo->method('setScheduleId')->willReturnSelf();
-        $cronItemTwo->method('setJobCode')->willReturnSelf();
-        $cronItemTwo->method('setStatus')->willReturnSelf();
-        $cronItemTwo->method('setMessages')->willReturnSelf();
-        $cronItemTwo->method('setCreatedAt')->willReturnSelf();
-        $cronItemTwo->method('setScheduledAt')->willReturnSelf();
-        $cronItemTwo->method('setExecutedAt')->willReturnSelf();
-        $cronItemTwo->method('setFinishedAt')->willReturnSelf();
-
-        $cronItemThree->method('setScheduleId')->willReturnSelf();
-        $cronItemThree->method('setJobCode')->willReturnSelf();
-        $cronItemThree->method('setStatus')->willReturnSelf();
-        $cronItemThree->method('setMessages')->willReturnSelf();
-        $cronItemThree->method('setCreatedAt')->willReturnSelf();
-        $cronItemThree->method('setScheduledAt')->willReturnSelf();
-        $cronItemThree->method('setExecutedAt')->willReturnSelf();
-        $cronItemThree->method('setFinishedAt')->willReturnSelf();
-
+            ->willReturnOnConsecutiveCalls($cronItemOne, $cronItemTwo);
         $this->responseFactoryMock->expects($this->once())->method('create')->willReturn($response);
-        $this->dateTimeMock->expects($this->once())->method('gmtDate')->willReturn('2026-07-09 08:55:00');
+        $this->loggerMock->expects($this->once())->method('debug');
 
-        $response->expects($this->once())->method('setIsRunning')->with(true)->willReturnSelf();
-        $response->expects($this->once())
-            ->method('setLastSuccessAt')
-            ->with('2026-07-09 08:51:06')
-            ->willReturnSelf();
-        $response->expects($this->once())->method('setLastStatus')->with('pending')->willReturnSelf();
+        $response->expects($this->once())->method('setTotalRecords')->with(15)->willReturnSelf();
         $response->expects($this->once())
             ->method('setCronJobs')
-            ->with([$cronItemOne, $cronItemTwo, $cronItemThree])
+            ->with([$cronItemOne, $cronItemTwo])
             ->willReturnSelf();
 
-        $this->assertSame($response, $this->model->getList());
+        $this->assertSame($response, $this->model->getList('all', 'pending', 1, 15));
         $this->assertSame(
             [
                 ['scheduled_at', 'DESC'],
                 ['schedule_id', 'DESC'],
             ],
-            $recentOrderCalls
+            $orderCalls
         );
         $this->assertSame(
             [
-                ['job_code', $jobCodeCondition],
-                ['status', 'success'],
+                [
+                    'job_code',
+                    [
+                        ['eq' => 'athoscommerce_task_execution'],
+                        ['eq' => 'athoscommerce_live_indexing_discovery'],
+                        ['eq' => 'athoscommerce_live_indexing_sync'],
+                    ],
+                ],
+                ['status', 'pending'],
             ],
-            $successFilterCalls
-        );
-        $this->assertSame(
-            [
-                ['scheduled_at', 'DESC'],
-                ['schedule_id', 'DESC'],
-            ],
-            $successOrderCalls
+            $filterCalls
         );
     }
 
-    public function testGetListReturnsStoppedStateWhenNoSuccessfulRunExists(): void
+    public function testGetListAppliesSpecificJobCodeAndPagination(): void
     {
-        $recentCollection = $this->createMock(Collection::class);
-        $successCollection = $this->createMock(Collection::class);
-        $response = $this->createMock(CronStatusResponseInterface::class);
-        $schedule = $this->createConfiguredMock(
-            Schedule::class,
-            [
-                'getScheduleId' => 1,
-                'getJobCode' => 'athoscommerce_task_execution',
-                'getStatus' => 'error',
-                'getMessages' => 'failed',
-                'getCreatedAt' => '2026-07-09 08:50:07',
-                'getScheduledAt' => '2026-07-09 08:53:00',
-                'getExecutedAt' => '2026-07-09 08:53:02',
-                'getFinishedAt' => '2026-07-09 08:53:03',
-            ]
+        $collection = $this->createMock(Collection::class);
+        $response = $this->createMock(CronStatusListInterface::class);
+        $cronItem = $this->createConfiguredCronItem('running');
+        $schedule = $this->createSchedule(
+            41,
+            'athoscommerce_live_indexing_sync',
+            'running',
+            'working',
+            '2026-09-01 09:54:38',
+            '2026-09-01 09:58:00',
+            '2026-09-01 09:58:05',
+            '',
+            41
         );
-        $emptySuccessSchedule = $this->createConfiguredMock(
-            Schedule::class,
-            [
-                'getId' => null,
-            ]
-        );
-        $cronItem = $this->createMock(CronStatusInterface::class);
+        $filterCalls = [];
 
-        $this->collectionFactoryMock->expects($this->exactly(2))
-            ->method('create')
-            ->willReturnOnConsecutiveCalls($recentCollection, $successCollection);
-
-        $recentCollection->method('addFieldToFilter')->willReturnSelf();
-        $recentCollection->method('setOrder')->willReturnSelf();
-        $recentCollection->method('setPageSize')->willReturnSelf();
-        $recentCollection->method('setCurPage')->willReturnSelf();
-        $recentCollection->expects($this->once())->method('getItems')->willReturn([$schedule]);
-
-        $successCollection->method('addFieldToFilter')->willReturnSelf();
-        $successCollection->method('setOrder')->willReturnSelf();
-        $successCollection->method('setPageSize')->willReturnSelf();
-        $successCollection->method('setCurPage')->willReturnSelf();
-        $successCollection->expects($this->once())->method('getFirstItem')->willReturn($emptySuccessSchedule);
+        $this->collectionFactoryMock->expects($this->once())->method('create')->willReturn($collection);
+        $collection->expects($this->exactly(2))
+            ->method('addFieldToFilter')
+            ->willReturnCallback(
+                function (string $field, $condition) use (&$filterCalls, $collection) {
+                    $filterCalls[] = [$field, $condition];
+                    return $collection;
+                }
+            );
+        $collection->expects($this->once())->method('getSelect')->willReturn($this->createSelectMock());
+        $collection->expects($this->once())->method('getSize')->willReturn(6);
+        $collection->method('setOrder')->willReturnSelf();
+        $collection->expects($this->once())->method('setPageSize')->with(5)->willReturnSelf();
+        $collection->expects($this->once())->method('setCurPage')->with(2)->willReturnSelf();
+        $collection->expects($this->once())->method('getItems')->willReturn([$schedule]);
 
         $this->itemFactoryMock->expects($this->once())->method('create')->willReturn($cronItem);
+        $this->responseFactoryMock->expects($this->once())->method('create')->willReturn($response);
+        $this->loggerMock->expects($this->once())->method('debug');
+
+        $response->expects($this->once())->method('setTotalRecords')->with(6)->willReturnSelf();
+        $response->expects($this->once())->method('setCronJobs')->with([$cronItem])->willReturnSelf();
+
+        $this->assertSame(
+            $response,
+            $this->model->getList('athoscommerce_live_indexing_sync', 'running', 2, 5)
+        );
+        $this->assertSame(
+            [
+                ['job_code', [['eq' => 'athoscommerce_live_indexing_sync']]],
+                ['status', 'running'],
+            ],
+            $filterCalls
+        );
+    }
+
+    private function createSchedule(
+        ?int $scheduleId,
+        ?string $jobCode,
+        ?string $status,
+        ?string $messages,
+        ?string $createdAt,
+        ?string $scheduledAt,
+        ?string $executedAt,
+        ?string $finishedAt,
+        ?int $id
+    ): Schedule {
+        return $this->createConfiguredMock(
+            Schedule::class,
+            [
+                'getScheduleId' => $scheduleId,
+                'getJobCode' => $jobCode,
+                'getStatus' => $status,
+                'getMessages' => $messages,
+                'getCreatedAt' => $createdAt,
+                'getScheduledAt' => $scheduledAt,
+                'getExecutedAt' => $executedAt,
+                'getFinishedAt' => $finishedAt,
+                'getId' => $id,
+            ]
+        );
+    }
+
+    private function createConfiguredCronItem(?string $status = null): CronStatusInterface
+    {
+        $cronItem = $this->createMock(CronStatusInterface::class);
         $cronItem->method('setScheduleId')->willReturnSelf();
         $cronItem->method('setJobCode')->willReturnSelf();
         $cronItem->method('setStatus')->willReturnSelf();
@@ -292,16 +256,18 @@ class GetCronStatusTest extends TestCase
         $cronItem->method('setScheduledAt')->willReturnSelf();
         $cronItem->method('setExecutedAt')->willReturnSelf();
         $cronItem->method('setFinishedAt')->willReturnSelf();
-        $cronItem->expects($this->once())->method('getStatus')->willReturn('error');
+        $cronItem->method('getStatus')->willReturn($status);
 
-        $this->responseFactoryMock->expects($this->once())->method('create')->willReturn($response);
-        $this->dateTimeMock->expects($this->never())->method('gmtDate');
+        return $cronItem;
+    }
 
-        $response->expects($this->once())->method('setIsRunning')->with(false)->willReturnSelf();
-        $response->expects($this->once())->method('setLastSuccessAt')->with(null)->willReturnSelf();
-        $response->expects($this->once())->method('setLastStatus')->with('error')->willReturnSelf();
-        $response->expects($this->once())->method('setCronJobs')->with([$cronItem])->willReturnSelf();
-
-        $this->assertSame($response, $this->model->getList());
+    private function createSelectMock(): object
+    {
+        return new class {
+            public function __toString(): string
+            {
+                return 'SELECT * FROM cron_schedule';
+            }
+        };
     }
 }

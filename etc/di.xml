@@ -59,8 +59,14 @@
                 type="AthosCommerce\Feed\Model\Data\ModulesList"/>
     <preference for="AthosCommerce\Feed\Api\GetCronStatusInterface"
                 type="AthosCommerce\Feed\Model\Api\GetCronStatus"/>
+    <preference for="AthosCommerce\Feed\Api\Data\CronJobSummaryInterface"
+                type="AthosCommerce\Feed\Model\Data\CronJobSummary"/>
     <preference for="AthosCommerce\Feed\Api\Data\CronStatusInterface"
                 type="AthosCommerce\Feed\Model\Data\CronStatus"/>
+    <preference for="AthosCommerce\Feed\Api\Data\CronStatusListInterface"
+                type="AthosCommerce\Feed\Model\Data\CronStatusList"/>
+    <preference for="AthosCommerce\Feed\Api\Data\CronStatusResultInterface"
+                type="AthosCommerce\Feed\Model\Data\CronStatusResult"/>
     <preference for="AthosCommerce\Feed\Api\Data\CronStatusResponseInterface"
                 type="AthosCommerce\Feed\Model\Data\CronStatusResponse"/>
     <preference for="AthosCommerce\Feed\Api\Data\CronStatusSearchResultsInterface"

@@ -18,14 +18,24 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Api;
 
-use AthosCommerce\Feed\Api\Data\CronStatusResponseInterface;
+use AthosCommerce\Feed\Api\Data\CronStatusListInterface;
 
 interface GetCronStatusInterface
 {
     /**
      * Get the recent AthosCommerce cron status summary.
      *
-     * @return \AthosCommerce\Feed\Api\Data\CronStatusResponseInterface
+     * @param string $jobCode
+     * @param string $status
+     * @param int $currentPage
+     * @param int $pageSize
+     *
+     * @return \AthosCommerce\Feed\Api\Data\CronStatusListInterface
      */
-    public function getList(): CronStatusResponseInterface;
+    public function getList(
+        string $jobCode = 'all',
+        string $status = '',
+        int $currentPage = 1,
+        int $pageSize = 3
+    ): CronStatusListInterface;
 }

@@ -18,33 +18,11 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Model\Data;
 
-use AthosCommerce\Feed\Api\Data\CronStatusResponseInterface;
+use AthosCommerce\Feed\Api\Data\CronStatusResultInterface;
 use Magento\Framework\DataObject;
 
-class CronStatusResponse extends DataObject implements CronStatusResponseInterface
+class CronStatusResult extends DataObject implements CronStatusResultInterface
 {
-    /**
-     * Get the per-job summaries.
-     *
-     * @return \AthosCommerce\Feed\Api\Data\CronJobSummaryInterface[]
-     */
-    public function getJobSummaries(): array
-    {
-        return $this->getData('job_summaries') ?? [];
-    }
-
-    /**
-     * Set the per-job summaries.
-     *
-     * @param \AthosCommerce\Feed\Api\Data\CronJobSummaryInterface[] $jobSummaries
-     *
-     * @return self
-     */
-    public function setJobSummaries(array $jobSummaries): self
-    {
-        return $this->setData('job_summaries', $jobSummaries);
-    }
-
     /**
      * Get the status of the most recent cron row.
      *
@@ -65,6 +43,28 @@ class CronStatusResponse extends DataObject implements CronStatusResponseInterfa
     public function setLastStatus(?string $lastStatus): self
     {
         return $this->setData('last_status', $lastStatus);
+    }
+
+    /**
+     * Get the total number of matching cron rows.
+     *
+     * @return int
+     */
+    public function getTotalRecords(): int
+    {
+        return (int) $this->getData('total_records');
+    }
+
+    /**
+     * Set the total number of matching cron rows.
+     *
+     * @param int $totalRecords
+     *
+     * @return self
+     */
+    public function setTotalRecords(int $totalRecords): self
+    {
+        return $this->setData('total_records', $totalRecords);
     }
 
     /**
