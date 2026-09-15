@@ -91,8 +91,7 @@ class LogInfo extends AbstractHelper
         File                $fileDriver,
         AthosCommerceLogger $logger,
         LogFileReader $logFileReader
-    )
-    {
+    ) {
         $this->directoryList = $directoryList;
         $this->fileDriver = $fileDriver;
         $this->logger = $logger;
@@ -134,13 +133,18 @@ class LogInfo extends AbstractHelper
         string $keyword = '',
         string $startDate = '',
         string $endDate = ''
-    ): string
-    {
+    ): string {
         return $this->getLogFile(
             self::LOG['athoscommerce'],
             self::LOG['getExtensionLogFileInfo'],
             self::LOG['getExtensionLogFileError'],
-            $compressOutput, $lastLines, $startLine, $endLine, $keyword, $startDate, $endDate
+            $compressOutput,
+            $lastLines,
+            $startLine,
+            $endLine,
+            $keyword,
+            $startDate,
+            $endDate
         );
     }
 
@@ -179,13 +183,18 @@ class LogInfo extends AbstractHelper
         string $keyword = '',
         string $startDate = '',
         string $endDate = ''
-    ): string
-    {
+    ): string {
         return $this->getLogFile(
             self::LOG['athoscommerceError'],
             self::LOG['getExtensionErrorLogInfo'],
             self::LOG['getExtensionErrorLogFileError'],
-            $compressOutput, $lastLines, $startLine, $endLine, $keyword, $startDate, $endDate
+            $compressOutput,
+            $lastLines,
+            $startLine,
+            $endLine,
+            $keyword,
+            $startDate,
+            $endDate
         );
     }
 
@@ -224,17 +233,24 @@ class LogInfo extends AbstractHelper
         string $keyword = '',
         string $startDate = '',
         string $endDate = ''
-    ): string
-    {
+    ): string {
         return $this->getLogFile(
             self::LOG['athoscommerceDebug'],
             self::LOG['getExtensionDebugLogInfo'],
             self::LOG['getExtensionDebugLogFileError'],
-            $compressOutput, $lastLines, $startLine, $endLine, $keyword, $startDate, $endDate
+            $compressOutput,
+            $lastLines,
+            $startLine,
+            $endLine,
+            $keyword,
+            $startDate,
+            $endDate
         );
     }
 
     /**
+     * Get the cron log file.
+     *
      * @param bool $compressOutput
      * @param int $lastLines
      * @param int $startLine
@@ -252,13 +268,18 @@ class LogInfo extends AbstractHelper
         string $keyword = '',
         string $startDate = '',
         string $endDate = ''
-    ): string
-    {
+    ): string {
         return $this->getLogFile(
             self::LOG['groupCron'],
             self::LOG['getCronLogFileInfo'],
             self::LOG['getCronLogFileError'],
-            $compressOutput, $lastLines, $startLine, $endLine, $keyword, $startDate, $endDate
+            $compressOutput,
+            $lastLines,
+            $startLine,
+            $endLine,
+            $keyword,
+            $startDate,
+            $endDate
         );
     }
 
@@ -276,8 +297,7 @@ class LogInfo extends AbstractHelper
         string $infoMsg,
         string $successMsg,
         string $errorMsg
-    ): bool
-    {
+    ): bool {
         try {
             $logPath = $this->directoryList->getPath(DirectoryList::LOG);
             $logFile = $logPath . '/' . $fileName;
@@ -331,15 +351,13 @@ class LogInfo extends AbstractHelper
         string $keyword = '',
         string $startDate = '',
         string $endDate = ''
-    ): string
-    {
+    ): string {
         $logFile = '';
         try {
             $logPath = $this->directoryList->getPath(DirectoryList::LOG);
             $logFile = $logPath . '/' . $fileName;
 
             if ($this->fileDriver->isExists($logFile)) {
-                $this->logger->info($infoMsg . ' ' . $logPath);
                 return $this->logFileReader->read(
                     $logFile,
                     $compressOutput,

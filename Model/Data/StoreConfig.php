@@ -25,6 +25,8 @@ use Magento\Framework\Model\AbstractExtensibleModel;
 class StoreConfig extends AbstractExtensibleModel implements StoreConfigInterface
 {
     /**
+     * Get the store ID.
+     *
      * @return int
      */
     public function getStoreId(): int
@@ -33,6 +35,8 @@ class StoreConfig extends AbstractExtensibleModel implements StoreConfigInterfac
     }
 
     /**
+     * Set the store ID.
+     *
      * @param int $storeId
      */
     public function setStoreId(int $storeId): self
@@ -41,6 +45,8 @@ class StoreConfig extends AbstractExtensibleModel implements StoreConfigInterfac
     }
 
     /**
+     * Get the store code.
+     *
      * @return string
      */
     public function getStoreCode(): string
@@ -49,6 +55,8 @@ class StoreConfig extends AbstractExtensibleModel implements StoreConfigInterfac
     }
 
     /**
+     * Set the store code.
+     *
      * @param string $storeCode
      */
     public function setStoreCode(string $storeCode): self
@@ -57,6 +65,8 @@ class StoreConfig extends AbstractExtensibleModel implements StoreConfigInterfac
     }
 
     /**
+     * Get the site ID.
+     *
      * @return string|null
      */
     public function getSiteId(): ?string
@@ -65,6 +75,8 @@ class StoreConfig extends AbstractExtensibleModel implements StoreConfigInterfac
     }
 
     /**
+     * Set the site ID.
+     *
      * @param string|null $siteId
      */
     public function setSiteId(?string $siteId): self
@@ -73,6 +85,8 @@ class StoreConfig extends AbstractExtensibleModel implements StoreConfigInterfac
     }
 
     /**
+     * Get the endpoint.
+     *
      * @return string|null
      */
     public function getEndPoint(): ?string
@@ -81,6 +95,8 @@ class StoreConfig extends AbstractExtensibleModel implements StoreConfigInterfac
     }
 
     /**
+     * Set the endpoint.
+     *
      * @param string|null $endPoint
      */
     public function setEndPoint(?string $endPoint): self
@@ -89,6 +105,8 @@ class StoreConfig extends AbstractExtensibleModel implements StoreConfigInterfac
     }
 
     /**
+     * Get the secret key.
+     *
      * @return string|null
      */
     public function getSecretKey(): ?string
@@ -97,6 +115,8 @@ class StoreConfig extends AbstractExtensibleModel implements StoreConfigInterfac
     }
 
     /**
+     * Set the secret key.
+     *
      * @param string|null $secretKey
      */
     public function setSecretKey(?string $secretKey): self
@@ -105,6 +125,29 @@ class StoreConfig extends AbstractExtensibleModel implements StoreConfigInterfac
     }
 
     /**
+     * Get the secret key length.
+     *
+     * @return int|null
+     */
+    public function getSecretKeyLength(): ?int
+    {
+        $value = $this->getData(self::SECRET_KEY_LENGTH);
+        return $value === null ? null : (int)$value;
+    }
+
+    /**
+     * Set the secret key length.
+     *
+     * @param int|null $secretKeyLength
+     */
+    public function setSecretKeyLength(?int $secretKeyLength): self
+    {
+        return $this->setData(self::SECRET_KEY_LENGTH, $secretKeyLength);
+    }
+
+    /**
+     * Get live indexing status.
+     *
      * @return int|null
      */
     public function getEnableLiveIndexing(): ?int
@@ -113,6 +156,8 @@ class StoreConfig extends AbstractExtensibleModel implements StoreConfigInterfac
     }
 
     /**
+     * Set live indexing status.
+     *
      * @param int|null $enableLiveIndexing
      */
     public function setEnableLiveIndexing(?int $enableLiveIndexing): self
@@ -121,6 +166,8 @@ class StoreConfig extends AbstractExtensibleModel implements StoreConfigInterfac
     }
 
     /**
+     * Get the entity sync cron expression.
+     *
      * @return string|null
      */
     public function getEntitySyncCronExpr(): ?string
@@ -129,6 +176,8 @@ class StoreConfig extends AbstractExtensibleModel implements StoreConfigInterfac
     }
 
     /**
+     * Set the entity sync cron expression.
+     *
      * @param string|null $entitySyncCronExpr
      */
     public function setEntitySyncCronExpr(?string $entitySyncCronExpr): self
@@ -137,6 +186,8 @@ class StoreConfig extends AbstractExtensibleModel implements StoreConfigInterfac
     }
 
     /**
+     * Get the per-minute rate.
+     *
      * @return int|null
      */
     public function getPerMinute(): ?int
@@ -145,6 +196,8 @@ class StoreConfig extends AbstractExtensibleModel implements StoreConfigInterfac
     }
 
     /**
+     * Set the per-minute rate.
+     *
      * @param int|null $perMinute
      */
     public function setPerMinute(?int $perMinute): self
@@ -153,6 +206,8 @@ class StoreConfig extends AbstractExtensibleModel implements StoreConfigInterfac
     }
 
     /**
+     * Get the chunk size.
+     *
      * @return int|null
      */
     public function getChunkSize(): ?int
@@ -161,6 +216,8 @@ class StoreConfig extends AbstractExtensibleModel implements StoreConfigInterfac
     }
 
     /**
+     * Set the chunk size.
+     *
      * @param int|null $chunkSize
      */
     public function setChunkSize(?int $chunkSize): self
@@ -169,6 +226,8 @@ class StoreConfig extends AbstractExtensibleModel implements StoreConfigInterfac
     }
 
     /**
+     * Get the task payload.
+     *
      * @return array|null
      */
     public function getTaskPayload(): ?array
@@ -177,6 +236,8 @@ class StoreConfig extends AbstractExtensibleModel implements StoreConfigInterfac
     }
 
     /**
+     * Set the task payload.
+     *
      * @param array|null $payload
      * @return $this
      */
@@ -187,8 +248,10 @@ class StoreConfig extends AbstractExtensibleModel implements StoreConfigInterfac
     }
 
     /**
+     * Add a task payload value.
+     *
      * @param string $key
-     * @param $value
+     * @param mixed $value
      * @return $this
      */
     public function addTaskPayloadValue(string $key, $value): self

@@ -14,6 +14,12 @@
             <resource ref="AthosCommerce_Feed::general" />
         </resources>
     </route>
+    <route url="/V1/athoscommerce/applicationlog/clear" method="POST">
+        <service class="AthosCommerce\Feed\Api\GetApplicationLogInterface" method="clearExtensionInfoLog" />
+        <resources>
+            <resource ref="AthosCommerce_Feed::general" />
+        </resources>
+    </route>
     <route url="/V1/athoscommerce/applicationlog/error" method="GET">
         <service class="AthosCommerce\Feed\Api\GetApplicationLogInterface" method="getExtensionErrorLog" />
         <resources>
@@ -76,6 +82,12 @@
     </route>
     <route url="/V1/athoscommerce/task/:id" method="GET">
         <service class="AthosCommerce\Feed\Api\TaskRepositoryInterface" method="get" />
+        <resources>
+            <resource ref="AthosCommerce_Feed::task" />
+        </resources>
+    </route>
+    <route url="/V1/athoscommerce/taskerrors" method="GET">
+        <service class="AthosCommerce\Feed\Api\GetTaskErrorsInterface" method="getList" />
         <resources>
             <resource ref="AthosCommerce_Feed::task" />
         </resources>
