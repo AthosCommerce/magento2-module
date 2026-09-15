@@ -30,6 +30,7 @@ interface CollectorInterface
      *
      */
     public const CODE_PRODUCT_FEED = 'product_feed';
+    public const CODE_TASK_EXECUTION = 'task_execution';
     /**
      *
      */
