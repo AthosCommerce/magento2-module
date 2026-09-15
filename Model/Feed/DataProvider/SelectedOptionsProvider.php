@@ -19,8 +19,8 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Model\Feed\DataProvider;
 
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
-use AthosCommerce\Feed\Model\Feed\DataProvider\Context\ParentRelationsContext;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\Constant;
+use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\ParentVariantResolver;
 use Magento\Catalog\Model\Product;
 use Magento\ConfigurableProduct\Helper\Data as ConfigurableHelper;
 use Magento\ConfigurableProduct\Model\ConfigurableAttributeData;
@@ -59,9 +59,9 @@ class SelectedOptionsProvider implements DataProviderInterface
     private $logger;
 
     /**
-     * @var ParentRelationsContext
+     * @var ParentVariantResolver
      */
-    private $parentRelationsContext;
+    private $parentVariantResolver;
 
     /**
      *
@@ -69,21 +69,21 @@ class SelectedOptionsProvider implements DataProviderInterface
      * @param ConfigurableAttributeData $configurableAttributeData
      * @param ConfigurableType $configurableType
      * @param AthosCommerceLogger $logger
-     * @param ParentRelationsContext $parentRelationsContext
+     * @param ParentVariantResolver $parentVariantResolver
      */
     public function __construct(
         ConfigurableHelper        $configurableHelper,
         ConfigurableAttributeData $configurableAttributeData,
         ConfigurableType          $configurableType,
         AthosCommerceLogger       $logger,
-        ParentRelationsContext    $parentRelationsContext
+        ParentVariantResolver     $parentVariantResolver
     )
     {
         $this->configurableHelper = $configurableHelper;
         $this->configurableAttributeData = $configurableAttributeData;
         $this->configurableType = $configurableType;
         $this->logger = $logger;
-        $this->parentRelationsContext = $parentRelationsContext;
+        $this->parentVariantResolver = $parentVariantResolver;
     }
 
     /**
@@ -115,7 +115,7 @@ class SelectedOptionsProvider implements DataProviderInterface
                 continue;
             }
 
-            $parentProduct = $this->parentRelationsContext->getParentsByChildId($simpleId);
+            $parentProduct = $this->parentVariantResolver->resolveParentProductForRow($product, $simpleProduct);
 
             if (!$parentProduct) {
                 $product[self::FIELD_KEY_SELECTED_OPTIONS] = null;

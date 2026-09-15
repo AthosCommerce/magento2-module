@@ -37,6 +37,7 @@ class Config implements ConfigInterface
      * @deprecated
      */
     public const ATHOSCOMMERCE_SITE_ID = 'athoscommerce/general/site_id';
+    public const ATHOSCOMMERCE_PARALLEL_CRON_ENABLED = 'athoscommerce/general/parallel_cron_enabled';
     public const ATHOSCOMMERCE_TRACKING_SCRIPT_SRC = 'athoscommerce/tracking/script_src';
 
     /**
@@ -100,5 +101,16 @@ class Config implements ConfigInterface
     public function shouldRender(): bool
     {
         return $this->getSiteId() && $this->getTrackingScriptSrc();
+    }
+
+    /**
+     * @return bool
+     */
+    public function isParallelCronEnabled(): bool
+    {
+        return (bool) $this->scopeConfig->getValue(
+            self::ATHOSCOMMERCE_PARALLEL_CRON_ENABLED,
+            ScopeInterface::SCOPE_STORE
+        );
     }
 }

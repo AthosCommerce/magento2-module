@@ -234,4 +234,126 @@ class PricesProviderTest extends TestCase
             $this->pricesProvider->getData($products, $feedSpecificationMock)
         );
     }
+
+    public function testGetDataCachesResolvedParentForRepeatedRows(): void
+    {
+        $priceProviderMock = $this->createMock(PriceProviderInterface::class);
+        $feedSpecificationMock = $this->createMock(FeedSpecificationInterface::class);
+        $productMock = $this->createMock(Product::class);
+        $resolvedParentMock = $this->createMock(Product::class);
+
+        $products = [
+            ['product_model' => $productMock, 'entity_id' => 1, Constant::IS_STANDALONE_PRODUCT_KEY => false],
+            ['product_model' => $productMock, 'entity_id' => 1, Constant::IS_STANDALONE_PRODUCT_KEY => false],
+        ];
+
+        $productMock->method('getId')->willReturn(1);
+
+        $feedSpecificationMock->method('getIgnoreFields')->willReturn([]);
+        $feedSpecificationMock->method('getIncludeTierPricing')->willReturn(false);
+
+        $this->priceProviderResolverMock->expects($this->exactly(2))
+            ->method('resolve')
+            ->with($productMock)
+            ->willReturn($priceProviderMock);
+
+        $this->parentVariantResolverMock->expects($this->once())
+            ->method('resolveParentProductForRow')
+            ->with($products[0], $productMock)
+            ->willReturn($resolvedParentMock);
+
+        $priceProviderMock->expects($this->exactly(2))
+            ->method('getPrices')
+            ->with($productMock, [], $resolvedParentMock)
+            ->willReturn([
+                'regular_price' => 1.0,
+                'final_price' => 2.0,
+                'max_price' => 3.0,
+            ]);
+
+        $result = $this->pricesProvider->getData($products, $feedSpecificationMock);
+
+        $this->assertSame(3.0, $result[0]['max_price']);
+        $this->assertSame(3.0, $result[1]['max_price']);
+    }
+
+    public function testGetDataResolvesParentsPerRowContextForSameProduct(): void
+    {
+        $priceProviderMock = $this->createMock(PriceProviderInterface::class);
+        $feedSpecificationMock = $this->createMock(FeedSpecificationInterface::class);
+        $productMock = $this->createMock(Product::class);
+        $firstParentMock = $this->createMock(Product::class);
+        $secondParentMock = $this->createMock(Product::class);
+
+        $products = [
+            [
+                'product_model' => $productMock,
+                'entity_id' => 1,
+                Constant::IS_STANDALONE_PRODUCT_KEY => false,
+                Constant::RESOLVED_PARENT_ID_KEY => 10,
+                Constant::RESOLVED_PARENT_SKU_KEY => 'parent-one',
+            ],
+            [
+                'product_model' => $productMock,
+                'entity_id' => 1,
+                Constant::IS_STANDALONE_PRODUCT_KEY => false,
+                Constant::RESOLVED_PARENT_ID_KEY => 11,
+                Constant::RESOLVED_PARENT_SKU_KEY => 'parent-two',
+            ],
+        ];
+
+        $productMock->method('getId')->willReturn(1);
+
+        $feedSpecificationMock->method('getIgnoreFields')->willReturn([]);
+        $feedSpecificationMock->method('getIncludeTierPricing')->willReturn(false);
+
+        $this->priceProviderResolverMock->expects($this->exactly(2))
+            ->method('resolve')
+            ->with($productMock)
+            ->willReturn($priceProviderMock);
+
+        $resolverCall = 0;
+        $this->parentVariantResolverMock->expects($this->exactly(2))
+            ->method('resolveParentProductForRow')
+            ->willReturnCallback(function (array $row, Product $product) use (
+                &$resolverCall,
+                $products,
+                $productMock,
+                $firstParentMock,
+                $secondParentMock
+            ) {
+                $this->assertSame($productMock, $product);
+                $this->assertSame($products[$resolverCall], $row);
+
+                return $resolverCall++ === 0 ? $firstParentMock : $secondParentMock;
+            });
+
+        $pricesCall = 0;
+        $priceProviderMock->expects($this->exactly(2))
+            ->method('getPrices')
+            ->willReturnCallback(function (Product $product, array $ignoredFields, ?Product $resolvedParent) use (
+                &$pricesCall,
+                $productMock,
+                $firstParentMock,
+                $secondParentMock
+            ) {
+                $this->assertSame($productMock, $product);
+                $this->assertSame([], $ignoredFields);
+
+                if ($pricesCall++ === 0) {
+                    $this->assertSame($firstParentMock, $resolvedParent);
+
+                    return ['regular_price' => 1.0, 'final_price' => 2.0, 'max_price' => 3.0];
+                }
+
+                $this->assertSame($secondParentMock, $resolvedParent);
+
+                return ['regular_price' => 10.0, 'final_price' => 20.0, 'max_price' => 30.0];
+            });
+
+        $result = $this->pricesProvider->getData($products, $feedSpecificationMock);
+
+        $this->assertSame(3.0, $result[0]['max_price']);
+        $this->assertSame(30.0, $result[1]['max_price']);
+    }
 }

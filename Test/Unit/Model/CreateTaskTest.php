@@ -16,6 +16,8 @@
 
 namespace AthosCommerce\Feed\Test\Unit\Model;
 
+require_once __DIR__ . '/../_files/bootstrap-stubs.php';
+
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use Magento\Framework\Exception\CouldNotSaveException;
 use Magento\Framework\Exception\NoSuchEntityException;
@@ -71,13 +73,16 @@ class CreateTaskTest extends \PHPUnit\Framework\TestCase
     public function setUp(): void
     {
         $this->taskRepositoryMock = $this->createMock(TaskRepositoryInterface::class);
-        $this->taskFactoryMock = $this->createMock(TaskInterfaceFactory::class);
         $this->validatorPoolMock = $this->createMock(ValidatorPool::class);
         $this->typeListMock = $this->createMock(TypeList::class);
         $this->uniqueCheckerPoolMock = $this->createMock(UniqueCheckerPool::class);
         $this->moduleManagerPoolMock = $this->createMock(Manager::class);
         $this->loggerMock = $this->createMock(AthosCommerceLogger::class);
         $this->eventManagerMock = $this->createMock(\Magento\Framework\Event\ManagerInterface::class);
+        $this->taskFactoryMock = $this->getMockBuilder(TaskInterfaceFactory::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['create'])
+            ->getMock();
 
         $this->createTask = new CreateTask(
             $this->taskRepositoryMock,

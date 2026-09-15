@@ -30,6 +30,8 @@ class StoreConfigApiMapper
     ];
 
     /**
+     * Map store config data for the public API.
+     *
      * @param StoreConfigInterface $store
      * @return array
      */
@@ -40,6 +42,7 @@ class StoreConfigApiMapper
             'storeCode' => $store->getStoreCode(),
             'siteId' => $store->getSiteId(),
             'secretKey' => $store->getSecretKey(),
+            'secretKeyLength' => $store->getSecretKeyLength(),
             'endPoint' => $store->getEndPoint(),
             'enableLiveIndexing' => $store->getEnableLiveIndexing(),
             'entitySyncCronExpr' => $store->getEntitySyncCronExpr(),
@@ -50,6 +53,10 @@ class StoreConfigApiMapper
 
         foreach (self::PUBLIC_API_IGNORE_LIST as $field) {
             unset($payload[$field]);
+        }
+
+        if ($payload['secretKeyLength'] === null) {
+            unset($payload['secretKeyLength']);
         }
 
         return $payload;

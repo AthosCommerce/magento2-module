@@ -88,8 +88,6 @@ class Json extends FileAbstract
             // Serialize each object individually and add a newline after it
             $serializedItem = $this->jsonSerializer->serialize($item) . PHP_EOL;
             $file->write($serializedItem);
-            $serializedItem = [];
         }
-
     }
 }

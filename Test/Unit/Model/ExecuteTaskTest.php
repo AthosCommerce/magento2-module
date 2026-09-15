@@ -16,6 +16,8 @@
 
 namespace AthosCommerce\Feed\Test\Unit\Model;
 
+require_once __DIR__ . '/../_files/bootstrap-stubs.php';
+
 use Magento\Framework\Stdlib\DateTime\DateTime;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Api\Data\TaskErrorInterface;

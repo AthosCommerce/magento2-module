@@ -14,6 +14,12 @@
             <resource ref="AthosCommerce_Feed::general" />
         </resources>
     </route>
+    <route url="/V1/athoscommerce/applicationlog/clear" method="POST">
+        <service class="AthosCommerce\Feed\Api\GetApplicationLogInterface" method="clearExtensionInfoLog" />
+        <resources>
+            <resource ref="AthosCommerce_Feed::general" />
+        </resources>
+    </route>
     <route url="/V1/athoscommerce/applicationlog/error" method="GET">
         <service class="AthosCommerce\Feed\Api\GetApplicationLogInterface" method="getExtensionErrorLog" />
         <resources>
@@ -23,7 +29,7 @@
     <route url="/V1/athoscommerce/applicationlog/error" method="POST">
         <service class="AthosCommerce\Feed\Api\GetApplicationLogInterface" method="clearExtensionErrorLog" />
         <resources>
-            <resource ref="AthosCommerce_Feed::general" />
+            <resource ref="AthosCommerce_Feed::admin_operation" />
         </resources>
     </route>
     <route url="/V1/athoscommerce/applicationlog/debug" method="GET">
@@ -35,7 +41,7 @@
     <route url="/V1/athoscommerce/applicationlog/debug" method="POST">
         <service class="AthosCommerce\Feed\Api\GetApplicationLogInterface" method="clearExtensionDebugLog" />
         <resources>
-            <resource ref="AthosCommerce_Feed::general" />
+            <resource ref="AthosCommerce_Feed::admin_operation" />
         </resources>
     </route>
     <route url="/V1/athoscommerce/groupcronlog" method="GET">
@@ -80,6 +86,12 @@
             <resource ref="AthosCommerce_Feed::task" />
         </resources>
     </route>
+    <route url="/V1/athoscommerce/taskerrors" method="GET">
+        <service class="AthosCommerce\Feed\Api\GetTaskErrorsInterface" method="getList" />
+        <resources>
+            <resource ref="AthosCommerce_Feed::task" />
+        </resources>
+    </route>
     <route url="/V1/athoscommerce/categorylist" method="GET">
         <service class="AthosCommerce\Feed\Api\CategoryInfoInterface" method="getAllCategories"/>
         <resources>
@@ -101,7 +113,7 @@
     <route url="/V1/athoscommerce/configupdate" method="POST">
         <service class="AthosCommerce\Feed\Api\ConfigUpdateInterface" method="update" />
         <resources>
-            <resource ref="AthosCommerce_Feed::config_write" />
+            <resource ref="AthosCommerce_Feed::admin_operation" />
         </resources>
     </route>
     <route url="/V1/athoscommerce/configinfo" method="GET">

@@ -14,40 +14,41 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-namespace AthosCommerce\Feed\Test\Unit\Model\Feed\DataProvider\Configurable;
+declare(strict_types=1);
 
-use Magento\Framework\Api\ExtensionAttribute\JoinProcessorInterface;
-use Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable\Attribute\Collection;
-use Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable\Attribute\CollectionFactory
-    as AttributeCollectionFactory;
+namespace AthosCommerce\Feed\Test\Unit\Model\Feed\DataProvider\Configurable {
+
+require_once dirname(__DIR__, 4) . '/_files/bootstrap-stubs.php';
+
 use AthosCommerce\Feed\Model\Feed\DataProvider\Configurable\GetAttributesCollection;
+use Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable\Attribute\Collection;
+use Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable\Attribute\CollectionFactory as AttributeCollectionFactory;
+use Magento\Framework\Api\ExtensionAttribute\JoinProcessorInterface;
 
 class GetAttributesCollectionTest extends \PHPUnit\Framework\TestCase
 {
     private $joinProcessorMock;
-
-    private $attributeCollectionFactoryMock;
-
+    private $attributeCollectionFactory;
     private $getAttributesCollection;
 
     public function setUp(): void
     {
         $this->joinProcessorMock = $this->createMock(JoinProcessorInterface::class);
-        $this->attributeCollectionFactoryMock = $this->createMock(AttributeCollectionFactory::class);
+        $attributesCollectionMock = $this->getMockBuilder(Collection::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['setProductFilter', 'orderByPosition'])
+            ->getMock();
+        $this->attributeCollectionFactory = new AttributeCollectionFactory($attributesCollectionMock);
         $this->getAttributesCollection = new GetAttributesCollection(
             $this->joinProcessorMock,
-            $this->attributeCollectionFactoryMock
+            $this->attributeCollectionFactory
         );
     }
 
-    public function testExecute()
+    public function testExecute(): void
     {
-        $attributesCollectionMock = $this->getMockBuilder(Collection::class)
-            ->disableOriginalConstructor()
-            ->getMock();
-        $this->attributeCollectionFactoryMock->expects($this->once())
-            ->method('create')
-            ->willReturn($attributesCollectionMock);
+        $attributesCollectionMock = $this->attributeCollectionFactory->create();
+
         $this->joinProcessorMock->expects($this->once())
             ->method('process')
             ->with($attributesCollectionMock);
@@ -57,4 +58,5 @@ class GetAttributesCollectionTest extends \PHPUnit\Framework\TestCase
 
         $this->assertSame($attributesCollectionMock, $this->getAttributesCollection->execute([]));
     }
+}
 }

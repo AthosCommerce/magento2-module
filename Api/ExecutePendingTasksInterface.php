@@ -33,4 +33,14 @@ interface ExecutePendingTasksInterface
         ?string $storeCode = null,
         string $executionMode = self::EXECUTION_MODE_UNKNOWN
     ) : array;
+
+    /**
+     * @param string $storeCode
+     * @param string $executionMode
+     * @return array
+     */
+    public function executeForStoreWorker(
+        string $storeCode,
+        string $executionMode = self::EXECUTION_MODE_UNKNOWN
+    ): array;
 }

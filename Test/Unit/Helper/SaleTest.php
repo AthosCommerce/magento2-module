@@ -18,7 +18,9 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Test\Unit\Helper;
 
+
 require_once dirname(__DIR__) . '/_files/SalesDataInterfaceFactory.php';
+require_once __DIR__ . '/../_files/bootstrap-stubs.php';
 
 use AthosCommerce\Feed\Api\Data\SalesDataInterface;
 use AthosCommerce\Feed\Api\Data\SalesDataInterfaceFactory;

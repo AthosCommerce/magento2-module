@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Console\Command;
 
 use Magento\Framework\App\Area;
+use Magento\Framework\App\ObjectManager;
 use Magento\Framework\App\State;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Stdlib\DateTime\DateTimeFactory;
@@ -27,6 +28,7 @@ use AthosCommerce\Feed\Api\ExecutePendingTasksInterface;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Metric\CollectorInterface;
 use AthosCommerce\Feed\Model\Metric\Output\CliOutput;
+use AthosCommerce\Feed\Model\Task\StoreWorkerLauncher;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -36,6 +38,7 @@ class ExecutePendingTasksCommand extends Command
 {
     public const COMMAND_NAME = 'athoscommerce:feed:execute-pending-tasks';
     private const OPTION_STORE = 'store';
+    private const OPTION_PARALLEL = 'parallel';
     /**
      * @var ExecutePendingTasksInterfaceFactory
      */
@@ -60,6 +63,10 @@ class ExecutePendingTasksCommand extends Command
      * @var AthosCommerceLogger
      */
     private $logger;
+    /**
+     * @var StoreWorkerLauncher
+     */
+    private $storeWorkerLauncher;
 
     /**
      * ExecutePendingTasks constructor.
@@ -70,6 +77,7 @@ class ExecutePendingTasksCommand extends Command
      * @param CliOutput $cliOutput
      * @param CollectorInterface $metricCollector
      * @param AthosCommerceLogger $logger
+     * @param StoreWorkerLauncher $storeWorkerLauncher
      * @param string|null $name
      */
     public function __construct(
@@ -79,6 +87,7 @@ class ExecutePendingTasksCommand extends Command
         CliOutput                           $cliOutput,
         CollectorInterface                  $metricCollector,
         AthosCommerceLogger                 $logger,
+        ?StoreWorkerLauncher                $storeWorkerLauncher = null,
         ?string                             $name = null
     )
     {
@@ -89,6 +98,9 @@ class ExecutePendingTasksCommand extends Command
         $this->cliOutput = $cliOutput;
         $this->metricCollector = $metricCollector;
         $this->logger = $logger;
+        $this->storeWorkerLauncher = $storeWorkerLauncher ?: ObjectManager::getInstance()->get(
+            StoreWorkerLauncher::class
+        );
     }
 
     /**
@@ -103,6 +115,12 @@ class ExecutePendingTasksCommand extends Command
                 null,
                 InputOption::VALUE_REQUIRED,
                 'Store code to execute pending tasks for'
+            )
+            ->addOption(
+                self::OPTION_PARALLEL,
+                'p',
+                InputOption::VALUE_NONE,
+                'Spawn per-store background workers for pending tasks'
             );
 
         parent::configure();
@@ -131,14 +149,40 @@ class ExecutePendingTasksCommand extends Command
             $storeCode = is_string($storeCode) ? trim($storeCode) : null;
             $storeCode = $storeCode !== '' ? $storeCode : null;
             $scopeLabel = $storeCode ? sprintf(' for store "%s"', $storeCode) : '';
+            $parallel = (bool) $input->getOption(self::OPTION_PARALLEL);
             $output->writeln('<info>Execution started' . $scopeLabel . ': ' . $dateTime->gmtDate() . '</info>');
             $this->logger->info(
                 'CLI started for task execution.',
                 [
                     'store' => $storeCode,
-                    'executionMode' => ExecutePendingTasksInterface::EXECUTION_MODE_CLI
+                    'executionMode' => ExecutePendingTasksInterface::EXECUTION_MODE_CLI,
+                    'parallel' => $parallel,
                 ]
             );
+
+            if ($parallel) {
+                $spawnedStores = $this->storeWorkerLauncher->spawnPendingStoreWorkers($storeCode);
+                if ($spawnedStores === []) {
+                    $output->writeln('<info>No pending store workers were spawned.</info>');
+                } else {
+                    foreach ($spawnedStores as $spawnedStore) {
+                        $output->writeln(sprintf('<info>Spawned worker for store "%s".</info>', $spawnedStore));
+                    }
+                }
+
+                $this->logger->info(
+                    'CLI spawned background workers for pending tasks.',
+                    [
+                        'store' => $storeCode,
+                        'spawnedStores' => $spawnedStores,
+                        'executionMode' => ExecutePendingTasksInterface::EXECUTION_MODE_CLI,
+                    ]
+                );
+                $output->writeln('<info>Execution dispatched in parallel mode.</info>');
+
+                return Command::SUCCESS;
+            }
+
             $this->cliOutput->setOutput($output);
             $this->metricCollector->setOutput($this->cliOutput);
             $result = $this->executePendingTasksFactory->create()->execute(
@@ -164,6 +208,14 @@ class ExecutePendingTasksCommand extends Command
 
             return Command::SUCCESS; // 0
         } catch (\Throwable $e) {
+            $this->logger->error(
+                $e->getMessage(),
+                [
+                    'store' => $storeCode ?? null,
+                    'trace' => $e->getTraceAsString(),
+                    'executionMode' => ExecutePendingTasksInterface::EXECUTION_MODE_CLI,
+                ]
+            );
             $output->writeln('<error>' . $e->getMessage() . '</error>');
 
             return Command::FAILURE; // 1

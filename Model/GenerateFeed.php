@@ -104,17 +104,18 @@ class GenerateFeed implements GenerateFeedInterface
      * @param AthosCommerceLogger $logger
      */
     public function __construct(
-        CollectionProcessor $collectionProcessor,
-        ItemsGenerator $itemsGenerator,
+        CollectionProcessor       $collectionProcessor,
+        ItemsGenerator            $itemsGenerator,
         CollectionConfigInterface $collectionConfig,
-        StorageInterface $storage,
-        CatalogStorageInterface $catalogStorage,
-        ContextManagerInterface $contextManager,
-        CollectorInterface $metricCollector,
-        AppConfigInterface $appConfig,
-        TaskRepositoryInterface $taskRepository,
-        AthosCommerceLogger $logger
-    ) {
+        StorageInterface          $storage,
+        CatalogStorageInterface   $catalogStorage,
+        ContextManagerInterface   $contextManager,
+        CollectorInterface        $metricCollector,
+        AppConfigInterface        $appConfig,
+        TaskRepositoryInterface   $taskRepository,
+        AthosCommerceLogger       $logger
+    )
+    {
         $this->collectionProcessor = $collectionProcessor;
         $this->itemsGenerator = $itemsGenerator;
         $this->collectionConfig = $collectionConfig;
@@ -202,6 +203,7 @@ class GenerateFeed implements GenerateFeedInterface
                     );
                 }
                 $itemsData = $this->itemsGenerator->generate($collection->getItems(), $feedSpecification);
+
                 $productCount += count($itemsData);
                 $title = 'Products: ' . $pageSize * $metrics . ' - ' . $pageSize * ($metrics + 1);
                 $metrics++;
@@ -213,8 +215,9 @@ class GenerateFeed implements GenerateFeedInterface
                     $metricPage++;
                 }
 
+
                 $this->storage->addData($itemsData, $id);
-                if(!empty($feedSpecification->getCatalogPreSignedUrl())) {
+                if (!empty($feedSpecification->getCatalogPreSignedUrl())) {
                     $this->catalogStorage->addData($itemsData, $id);
                     $catalogRowCount = $this->catalogStorage->getCatalogRowCount();
                 }
@@ -325,7 +328,7 @@ class GenerateFeed implements GenerateFeedInterface
             'format' => $feedSpecification->getFormat(),
         ]);
 
-        if(!empty($feedSpecification->getCatalogPreSignedUrl())) {
+        if (!empty($feedSpecification->getCatalogPreSignedUrl())) {
             $this->logger->info('Persistent catalog storage in s3 completed', [
                 'method' => __METHOD__,
                 'entityId' => $id,

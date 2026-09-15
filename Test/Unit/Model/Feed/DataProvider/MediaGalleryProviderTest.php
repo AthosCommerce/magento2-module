@@ -16,6 +16,7 @@
 
 namespace AthosCommerce\Feed\Test\Unit\Model\Feed\DataProvider;
 
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use Magento\Catalog\Helper\Image;
 use Magento\Catalog\Model\Product;
 use Magento\Framework\Serialize\Serializer\Json;
@@ -29,21 +30,29 @@ class MediaGalleryProviderTest extends \PHPUnit\Framework\TestCase
 
     private $jsonMock;
 
+    private $loggerMock;
+
     private $mediaGalleryProvider;
 
     public function setUp(): void
     {
         $this->imageHelperMock = $this->createMock(Image::class);
         $this->jsonMock = $this->createMock(Json::class);
+        $this->loggerMock = $this->createMock(AthosCommerceLogger::class);
         $this->mediaGalleryProvider = new MediaGalleryProvider(
             $this->imageHelperMock,
-            $this->jsonMock
+            $this->jsonMock,
+            $this->loggerMock
         );
     }
 
     public function testGetData()
     {
-        $productGalleryImageMock = $this->createMock(Product\Gallery\Entry::class);
+        $productGalleryImageMock = $this->getMockBuilder(Product\Gallery\Entry::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['getMediaType', 'getLabel', 'getPosition', 'getFile'])
+            ->addMethods(['getDisabled'])
+            ->getMock();
         $imageMock = $this->createMock(\Magento\Catalog\Helper\Image::class);
         $productMock = $this->getMockBuilder(Product::class)
             ->disableOriginalConstructor()
@@ -106,8 +115,7 @@ class MediaGalleryProviderTest extends \PHPUnit\Framework\TestCase
             ->method('getPosition')
             ->willReturn(1);
         $productGalleryImageMock->expects($this->once())
-            ->method('__call')
-            ->withAnyParameters()
+            ->method('getDisabled')
             ->willReturn(false);
         $productGalleryImageMock->expects($this->once())
             ->method('getFile')
@@ -119,7 +127,7 @@ class MediaGalleryProviderTest extends \PHPUnit\Framework\TestCase
         $this->jsonMock->expects($this->once())
             ->method('serialize')
             ->with([$mediaGalleryResult])
-            ->willReturn(json_encode($mediaGalleryResult));
+            ->willReturn(json_encode([$mediaGalleryResult]));
 
         $this->assertSame(
             [
@@ -127,7 +135,7 @@ class MediaGalleryProviderTest extends \PHPUnit\Framework\TestCase
                     $products[0],
                     [
                         'cached_thumbnail' => 'http://test.url/image.jpg',
-                        'media_gallery_json' => json_encode($mediaGalleryResult),
+                        'media_gallery_json' => json_encode([$mediaGalleryResult]),
                     ]
                 )
             ],

@@ -16,6 +16,8 @@
 
 namespace AthosCommerce\Feed\Test\Unit\Model;
 
+require_once __DIR__ . '/../_files/bootstrap-stubs.php';
+
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use Magento\Framework\Api\ExtensionAttribute\JoinProcessorInterface;
 use Magento\Framework\Api\SearchCriteria\CollectionProcessorInterface;

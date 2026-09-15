@@ -16,6 +16,7 @@
 
 namespace AthosCommerce\Feed\Test\Unit\Model\Feed\Collection;
 
+use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use Magento\Catalog\Model\ResourceModel\Product\Collection;
 use Magento\CatalogInventory\Model\ResourceModel\Stock\Status;
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
@@ -25,12 +26,15 @@ class StockModifierTest extends \PHPUnit\Framework\TestCase
 {
     private $statusMock;
 
+    private $loggerMock;
+
     private $stockModifier;
 
     public function setUp(): void
     {
         $this->statusMock = $this->createMock(Status::class);
-        $this->stockModifier = new StockModifier($this->statusMock);
+        $this->loggerMock = $this->createMock(AthosCommerceLogger::class);
+        $this->stockModifier = new StockModifier($this->statusMock, $this->loggerMock);
     }
 
     public function testModify()
