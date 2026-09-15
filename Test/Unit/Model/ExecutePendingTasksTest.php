@@ -22,8 +22,10 @@ use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Api\Data\TaskInterface;
 use AthosCommerce\Feed\Api\Data\TaskSearchResultsInterface;
 use AthosCommerce\Feed\Api\ExecuteTaskInterface;
+use AthosCommerce\Feed\Api\StoreExecutionLockInterface;
 use AthosCommerce\Feed\Api\TaskRepositoryInterface;
 use AthosCommerce\Feed\Model\ExecutePendingTasks;
+use AthosCommerce\Feed\Model\ResourceModel\Task as TaskResource;
 
 class ExecutePendingTasksTest extends \PHPUnit\Framework\TestCase
 {
@@ -47,6 +49,16 @@ class ExecutePendingTasksTest extends \PHPUnit\Framework\TestCase
      */
     private $loggerMock;
 
+    /**
+     * @var TaskResource
+     */
+    private $taskResourceMock;
+
+    /**
+     * @var StoreExecutionLockInterface
+     */
+    private $storeExecutionLockMock;
+
     private $executePendingTasks;
 
     /**
@@ -58,11 +70,15 @@ class ExecutePendingTasksTest extends \PHPUnit\Framework\TestCase
         $this->searchCriteriaBuilderMock = $this->createMock(SearchCriteriaBuilder::class);
         $this->executeTaskMock = $this->createMock(ExecuteTaskInterface::class);
         $this->loggerMock = $this->createMock(AthosCommerceLogger::class);
+        $this->taskResourceMock = $this->createMock(TaskResource::class);
+        $this->storeExecutionLockMock = $this->createMock(StoreExecutionLockInterface::class);
         $this->executePendingTasks = new ExecutePendingTasks(
             $this->taskRepositoryMock,
             $this->searchCriteriaBuilderMock,
             $this->executeTaskMock,
-            $this->loggerMock
+            $this->loggerMock,
+            $this->taskResourceMock,
+            $this->storeExecutionLockMock
         );
     }
 
@@ -194,5 +210,77 @@ class ExecutePendingTasksTest extends \PHPUnit\Framework\TestCase
             [$defaultTaskId => $executeResult],
             $this->executePendingTasks->execute('default')
         );
+    }
+
+    public function testExecuteForStoreWorkerClaimsTasksBeforeRunning(): void
+    {
+        $entityId = 11;
+        $executeResult = ['payload' => 'test'];
+        $taskInterfaceMock = $this->createMock(TaskInterface::class);
+        $searchCriteriaMock = $this->getMockBuilder(SearchCriteriaInterface::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+        $searchResultsMock = $this->getMockBuilder(TaskSearchResultsInterface::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+
+        $this->storeExecutionLockMock->expects($this->once())
+            ->method('acquire')
+            ->with('default')
+            ->willReturn(true);
+        $this->taskResourceMock->expects($this->once())
+            ->method('claimPendingTasksForStore')
+            ->with('default')
+            ->willReturn([$entityId]);
+        $this->storeExecutionLockMock->expects($this->once())
+            ->method('release')
+            ->with('default');
+        $this->searchCriteriaBuilderMock->expects($this->once())
+            ->method('addFilter')
+            ->with('entity_id', [$entityId], 'in')
+            ->willReturnSelf();
+        $this->searchCriteriaBuilderMock->expects($this->once())
+            ->method('create')
+            ->willReturn($searchCriteriaMock);
+        $this->taskRepositoryMock->expects($this->once())
+            ->method('getList')
+            ->with($searchCriteriaMock)
+            ->willReturn($searchResultsMock);
+        $searchResultsMock->expects($this->once())
+            ->method('getItems')
+            ->willReturn([$taskInterfaceMock]);
+        $taskInterfaceMock->expects($this->exactly(2))
+            ->method('getEntityId')
+            ->willReturn($entityId);
+        $taskInterfaceMock->expects($this->once())
+            ->method('getStatus')
+            ->willReturn('processing');
+        $this->executeTaskMock->expects($this->once())
+            ->method('execute')
+            ->with($taskInterfaceMock)
+            ->willReturn($executeResult);
+
+        $this->assertSame(
+            [$entityId => $executeResult],
+            $this->executePendingTasks->executeForStoreWorker('default')
+        );
+    }
+
+    public function testExecuteForStoreWorkerSkipsWhenLockCannotBeAcquired(): void
+    {
+        $this->storeExecutionLockMock->expects($this->once())
+            ->method('acquire')
+            ->with('default')
+            ->willReturn(false);
+        $this->taskResourceMock->expects($this->never())
+            ->method('claimPendingTasksForStore');
+        $this->taskRepositoryMock->expects($this->never())
+            ->method('getList');
+        $this->storeExecutionLockMock->expects($this->never())
+            ->method('release');
+        $this->executeTaskMock->expects($this->never())
+            ->method('execute');
+
+        $this->assertSame([], $this->executePendingTasks->executeForStoreWorker('default'));
     }
 }
