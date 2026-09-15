@@ -18,29 +18,29 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Api;
 
-interface ExecutePendingTasksInterface
+interface StoreExecutionLockInterface
 {
-    public const EXECUTION_MODE_UNKNOWN = 'unknown';
-    public const EXECUTION_MODE_CLI = 'cli';
-    public const EXECUTION_MODE_CRON = 'cron';
-
     /**
-     * @param string|null $storeCode
-     * @param string $executionMode
-     * @return array
-     */
-    public function execute(
-        ?string $storeCode = null,
-        string $executionMode = self::EXECUTION_MODE_UNKNOWN
-    ) : array;
-
-    /**
+     * Check whether a store worker is already locked.
+     *
      * @param string $storeCode
-     * @param string $executionMode
-     * @return array
+     * @return bool
      */
-    public function executeForStoreWorker(
-        string $storeCode,
-        string $executionMode = self::EXECUTION_MODE_UNKNOWN
-    ): array;
+    public function isLocked(string $storeCode): bool;
+
+    /**
+     * Acquire a lock for a store worker.
+     *
+     * @param string $storeCode
+     * @return bool
+     */
+    public function acquire(string $storeCode): bool;
+
+    /**
+     * Release a lock for a store worker.
+     *
+     * @param string $storeCode
+     * @return void
+     */
+    public function release(string $storeCode): void;
 }

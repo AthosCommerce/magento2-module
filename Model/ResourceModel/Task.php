@@ -24,6 +24,8 @@ use Magento\Framework\Model\ResourceModel\Db\VersionControl\AbstractDb;
 use Magento\Framework\Model\ResourceModel\Db\VersionControl\RelationComposite;
 use Magento\Framework\Model\ResourceModel\Db\VersionControl\Snapshot;
 use Magento\Framework\Serialize\SerializerInterface;
+use Zend_Db_Expr;
+use AthosCommerce\Feed\Api\MetadataInterface;
 use AthosCommerce\Feed\Api\Data\TaskInterface;
 use AthosCommerce\Feed\Model\ResourceModel\Task\Error\DeleteErrors;
 use AthosCommerce\Feed\Model\ResourceModel\Task\Error\SaveError;
@@ -103,5 +105,93 @@ class Task extends AbstractDb
         }
 
         return parent::_afterSave($object);
+    }
+
+    /**
+     * @param string|null $storeCode
+     * @return string[]
+     */
+    public function getPendingStoreCodes(?string $storeCode = null): array
+    {
+        $connection = $this->getConnection();
+        $storeExpression = $this->getStoreCodeExpression();
+        $select = $connection->select()
+            ->distinct()
+            ->from($this->getMainTable(), ['store_code' => new Zend_Db_Expr($storeExpression)])
+            ->where(TaskInterface::STATUS . ' = ?', MetadataInterface::TASK_STATUS_PENDING)
+            ->where('JSON_EXTRACT(' . TaskInterface::PAYLOAD . ', "$.store") IS NOT NULL')
+            ->where('TRIM(' . $storeExpression . ') <> ?', '');
+
+        if ($storeCode !== null && trim($storeCode) !== '') {
+            $select->where($storeExpression . ' = ?', trim($storeCode));
+        }
+
+        $result = [];
+        foreach ($connection->fetchCol($select) as $pendingStoreCode) {
+            $pendingStoreCode = is_string($pendingStoreCode) ? trim($pendingStoreCode) : '';
+            if ($pendingStoreCode === '') {
+                continue;
+            }
+
+            $result[] = $pendingStoreCode;
+        }
+
+        return array_values(array_unique($result));
+    }
+
+    /**
+     * @param string $storeCode
+     * @return int[]
+     * @throws \Throwable
+     */
+    public function claimPendingTasksForStore(string $storeCode): array
+    {
+        $storeCode = trim($storeCode);
+        if ($storeCode === '') {
+            return [];
+        }
+
+        $connection = $this->getConnection();
+        $connection->beginTransaction();
+        try {
+            $select = $connection->select()
+                ->from($this->getMainTable(), [TaskInterface::ENTITY_ID])
+                ->where(TaskInterface::STATUS . ' = ?', MetadataInterface::TASK_STATUS_PENDING)
+                ->where($this->getStoreCodeExpression() . ' = ?', $storeCode)
+                ->forUpdate(true);
+
+            $taskIds = array_map('intval', $connection->fetchCol($select));
+            if ($taskIds === []) {
+                $connection->commit();
+                return [];
+            }
+
+            $connection->update(
+                $this->getMainTable(),
+                [
+                    TaskInterface::STATUS => MetadataInterface::TASK_STATUS_PROCESSING,
+                    TaskInterface::STARTED_AT => gmdate('Y-m-d H:i:s'),
+                ],
+                [
+                    $connection->quoteInto(TaskInterface::ENTITY_ID . ' IN (?)', $taskIds),
+                    $connection->quoteInto(TaskInterface::STATUS . ' = ?', MetadataInterface::TASK_STATUS_PENDING),
+                ]
+            );
+
+            $connection->commit();
+
+            return $taskIds;
+        } catch (\Throwable $exception) {
+            $connection->rollBack();
+            throw $exception;
+        }
+    }
+
+    /**
+     * @return string
+     */
+    private function getStoreCodeExpression(): string
+    {
+        return 'JSON_UNQUOTE(JSON_EXTRACT(' . TaskInterface::PAYLOAD . ', "$.store"))';
     }
 }
