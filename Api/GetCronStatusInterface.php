@@ -36,6 +36,6 @@ interface GetCronStatusInterface
         string $jobCode = 'all',
         string $status = '',
         int $currentPage = 1,
-        int $pageSize = 3
+        int $pageSize = 20
     ): CronStatusListInterface;
 }

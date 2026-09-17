@@ -40,6 +40,11 @@ class GetCronStatus implements GetCronStatusInterface
 
     private const RECENT_RUN_LIMIT = 20;
 
+    /**
+     * Maximum allowed limit per page to prevent memory/performance issues.
+     */
+    private const MAX_PAGE_SIZE = 250;
+
     /** @var ScheduleCollectionFactory */
     private $scheduleCollectionFactory;
 
@@ -92,6 +97,20 @@ class GetCronStatus implements GetCronStatusInterface
         int $currentPage = 1,
         int $pageSize = self::RECENT_RUN_LIMIT
     ): CronStatusListInterface {
+
+        if ($pageSize > self::MAX_PAGE_SIZE) {
+            $this->logger->error(
+                "[CRON STATUS API] Page size exceeds maximum limit.",
+                [
+                    'requested_page_size' => $pageSize,
+                    'max_page_size' => self::MAX_PAGE_SIZE
+                ]
+            );
+        }
+
+        $effectivePageSize = $pageSize > 0 ? $pageSize : self::RECENT_RUN_LIMIT;
+        $effectiveCurrentPage = max(1, $currentPage);
+
         /** @var CronStatusListInterface $response */
         $response = $this->responseFactory->create();
         $jobCodes = $this->resolveJobCodes($jobCode);
@@ -99,12 +118,20 @@ class GetCronStatus implements GetCronStatusInterface
         $totalRecords = (int) $recentCollection->getSize();
         $recentCollection->setOrder('scheduled_at', ScheduleCollection::SORT_ORDER_DESC);
         $recentCollection->setOrder('schedule_id', ScheduleCollection::SORT_ORDER_DESC);
-        $recentCollection->setPageSize($pageSize > 0 ? $pageSize : self::RECENT_RUN_LIMIT);
-        $recentCollection->setCurPage($currentPage > 0 ? $currentPage : 1);
+        $recentCollection->setPageSize($effectivePageSize);
+        $recentCollection->setCurPage($effectiveCurrentPage);
 
+        $this->logger->debug(
+            "[CRON STATUS API] SQL QueryAfterPagination: ",
+            [
+                'query' => $recentCollection->getSelect()->__toString()
+            ]
+        );
         $cronJobs = [];
+        $jobItems = $recentCollection->getItems();
+
         /** @var Schedule $scheduleItem */
-        foreach ($recentCollection->getItems() as $scheduleItem) {
+        foreach ($jobItems as $scheduleItem) {
             $cronJob = $this->cronStatusFactory->create();
             $cronJob->setScheduleId((int)$scheduleItem->getScheduleId());
             $cronJob->setJobCode((string)$scheduleItem->getJobCode());
