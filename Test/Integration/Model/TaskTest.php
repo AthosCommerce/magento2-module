@@ -216,7 +216,7 @@ class TaskTest extends TestCase
         $task->setType(MetadataInterface::FEED_GENERATION_TASK_CODE);
         $task->setStatus(MetadataInterface::TASK_STATUS_ERROR);
         $task->setPayload([
-            'preSignedUrl' => 'https://testurl.com',
+            'preSignedUrl' => 'https://test-athos-feed-bucket.s3.us-east-1.amazonaws.com/test-feed.json',
         ]);
 
         $savedTask = $this->taskRepository->save($task);
