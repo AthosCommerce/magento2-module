@@ -18,13 +18,14 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Model\Aws\Client;
 
+use AthosCommerce\Feed\Exception\ClientException;
+use AthosCommerce\Feed\Helper\S3UrlValidator;
 use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\Psr7\Utils;
 use GuzzleHttp\RequestOptions;
 use Magento\Framework\HTTP\AsyncClient\GuzzleWrapDeferred;
 use Magento\Framework\HTTP\AsyncClient\RequestFactory;
 use Psr\Http\Message\StreamInterface;
-use AthosCommerce\Feed\Exception\ClientException;
 use Throwable;
 
 class Client implements ClientInterface
@@ -41,24 +42,34 @@ class Client implements ClientInterface
      * @var GuzzleClient
      */
     private $client;
+    /**
+     * @var S3UrlValidator
+     */
+    private $s3UrlValidator;
 
     /**
      * Client constructor.
+     *
      * @param GuzzleClient $client
      * @param RequestFactory $requestFactory
      * @param ResponseInterfaceFactory $responseFactory
+     * @param S3UrlValidator $s3UrlValidator
      */
     public function __construct(
         GuzzleClient $client,
         RequestFactory $requestFactory,
-        ResponseInterfaceFactory $responseFactory
+        ResponseInterfaceFactory $responseFactory,
+        S3UrlValidator $s3UrlValidator
     ) {
         $this->requestFactory = $requestFactory;
         $this->responseFactory = $responseFactory;
         $this->client = $client;
+        $this->s3UrlValidator = $s3UrlValidator;
     }
 
     /**
+     * Execute an upload request against a validated S3 pre-signed URL.
+     *
      * @param string $method
      * @param string $url
      * @param array|null $content
@@ -66,8 +77,16 @@ class Client implements ClientInterface
      * @return ResponseInterface
      * @throws ClientException
      */
-    public function execute(string $method, string $url, ?array $content = null, array $headers = []) : ResponseInterface
-    {
+    public function execute(
+        string $method,
+        string $url,
+        ?array $content = null,
+        array $headers = []
+    ): ResponseInterface {
+        if (!$this->s3UrlValidator->validate($url)) {
+            throw new ClientException('Only HTTPS Amazon S3 bucket URLs are allowed for uploads.');
+        }
+
         if ($content) {
             $content = $this->prepareContent($content);
         }
@@ -75,6 +94,7 @@ class Client implements ClientInterface
         try {
             $options = [];
             $options[RequestOptions::HEADERS] = $headers;
+            $options[RequestOptions::ALLOW_REDIRECTS] = false;
             if ($content !== null) {
                 $options[RequestOptions::BODY] = $content;
             }
@@ -100,6 +120,8 @@ class Client implements ClientInterface
     }
 
     /**
+     * Prepare the request body for the outgoing upload.
+     *
      * @param array $content
      * @return mixed|StreamInterface
      */

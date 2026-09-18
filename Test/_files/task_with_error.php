@@ -28,7 +28,7 @@ $taskRepository = $objectManager->get(TaskRepositoryInterface::class);
 /** @var TaskInterface $task */
 $task = $objectManager->create(TaskInterface::class);
 $task->setPayload([
-    'preSignedUrl' => 'https://testurl.com',
+    'preSignedUrl' => 'https://test-athos-feed-bucket.s3.us-east-1.amazonaws.com/test-feed.json',
 ])
     ->setType(MetadataInterface::FEED_GENERATION_TASK_CODE)
     ->setStatus(MetadataInterface::TASK_STATUS_ERROR);

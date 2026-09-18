@@ -244,7 +244,7 @@ class PreSignedUrlStorageTest extends TestCase
     private function getFeedSpecification(): FeedSpecificationInterface
     {
         return $this->feedSpecificationBuilder->build([
-            'preSignedUrl' => 'https://testurl.com',
+            'preSignedUrl' => 'https://test-athos-feed-bucket.s3.us-east-1.amazonaws.com/test-feed.json',
             'format' => MetadataInterface::FORMAT_JSON,
         ]);
     }
