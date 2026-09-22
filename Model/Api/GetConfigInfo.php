@@ -178,7 +178,6 @@ class GetConfigInfo implements GetConfigInfoInterface
                             'setter' => $setter,
                             'key' => $outputKey,
                             'path' => $path,
-                            'value' => $value,
                             'exception' => $exception->getMessage(),
                             'trace' => $exception->getTraceAsString()
                         ]
