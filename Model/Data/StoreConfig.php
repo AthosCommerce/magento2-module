@@ -226,6 +226,40 @@ class StoreConfig extends AbstractExtensibleModel implements StoreConfigInterfac
     }
 
     /**
+     * Get debug logging status.
+     *
+     * @return bool|null
+     */
+    public function getEnableDebugLog(): ?bool
+    {
+        $value = $this->getData(self::ENABLE_DEBUG_LOG);
+        return $value === null ? null : (bool)$value;
+    }
+
+    /**
+     * Set debug logging status.
+     *
+     * @param mixed $enableDebugLog
+     */
+    public function setEnableDebugLog($enableDebugLog): self
+    {
+        if ($enableDebugLog === null) {
+            return $this->setData(self::ENABLE_DEBUG_LOG, null);
+        }
+
+        if (is_string($enableDebugLog)) {
+            $normalizedValue = strtolower(trim($enableDebugLog));
+            if ($normalizedValue === 'true') {
+                $enableDebugLog = true;
+            } elseif ($normalizedValue === 'false') {
+                $enableDebugLog = false;
+            }
+        }
+
+        return $this->setData(self::ENABLE_DEBUG_LOG, (bool)$enableDebugLog);
+    }
+
+    /**
      * Get the task payload.
      *
      * @return array|null

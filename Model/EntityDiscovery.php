@@ -278,7 +278,9 @@ class EntityDiscovery implements EntityDiscoveryInterface
      */
     private function discoverAdditions(string $siteId, string $storeCode, array $payload): void
     {
+        $payload['store'] = $storeCode;
         $feedSpecification = $this->specificationBuilder->build($payload);
+        $feedSpecification->setStoreCode($storeCode);
 
         foreach ($this->magentoEntityProvider->getMagentoEntityIds($feedSpecification) as $magentoIds) {
             if (!is_array($magentoIds)) {

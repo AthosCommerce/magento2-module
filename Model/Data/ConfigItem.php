@@ -469,12 +469,12 @@ class ConfigItem extends AbstractExtensibleObject implements ConfigItemInterface
     }
 
     /**
-     * @param bool|null $flag
+     * @param $value
      * @return ConfigItemInterface
      */
-    public function setEnableDebugLog(?bool $flag): ConfigItemInterface
+    public function setEnableDebugLog($value): ConfigItemInterface
     {
-        return $this->setData(self::ENABLE_DEBUG_LOG, $flag);
+        return $this->setData(self::ENABLE_DEBUG_LOG, (bool)$value);
     }
 
     /**

@@ -16,6 +16,7 @@
             <indexing>
                 <enable_live_indexing>0</enable_live_indexing>
                 <entity_sync_cron_expr>*/2 * * * *</entity_sync_cron_expr>
+                <discovery_sync_cron_expr>*/30 * * * *</discovery_sync_cron_expr>
                 <api_customers_max_page_size>500</api_customers_max_page_size>
                 <api_sales_max_page_size>500</api_sales_max_page_size>
                 <request_per_minute>480</request_per_minute>
