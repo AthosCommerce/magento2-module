@@ -58,12 +58,14 @@ class BaseProductObserver
      * @param array $entityIds
      * @param string $action
      * @param bool $forceIndexable
+     * @param array $siteIds
      * @return void
      */
     public function execute(
         array  $entityIds,
         string $action,
-        bool   $forceIndexable = false
+        bool   $forceIndexable = false,
+        array  $siteIds = []
     ): void
     {
         if (!$entityIds) {
@@ -71,10 +73,10 @@ class BaseProductObserver
         }
         switch ($action) {
             case Actions::UPSERT:
-                $this->setIndexingEntitiesToUpdateAction->execute($entityIds, $forceIndexable);
+                $this->setIndexingEntitiesToUpdateAction->execute($entityIds, $forceIndexable, $siteIds);
                 break;
             case Actions::DELETE:
-                $this->setIndexingEntitiesToDeleteAction->execute($entityIds);
+                $this->setIndexingEntitiesToDeleteAction->execute($entityIds, $siteIds);
                 break;
             default:
                 $this->logger->error(

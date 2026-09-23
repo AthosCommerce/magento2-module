@@ -19,10 +19,12 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Service\Provider;
 
 use AthosCommerce\Feed\Model\Source\Actions;
+use AthosCommerce\Feed\Service\GroupedParentIdResolver;
 use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Catalog\Model\Product\Attribute\Source\Status;
 use Magento\Catalog\Model\Product\Visibility;
 use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory as ProductCollectionFactory;
+use Magento\ConfigurableProduct\Model\Product\Type\Configurable;
 
 class ProductNextActionProvider
 {
@@ -32,22 +34,43 @@ class ProductNextActionProvider
     private $productCollectionFactory;
 
     /**
+     * @var Configurable
+     */
+    private $configurableType;
+
+    /**
+     * @var GroupedParentIdResolver
+     */
+    private $groupedParentIdResolver;
+
+    /**
      * @param ProductCollectionFactory $productCollectionFactory
+     * @param Configurable $configurableType
+     * @param GroupedParentIdResolver $groupedParentIdResolver
      */
     public function __construct(
-        ProductCollectionFactory $productCollectionFactory
+        ProductCollectionFactory $productCollectionFactory,
+        Configurable $configurableType,
+        GroupedParentIdResolver $groupedParentIdResolver
     )
     {
         $this->productCollectionFactory = $productCollectionFactory;
+        $this->configurableType = $configurableType;
+        $this->groupedParentIdResolver = $groupedParentIdResolver;
     }
 
     /**
      * @param ProductInterface $product
+     * @param int|null $storeId
      *
      * @return string
      */
-    public function getNextActionByProduct(ProductInterface $product): string
+    public function getNextActionByProduct(ProductInterface $product, ?int $storeId = null): string
     {
+        if ($storeId !== null && $this->hasVisibleEnabledParent($product, $storeId)) {
+            return Actions::UPSERT;
+        }
+
         return $this->resolveNextAction(
             (int)$product->getStatus(),
             (int)$product->getVisibility()
@@ -56,10 +79,11 @@ class ProductNextActionProvider
 
     /**
      * @param array $productIds
+     * @param int|null $storeId
      *
      * @return array<int, string>
      */
-    public function getNextActionsByProductIds(array $productIds): array
+    public function getNextActionsByProductIds(array $productIds, ?int $storeId = null): array
     {
         $productIds = $this->normalizeProductIds($productIds);
         if ($productIds === []) {
@@ -67,13 +91,13 @@ class ProductNextActionProvider
         }
 
         $collection = $this->productCollectionFactory->create();
-        $collection->setStoreId(0);
+        $collection->setStoreId($storeId ?? 0);
         $collection->addAttributeToSelect(['status', 'visibility']);
         $collection->addFieldToFilter('entity_id', ['in' => $productIds]);
 
         $nextActions = [];
         foreach ($collection as $product) {
-            $nextActions[(int)$product->getId()] = $this->getNextActionByProduct($product);
+            $nextActions[(int)$product->getId()] = $this->getNextActionByProduct($product, $storeId);
         }
 
         return $nextActions;
@@ -90,6 +114,45 @@ class ProductNextActionProvider
         return ($status !== Status::STATUS_ENABLED || $visibility === Visibility::VISIBILITY_NOT_VISIBLE)
             ? Actions::DELETE
             : Actions::UPSERT;
+    }
+
+    /**
+     * @param ProductInterface $product
+     * @param int $storeId
+     * @return bool
+     */
+    private function hasVisibleEnabledParent(ProductInterface $product, int $storeId): bool
+    {
+        if ((int)$product->getStatus() !== Status::STATUS_ENABLED
+            || (int)$product->getVisibility() !== Visibility::VISIBILITY_NOT_VISIBLE
+        ) {
+            return false;
+        }
+
+        $groupedParentIds = $this->groupedParentIdResolver->getParentIdsByChildId((int)$product->getId());
+        $parentIds = array_merge(
+            $this->configurableType->getParentIdsByChild((int)$product->getId()),
+            $groupedParentIds
+        );
+        $parentIds = array_values(array_unique(array_map('intval', $parentIds)));
+        if ($parentIds === []) {
+            return false;
+        }
+
+        $parentCollection = $this->productCollectionFactory->create();
+        $parentCollection->setStoreId($storeId);
+        $parentCollection->addAttributeToSelect(['status', 'visibility']);
+        $parentCollection->addFieldToFilter('entity_id', ['in' => $parentIds]);
+
+        foreach ($parentCollection as $parentProduct) {
+            if ((int)$parentProduct->getStatus() === Status::STATUS_ENABLED
+                && (int)$parentProduct->getVisibility() !== Visibility::VISIBILITY_NOT_VISIBLE
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

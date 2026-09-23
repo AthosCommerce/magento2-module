@@ -23,7 +23,8 @@ interface SetIndexingEntitiesToUpdateActionInterface
     /**
      * @param array $entityIds
      * @param bool $forceIndexable
+     * @param array $siteIds
      * @return void
      */
-    public function execute(array $entityIds, bool $forceIndexable = false): void;
+    public function execute(array $entityIds, bool $forceIndexable = false, array $siteIds = []): void;
 }

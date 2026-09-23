@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Observer\Product;
 
 use AthosCommerce\Feed\Helper\Constants;
+use AthosCommerce\Feed\Model\Config as ConfigModel;
 use AthosCommerce\Feed\Model\Source\Actions;
 use AthosCommerce\Feed\Observer\BaseProductObserver;
 use Magento\Catalog\Model\ProductRepository;
@@ -28,6 +29,8 @@ use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Service\Provider\ProductNextActionProvider;
+use AthosCommerce\Feed\Service\Tracking\IdProviderInterface;
+use Magento\Catalog\Model\Product\Visibility;
 
 class InventoryUpdateObserver implements ObserverInterface
 {
@@ -55,12 +58,24 @@ class InventoryUpdateObserver implements ObserverInterface
      */
     private $productNextActionProvider;
 
+    /**
+     * @var IdProviderInterface
+     */
+    private $idProvider;
+
+    /**
+     * @var ConfigModel
+     */
+    private $configModel;
+
     public function __construct(
         AthosCommerceLogger       $logger,
         ProductRepository         $productRepository,
         ScopeConfigInterface      $scopeConfig,
         BaseProductObserver       $baseProductObserver,
-        ProductNextActionProvider $productNextActionProvider
+        ProductNextActionProvider $productNextActionProvider,
+        IdProviderInterface       $idProvider,
+        ConfigModel               $configModel
     )
     {
         $this->logger = $logger;
@@ -68,6 +83,8 @@ class InventoryUpdateObserver implements ObserverInterface
         $this->scopeConfig = $scopeConfig;
         $this->baseProductObserver = $baseProductObserver;
         $this->productNextActionProvider = $productNextActionProvider;
+        $this->idProvider = $idProvider;
+        $this->configModel = $configModel;
     }
 
     /**
@@ -112,9 +129,18 @@ class InventoryUpdateObserver implements ObserverInterface
                         continue;
                     }
 
-                    $nextAction = $this->productNextActionProvider->getNextActionByProduct($product);
+                    $nextAction = $this->productNextActionProvider->getNextActionByProduct($product, (int)$storeId);
+                    $forceIndexable = $nextAction === Actions::UPSERT
+                        && (int)$product->getVisibility() === Visibility::VISIBILITY_NOT_VISIBLE;
+                    $entityIds = $this->getEntityIdsToProcess($productId, $product);
+                    $siteId = $this->resolveSiteIdByStoreId((int)$storeId);
 
-                    $this->baseProductObserver->execute([$productId], $nextAction);
+                    $this->baseProductObserver->execute(
+                        $entityIds,
+                        $nextAction,
+                        $forceIndexable,
+                        $siteId !== null ? [$siteId] : []
+                    );
 
                     $this->logger->debug(
                         '[InventoryUpdateObserver] Stock Update Store Check',
@@ -147,5 +173,33 @@ class InventoryUpdateObserver implements ObserverInterface
                 ]
             );
         }
+    }
+
+    /**
+     * @param int $productId
+     * @param \Magento\Catalog\Api\Data\ProductInterface $product
+     * @return array<int, int>
+     */
+    private function getEntityIdsToProcess(int $productId, \Magento\Catalog\Api\Data\ProductInterface $product): array
+    {
+        $entityIds = [$productId];
+        $parentId = (int)$this->idProvider->getItemParentId($product);
+
+        if ($parentId > 0 && $parentId !== $productId) {
+            $entityIds[] = $parentId;
+        }
+
+        return array_values(array_unique($entityIds));
+    }
+
+    /**
+     * @param int $storeId
+     * @return string|null
+     */
+    private function resolveSiteIdByStoreId(int $storeId): ?string
+    {
+        $siteId = trim($this->configModel->getSiteIdByStoreId($storeId));
+
+        return $siteId !== '' ? $siteId : null;
     }
 }

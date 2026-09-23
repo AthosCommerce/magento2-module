@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Observer\Product;
 
 use AthosCommerce\Feed\Helper\Constants;
+use AthosCommerce\Feed\Model\Config as ConfigModel;
 use AthosCommerce\Feed\Model\Source\Actions;
 use Magento\Catalog\Model\ResourceModel\Product as ProductResource;
 use Magento\Framework\App\Config\ScopeConfigInterface;
@@ -31,6 +32,8 @@ use AthosCommerce\Feed\Service\Provider\ProductNextActionProvider;
 
 class BunchSaveObserver implements ObserverInterface
 {
+    private const UNSCOPED_SITE_KEY = '__all__';
+
     /**
      * @var BaseProductObserver
      */
@@ -61,12 +64,18 @@ class BunchSaveObserver implements ObserverInterface
     private $productNextActionProvider;
 
     /**
+     * @var ConfigModel
+     */
+    private $configModel;
+
+    /**
      * @param BaseProductObserver $baseProductObserver
      * @param AthosCommerceLogger $logger
      * @param ResourceConnection $resourceConnection
      * @param ScopeConfigInterface $scopeConfig
      * @param ProductResource $productResource
      * @param ProductNextActionProvider $productNextActionProvider
+     * @param ConfigModel $configModel
      */
     public function __construct(
         BaseProductObserver       $baseProductObserver,
@@ -74,7 +83,8 @@ class BunchSaveObserver implements ObserverInterface
         ResourceConnection        $resourceConnection,
         ScopeConfigInterface      $scopeConfig,
         ProductResource           $productResource,
-        ProductNextActionProvider $productNextActionProvider
+        ProductNextActionProvider $productNextActionProvider,
+        ConfigModel               $configModel
     )
     {
         $this->baseProductObserver = $baseProductObserver;
@@ -83,6 +93,7 @@ class BunchSaveObserver implements ObserverInterface
         $this->scopeConfig = $scopeConfig;
         $this->productResource = $productResource;
         $this->productNextActionProvider = $productNextActionProvider;
+        $this->configModel = $configModel;
     }
 
     /**
@@ -121,20 +132,17 @@ class BunchSaveObserver implements ObserverInterface
             }
 
             $productIds = array_column($skuToData, 'entity_id');
-            $productIdsToUpsert = [];
-            $productIdsToDelete = [];
+            $resolvedActionsBySite = [];
 
             // Process in chunks to avoid memory issues
             $chunks = array_chunk($productIds, 200);
             foreach ($chunks as $chunk) {
                 try {
-                    // Get store IDs and next actions for this chunk in ONE query each
+                    // Get store IDs for this chunk in one query and resolve actions per store.
                     $productStores = $this->getStoreIdsForProducts($chunk);
-                    $productNextActions = $this->productNextActionProvider->getNextActionsByProductIds($chunk);
+                    $productIdsByStore = [];
 
                     foreach ($productStores as $productId => $storeIds) {
-                        $shouldProcess = false;
-
                         foreach ($storeIds as $storeId) {
                             try {
                                 $liveIndexing = (bool)$this->scopeConfig->getValue(
@@ -146,7 +154,7 @@ class BunchSaveObserver implements ObserverInterface
                                 if (!$liveIndexing) {
                                     continue;
                                 }
-                                $shouldProcess = true;
+                                $productIdsByStore[(int)$storeId][] = (int)$productId;
                             } catch (\Throwable $storeEx) {
                                 $this->logger->error(
                                     "[BunchSaveObserver] Error: " . $storeEx->getMessage(),
@@ -158,40 +166,69 @@ class BunchSaveObserver implements ObserverInterface
                                 );
                             }
                         }
+                    }
 
-                        if ($shouldProcess) {
+                    foreach ($productIdsByStore as $storeId => $productIdsForStore) {
+                        $productIdsForStore = array_values(array_unique($productIdsForStore));
+                        $siteId = $this->resolveSiteIdByStoreId((int)$storeId);
+                        $siteKey = $siteId ?? self::UNSCOPED_SITE_KEY;
+
+                        $productNextActions = $this->productNextActionProvider->getNextActionsByProductIds(
+                            $productIdsForStore,
+                            (int)$storeId
+                        );
+
+                        foreach ($productIdsForStore as $productId) {
                             $nextAction = $productNextActions[$productId] ?? Actions::UPSERT;
 
-                            if ($nextAction === Actions::DELETE) {
-                                $productIdsToDelete[] = $productId;
-                            } else {
-                                $productIdsToUpsert[] = $productId;
+                            if (!isset($resolvedActionsBySite[$siteKey][$productId]) || $nextAction === Actions::UPSERT) {
+                                $resolvedActionsBySite[$siteKey][$productId] = $nextAction;
                             }
                         }
                     }
-
                 } catch (\Throwable $chunkEx) {
                     $this->logger->error(
-                        "[BunchSaveObserver] Chunk processing error: " . $chunkEx->getMessage(),
+                       "[BunchSaveObserver] Chunk processing error: " . $chunkEx->getMessage(),
                         ['trace' => $chunkEx->getTraceAsString()]
                     );
                 }
             }
 
-            if (!empty($productIdsToUpsert)) {
-                $this->baseProductObserver->execute($productIdsToUpsert, Actions::UPSERT, true);
-                $this->logger->info(
-                    '[BunchSaveObserver] Executed UPSERT for products',
-                    ['productIds' => $productIdsToUpsert]
-                );
-            }
+            foreach ($resolvedActionsBySite as $siteKey => $resolvedActions) {
+                $productIdsToUpsert = [];
+                $productIdsToDelete = [];
+                $siteIds = $siteKey === self::UNSCOPED_SITE_KEY ? [] : [$siteKey];
 
-            if (!empty($productIdsToDelete)) {
-                $this->baseProductObserver->execute($productIdsToDelete, Actions::DELETE);
-                $this->logger->info(
-                    '[BunchSaveObserver] Executed DELETE for products',
-                    ['productIds' => $productIdsToDelete]
-                );
+                foreach ($resolvedActions as $productId => $nextAction) {
+                    if ($nextAction === Actions::DELETE) {
+                        $productIdsToDelete[] = $productId;
+                        continue;
+                    }
+
+                    $productIdsToUpsert[] = $productId;
+                }
+
+                if (!empty($productIdsToUpsert)) {
+                    $productIdsToUpsert = array_values(array_unique($productIdsToUpsert));
+                    $this->baseProductObserver->execute($productIdsToUpsert, Actions::UPSERT, true, $siteIds);
+                    $this->logger->info(
+                        '[BunchSaveObserver] Executed UPSERT for products',
+                        ['productIds' => $productIdsToUpsert, 'site_id' => $siteKey]
+                    );
+                }
+
+                if (!empty($productIdsToDelete)) {
+                    $productIdsToDelete = array_values(array_unique($productIdsToDelete));
+                    $productIdsToDelete = array_values(array_diff($productIdsToDelete, $productIdsToUpsert));
+                }
+
+                if (!empty($productIdsToDelete)) {
+                    $this->baseProductObserver->execute($productIdsToDelete, Actions::DELETE, false, $siteIds);
+                    $this->logger->info(
+                        '[BunchSaveObserver] Executed DELETE for products',
+                        ['productIds' => $productIdsToDelete, 'site_id' => $siteKey]
+                    );
+                }
             }
         } catch (\Throwable $e) {
             $this->logger->critical(
@@ -231,6 +268,17 @@ class BunchSaveObserver implements ObserverInterface
         }
 
         return $result;
+    }
+
+    /**
+     * @param int $storeId
+     * @return string|null
+     */
+    private function resolveSiteIdByStoreId(int $storeId): ?string
+    {
+        $siteId = trim($this->configModel->getSiteIdByStoreId($storeId));
+
+        return $siteId !== '' ? $siteId : null;
     }
 
 }
