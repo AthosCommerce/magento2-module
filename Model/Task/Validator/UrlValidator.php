@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Model\Task\Validator;
 
+use AthosCommerce\Feed\Helper\S3UrlValidator;
 use Magento\Framework\Validation\ValidationResult;
 use Magento\Framework\Validator\Url;
 use AthosCommerce\Feed\Model\Task\ValidatorInterface;
@@ -43,16 +44,22 @@ class UrlValidator implements ValidatorInterface
      * @var Url
      */
     private $urlValidator;
+    /**
+     * @var S3UrlValidator
+     */
+    private $s3UrlValidator;
 
     /**
      * @param CreateValidationResult $createValidationResult
      * @param Url $urlValidator
+     * @param S3UrlValidator $s3UrlValidator
      * @param array $fields
      * @param bool $fieldRequired
      */
     public function __construct(
         CreateValidationResult $createValidationResult,
         Url $urlValidator,
+        S3UrlValidator $s3UrlValidator,
         array $fields = [],
         bool $fieldRequired = false
     ) {
@@ -60,9 +67,12 @@ class UrlValidator implements ValidatorInterface
         $this->fieldRequired = $fieldRequired;
         $this->fields = $fields;
         $this->urlValidator = $urlValidator;
+        $this->s3UrlValidator = $s3UrlValidator;
     }
 
     /**
+     * Validate configured URL fields in the task payload.
+     *
      * @param array $payload
      * @return ValidationResult
      */
@@ -83,49 +93,17 @@ class UrlValidator implements ValidatorInterface
             }
 
             // Enforce standard URL format
-            if (!$this->urlValidator->isValid((string) $value, ['http', 'https'])) {
+            if (!$this->urlValidator->isValid((string) $value, ['https'])) {
                 $errors[] = (string) __('"%1" field value must be valid url address', $field);
                 continue; // Skip host check if basic URL format is invalid
             }
 
             // Enforce AWS Bucket host format
-            if (!$this->isAllowedAmazonAwsHost((string) $value)) {
+            if (!$this->s3UrlValidator->validate((string)$value)) {
                 $errors[] = (string) __('"%1" field value must contain valid bucket url', $field);
             }
         }
 
         return $this->createValidationResult->create($errors);
-    }
-
-    /**
-     * @param string $url
-     * @return bool
-     */
-    private function isAllowedAmazonAwsHost(string $url): bool
-    {
-        $host = parse_url($url, PHP_URL_HOST);
-        if (!is_string($host) || $host === '') {
-            return false;
-        }
-
-        $normalizedHost = strtolower(rtrim($host, '.'));
-        $targetDomain = 'amazonaws.com';
-
-        if ($normalizedHost === $targetDomain) {
-            return true;
-        }
-
-        $suffix = '.' . $targetDomain;
-
-        if (function_exists('str_ends_with')) {
-            return str_ends_with($normalizedHost, $suffix);
-        }
-
-        $suffixLength = strlen($suffix);
-        if (strlen($normalizedHost) <= $suffixLength) {
-            return false;
-        }
-
-        return substr($normalizedHost, -$suffixLength) === $suffix;
     }
 }

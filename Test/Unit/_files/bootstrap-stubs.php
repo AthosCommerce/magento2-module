@@ -41,5 +41,6 @@ require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/MediaGallerySpecifica
 require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/FeedSpecificationExtensionInterface.php';
 require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/MediaGallerySpecificationExtensionInterface.php';
 require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Api/Data/TaskExtensionInterface.php';
+require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Model/Aws/Client/ResponseInterfaceFactory.php';
 require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Model/TaskFactory.php';
 require_once __DIR__ . '/Stubs/AthosCommerce/Feed/Model/ResourceModel/Task/CollectionFactory.php';
