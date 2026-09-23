@@ -66,6 +66,11 @@ class GetConfigInfoTest extends TestCase
             ->willReturn([
                 [
                     'scope_id' => 1,
+                    'path' => Constants::XML_PATH_DEBUG_LOG_ENABLED,
+                    'value' => '0',
+                ],
+                [
+                    'scope_id' => 1,
                     'path' => Constants::XML_PATH_CONFIG_SECRET_KEY,
                     'value' => $rawSecret,
                 ],
@@ -93,6 +98,7 @@ class GetConfigInfoTest extends TestCase
 
         $storeConfigMock->expects($this->once())->method('setStoreId')->with(1)->willReturnSelf();
         $storeConfigMock->expects($this->once())->method('setStoreCode')->with('default')->willReturnSelf();
+        $storeConfigMock->expects($this->once())->method('setEnableDebugLog')->with(false)->willReturnSelf();
         $storeConfigMock->expects($this->once())->method('setSecretKey')->with($rawSecret)->willReturnSelf();
         $storeConfigMock->expects($this->once())->method('setSecretKeyLength')->with(strlen($rawSecret))->willReturnSelf();
 
