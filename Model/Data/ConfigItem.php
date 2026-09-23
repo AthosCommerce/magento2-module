@@ -474,6 +474,17 @@ class ConfigItem extends AbstractExtensibleObject implements ConfigItemInterface
      */
     public function setEnableDebugLog($value): ConfigItemInterface
     {
+        if ($value === null) {
+            return $this->setData(self::ENABLE_DEBUG_LOG, null);
+        }
+        if (is_string($value)) {
+            $normalizedValue = strtolower(trim($value));
+            if ($normalizedValue === 'true') {
+                $value = true;
+            } elseif ($normalizedValue === 'false') {
+                $value = false;
+            }
+        }
         return $this->setData(self::ENABLE_DEBUG_LOG, (bool)$value);
     }
 
