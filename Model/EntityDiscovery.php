@@ -18,12 +18,14 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Model;
 
+use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Api\EntityDiscoveryInterface;
 use AthosCommerce\Feed\Helper\Constants;
 use AthosCommerce\Feed\Model\Api\MagentoEntityInterface;
 use AthosCommerce\Feed\Model\Api\MagentoEntityInterfaceFactory;
 use AthosCommerce\Feed\Model\Config as ConfigModel;
 use AthosCommerce\Feed\Model\CollectionProcessor;
+use AthosCommerce\Feed\Model\Feed\ContextManagerInterface;
 use AthosCommerce\Feed\Model\Feed\SpecificationBuilderInterface;
 use AthosCommerce\Feed\Service\Action\AddIndexingEntitiesActionInterface;
 use AthosCommerce\Feed\Service\Action\SetIndexingEntitiesToDeleteActionInterface;
@@ -70,6 +72,10 @@ class EntityDiscovery implements EntityDiscoveryInterface
      */
     private $specificationBuilder;
     /**
+     * @var ContextManagerInterface
+     */
+    private $contextManager;
+    /**
      * @var SerializerInterface
      */
     private $serializer;
@@ -109,6 +115,7 @@ class EntityDiscovery implements EntityDiscoveryInterface
      * @param CollectionProcessor $collectionProcessor
      * @param SpecificationBuilderInterface $specificationBuilder
      * @param SerializerInterface $serializer
+     * @param ContextManagerInterface $contextManager
      * @param ProductRelationsProvider $productRelationProvider
      * @param MagentoEntityProvider $magentoEntityProvider
      * @param IndexingEntityProviderInterface $indexingEntityProvider
@@ -124,6 +131,7 @@ class EntityDiscovery implements EntityDiscoveryInterface
         CollectionProcessor                        $collectionProcessor,
         SpecificationBuilderInterface              $specificationBuilder,
         SerializerInterface                        $serializer,
+        ContextManagerInterface                    $contextManager,
         ProductRelationsProvider                   $productRelationProvider,
         MagentoEntityProvider                      $magentoEntityProvider,
         IndexingEntityProviderInterface            $indexingEntityProvider,
@@ -140,6 +148,7 @@ class EntityDiscovery implements EntityDiscoveryInterface
         $this->collectionProcessor = $collectionProcessor;
         $this->specificationBuilder = $specificationBuilder;
         $this->serializer = $serializer;
+        $this->contextManager = $contextManager;
         $this->productRelationProvider = $productRelationProvider;
         $this->magentoEntityProvider = $magentoEntityProvider;
         $this->indexingEntityProvider = $indexingEntityProvider;
@@ -196,6 +205,9 @@ class EntityDiscovery implements EntityDiscoveryInterface
             }
 
             try {
+                $feedSpecification = $this->buildFeedSpecification($payload, $storeCode);
+                $this->contextManager->setContextFromSpecification($feedSpecification);
+
                 $this->logger->info(
                     "[Discovery] started for $storeCode/$siteId"
                 );
@@ -203,16 +215,17 @@ class EntityDiscovery implements EntityDiscoveryInterface
                 $this->discoverDeletions($siteId, $storeCode);
                 //TODO:: check with observer if updates are needed
                 //$this->discoverUpdates($siteId, $storeCode);
-                $this->discoverAdditions($siteId, $storeCode, $payload);
+                $this->discoverAdditions($siteId, $storeCode, $feedSpecification);
 
                 $this->logger->info(
                     "[Discovery] finished for $storeCode/$siteId"
                 );
-
             } catch (Exception $e) {
                 $this->logger->error(
                     "[Discovery] error for $storeCode/$siteId: " . $e->getMessage()
                 );
+            } finally {
+                $this->contextManager->resetContext();
             }
             $response[$storeId] = $storeCode;
         }
@@ -273,15 +286,15 @@ class EntityDiscovery implements EntityDiscoveryInterface
     /**
      * @param string $siteId
      * @param string $storeCode
-     * @param array $payload
+     * @param FeedSpecificationInterface $feedSpecification
      * @return void
      */
-    private function discoverAdditions(string $siteId, string $storeCode, array $payload): void
+    private function discoverAdditions(
+        string $siteId,
+        string $storeCode,
+        FeedSpecificationInterface $feedSpecification
+    ): void
     {
-        $payload['store'] = $storeCode;
-        $feedSpecification = $this->specificationBuilder->build($payload);
-        $feedSpecification->setStoreCode($storeCode);
-
         foreach ($this->magentoEntityProvider->getMagentoEntityIds($feedSpecification) as $magentoIds) {
             if (!is_array($magentoIds)) {
                 throw new \LogicException(
@@ -323,7 +336,6 @@ class EntityDiscovery implements EntityDiscoveryInterface
         $table = $this->resource->getTableName('athoscommerce_indexing_entity');
         $existing = [];
 
-        //TODO:: Change chunk size if needed
         foreach (array_chunk($targetIds, 500) as $chunk) {
 
             $select = $this->connection->select()
@@ -468,8 +480,12 @@ class EntityDiscovery implements EntityDiscoveryInterface
             $relations = array_merge($configRelations, $groupedRelations);
 
             foreach ($relations as $relation) {
-                $parentId = (int)$relation['parent_id'];
+                $parentId = $this->resolveParentEntityId($relation);
                 $childId = (int)$relation['product_id'];
+
+                if ($parentId <= 0 || $childId <= 0) {
+                    continue;
+                }
 
                 $childToParentMap[$childId] = $parentId;
                 $this->childParentCache[$childId] = $parentId;
@@ -499,5 +515,35 @@ class EntityDiscovery implements EntityDiscoveryInterface
         return $this->configModel->getEndpointByStoreId($storeId)
             && $this->configModel->isLiveIndexingEnabled($storeId)
             && $this->configModel->getSiteIdByStoreId($storeId);
+    }
+
+    /**
+     * @param array $payload
+     * @param string $storeCode
+     * @return FeedSpecificationInterface
+     */
+    private function buildFeedSpecification(array $payload, string $storeCode): FeedSpecificationInterface
+    {
+        $payload['store'] = $storeCode;
+        $feedSpecification = $this->specificationBuilder->build($payload);
+        $feedSpecification->setStoreCode($storeCode);
+
+        return $feedSpecification;
+    }
+
+    /**
+     * Configurable relation queries return both the parent entity_id and the link-field parent_id.
+     * Discovery must persist the entity identifier so live indexing matches full-sync parent references.
+     *
+     * @param array $relation
+     * @return int
+     */
+    private function resolveParentEntityId(array $relation): int
+    {
+        if (isset($relation['entity_id'])) {
+            return (int)$relation['entity_id'];
+        }
+
+        return (int)($relation['parent_id'] ?? 0);
     }
 }
