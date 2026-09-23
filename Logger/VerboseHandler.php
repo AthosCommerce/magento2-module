@@ -9,7 +9,6 @@ use Magento\Framework\Filesystem\DriverInterface;
 use Magento\Framework\Logger\Handler\Base;
 use Magento\Store\Model\StoreManagerInterface;
 use Monolog\Logger;
-use Monolog\LogRecord;
 
 class VerboseHandler extends Base
 {
@@ -59,11 +58,18 @@ class VerboseHandler extends Base
     /**
      * Handle DEBUG-level records only.
      *
+     * @param array|\Monolog\LogRecord $record
      * @return bool
      */
-    public function handle(LogRecord $record): bool
+    public function handle($record): bool
     {
-        if ($record->level->value !== Logger::DEBUG) {
+        if (is_array($record)) {
+            $levelValue = $record['level'] ?? '';
+        } else {
+            $levelValue = $record->level->value ?? $record->level;
+        }
+
+        if ($levelValue !== Logger::DEBUG) {
             return false;
         }
 
@@ -73,9 +79,10 @@ class VerboseHandler extends Base
     /**
      * Check if the record should be handled, evaluating debug mode lazily
      *
+     * @param array|\Monolog\LogRecord $record
      * @return bool
      */
-    public function isHandling(LogRecord $record): bool
+    public function isHandling($record): bool
     {
         if (!$this->isDebug($this->getStoreId($record))) {
             return false;
@@ -101,12 +108,17 @@ class VerboseHandler extends Base
     }
 
     /**
-     * @param LogRecord $record
+     * @param array|\Monolog\LogRecord $record
      * @return int|null
      */
-    private function getStoreId(LogRecord $record): ?int
+    private function getStoreId($record): ?int
     {
-        $storeId = $this->normalizeStoreId($record->context['store_id'] ?? null);
+        if (is_array($record)) {
+            $storeId = $this->normalizeStoreId($record['context']['store_id'] ?? null);
+        } else {
+            $storeId = $this->normalizeStoreId($record->context['store_id'] ?? null);
+        }
+
         if ($storeId !== null) {
             return $storeId;
         }

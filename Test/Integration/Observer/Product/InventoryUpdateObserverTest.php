@@ -31,6 +31,7 @@ use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\Product\Attribute\Source\Status;
 use Magento\Catalog\Model\Product\Type;
 use Magento\Catalog\Model\Product\Visibility;
+use Magento\CatalogInventory\Api\StockRegistryInterface;
 use Magento\CatalogInventory\Model\Stock\Item as StockItem;
 use Magento\ConfigurableProduct\Helper\Product\Options\Factory as ConfigurableOptionsFactory;
 use Magento\ConfigurableProduct\Model\Product\Type\Configurable;
@@ -54,7 +55,8 @@ use PHPUnit\Framework\TestCase;
  *
  * Key characteristics of InventoryUpdateObserver vs UpdateObserver:
  *  - Event carries a StockItem; the product is loaded separately by the observer.
- *  - forceIndexable is NOT passed → defaults to false (same behaviour as DeleteObserver).
+ *  - forceIndexable is true only for an NVI child with a visible parent, and applies to the
+ *    child's own rows only. The parent's own row is re-queued for UPSERT; siblings are untouched.
  *  - Observer exits early when dataHasChangedFor('qty') and dataHasChangedFor('is_in_stock')
  *    are both false.
  *
@@ -69,6 +71,9 @@ class InventoryUpdateObserverTest extends TestCase
     use IndexingEntitiesTrait;
 
     private const SITE_ID_PREFIX = 'test-inv-observer-';
+
+    /** Target id for a sibling variant row under the same parent; no product is needed for it. */
+    private const SIBLING_ID = 987654321;
 
     private ?ObjectManagerInterface $objectManager = null;
 
@@ -359,6 +364,142 @@ class InventoryUpdateObserverTest extends TestCase
         }
     }
 
+    /**
+     * When a variant goes out of stock through a real stock item save, the parent's own
+     * row must be queued for UPSERT so parent salability reflects the child stock.
+     *
+     * @dataProvider configurableParentVisibilityDataProvider
+     * @magentoDataFixture Magento/ConfigurableProduct/_files/configurable_attribute.php
+     * @magentoConfigFixture current_store athoscommerce/indexing/enable_live_indexing 1
+     */
+    public function testExecute_WhenConfigurableChildGoesOutOfStock_QueuesParent(int $parentVisibility): void
+    {
+        [$parentProduct, $childProduct] = $this->createAndSaveConfigurableProduct(
+            Status::STATUS_ENABLED,
+            $parentVisibility
+        );
+        $parentId = (int)$parentProduct->getId();
+        $childId = (int)$childProduct->getId();
+
+        $this->createIndexingEntityForProduct($parentId, Actions::UPSERT, true);
+        $this->createIndexingEntityForProduct($childId, Actions::UPSERT, true, $parentId);
+
+        /** @var StockRegistryInterface $stockRegistry */
+        $stockRegistry = $this->objectManager->get(StockRegistryInterface::class);
+        $stockItem = $stockRegistry->getStockItem($childId);
+        $stockItem->setUseConfigManageStock(false);
+        $stockItem->setManageStock(true);
+        $stockItem->setQty(0);
+        $stockItem->setIsInStock(false);
+        $stockRegistry->updateStockItemBySku($childProduct->getSku(), $stockItem);
+
+        $parentEntity = $this->getIndexingEntityByTargetIdAndParentId($parentId, null);
+        $childEntity = $this->getIndexingEntityByTargetIdAndParentId($childId, $parentId);
+
+        $this->assertNotNull($parentEntity);
+        $this->assertNotNull($childEntity);
+        $this->assertSame(Actions::UPSERT, $parentEntity->getNextAction(), 'Parent next_action mismatch');
+        $this->assertTrue($parentEntity->getIsIndexable(), 'Parent is_indexable mismatch');
+        $this->assertSame(Actions::UPSERT, $childEntity->getNextAction(), 'Child next_action mismatch');
+        $this->assertTrue($childEntity->getIsIndexable(), 'Child is_indexable mismatch');
+    }
+
+    /**
+     * A stock change on a disabled configurable child must only DELETE the child's own
+     * row. The parent and its sibling variant rows must not be deleted; the parent is
+     * re-queued for UPSERT so its availability is refreshed.
+     *
+     * @magentoDataFixture Magento/ConfigurableProduct/_files/configurable_attribute.php
+     * @magentoConfigFixture current_store athoscommerce/indexing/enable_live_indexing 1
+     */
+    public function testExecute_WhenDisabledConfigurableChildStockChanges_DoesNotDeleteParentOrSiblings(): void
+    {
+        [$parentProduct, $childProduct] = $this->createAndSaveConfigurableProduct(
+            Status::STATUS_ENABLED,
+            Visibility::VISIBILITY_BOTH
+        );
+        $childProduct->setStatus(Status::STATUS_DISABLED);
+        /** @var ProductRepositoryInterface $productRepository */
+        $productRepository = $this->objectManager->get(ProductRepositoryInterface::class);
+        $productRepository->save($childProduct);
+
+        $parentId = (int)$parentProduct->getId();
+        $childId = (int)$childProduct->getId();
+
+        $this->createIndexingEntityForProduct($parentId, Actions::UPSERT, true);
+        $this->createIndexingEntityForProduct($childId, Actions::UPSERT, true, $parentId);
+        $this->createIndexingEntityForProduct(self::SIBLING_ID, Actions::UPSERT, true, $parentId);
+
+        $stockItem = $this->buildStockItem(
+            $childId,
+            currentQty: 0,
+            origQty: 10,
+            currentInStock: 0,
+            origInStock: 1
+        );
+
+        $this->dispatchStockItemSaveAfter($stockItem);
+
+        $parentEntity = $this->getIndexingEntityByTargetIdAndParentId($parentId, null);
+        $childEntity = $this->getIndexingEntityByTargetIdAndParentId($childId, $parentId);
+        $siblingEntity = $this->getIndexingEntityByTargetIdAndParentId(self::SIBLING_ID, $parentId);
+
+        $this->assertNotNull($parentEntity);
+        $this->assertNotNull($childEntity);
+        $this->assertNotNull($siblingEntity);
+        $this->assertSame(Actions::DELETE, $childEntity->getNextAction(), 'Child next_action mismatch');
+        $this->assertSame(Actions::UPSERT, $parentEntity->getNextAction(), 'Parent next_action mismatch');
+        $this->assertTrue($parentEntity->getIsIndexable(), 'Parent is_indexable mismatch');
+        $this->assertSame(Actions::NO_ACTION, $siblingEntity->getNextAction(), 'Sibling next_action mismatch');
+        $this->assertTrue($siblingEntity->getIsIndexable(), 'Sibling is_indexable mismatch');
+    }
+
+    /**
+     * A stock change on an enabled NVI configurable child forces only the child's own
+     * row indexable. Non-indexable sibling rows and a non-indexable parent row must be
+     * left untouched.
+     *
+     * @magentoDataFixture Magento/ConfigurableProduct/_files/configurable_attribute.php
+     * @magentoConfigFixture current_store athoscommerce/indexing/enable_live_indexing 1
+     */
+    public function testExecute_WhenConfigurableChildStockChanges_DoesNotForceSiblingsOrParentIndexable(): void
+    {
+        [$parentProduct, $childProduct] = $this->createAndSaveConfigurableProduct(
+            Status::STATUS_ENABLED,
+            Visibility::VISIBILITY_BOTH
+        );
+        $parentId = (int)$parentProduct->getId();
+        $childId = (int)$childProduct->getId();
+
+        $this->createIndexingEntityForProduct($parentId, Actions::NO_ACTION, false);
+        $this->createIndexingEntityForProduct($childId, Actions::NO_ACTION, false, $parentId);
+        $this->createIndexingEntityForProduct(self::SIBLING_ID, Actions::NO_ACTION, false, $parentId);
+
+        $stockItem = $this->buildStockItem(
+            $childId,
+            currentQty: 5,
+            origQty: 10,
+            currentInStock: 1,
+            origInStock: 1
+        );
+
+        $this->dispatchStockItemSaveAfter($stockItem);
+
+        $parentEntity = $this->getIndexingEntityByTargetIdAndParentId($parentId, null);
+        $childEntity = $this->getIndexingEntityByTargetIdAndParentId($childId, $parentId);
+        $siblingEntity = $this->getIndexingEntityByTargetIdAndParentId(self::SIBLING_ID, $parentId);
+
+        $this->assertNotNull($parentEntity);
+        $this->assertNotNull($childEntity);
+        $this->assertNotNull($siblingEntity);
+        $this->assertSame(Actions::UPSERT, $childEntity->getNextAction(), 'Child next_action mismatch');
+        $this->assertTrue($childEntity->getIsIndexable(), 'Child is_indexable mismatch');
+        $this->assertSame(Actions::NO_ACTION, $siblingEntity->getNextAction(), 'Sibling next_action mismatch');
+        $this->assertFalse($siblingEntity->getIsIndexable(), 'Sibling is_indexable mismatch');
+        $this->assertSame(Actions::NO_ACTION, $parentEntity->getNextAction(), 'Parent next_action mismatch');
+        $this->assertFalse($parentEntity->getIsIndexable(), 'Parent is_indexable mismatch');
+    }
+
     // ──────────────────────────────────────────────────────────────────────────
     // Data provider
     // ──────────────────────────────────────────────────────────────────────────
@@ -645,12 +786,14 @@ class InventoryUpdateObserverTest extends TestCase
     private function createIndexingEntityForProduct(
         int    $productId,
         string $lastAction,
-        bool   $isIndexable
+        bool   $isIndexable,
+        ?int   $targetParentId = null
     ): IndexingEntity {
         /** @var IndexingEntity $entity */
         $entity = $this->objectManager->create(IndexingEntity::class);
         $entity->setTargetEntityType(Constants::PRODUCT_KEY);
         $entity->setTargetId($productId);
+        $entity->setTargetParentId($targetParentId);
         $entity->setSiteId(self::SITE_ID_PREFIX . random_int(0, 999999999));
         $entity->setNextAction(Actions::NO_ACTION);
         $entity->setLastAction($lastAction);
