@@ -24,12 +24,16 @@ use AthosCommerce\Feed\Model\Api\MagentoEntityInterface;
 use AthosCommerce\Feed\Model\Api\MagentoEntityInterfaceFactory;
 use AthosCommerce\Feed\Model\Config as ConfigModel;
 use AthosCommerce\Feed\Model\CollectionProcessor;
+use AthosCommerce\Feed\Model\Feed\ContextManagerInterface;
 use AthosCommerce\Feed\Model\Feed\SpecificationBuilderInterface;
 use AthosCommerce\Feed\Service\Action\AddIndexingEntitiesActionInterface;
 use AthosCommerce\Feed\Service\Action\SetIndexingEntitiesToDeleteActionInterface;
 use AthosCommerce\Feed\Service\Action\SetIndexingEntitiesToUpdateActionInterface;
 use AthosCommerce\Feed\Service\Provider\Api\IndexingEntityProviderInterface;
 use AthosCommerce\Feed\Service\Provider\MagentoEntityProvider;
+use AthosCommerce\Feed\Service\Action\SyncSiteAssignmentAction;
+use AthosCommerce\Feed\Service\Provider\LiveIndexingSiteProvider;
+use Magento\Framework\App\ObjectManager;
 use Exception;
 use Magento\Framework\Serialize\SerializerInterface;
 use Magento\Store\Model\ScopeInterface;
@@ -99,6 +103,18 @@ class EntityDiscovery implements EntityDiscoveryInterface
      * @var SetIndexingEntitiesToUpdateActionInterface
      */
     private $setIndexingEntitiesToUpdateAction;
+    /**
+     * @var ContextManagerInterface
+     */
+    private $contextManager;
+    /**
+     * @var LiveIndexingSiteProvider
+     */
+    private $siteProvider;
+    /**
+     * @var SyncSiteAssignmentAction
+     */
+    private $syncSiteAssignmentAction;
 
     /**
      * @param StoreManagerInterface $storeManager
@@ -109,11 +125,15 @@ class EntityDiscovery implements EntityDiscoveryInterface
      * @param CollectionProcessor $collectionProcessor
      * @param SpecificationBuilderInterface $specificationBuilder
      * @param SerializerInterface $serializer
+     * @param ContextManagerInterface $contextManager
      * @param ProductRelationsProvider $productRelationProvider
      * @param MagentoEntityProvider $magentoEntityProvider
      * @param IndexingEntityProviderInterface $indexingEntityProvider
      * @param \Magento\Framework\App\ResourceConnection $resource
      * @param SetIndexingEntitiesToDeleteActionInterface $setIndexingEntitiesToDeleteAction
+     * @param SetIndexingEntitiesToUpdateActionInterface $setIndexingEntitiesToUpdateAction
+     * @param LiveIndexingSiteProvider|null $siteProvider
+     * @param SyncSiteAssignmentAction|null $syncSiteAssignmentAction
      */
     public function __construct(
         StoreManagerInterface                      $storeManager,
@@ -124,12 +144,15 @@ class EntityDiscovery implements EntityDiscoveryInterface
         CollectionProcessor                        $collectionProcessor,
         SpecificationBuilderInterface              $specificationBuilder,
         SerializerInterface                        $serializer,
+        ContextManagerInterface                    $contextManager,
         ProductRelationsProvider                   $productRelationProvider,
         MagentoEntityProvider                      $magentoEntityProvider,
         IndexingEntityProviderInterface            $indexingEntityProvider,
         \Magento\Framework\App\ResourceConnection  $resource,
         SetIndexingEntitiesToDeleteActionInterface $setIndexingEntitiesToDeleteAction,
-        SetIndexingEntitiesToUpdateActionInterface $setIndexingEntitiesToUpdateAction
+        SetIndexingEntitiesToUpdateActionInterface $setIndexingEntitiesToUpdateAction,
+        ?LiveIndexingSiteProvider                  $siteProvider = null,
+        ?SyncSiteAssignmentAction                  $syncSiteAssignmentAction = null
     )
     {
         $this->storeManager = $storeManager;
@@ -140,6 +163,7 @@ class EntityDiscovery implements EntityDiscoveryInterface
         $this->collectionProcessor = $collectionProcessor;
         $this->specificationBuilder = $specificationBuilder;
         $this->serializer = $serializer;
+        $this->contextManager = $contextManager;
         $this->productRelationProvider = $productRelationProvider;
         $this->magentoEntityProvider = $magentoEntityProvider;
         $this->indexingEntityProvider = $indexingEntityProvider;
@@ -147,6 +171,8 @@ class EntityDiscovery implements EntityDiscoveryInterface
         $this->connection = $resource->getConnection();
         $this->setIndexingEntitiesToDeleteAction = $setIndexingEntitiesToDeleteAction;
         $this->setIndexingEntitiesToUpdateAction = $setIndexingEntitiesToUpdateAction;
+        $this->siteProvider = $siteProvider;
+        $this->syncSiteAssignmentAction = $syncSiteAssignmentAction;
     }
 
     /**
@@ -162,7 +188,7 @@ class EntityDiscovery implements EntityDiscoveryInterface
             $storeCode = $store->getCode();
 
             $isValid = $this->validateLiveIndexingConfig($storeId);
-            $siteId = $this->configModel->getSiteIdByStoreId($storeId);
+            $siteId = trim((string)$this->configModel->getSiteIdByStoreId($storeId));
             if ($isValid === false) {
                 $this->logger->info(
                     "[Discovery] Configuration incomplete for store: " . $storeCode,
@@ -278,8 +304,29 @@ class EntityDiscovery implements EntityDiscoveryInterface
      */
     private function discoverAdditions(string $siteId, string $storeCode, array $payload): void
     {
+        // The feed collection filters by the current store context (website, visibility, stock):
+        // without it every store would discover the default store's products.
+        $payload['store'] = $storeCode;
         $feedSpecification = $this->specificationBuilder->build($payload);
+        $feedSpecification->setStoreCode($storeCode);
+        $this->contextManager->setContextFromSpecification($feedSpecification);
+        try {
+            $this->addDiscoveredEntities($feedSpecification, $siteId, $storeCode);
+        } finally {
+            $this->contextManager->resetContext();
+        }
+    }
 
+    /**
+     * Add rows for products found by the feed collection that have no row for this site yet.
+     *
+     * @param \AthosCommerce\Feed\Api\Data\FeedSpecificationInterface $feedSpecification
+     * @param string $siteId
+     * @param string $storeCode
+     * @return void
+     */
+    private function addDiscoveredEntities($feedSpecification, string $siteId, string $storeCode): void
+    {
         foreach ($this->magentoEntityProvider->getMagentoEntityIds($feedSpecification) as $magentoIds) {
             if (!is_array($magentoIds)) {
                 throw new \LogicException(
@@ -345,9 +392,10 @@ class EntityDiscovery implements EntityDiscoveryInterface
 
     /**
      * @param int[] $ids
+     * @param int[] $websiteIds when given, only products assigned to one of these websites count
      * @return int[] existing Magento Entity IDs
      */
-    private function filterMagentoEntityIds(array $ids): array
+    private function filterMagentoEntityIds(array $ids, array $websiteIds = []): array
     {
         if (!$ids) {
             return [];
@@ -358,8 +406,17 @@ class EntityDiscovery implements EntityDiscoveryInterface
         $chunkIds = array_chunk($ids, 500);
         foreach ($chunkIds as $chunk) {
             $select = $this->connection->select()
-                ->from($table, ['entity_id'])
-                ->where('entity_id IN (?)', $chunk);
+                ->from(['e' => $table], ['entity_id'])
+                ->where('e.entity_id IN (?)', $chunk);
+            if ($websiteIds) {
+                $select->join(
+                    ['w' => $this->resource->getTableName('catalog_product_website')],
+                    'w.product_id = e.entity_id',
+                    []
+                )
+                    ->where('w.website_id IN (?)', $websiteIds)
+                    ->distinct();
+            }
 
             $existingEntityIds = array_merge(
                 $existingEntityIds,
@@ -367,7 +424,7 @@ class EntityDiscovery implements EntityDiscoveryInterface
             );
         }
 
-        return $existingEntityIds;
+        return array_map('intval', $existingEntityIds);
     }
 
     /**
@@ -377,14 +434,17 @@ class EntityDiscovery implements EntityDiscoveryInterface
      */
     private function discoverDeletions(string $siteId, string $storeCode): void
     {
+        // Products deleted from Magento, or no longer assigned to any website of this site.
+        $websiteIds = null;
         foreach ($this->getIndexedAthosIds($siteId) as $athosIndexedIds) {
+            $websiteIds = $websiteIds ?? $this->getSiteProvider()->getWebsiteIdsForSite($siteId);
+            $athosIndexedIds = array_map('intval', $athosIndexedIds);
+            $existingMagentoIds = $this->filterMagentoEntityIds($athosIndexedIds, $websiteIds);
 
-            $existingMagentoIds = $this->filterMagentoEntityIds($athosIndexedIds);
-            if (empty($existingMagentoIds)) {
-                $existingMagentoIds = [];
-            }
-
-            $idsToDelete = array_diff($athosIndexedIds, $existingMagentoIds);
+            $idsToDelete = $this->getSyncSiteAssignmentAction()->filterPendingDeletions(
+                array_values(array_diff($athosIndexedIds, $existingMagentoIds)),
+                $siteId
+            );
             if (!$idsToDelete) {
                 $this->logger->info(
                     "[Discovery] No ids found for DELETE $storeCode: "
@@ -396,7 +456,7 @@ class EntityDiscovery implements EntityDiscoveryInterface
                 "[Discovery] DELETE $storeCode: " . implode(',', $idsToDelete)
             );
 
-            $this->setIndexingEntitiesToDeleteAction->execute($idsToDelete);
+            $this->setIndexingEntitiesToDeleteAction->execute($idsToDelete, [$siteId]);
         }
     }
 
@@ -466,7 +526,8 @@ class EntityDiscovery implements EntityDiscoveryInterface
             $relations = array_merge($configRelations, $groupedRelations);
 
             foreach ($relations as $relation) {
-                $parentId = (int)$relation['parent_id'];
+                // target_parent_id must hold the parent entity_id; parent_id is the row_id on Commerce.
+                $parentId = (int)$relation['parent_entity_id'];
                 $childId = (int)$relation['product_id'];
 
                 $childToParentMap[$childId] = $parentId;
@@ -497,5 +558,33 @@ class EntityDiscovery implements EntityDiscoveryInterface
         return $this->configModel->getEndpointByStoreId($storeId)
             && $this->configModel->isLiveIndexingEnabled($storeId)
             && $this->configModel->getSiteIdByStoreId($storeId);
+    }
+
+    /**
+     * Site provider, resolved on first use for callers that do not inject it.
+     *
+     * @return LiveIndexingSiteProvider
+     */
+    private function getSiteProvider(): LiveIndexingSiteProvider
+    {
+        if ($this->siteProvider === null) {
+            $this->siteProvider = ObjectManager::getInstance()->get(LiveIndexingSiteProvider::class);
+        }
+
+        return $this->siteProvider;
+    }
+
+    /**
+     * Site assignment action, resolved on first use for callers that do not inject it.
+     *
+     * @return SyncSiteAssignmentAction
+     */
+    private function getSyncSiteAssignmentAction(): SyncSiteAssignmentAction
+    {
+        if ($this->syncSiteAssignmentAction === null) {
+            $this->syncSiteAssignmentAction = ObjectManager::getInstance()->get(SyncSiteAssignmentAction::class);
+        }
+
+        return $this->syncSiteAssignmentAction;
     }
 }

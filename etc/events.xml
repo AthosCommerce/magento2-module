@@ -20,6 +20,10 @@
         <observer name="athos_commerce_product_import_bunch_delete_observer"
                   instance="AthosCommerce\Feed\Observer\Product\BunchDeleteObserver"/>
     </event>
+    <event name="cataloginventory_stock_item_save_before">
+        <observer name="athos_commerce_stock_item_save_before_observer"
+                  instance="AthosCommerce\Feed\Observer\Product\InventoryBeforeSaveObserver"/>
+    </event>
     <event name="cataloginventory_stock_item_save_after">
         <observer name="athos_commerce_stock_item_save_after_observer"
                   instance="AthosCommerce\Feed\Observer\Product\InventoryUpdateObserver"/>

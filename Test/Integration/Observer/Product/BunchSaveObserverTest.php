@@ -410,9 +410,7 @@ class BunchSaveObserverTest extends TestCase
     // ──────────────────────────────────────────────────────────────────────────
 
     /**
-     * Creates and saves a simple product. Status and visibility are set to the
-     * most common import scenario (enabled, visible both) — the observer does not
-     * check them, so they do not affect the expected outcome.
+     * Creates and saves a simple product with the supplied status and visibility.
      */
     private function createAndSaveTestProduct(
         int $status = Status::STATUS_ENABLED,

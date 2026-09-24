@@ -79,16 +79,17 @@ class SetIndexingEntitiesToDeleteAction implements SetIndexingEntitiesToDeleteAc
 
     /**
      * @param array $entityIds
-     *
-     * @return void
-     */
-    public function execute(array $entityIds): void
+    * @param array $siteIds
+    *
+    * @return void
+    */
+    public function execute(array $entityIds, array $siteIds = []): void
     {
-        $indexingEntities = $this->getIndexingEntities(iterator_to_array($entityIds));
-        try {
-            $indexingEntityIds = [];
-            foreach ($indexingEntities as $indexingEntity) {
-                $indexingEntityIds[] = $indexingEntity->getId();
+       $indexingEntities = $this->getIndexingEntities(iterator_to_array($entityIds), $siteIds);
+       $indexingEntityIds = [];
+       try {
+           foreach ($indexingEntities as $indexingEntity) {
+               $indexingEntityIds[] = $indexingEntity->getId();
                 if ($indexingEntity->getLastAction() === ACTIONS::NO_ACTION) {
                     $indexingEntity->setNextAction(Actions::NO_ACTION);
                     $indexingEntity->setIsIndexable(false);
@@ -111,7 +112,8 @@ class SetIndexingEntitiesToDeleteAction implements SetIndexingEntitiesToDeleteAc
             'Indexing Entities Set to Delete',
             [
                 'entityIds' => $entityIds,
-                'indexingEntityIds' => $indexingEntityIds
+                'indexingEntityIds' => $indexingEntityIds,
+                'siteIds' => $siteIds,
             ],
         );
         foreach ($indexingEntities as $indexingEntity) {
@@ -124,14 +126,17 @@ class SetIndexingEntitiesToDeleteAction implements SetIndexingEntitiesToDeleteAc
 
     /**
      * @param array $entityIds
-     *
-     * @return array
-     */
-    private function getIndexingEntities(array $entityIds): array
+    * @param array $siteIds
+    *
+    * @return array
+    */
+    private function getIndexingEntities(array $entityIds, array $siteIds = []): array
     {
-        $indexingEntities = [];
-        $entityIds = array_filter($entityIds);
-        if (!empty($entityIds)) {
+       $indexingEntities = [];
+       $entityIds = array_filter($entityIds);
+       $siteIds = array_values(array_unique(array_filter($siteIds)));
+
+       if (!empty($entityIds)) {
             /** @var SearchCriteriaBuilder $searchCriteriaBuilder */
             $searchCriteriaBuilder = $this->searchCriteriaBuilderFactory->create();
             /** @var FilterBuilder $filterBuilder */
@@ -158,9 +163,17 @@ class SetIndexingEntitiesToDeleteAction implements SetIndexingEntitiesToDeleteAc
                 ->addFilter($targetParentIdFilter)
                 ->create();
 
-            $searchCriteria = $searchCriteriaBuilder
-                ->setFilterGroups([$filterGroup])
-                ->create();
+            $searchCriteriaBuilder->setFilterGroups([$filterGroup]);
+
+            if (!empty($siteIds)) {
+                $searchCriteriaBuilder->addFilter(
+                    IndexingEntity::SITE_ID,
+                    $siteIds,
+                    'in'
+                );
+            }
+
+            $searchCriteria = $searchCriteriaBuilder->create();
 
             $searchResult = $this->indexingEntityRepository->getList($searchCriteria);
             $indexingEntities = $searchResult->getItems();

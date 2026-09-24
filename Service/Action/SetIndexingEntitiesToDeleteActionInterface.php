@@ -22,8 +22,9 @@ interface SetIndexingEntitiesToDeleteActionInterface
 {
     /**
      * @param array $entityIds
+     * @param array $siteIds
      *
      * @return void
      */
-    public function execute(array $entityIds): void;
+    public function execute(array $entityIds, array $siteIds = []): void;
 }
