@@ -33,6 +33,8 @@ use Magento\Framework\Event\ObserverInterface;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Service\Provider\ProductNextActionProvider;
 use AthosCommerce\Feed\Service\Tracking\IdProviderInterface;
+use AthosCommerce\Feed\Service\Tracking\StockItemSnapshot;
+use Magento\Framework\App\ObjectManager;
 use Magento\Catalog\Model\Product\Visibility;
 
 class InventoryUpdateObserver implements ObserverInterface
@@ -81,6 +83,11 @@ class InventoryUpdateObserver implements ObserverInterface
      */
     private $searchCriteriaBuilderFactory;
 
+    /**
+     * @var StockItemSnapshot
+     */
+    private $stockItemSnapshot;
+
     public function __construct(
         AthosCommerceLogger       $logger,
         ProductRepository         $productRepository,
@@ -90,7 +97,8 @@ class InventoryUpdateObserver implements ObserverInterface
         IdProviderInterface       $idProvider,
         ConfigModel               $configModel,
         IndexingEntityRepositoryInterface $indexingEntityRepository,
-        SearchCriteriaBuilderFactory      $searchCriteriaBuilderFactory
+        SearchCriteriaBuilderFactory      $searchCriteriaBuilderFactory,
+        ?StockItemSnapshot                $stockItemSnapshot = null
     )
     {
         $this->logger = $logger;
@@ -102,6 +110,8 @@ class InventoryUpdateObserver implements ObserverInterface
         $this->configModel = $configModel;
         $this->indexingEntityRepository = $indexingEntityRepository;
         $this->searchCriteriaBuilderFactory = $searchCriteriaBuilderFactory;
+        $this->stockItemSnapshot = $stockItemSnapshot
+            ?? ObjectManager::getInstance()->get(StockItemSnapshot::class);
     }
 
     /**
@@ -118,6 +128,7 @@ class InventoryUpdateObserver implements ObserverInterface
 
             $qtyChanged = $this->hasStockFieldChanged($stockItem, 'qty');
             $inStockChanged = $this->hasStockFieldChanged($stockItem, 'is_in_stock');
+            $this->stockItemSnapshot->forget($stockItem);
 
             if (!$qtyChanged && !$inStockChanged) {
                 return;
@@ -146,9 +157,14 @@ class InventoryUpdateObserver implements ObserverInterface
                         continue;
                     }
 
-                    $nextAction = $this->productNextActionProvider->getNextActionByProduct($product, (int)$storeId);
+                    // Status/visibility are store-view scoped: resolve them for this store's site.
+                    $storeProduct = $this->productNextActionProvider->getStoreScopedProduct(
+                        (int)$productId,
+                        (int)$storeId
+                    ) ?? $product;
+                    $nextAction = $this->productNextActionProvider->getNextActionByProduct($storeProduct, (int)$storeId);
                     $forceIndexable = $nextAction === Actions::UPSERT
-                        && (int)$product->getVisibility() === Visibility::VISIBILITY_NOT_VISIBLE;
+                        && (int)$storeProduct->getVisibility() === Visibility::VISIBILITY_NOT_VISIBLE;
                     $siteId = $this->resolveSiteIdByStoreId((int)$storeId);
 
                     // Child action/forceIndexable must only reach the child's own rows; passing the
@@ -207,7 +223,8 @@ class InventoryUpdateObserver implements ObserverInterface
     {
         $origData = $stockItem->getOrigData();
         if (!is_array($origData) || !array_key_exists($field, $origData)) {
-            return true;
+            // Product saves re-save the stock item without orig data: compare with the stored row.
+            return $this->stockItemSnapshot->hasChanged($stockItem, $field) ?? true;
         }
 
         return $stockItem->dataHasChangedFor($field);

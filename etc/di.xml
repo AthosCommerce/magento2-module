@@ -590,4 +590,8 @@
             </argument>
         </arguments>
     </virtualType>
+    <type name="Magento\Catalog\Model\Product\Action">
+        <plugin name="athoscommerce_feed_product_action_live_indexing"
+                type="AthosCommerce\Feed\Plugin\Catalog\ProductActionPlugin"/>
+    </type>
 </config>

@@ -24,6 +24,8 @@ use AthosCommerce\Feed\Model\Api\MagentoEntityInterface;
 use AthosCommerce\Feed\Model\Api\MagentoEntityInterfaceFactory;
 use AthosCommerce\Feed\Model\Config as ConfigModel;
 use AthosCommerce\Feed\Model\CollectionProcessor;
+use AthosCommerce\Feed\Model\Feed\ContextManagerInterface;
+use AthosCommerce\Feed\Model\Source\Actions;
 use AthosCommerce\Feed\Model\Feed\SpecificationBuilderInterface;
 use AthosCommerce\Feed\Service\Action\AddIndexingEntitiesActionInterface;
 use AthosCommerce\Feed\Service\Action\SetIndexingEntitiesToDeleteActionInterface;
@@ -99,6 +101,10 @@ class EntityDiscovery implements EntityDiscoveryInterface
      * @var SetIndexingEntitiesToUpdateActionInterface
      */
     private $setIndexingEntitiesToUpdateAction;
+    /**
+     * @var ContextManagerInterface
+     */
+    private $contextManager;
 
     /**
      * @param StoreManagerInterface $storeManager
@@ -109,6 +115,7 @@ class EntityDiscovery implements EntityDiscoveryInterface
      * @param CollectionProcessor $collectionProcessor
      * @param SpecificationBuilderInterface $specificationBuilder
      * @param SerializerInterface $serializer
+     * @param ContextManagerInterface $contextManager
      * @param ProductRelationsProvider $productRelationProvider
      * @param MagentoEntityProvider $magentoEntityProvider
      * @param IndexingEntityProviderInterface $indexingEntityProvider
@@ -124,6 +131,7 @@ class EntityDiscovery implements EntityDiscoveryInterface
         CollectionProcessor                        $collectionProcessor,
         SpecificationBuilderInterface              $specificationBuilder,
         SerializerInterface                        $serializer,
+        ContextManagerInterface                    $contextManager,
         ProductRelationsProvider                   $productRelationProvider,
         MagentoEntityProvider                      $magentoEntityProvider,
         IndexingEntityProviderInterface            $indexingEntityProvider,
@@ -140,6 +148,7 @@ class EntityDiscovery implements EntityDiscoveryInterface
         $this->collectionProcessor = $collectionProcessor;
         $this->specificationBuilder = $specificationBuilder;
         $this->serializer = $serializer;
+        $this->contextManager = $contextManager;
         $this->productRelationProvider = $productRelationProvider;
         $this->magentoEntityProvider = $magentoEntityProvider;
         $this->indexingEntityProvider = $indexingEntityProvider;
@@ -278,8 +287,27 @@ class EntityDiscovery implements EntityDiscoveryInterface
      */
     private function discoverAdditions(string $siteId, string $storeCode, array $payload): void
     {
+        // The feed collection filters by the current store context (website, visibility, stock):
+        // without it every store would discover the default store's products.
+        $payload['store'] = $storeCode;
         $feedSpecification = $this->specificationBuilder->build($payload);
+        $feedSpecification->setStoreCode($storeCode);
+        $this->contextManager->setContextFromSpecification($feedSpecification);
+        try {
+            $this->addDiscoveredEntities($feedSpecification, $siteId, $storeCode);
+        } finally {
+            $this->contextManager->resetContext();
+        }
+    }
 
+    /**
+     * @param \AthosCommerce\Feed\Api\Data\FeedSpecificationInterface $feedSpecification
+     * @param string $siteId
+     * @param string $storeCode
+     * @return void
+     */
+    private function addDiscoveredEntities($feedSpecification, string $siteId, string $storeCode): void
+    {
         foreach ($this->magentoEntityProvider->getMagentoEntityIds($feedSpecification) as $magentoIds) {
             if (!is_array($magentoIds)) {
                 throw new \LogicException(
@@ -345,9 +373,10 @@ class EntityDiscovery implements EntityDiscoveryInterface
 
     /**
      * @param int[] $ids
+     * @param int[] $websiteIds when given, only products assigned to one of these websites count
      * @return int[] existing Magento Entity IDs
      */
-    private function filterMagentoEntityIds(array $ids): array
+    private function filterMagentoEntityIds(array $ids, array $websiteIds = []): array
     {
         if (!$ids) {
             return [];
@@ -358,8 +387,17 @@ class EntityDiscovery implements EntityDiscoveryInterface
         $chunkIds = array_chunk($ids, 500);
         foreach ($chunkIds as $chunk) {
             $select = $this->connection->select()
-                ->from($table, ['entity_id'])
-                ->where('entity_id IN (?)', $chunk);
+                ->from(['e' => $table], ['entity_id'])
+                ->where('e.entity_id IN (?)', $chunk);
+            if ($websiteIds) {
+                $select->join(
+                    ['w' => $this->resource->getTableName('catalog_product_website')],
+                    'w.product_id = e.entity_id',
+                    []
+                )
+                    ->where('w.website_id IN (?)', $websiteIds)
+                    ->distinct();
+            }
 
             $existingEntityIds = array_merge(
                 $existingEntityIds,
@@ -367,7 +405,54 @@ class EntityDiscovery implements EntityDiscoveryInterface
             );
         }
 
-        return $existingEntityIds;
+        return array_map('intval', $existingEntityIds);
+    }
+
+    /**
+     * Websites whose store views send to this site id. A site id may be shared by store views
+     * of several websites; a product is still on the site while it is on any of them.
+     *
+     * @param string $siteId
+     * @return int[]
+     */
+    private function getWebsiteIdsForSite(string $siteId): array
+    {
+        $websiteIds = [];
+        foreach ($this->storeManager->getStores(false) as $store) {
+            if (trim((string)$this->configModel->getSiteIdByStoreId((int)$store->getId())) === $siteId) {
+                $websiteIds[] = (int)$store->getWebsiteId();
+            }
+        }
+
+        return array_values(array_unique($websiteIds));
+    }
+
+    /**
+     * Drops ids whose row on this site is already deleted, already queued for Delete, or was
+     * never sent, so repeated discovery runs do not queue the same Delete again.
+     *
+     * @param int[] $ids
+     * @param string $siteId
+     * @return int[]
+     */
+    private function filterPendingDeletions(array $ids, string $siteId): array
+    {
+        if (!$ids) {
+            return [];
+        }
+        $select = $this->connection->select()
+            ->from($this->resource->getTableName('athoscommerce_indexing_entity'), ['target_id'])
+            ->where('target_entity_type = ?', Constants::PRODUCT_KEY)
+            ->where('site_id = ?', $siteId)
+            ->where('target_id IN (?)', $ids)
+            ->where('next_action <> ?', Actions::DELETE)
+            ->where(sprintf(
+                'NOT (next_action = %1$s AND (last_action = %2$s OR (last_action = %1$s AND is_indexable = 0)))',
+                $this->connection->quote(Actions::NO_ACTION),
+                $this->connection->quote(Actions::DELETE)
+            ));
+
+        return array_values(array_unique(array_map('intval', $this->connection->fetchCol($select))));
     }
 
     /**
@@ -377,14 +462,17 @@ class EntityDiscovery implements EntityDiscoveryInterface
      */
     private function discoverDeletions(string $siteId, string $storeCode): void
     {
+        // Products deleted from Magento, or no longer assigned to any website of this site.
+        $websiteIds = null;
         foreach ($this->getIndexedAthosIds($siteId) as $athosIndexedIds) {
+            $websiteIds = $websiteIds ?? $this->getWebsiteIdsForSite($siteId);
+            $athosIndexedIds = array_map('intval', $athosIndexedIds);
+            $existingMagentoIds = $this->filterMagentoEntityIds($athosIndexedIds, $websiteIds);
 
-            $existingMagentoIds = $this->filterMagentoEntityIds($athosIndexedIds);
-            if (empty($existingMagentoIds)) {
-                $existingMagentoIds = [];
-            }
-
-            $idsToDelete = array_diff($athosIndexedIds, $existingMagentoIds);
+            $idsToDelete = $this->filterPendingDeletions(
+                array_values(array_diff($athosIndexedIds, $existingMagentoIds)),
+                $siteId
+            );
             if (!$idsToDelete) {
                 $this->logger->info(
                     "[Discovery] No ids found for DELETE $storeCode: "
@@ -396,7 +484,7 @@ class EntityDiscovery implements EntityDiscoveryInterface
                 "[Discovery] DELETE $storeCode: " . implode(',', $idsToDelete)
             );
 
-            $this->setIndexingEntitiesToDeleteAction->execute($idsToDelete);
+            $this->setIndexingEntitiesToDeleteAction->execute($idsToDelete, [$siteId]);
         }
     }
 

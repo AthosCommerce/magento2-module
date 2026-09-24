@@ -78,6 +78,50 @@ class ProductNextActionProvider
     }
 
     /**
+     * Next action from the product's status and visibility in the given store view.
+     *
+     * A saved product object only carries the values of the scope it was saved in, so it
+     * cannot be reused to decide the action for other store views (and their sites).
+     *
+     * @param ProductInterface $product
+     * @param int $storeId
+     *
+     * @return string
+     */
+    public function getNextActionByProductForStore(ProductInterface $product, int $storeId): string
+    {
+        return $this->getNextActionByProduct(
+            $this->getStoreScopedProduct((int)$product->getId(), $storeId) ?? $product,
+            $storeId
+        );
+    }
+
+    /**
+     * Product with status and visibility resolved for the given store view.
+     *
+     * @param int $productId
+     * @param int $storeId
+     *
+     * @return ProductInterface|null
+     */
+    public function getStoreScopedProduct(int $productId, int $storeId): ?ProductInterface
+    {
+        if ($productId <= 0) {
+            return null;
+        }
+
+        $collection = $this->productCollectionFactory->create();
+        $collection->setStoreId($storeId);
+        $collection->addAttributeToSelect(['status', 'visibility']);
+        $collection->addFieldToFilter('entity_id', $productId);
+        $collection->setPageSize(1);
+        /** @var ProductInterface $product */
+        $product = $collection->getFirstItem();
+
+        return $product->getId() ? $product : null;
+    }
+
+    /**
      * @param array $productIds
      * @param int|null $storeId
      *

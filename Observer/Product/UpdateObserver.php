@@ -29,6 +29,9 @@ use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Api\SearchCriteriaBuilderFactory;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
+use Magento\Framework\App\ObjectManager;
+use Magento\Store\Model\Store;
+use Magento\Store\Model\StoreManagerInterface;
 use AthosCommerce\Feed\Observer\BaseProductObserver;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Service\Provider\ProductNextActionProvider;
@@ -79,6 +82,11 @@ class UpdateObserver implements ObserverInterface
     private $configModel;
 
     /**
+     * @var StoreManagerInterface
+     */
+    private $storeManager;
+
+    /**
      * @param BaseProductObserver $baseProductObserver
      * @param AthosCommerceLogger $logger
      * @param ScopeConfigInterface $scopeConfig
@@ -88,6 +96,7 @@ class UpdateObserver implements ObserverInterface
      * @param IndexingEntityRepositoryInterface $indexingEntityRepository
      * @param SearchCriteriaBuilderFactory $searchCriteriaBuilderFactory
      * @param ConfigModel $configModel
+     * @param StoreManagerInterface|null $storeManager
      */
     public function __construct(
         BaseProductObserver $baseProductObserver,
@@ -98,7 +107,8 @@ class UpdateObserver implements ObserverInterface
         IdProviderInterface $idProvider,
         IndexingEntityRepositoryInterface $indexingEntityRepository,
         SearchCriteriaBuilderFactory $searchCriteriaBuilderFactory,
-        ConfigModel $configModel
+        ConfigModel $configModel,
+        ?StoreManagerInterface $storeManager = null
     )
     {
         $this->baseProductObserver = $baseProductObserver;
@@ -110,6 +120,8 @@ class UpdateObserver implements ObserverInterface
         $this->indexingEntityRepository = $indexingEntityRepository;
         $this->searchCriteriaBuilderFactory = $searchCriteriaBuilderFactory;
         $this->configModel = $configModel;
+        $this->storeManager = $storeManager
+            ?? ObjectManager::getInstance()->get(StoreManagerInterface::class);
     }
 
     /**
@@ -128,6 +140,7 @@ class UpdateObserver implements ObserverInterface
             if (!$product || !$product->getId()) {
                 return;
             }
+            $storeIds = $this->getAffectedStoreIds($product, $storeIds);
 
             foreach ($storeIds as $storeId) {
                 try {
@@ -142,7 +155,12 @@ class UpdateObserver implements ObserverInterface
                         continue;
                     }
 
-                    $nextAction = $this->productNextActionProvider->getNextActionByProduct($product, (int)$storeId);
+                    // The saved object holds the values of the scope it was saved in; resolve
+                    // status/visibility for this store view so other sites are not affected.
+                    $nextAction = $this->productNextActionProvider->getNextActionByProductForStore(
+                        $product,
+                        (int)$storeId
+                    );
                     $siteId = $this->resolveSiteIdByStoreId((int)$storeId);
 
                     $this->baseProductObserver->execute(
@@ -235,6 +253,62 @@ class UpdateObserver implements ObserverInterface
 
             $this->indexingEntityRepository->save($indexingEntity);
         }
+    }
+
+    /**
+     * A save at store-view scope only changes that store view's values, so only its site is
+     * affected, unless a website-scoped attribute changed (e.g. status, or price with website
+     * price scope): Magento applies those to every store view of the website. A save at default
+     * scope affects every store of the product.
+     *
+     * @param \Magento\Catalog\Api\Data\ProductInterface $product
+     * @param array $storeIds
+     * @return int[]
+     */
+    private function getAffectedStoreIds(
+        \Magento\Catalog\Api\Data\ProductInterface $product,
+        array $storeIds
+    ): array {
+        $storeIds = array_map('intval', $storeIds);
+        $savedStoreId = (int)$product->getStoreId();
+        if ($savedStoreId === Store::DEFAULT_STORE_ID || !in_array($savedStoreId, $storeIds, true)) {
+            return $storeIds;
+        }
+        if (!$this->hasWebsiteScopedChange($product)) {
+            return [$savedStoreId];
+        }
+
+        $websiteId = (int)$this->storeManager->getStore($savedStoreId)->getWebsiteId();
+
+        return array_values(array_filter(
+            $storeIds,
+            fn (int $storeId): bool => (int)$this->storeManager->getStore($storeId)->getWebsiteId() === $websiteId
+        ));
+    }
+
+    /**
+     * Orig data is still the loaded state during catalog_product_save_after.
+     *
+     * @param \Magento\Catalog\Api\Data\ProductInterface $product
+     * @return bool
+     */
+    private function hasWebsiteScopedChange(\Magento\Catalog\Api\Data\ProductInterface $product): bool
+    {
+        if (!$product instanceof \Magento\Catalog\Model\Product) {
+            return true;
+        }
+        $resource = $product->getResource();
+        foreach (array_keys($product->getData()) as $code) {
+            if (!is_string($code) || !$product->dataHasChangedFor($code)) {
+                continue;
+            }
+            $attribute = $resource->getAttribute($code);
+            if ($attribute && method_exists($attribute, 'isScopeWebsite') && $attribute->isScopeWebsite()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
