@@ -99,10 +99,13 @@ class RelationsProvider
             $childIds
         );
         $select->reset('columns');
+        // parent_id is the parent link field (row_id on Commerce); parent_entity_id is always entity_id.
         $select->columns([
             ParentConstant::PARENT_CATALOG_PRODUCT_ENTITY_ALIAS . '.' . Entity::DEFAULT_ENTITY_ID_FIELD,
             ParentConstant::CATALOG_PRODUCT_SUPER_LINK_ALIAS . '.product_id',
             ParentConstant::CATALOG_PRODUCT_SUPER_LINK_ALIAS . '.parent_id',
+            'parent_entity_id' => ParentConstant::PARENT_CATALOG_PRODUCT_ENTITY_ALIAS . '.'
+                . Entity::DEFAULT_ENTITY_ID_FIELD,
         ]);
         $this->logger->info(
             '[ConfigRelations] QueryInfo',
@@ -159,9 +162,12 @@ class RelationsProvider
             (int)MagentoGroupedProductLink::LINK_TYPE_GROUPED
         );
         $select->reset('columns');
+        // parent_id is the parent link field (row_id on Commerce); parent_entity_id is always entity_id.
         $select->columns([
             ParentConstant::CATALOG_PRODUCT_LINK . '.linked_product_id AS product_id',
             ParentConstant::CATALOG_PRODUCT_LINK . '.product_id AS parent_id',
+            'parent_entity_id' => ParentConstant::PARENT_CATALOG_PRODUCT_ENTITY_ALIAS . '.'
+                . Entity::DEFAULT_ENTITY_ID_FIELD,
         ]);
 
         $this->logger->debug(

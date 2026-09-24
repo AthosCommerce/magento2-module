@@ -466,7 +466,8 @@ class EntityDiscovery implements EntityDiscoveryInterface
             $relations = array_merge($configRelations, $groupedRelations);
 
             foreach ($relations as $relation) {
-                $parentId = (int)$relation['parent_id'];
+                // target_parent_id must hold the parent entity_id; parent_id is the row_id on Commerce.
+                $parentId = (int)$relation['parent_entity_id'];
                 $childId = (int)$relation['product_id'];
 
                 $childToParentMap[$childId] = $parentId;
