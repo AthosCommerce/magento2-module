@@ -19,24 +19,29 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Plugin\Catalog;
 
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
-use AthosCommerce\Feed\Model\Config as ConfigModel;
 use AthosCommerce\Feed\Model\Source\Actions;
 use AthosCommerce\Feed\Observer\BaseProductObserver;
+use AthosCommerce\Feed\Service\Action\SyncSiteAssignmentAction;
+use AthosCommerce\Feed\Service\Provider\LiveIndexingSiteProvider;
 use AthosCommerce\Feed\Service\Provider\ProductNextActionProvider;
+use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\Product\Action as ProductAction;
-use Magento\Framework\App\ResourceConnection;
+use Magento\Eav\Model\Config as EavConfig;
 use Magento\Store\Api\Data\StoreInterface;
 use Magento\Store\Model\Store;
 use Magento\Store\Model\StoreManagerInterface;
 
 /**
- * Admin grid mass actions ("Update attributes", website assignment) write through
- * Product\Action without dispatching catalog_product_save_after, so the product observers
- * never see them. Queue the matching per-site actions here.
+ * Queues live indexing actions for admin grid mass actions.
+ *
+ * "Update attributes" and website assignment write through Product\Action without dispatching
+ * catalog_product_save_after, so the product observers never see them.
  */
 class ProductActionPlugin
 {
-    private const ATTRIBUTES_AFFECTING_ACTION = ['status', 'visibility'];
+    private const SCOPE_STORE = 0;
+    private const SCOPE_WEBSITE = 1;
+    private const SCOPE_GLOBAL = 2;
 
     /**
      * @var BaseProductObserver
@@ -47,17 +52,21 @@ class ProductActionPlugin
      */
     private $productNextActionProvider;
     /**
+     * @var LiveIndexingSiteProvider
+     */
+    private $siteProvider;
+    /**
+     * @var SyncSiteAssignmentAction
+     */
+    private $syncSiteAssignmentAction;
+    /**
      * @var StoreManagerInterface
      */
     private $storeManager;
     /**
-     * @var ConfigModel
+     * @var EavConfig
      */
-    private $configModel;
-    /**
-     * @var ResourceConnection
-     */
-    private $resourceConnection;
+    private $eavConfig;
     /**
      * @var AthosCommerceLogger
      */
@@ -66,34 +75,40 @@ class ProductActionPlugin
     /**
      * @param BaseProductObserver $baseProductObserver
      * @param ProductNextActionProvider $productNextActionProvider
+     * @param LiveIndexingSiteProvider $siteProvider
+     * @param SyncSiteAssignmentAction $syncSiteAssignmentAction
      * @param StoreManagerInterface $storeManager
-     * @param ConfigModel $configModel
-     * @param ResourceConnection $resourceConnection
+     * @param EavConfig $eavConfig
      * @param AthosCommerceLogger $logger
      */
     public function __construct(
         BaseProductObserver $baseProductObserver,
         ProductNextActionProvider $productNextActionProvider,
+        LiveIndexingSiteProvider $siteProvider,
+        SyncSiteAssignmentAction $syncSiteAssignmentAction,
         StoreManagerInterface $storeManager,
-        ConfigModel $configModel,
-        ResourceConnection $resourceConnection,
+        EavConfig $eavConfig,
         AthosCommerceLogger $logger
     ) {
         $this->baseProductObserver = $baseProductObserver;
         $this->productNextActionProvider = $productNextActionProvider;
+        $this->siteProvider = $siteProvider;
+        $this->syncSiteAssignmentAction = $syncSiteAssignmentAction;
         $this->storeManager = $storeManager;
-        $this->configModel = $configModel;
-        $this->resourceConnection = $resourceConnection;
+        $this->eavConfig = $eavConfig;
         $this->logger = $logger;
     }
 
     /**
+     * Queue per-site actions after a mass attribute update.
+     *
      * @param ProductAction $subject
      * @param mixed $result
      * @param array $productIds
      * @param array $attrData
      * @param int|string $storeId
      * @return mixed
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function afterUpdateAttributes(
         ProductAction $subject,
@@ -103,19 +118,11 @@ class ProductActionPlugin
         $storeId
     ) {
         try {
-            if (!array_intersect(array_keys((array)$attrData), self::ATTRIBUTES_AFFECTING_ACTION)) {
+            $productIds = $this->normalizeIds((array)$productIds);
+            if (!$productIds || !$attrData) {
                 return $result;
             }
-            $productIds = $this->normalizeIds((array)$productIds);
-            $storeId = (int)$storeId;
-            // A store-view update only changes that store view; a default-scope update changes all.
-            $stores = $storeId === Store::DEFAULT_STORE_ID
-                ? $this->getLiveIndexingStores()
-                : array_filter(
-                    $this->getLiveIndexingStores(),
-                    static fn (StoreInterface $store): bool => (int)$store->getId() === $storeId
-                );
-            foreach ($stores as $store) {
+            foreach ($this->getStoresAffectedByUpdate(array_keys((array)$attrData), (int)$storeId) as $store) {
                 $this->queueForStore($productIds, $store);
             }
         } catch (\Throwable $e) {
@@ -126,12 +133,15 @@ class ProductActionPlugin
     }
 
     /**
+     * Queue per-site actions after products are added to or removed from websites.
+     *
      * @param ProductAction $subject
      * @param mixed $result
      * @param array $productIds
      * @param array $websiteIds
      * @param string $type
      * @return mixed
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
     public function afterUpdateWebsites(
         ProductAction $subject,
@@ -147,15 +157,22 @@ class ProductActionPlugin
                 return $result;
             }
             $stores = array_filter(
-                $this->getLiveIndexingStores(),
+                $this->siteProvider->getLiveIndexingStores(),
                 static fn (StoreInterface $store): bool => in_array((int)$store->getWebsiteId(), $websiteIds, true)
             );
             if ($type === 'add') {
                 foreach ($stores as $store) {
-                    $this->queueForStore($productIds, $store);
+                    $this->queueForStore($productIds, $store, true);
                 }
             } elseif ($type === 'remove') {
-                $this->queueWebsiteRemoval($productIds, $stores);
+                $siteIds = array_map(
+                    fn (StoreInterface $store): string => $this->siteProvider->getSiteId((int)$store->getId()),
+                    $stores
+                );
+                $this->syncSiteAssignmentAction->queueDeleteForUnassignedSites(
+                    $productIds,
+                    array_values(array_unique($siteIds))
+                );
             }
         } catch (\Throwable $e) {
             $this->logger->error('[ProductActionPlugin] updateWebsites: ' . $e->getMessage());
@@ -165,19 +182,78 @@ class ProductActionPlugin
     }
 
     /**
+     * Live indexing store views whose values an update at this scope changes.
+     *
+     * A store-view update of a website-scoped attribute is written to every store view of that
+     * website, and a global attribute to all store views, so the widest scope decides.
+     *
+     * @param string[] $attributeCodes
+     * @param int $storeId
+     * @return StoreInterface[]
+     */
+    private function getStoresAffectedByUpdate(array $attributeCodes, int $storeId): array
+    {
+        $stores = $this->siteProvider->getLiveIndexingStores();
+        if ($storeId === Store::DEFAULT_STORE_ID) {
+            return $stores;
+        }
+        $scope = self::SCOPE_STORE;
+        foreach ($attributeCodes as $code) {
+            $scope = max($scope, $this->getAttributeScope((string)$code));
+        }
+        if ($scope === self::SCOPE_GLOBAL) {
+            return $stores;
+        }
+        $websiteId = (int)$this->storeManager->getStore($storeId)->getWebsiteId();
+
+        return array_filter(
+            $stores,
+            static fn (StoreInterface $store): bool => $scope === self::SCOPE_WEBSITE
+                ? (int)$store->getWebsiteId() === $websiteId
+                : (int)$store->getId() === $storeId
+        );
+    }
+
+    /**
+     * Scope of a product attribute; unknown codes count as global.
+     *
+     * @param string $code
+     * @return int
+     */
+    private function getAttributeScope(string $code): int
+    {
+        $attribute = $this->eavConfig->getAttribute(Product::ENTITY, $code);
+        if (!$attribute || !$attribute->getId() || !method_exists($attribute, 'isScopeStore')) {
+            return self::SCOPE_GLOBAL;
+        }
+        if ($attribute->isScopeStore()) {
+            return self::SCOPE_STORE;
+        }
+
+        return $attribute->isScopeWebsite() ? self::SCOPE_WEBSITE : self::SCOPE_GLOBAL;
+    }
+
+    /**
      * Upsert or Delete each product on the store's site, from its values in that store view.
      *
      * @param int[] $productIds
      * @param StoreInterface $store
+     * @param bool $addMissingRows create rows for products new to this site
      * @return void
      */
-    private function queueForStore(array $productIds, StoreInterface $store): void
+    private function queueForStore(array $productIds, StoreInterface $store, bool $addMissingRows = false): void
     {
-        $siteId = $this->getSiteId($store);
+        $siteId = $this->siteProvider->getSiteId((int)$store->getId());
         $byAction = [];
-        foreach ($this->productNextActionProvider->getNextActionsByProductIds($productIds, (int)$store->getId())
-                 as $productId => $nextAction) {
+        $nextActions = $this->productNextActionProvider->getNextActionsByProductIds(
+            $productIds,
+            (int)$store->getId()
+        );
+        foreach ($nextActions as $productId => $nextAction) {
             $byAction[$nextAction][] = $productId;
+        }
+        if ($addMissingRows && !empty($byAction[Actions::UPSERT])) {
+            $this->syncSiteAssignmentAction->addMissingRows($byAction[Actions::UPSERT], $siteId);
         }
         foreach ($byAction as $nextAction => $ids) {
             $this->baseProductObserver->execute($ids, $nextAction, $nextAction === Actions::UPSERT, [$siteId]);
@@ -189,83 +265,8 @@ class ProductActionPlugin
     }
 
     /**
-     * Delete on the sites of the removed websites, unless another website the product is still
-     * assigned to serves the same site id.
+     * Unique positive integer ids.
      *
-     * @param int[] $productIds
-     * @param StoreInterface[] $removedStores
-     * @return void
-     */
-    private function queueWebsiteRemoval(array $productIds, array $removedStores): void
-    {
-        $removedSiteIds = array_values(array_unique(array_map([$this, 'getSiteId'], $removedStores)));
-        if (!$removedSiteIds) {
-            return;
-        }
-        $siteIdsByWebsite = [];
-        foreach ($this->getLiveIndexingStores() as $store) {
-            $siteIdsByWebsite[(int)$store->getWebsiteId()][] = $this->getSiteId($store);
-        }
-        $remainingWebsites = $this->getProductWebsiteIds($productIds);
-
-        $idsBySite = [];
-        foreach ($productIds as $productId) {
-            $stillServed = [];
-            foreach ($remainingWebsites[$productId] ?? [] as $websiteId) {
-                $stillServed = array_merge($stillServed, $siteIdsByWebsite[$websiteId] ?? []);
-            }
-            foreach (array_diff($removedSiteIds, $stillServed) as $siteId) {
-                $idsBySite[$siteId][] = $productId;
-            }
-        }
-        foreach ($idsBySite as $siteId => $ids) {
-            $this->baseProductObserver->execute($ids, Actions::DELETE, false, [(string)$siteId]);
-        }
-        $this->logger->debug('[ProductActionPlugin] website removal queued Delete', ['sites' => $idsBySite]);
-    }
-
-    /**
-     * @param int[] $productIds
-     * @return array<int, int[]> product id => website ids
-     */
-    private function getProductWebsiteIds(array $productIds): array
-    {
-        $connection = $this->resourceConnection->getConnection();
-        $rows = $connection->fetchAll(
-            $connection->select()
-                ->from($this->resourceConnection->getTableName('catalog_product_website'), ['product_id', 'website_id'])
-                ->where('product_id IN (?)', $productIds)
-        );
-        $result = [];
-        foreach ($rows as $row) {
-            $result[(int)$row['product_id']][] = (int)$row['website_id'];
-        }
-
-        return $result;
-    }
-
-    /**
-     * @return StoreInterface[]
-     */
-    private function getLiveIndexingStores(): array
-    {
-        return array_filter(
-            $this->storeManager->getStores(false),
-            fn (StoreInterface $store): bool => $this->configModel->isLiveIndexingEnabled((int)$store->getId())
-                && $this->getSiteId($store) !== ''
-        );
-    }
-
-    /**
-     * @param StoreInterface $store
-     * @return string
-     */
-    private function getSiteId(StoreInterface $store): string
-    {
-        return trim((string)$this->configModel->getSiteIdByStoreId((int)$store->getId()));
-    }
-
-    /**
      * @param array $ids
      * @return int[]
      */

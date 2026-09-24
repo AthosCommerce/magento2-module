@@ -35,9 +35,37 @@ use Magento\Store\Model\StoreManagerInterface;
 use AthosCommerce\Feed\Observer\BaseProductObserver;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Service\Provider\ProductNextActionProvider;
+use AthosCommerce\Feed\Service\Action\SyncSiteAssignmentAction;
 
 class UpdateObserver implements ObserverInterface
 {
+    private const SCOPE_STORE = 0;
+    private const SCOPE_WEBSITE = 1;
+    private const SCOPE_GLOBAL = 2;
+
+    /**
+     * Data keys that change on every save without changing what is sent to Athos.
+     * Stock is handled by InventoryUpdateObserver.
+     */
+    private const IGNORED_CHANGE_KEYS = [
+        'updated_at', 'quantity_and_stock_status', 'stock_item', 'stock_data', 'id', 'entity_id',
+        'row_id', 'store_id', 'store_ids', '_edit_mode', 'media_attributes', 'can_save_custom_options',
+        'is_custom_option_changed', 'has_options', 'required_options', 'force_reindex_eav_required',
+        'save_rewrites_history', 'url_key_create_redirect', 'affect_product_custom_options',
+    ];
+
+    /**
+     * Non-EAV product data that is the same in every store view.
+     *
+     * Only compared when the product has orig data for the key: ProductRepository fills
+     * several of them (e.g. configurable_product_links) on every save without orig data.
+     */
+    private const GLOBAL_DATA_KEYS = [
+        'category_ids', 'website_ids', 'product_links', 'media_gallery', 'options',
+        'configurable_product_links', 'configurable_product_options', 'associated_product_ids',
+        'bundle_options', 'downloadable_data',
+    ];
+
     /**
      * @var BaseProductObserver
      */
@@ -87,6 +115,11 @@ class UpdateObserver implements ObserverInterface
     private $storeManager;
 
     /**
+     * @var SyncSiteAssignmentAction
+     */
+    private $syncSiteAssignmentAction;
+
+    /**
      * @param BaseProductObserver $baseProductObserver
      * @param AthosCommerceLogger $logger
      * @param ScopeConfigInterface $scopeConfig
@@ -97,6 +130,7 @@ class UpdateObserver implements ObserverInterface
      * @param SearchCriteriaBuilderFactory $searchCriteriaBuilderFactory
      * @param ConfigModel $configModel
      * @param StoreManagerInterface|null $storeManager
+     * @param SyncSiteAssignmentAction|null $syncSiteAssignmentAction
      */
     public function __construct(
         BaseProductObserver $baseProductObserver,
@@ -108,7 +142,8 @@ class UpdateObserver implements ObserverInterface
         IndexingEntityRepositoryInterface $indexingEntityRepository,
         SearchCriteriaBuilderFactory $searchCriteriaBuilderFactory,
         ConfigModel $configModel,
-        ?StoreManagerInterface $storeManager = null
+        ?StoreManagerInterface $storeManager = null,
+        ?SyncSiteAssignmentAction $syncSiteAssignmentAction = null
     )
     {
         $this->baseProductObserver = $baseProductObserver;
@@ -122,6 +157,8 @@ class UpdateObserver implements ObserverInterface
         $this->configModel = $configModel;
         $this->storeManager = $storeManager
             ?? ObjectManager::getInstance()->get(StoreManagerInterface::class);
+        $this->syncSiteAssignmentAction = $syncSiteAssignmentAction
+            ?? ObjectManager::getInstance()->get(SyncSiteAssignmentAction::class);
     }
 
     /**
@@ -141,6 +178,9 @@ class UpdateObserver implements ObserverInterface
                 return;
             }
             $storeIds = $this->getAffectedStoreIds($product, $storeIds);
+            // Brand-new products get their rows from discovery; a product that is already indexed
+            // and was added to another website needs rows for that website's site now.
+            $isIndexed = $this->syncSiteAssignmentAction->hasRows((int)$product->getId());
 
             foreach ($storeIds as $storeId) {
                 try {
@@ -162,6 +202,9 @@ class UpdateObserver implements ObserverInterface
                         (int)$storeId
                     );
                     $siteId = $this->resolveSiteIdByStoreId((int)$storeId);
+                    if ($isIndexed && $siteId !== null && $nextAction === Actions::UPSERT) {
+                        $this->syncSiteAssignmentAction->addMissingRows([(int)$product->getId()], $siteId);
+                    }
 
                     $this->baseProductObserver->execute(
                         [$product->getId()],
@@ -191,6 +234,8 @@ class UpdateObserver implements ObserverInterface
                     );
                 }
             }
+            // Websites removed in this save: their sites no longer serve the product.
+            $this->syncSiteAssignmentAction->queueDeleteForUnassignedSites([(int)$product->getId()]);
         } catch (\Throwable $e) {
             $this->logger->error(
                 '[UpdateObserver] error: ' . $e->getMessage(),
@@ -256,10 +301,12 @@ class UpdateObserver implements ObserverInterface
     }
 
     /**
-     * A save at store-view scope only changes that store view's values, so only its site is
-     * affected, unless a website-scoped attribute changed (e.g. status, or price with website
-     * price scope): Magento applies those to every store view of the website. A save at default
-     * scope affects every store of the product.
+     * Store views whose values this save changed.
+     *
+     * A save at store-view scope only changes that store view when every changed attribute is
+     * store scoped. Magento writes website-scoped attributes (e.g. status) to every store view of
+     * the website, and global attributes and data (e.g. price with global price scope, categories)
+     * to all store views. A save at default scope affects every store of the product.
      *
      * @param \Magento\Catalog\Api\Data\ProductInterface $product
      * @param array $storeIds
@@ -274,7 +321,11 @@ class UpdateObserver implements ObserverInterface
         if ($savedStoreId === Store::DEFAULT_STORE_ID || !in_array($savedStoreId, $storeIds, true)) {
             return $storeIds;
         }
-        if (!$this->hasWebsiteScopedChange($product)) {
+        $scope = $this->getChangeScope($product);
+        if ($scope === self::SCOPE_GLOBAL) {
+            return $storeIds;
+        }
+        if ($scope === self::SCOPE_STORE) {
             return [$savedStoreId];
         }
 
@@ -287,28 +338,44 @@ class UpdateObserver implements ObserverInterface
     }
 
     /**
+     * Widest scope among the attributes this save changed.
+     *
      * Orig data is still the loaded state during catalog_product_save_after.
      *
      * @param \Magento\Catalog\Api\Data\ProductInterface $product
-     * @return bool
+     * @return int
      */
-    private function hasWebsiteScopedChange(\Magento\Catalog\Api\Data\ProductInterface $product): bool
+    private function getChangeScope(\Magento\Catalog\Api\Data\ProductInterface $product): int
     {
         if (!$product instanceof \Magento\Catalog\Model\Product) {
-            return true;
+            return self::SCOPE_GLOBAL;
         }
         $resource = $product->getResource();
+        $scope = self::SCOPE_STORE;
         foreach (array_keys($product->getData()) as $code) {
-            if (!is_string($code) || !$product->dataHasChangedFor($code)) {
+            if (!is_string($code)
+                || in_array($code, self::IGNORED_CHANGE_KEYS, true)
+                || !$product->dataHasChangedFor($code)
+            ) {
+                continue;
+            }
+            if (in_array($code, self::GLOBAL_DATA_KEYS, true)) {
+                if (array_key_exists($code, (array)$product->getOrigData())) {
+                    return self::SCOPE_GLOBAL;
+                }
                 continue;
             }
             $attribute = $resource->getAttribute($code);
-            if ($attribute && method_exists($attribute, 'isScopeWebsite') && $attribute->isScopeWebsite()) {
-                return true;
+            if (!$attribute || !method_exists($attribute, 'isScopeStore') || $attribute->isScopeStore()) {
+                continue;
             }
+            if (!$attribute->isScopeWebsite()) {
+                return self::SCOPE_GLOBAL;
+            }
+            $scope = self::SCOPE_WEBSITE;
         }
 
-        return false;
+        return $scope;
     }
 
     /**

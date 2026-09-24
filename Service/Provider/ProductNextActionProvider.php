@@ -110,15 +110,7 @@ class ProductNextActionProvider
             return null;
         }
 
-        $collection = $this->productCollectionFactory->create();
-        $collection->setStoreId($storeId);
-        $collection->addAttributeToSelect(['status', 'visibility']);
-        $collection->addFieldToFilter('entity_id', $productId);
-        $collection->setPageSize(1);
-        /** @var ProductInterface $product */
-        $product = $collection->getFirstItem();
-
-        return $product->getId() ? $product : null;
+        return $this->getStoreScopedProducts([$productId], $storeId)[$productId] ?? null;
     }
 
     /**
@@ -134,17 +126,34 @@ class ProductNextActionProvider
             return [];
         }
 
-        $collection = $this->productCollectionFactory->create();
-        $collection->setStoreId($storeId ?? 0);
-        $collection->addAttributeToSelect(['status', 'visibility']);
-        $collection->addFieldToFilter('entity_id', ['in' => $productIds]);
-
         $nextActions = [];
-        foreach ($collection as $product) {
-            $nextActions[(int)$product->getId()] = $this->getNextActionByProduct($product, $storeId);
+        foreach ($this->getStoreScopedProducts($productIds, $storeId ?? 0) as $productId => $product) {
+            $nextActions[$productId] = $this->getNextActionByProduct($product, $storeId);
         }
 
         return $nextActions;
+    }
+
+    /**
+     * Products with status and visibility resolved for the store view, keyed by id.
+     *
+     * @param int[] $productIds
+     * @param int $storeId
+     * @return array<int, ProductInterface>
+     */
+    private function getStoreScopedProducts(array $productIds, int $storeId): array
+    {
+        $collection = $this->productCollectionFactory->create();
+        $collection->setStoreId($storeId);
+        $collection->addAttributeToSelect(['status', 'visibility']);
+        $collection->addFieldToFilter('entity_id', ['in' => $productIds]);
+
+        $products = [];
+        foreach ($collection as $product) {
+            $products[(int)$product->getId()] = $product;
+        }
+
+        return $products;
     }
 
     /**

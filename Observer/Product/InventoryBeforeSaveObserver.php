@@ -52,6 +52,8 @@ class InventoryBeforeSaveObserver implements ObserverInterface
     }
 
     /**
+     * Remember the stored stock values of the item about to be saved.
+     *
      * @param Observer $observer
      * @return void
      */
@@ -59,9 +61,18 @@ class InventoryBeforeSaveObserver implements ObserverInterface
     {
         try {
             $stockItem = $observer->getEvent()->getItem();
-            if ($stockItem instanceof Item) {
-                $this->stockItemSnapshot->remember($stockItem);
+            if (!$stockItem instanceof Item) {
+                return;
             }
+            $origData = $stockItem->getOrigData();
+            // Items loaded from the database can compare with their orig data; no read needed.
+            if (is_array($origData)
+                && array_key_exists('qty', $origData)
+                && array_key_exists('is_in_stock', $origData)
+            ) {
+                return;
+            }
+            $this->stockItemSnapshot->remember($stockItem);
         } catch (\Throwable $e) {
             $this->logger->error('[InventoryBeforeSaveObserver] ' . $e->getMessage());
         }

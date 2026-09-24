@@ -25,13 +25,15 @@ use AthosCommerce\Feed\Model\Api\MagentoEntityInterfaceFactory;
 use AthosCommerce\Feed\Model\Config as ConfigModel;
 use AthosCommerce\Feed\Model\CollectionProcessor;
 use AthosCommerce\Feed\Model\Feed\ContextManagerInterface;
-use AthosCommerce\Feed\Model\Source\Actions;
 use AthosCommerce\Feed\Model\Feed\SpecificationBuilderInterface;
 use AthosCommerce\Feed\Service\Action\AddIndexingEntitiesActionInterface;
 use AthosCommerce\Feed\Service\Action\SetIndexingEntitiesToDeleteActionInterface;
 use AthosCommerce\Feed\Service\Action\SetIndexingEntitiesToUpdateActionInterface;
 use AthosCommerce\Feed\Service\Provider\Api\IndexingEntityProviderInterface;
 use AthosCommerce\Feed\Service\Provider\MagentoEntityProvider;
+use AthosCommerce\Feed\Service\Action\SyncSiteAssignmentAction;
+use AthosCommerce\Feed\Service\Provider\LiveIndexingSiteProvider;
+use Magento\Framework\App\ObjectManager;
 use Exception;
 use Magento\Framework\Serialize\SerializerInterface;
 use Magento\Store\Model\ScopeInterface;
@@ -105,6 +107,14 @@ class EntityDiscovery implements EntityDiscoveryInterface
      * @var ContextManagerInterface
      */
     private $contextManager;
+    /**
+     * @var LiveIndexingSiteProvider
+     */
+    private $siteProvider;
+    /**
+     * @var SyncSiteAssignmentAction
+     */
+    private $syncSiteAssignmentAction;
 
     /**
      * @param StoreManagerInterface $storeManager
@@ -121,6 +131,9 @@ class EntityDiscovery implements EntityDiscoveryInterface
      * @param IndexingEntityProviderInterface $indexingEntityProvider
      * @param \Magento\Framework\App\ResourceConnection $resource
      * @param SetIndexingEntitiesToDeleteActionInterface $setIndexingEntitiesToDeleteAction
+     * @param SetIndexingEntitiesToUpdateActionInterface $setIndexingEntitiesToUpdateAction
+     * @param LiveIndexingSiteProvider|null $siteProvider
+     * @param SyncSiteAssignmentAction|null $syncSiteAssignmentAction
      */
     public function __construct(
         StoreManagerInterface                      $storeManager,
@@ -137,7 +150,9 @@ class EntityDiscovery implements EntityDiscoveryInterface
         IndexingEntityProviderInterface            $indexingEntityProvider,
         \Magento\Framework\App\ResourceConnection  $resource,
         SetIndexingEntitiesToDeleteActionInterface $setIndexingEntitiesToDeleteAction,
-        SetIndexingEntitiesToUpdateActionInterface $setIndexingEntitiesToUpdateAction
+        SetIndexingEntitiesToUpdateActionInterface $setIndexingEntitiesToUpdateAction,
+        ?LiveIndexingSiteProvider                  $siteProvider = null,
+        ?SyncSiteAssignmentAction                  $syncSiteAssignmentAction = null
     )
     {
         $this->storeManager = $storeManager;
@@ -156,6 +171,8 @@ class EntityDiscovery implements EntityDiscoveryInterface
         $this->connection = $resource->getConnection();
         $this->setIndexingEntitiesToDeleteAction = $setIndexingEntitiesToDeleteAction;
         $this->setIndexingEntitiesToUpdateAction = $setIndexingEntitiesToUpdateAction;
+        $this->siteProvider = $siteProvider;
+        $this->syncSiteAssignmentAction = $syncSiteAssignmentAction;
     }
 
     /**
@@ -171,7 +188,7 @@ class EntityDiscovery implements EntityDiscoveryInterface
             $storeCode = $store->getCode();
 
             $isValid = $this->validateLiveIndexingConfig($storeId);
-            $siteId = $this->configModel->getSiteIdByStoreId($storeId);
+            $siteId = trim((string)$this->configModel->getSiteIdByStoreId($storeId));
             if ($isValid === false) {
                 $this->logger->info(
                     "[Discovery] Configuration incomplete for store: " . $storeCode,
@@ -301,6 +318,8 @@ class EntityDiscovery implements EntityDiscoveryInterface
     }
 
     /**
+     * Add rows for products found by the feed collection that have no row for this site yet.
+     *
      * @param \AthosCommerce\Feed\Api\Data\FeedSpecificationInterface $feedSpecification
      * @param string $siteId
      * @param string $storeCode
@@ -409,53 +428,6 @@ class EntityDiscovery implements EntityDiscoveryInterface
     }
 
     /**
-     * Websites whose store views send to this site id. A site id may be shared by store views
-     * of several websites; a product is still on the site while it is on any of them.
-     *
-     * @param string $siteId
-     * @return int[]
-     */
-    private function getWebsiteIdsForSite(string $siteId): array
-    {
-        $websiteIds = [];
-        foreach ($this->storeManager->getStores(false) as $store) {
-            if (trim((string)$this->configModel->getSiteIdByStoreId((int)$store->getId())) === $siteId) {
-                $websiteIds[] = (int)$store->getWebsiteId();
-            }
-        }
-
-        return array_values(array_unique($websiteIds));
-    }
-
-    /**
-     * Drops ids whose row on this site is already deleted, already queued for Delete, or was
-     * never sent, so repeated discovery runs do not queue the same Delete again.
-     *
-     * @param int[] $ids
-     * @param string $siteId
-     * @return int[]
-     */
-    private function filterPendingDeletions(array $ids, string $siteId): array
-    {
-        if (!$ids) {
-            return [];
-        }
-        $select = $this->connection->select()
-            ->from($this->resource->getTableName('athoscommerce_indexing_entity'), ['target_id'])
-            ->where('target_entity_type = ?', Constants::PRODUCT_KEY)
-            ->where('site_id = ?', $siteId)
-            ->where('target_id IN (?)', $ids)
-            ->where('next_action <> ?', Actions::DELETE)
-            ->where(sprintf(
-                'NOT (next_action = %1$s AND (last_action = %2$s OR (last_action = %1$s AND is_indexable = 0)))',
-                $this->connection->quote(Actions::NO_ACTION),
-                $this->connection->quote(Actions::DELETE)
-            ));
-
-        return array_values(array_unique(array_map('intval', $this->connection->fetchCol($select))));
-    }
-
-    /**
      * @param string $siteId
      * @param string $storeCode
      * @return void
@@ -465,11 +437,11 @@ class EntityDiscovery implements EntityDiscoveryInterface
         // Products deleted from Magento, or no longer assigned to any website of this site.
         $websiteIds = null;
         foreach ($this->getIndexedAthosIds($siteId) as $athosIndexedIds) {
-            $websiteIds = $websiteIds ?? $this->getWebsiteIdsForSite($siteId);
+            $websiteIds = $websiteIds ?? $this->getSiteProvider()->getWebsiteIdsForSite($siteId);
             $athosIndexedIds = array_map('intval', $athosIndexedIds);
             $existingMagentoIds = $this->filterMagentoEntityIds($athosIndexedIds, $websiteIds);
 
-            $idsToDelete = $this->filterPendingDeletions(
+            $idsToDelete = $this->getSyncSiteAssignmentAction()->filterPendingDeletions(
                 array_values(array_diff($athosIndexedIds, $existingMagentoIds)),
                 $siteId
             );
@@ -586,5 +558,33 @@ class EntityDiscovery implements EntityDiscoveryInterface
         return $this->configModel->getEndpointByStoreId($storeId)
             && $this->configModel->isLiveIndexingEnabled($storeId)
             && $this->configModel->getSiteIdByStoreId($storeId);
+    }
+
+    /**
+     * Site provider, resolved on first use for callers that do not inject it.
+     *
+     * @return LiveIndexingSiteProvider
+     */
+    private function getSiteProvider(): LiveIndexingSiteProvider
+    {
+        if ($this->siteProvider === null) {
+            $this->siteProvider = ObjectManager::getInstance()->get(LiveIndexingSiteProvider::class);
+        }
+
+        return $this->siteProvider;
+    }
+
+    /**
+     * Site assignment action, resolved on first use for callers that do not inject it.
+     *
+     * @return SyncSiteAssignmentAction
+     */
+    private function getSyncSiteAssignmentAction(): SyncSiteAssignmentAction
+    {
+        if ($this->syncSiteAssignmentAction === null) {
+            $this->syncSiteAssignmentAction = ObjectManager::getInstance()->get(SyncSiteAssignmentAction::class);
+        }
+
+        return $this->syncSiteAssignmentAction;
     }
 }

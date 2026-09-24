@@ -162,7 +162,10 @@ class InventoryUpdateObserver implements ObserverInterface
                         (int)$productId,
                         (int)$storeId
                     ) ?? $product;
-                    $nextAction = $this->productNextActionProvider->getNextActionByProduct($storeProduct, (int)$storeId);
+                    $nextAction = $this->productNextActionProvider->getNextActionByProduct(
+                        $storeProduct,
+                        (int)$storeId
+                    );
                     $forceIndexable = $nextAction === Actions::UPSERT
                         && (int)$storeProduct->getVisibility() === Visibility::VISIBILITY_NOT_VISIBLE;
                     $siteId = $this->resolveSiteIdByStoreId((int)$storeId);

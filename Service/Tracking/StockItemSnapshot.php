@@ -48,6 +48,8 @@ class StockItemSnapshot
     }
 
     /**
+     * Read and keep the stored qty / is_in_stock for the item, before it is saved.
+     *
      * @param Item $stockItem
      * @return void
      */
@@ -92,6 +94,8 @@ class StockItemSnapshot
     }
 
     /**
+     * Drop the stored values once the save has been handled.
+     *
      * @param Item $stockItem
      * @return void
      */
@@ -104,6 +108,8 @@ class StockItemSnapshot
     }
 
     /**
+     * Snapshot key: product id and stock id.
+     *
      * @param Item $stockItem
      * @return string|null
      */
