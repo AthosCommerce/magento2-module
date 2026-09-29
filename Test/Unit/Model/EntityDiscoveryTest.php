@@ -16,19 +16,7 @@
 
 declare(strict_types=1);
 
-namespace AthosCommerce\Feed\Model\Api {
-    if (!class_exists(MagentoEntityInterfaceFactory::class)) {
-        class MagentoEntityInterfaceFactory
-        {
-            public function create(array $data = [])
-            {
-                return (object)$data;
-            }
-        }
-    }
-}
-
-namespace AthosCommerce\Feed\Test\Unit\Model {
+namespace AthosCommerce\Feed\Test\Unit\Model;
 
 use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
@@ -42,6 +30,8 @@ use AthosCommerce\Feed\Model\Api\MagentoEntityInterfaceFactory;
 use AthosCommerce\Feed\Service\Action\AddIndexingEntitiesActionInterface;
 use AthosCommerce\Feed\Service\Action\SetIndexingEntitiesToDeleteActionInterface;
 use AthosCommerce\Feed\Service\Action\SetIndexingEntitiesToUpdateActionInterface;
+use AthosCommerce\Feed\Service\Action\SyncSiteAssignmentAction;
+use AthosCommerce\Feed\Service\Provider\LiveIndexingSiteProvider;
 use AthosCommerce\Feed\Service\Provider\Api\IndexingEntityProviderInterface;
 use AthosCommerce\Feed\Service\Provider\MagentoEntityProvider;
 use Magento\Framework\App\ResourceConnection;
@@ -155,7 +145,9 @@ class EntityDiscoveryTest extends TestCase
             $this->indexingEntityProviderMock,
             $this->resourceMock,
             $this->setIndexingEntitiesToDeleteActionMock,
-            $this->setIndexingEntitiesToUpdateActionMock
+            $this->setIndexingEntitiesToUpdateActionMock,
+            $this->createMock(LiveIndexingSiteProvider::class),
+            $this->createMock(SyncSiteAssignmentAction::class)
         );
     }
 
@@ -283,5 +275,4 @@ class EntityDiscoveryTest extends TestCase
         throw $exception;
         yield [];
     }
-}
 }

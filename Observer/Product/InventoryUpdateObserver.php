@@ -34,7 +34,6 @@ use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Service\Provider\ProductNextActionProvider;
 use AthosCommerce\Feed\Service\Tracking\IdProviderInterface;
 use AthosCommerce\Feed\Service\Tracking\StockItemSnapshot;
-use Magento\Framework\App\ObjectManager;
 use Magento\Catalog\Model\Product\Visibility;
 
 class InventoryUpdateObserver implements ObserverInterface
@@ -98,7 +97,7 @@ class InventoryUpdateObserver implements ObserverInterface
         ConfigModel               $configModel,
         IndexingEntityRepositoryInterface $indexingEntityRepository,
         SearchCriteriaBuilderFactory      $searchCriteriaBuilderFactory,
-        ?StockItemSnapshot                $stockItemSnapshot = null
+        StockItemSnapshot                $stockItemSnapshot
     )
     {
         $this->logger = $logger;
@@ -110,8 +109,7 @@ class InventoryUpdateObserver implements ObserverInterface
         $this->configModel = $configModel;
         $this->indexingEntityRepository = $indexingEntityRepository;
         $this->searchCriteriaBuilderFactory = $searchCriteriaBuilderFactory;
-        $this->stockItemSnapshot = $stockItemSnapshot
-            ?? ObjectManager::getInstance()->get(StockItemSnapshot::class);
+        $this->stockItemSnapshot = $stockItemSnapshot;
     }
 
     /**

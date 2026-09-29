@@ -30,11 +30,10 @@ use AthosCommerce\Feed\Model\Feed\SpecificationBuilderInterface;
 use AthosCommerce\Feed\Service\Action\AddIndexingEntitiesActionInterface;
 use AthosCommerce\Feed\Service\Action\SetIndexingEntitiesToDeleteActionInterface;
 use AthosCommerce\Feed\Service\Action\SetIndexingEntitiesToUpdateActionInterface;
-use AthosCommerce\Feed\Service\Provider\Api\IndexingEntityProviderInterface;
-use AthosCommerce\Feed\Service\Provider\MagentoEntityProvider;
 use AthosCommerce\Feed\Service\Action\SyncSiteAssignmentAction;
 use AthosCommerce\Feed\Service\Provider\LiveIndexingSiteProvider;
-use Magento\Framework\App\ObjectManager;
+use AthosCommerce\Feed\Service\Provider\Api\IndexingEntityProviderInterface;
+use AthosCommerce\Feed\Service\Provider\MagentoEntityProvider;
 use Exception;
 use Magento\Framework\Serialize\SerializerInterface;
 use Magento\Store\Model\ScopeInterface;
@@ -79,6 +78,14 @@ class EntityDiscovery implements EntityDiscoveryInterface
      */
     private $contextManager;
     /**
+     * @var LiveIndexingSiteProvider
+     */
+    private $siteProvider;
+    /**
+     * @var SyncSiteAssignmentAction
+     */
+    private $syncSiteAssignmentAction;
+    /**
      * @var SerializerInterface
      */
     private $serializer;
@@ -108,18 +115,6 @@ class EntityDiscovery implements EntityDiscoveryInterface
      * @var SetIndexingEntitiesToUpdateActionInterface
      */
     private $setIndexingEntitiesToUpdateAction;
-    /**
-     * @var ContextManagerInterface
-     */
-    private $contextManager;
-    /**
-     * @var LiveIndexingSiteProvider
-     */
-    private $siteProvider;
-    /**
-     * @var SyncSiteAssignmentAction
-     */
-    private $syncSiteAssignmentAction;
 
     /**
      * @param StoreManagerInterface $storeManager
@@ -137,8 +132,8 @@ class EntityDiscovery implements EntityDiscoveryInterface
      * @param \Magento\Framework\App\ResourceConnection $resource
      * @param SetIndexingEntitiesToDeleteActionInterface $setIndexingEntitiesToDeleteAction
      * @param SetIndexingEntitiesToUpdateActionInterface $setIndexingEntitiesToUpdateAction
-     * @param LiveIndexingSiteProvider|null $siteProvider
-     * @param SyncSiteAssignmentAction|null $syncSiteAssignmentAction
+     * @param LiveIndexingSiteProvider $siteProvider
+     * @param SyncSiteAssignmentAction $syncSiteAssignmentAction
      */
     public function __construct(
         StoreManagerInterface                      $storeManager,
@@ -156,8 +151,8 @@ class EntityDiscovery implements EntityDiscoveryInterface
         \Magento\Framework\App\ResourceConnection  $resource,
         SetIndexingEntitiesToDeleteActionInterface $setIndexingEntitiesToDeleteAction,
         SetIndexingEntitiesToUpdateActionInterface $setIndexingEntitiesToUpdateAction,
-        ?LiveIndexingSiteProvider                  $siteProvider = null,
-        ?SyncSiteAssignmentAction                  $syncSiteAssignmentAction = null
+        LiveIndexingSiteProvider                   $siteProvider,
+        SyncSiteAssignmentAction                   $syncSiteAssignmentAction
     )
     {
         $this->storeManager = $storeManager;
@@ -317,29 +312,6 @@ class EntityDiscovery implements EntityDiscoveryInterface
         FeedSpecificationInterface $feedSpecification
     ): void
     {
-        // The feed collection filters by the current store context (website, visibility, stock):
-        // without it every store would discover the default store's products.
-        $payload['store'] = $storeCode;
-        $feedSpecification = $this->specificationBuilder->build($payload);
-        $feedSpecification->setStoreCode($storeCode);
-        $this->contextManager->setContextFromSpecification($feedSpecification);
-        try {
-            $this->addDiscoveredEntities($feedSpecification, $siteId, $storeCode);
-        } finally {
-            $this->contextManager->resetContext();
-        }
-    }
-
-    /**
-     * Add rows for products found by the feed collection that have no row for this site yet.
-     *
-     * @param \AthosCommerce\Feed\Api\Data\FeedSpecificationInterface $feedSpecification
-     * @param string $siteId
-     * @param string $storeCode
-     * @return void
-     */
-    private function addDiscoveredEntities($feedSpecification, string $siteId, string $storeCode): void
-    {
         foreach ($this->magentoEntityProvider->getMagentoEntityIds($feedSpecification) as $magentoIds) {
             if (!is_array($magentoIds)) {
                 throw new \LogicException(
@@ -403,6 +375,8 @@ class EntityDiscovery implements EntityDiscoveryInterface
     }
 
     /**
+     * Ids of products that exist and, when websites are given, are assigned to one of them.
+     *
      * @param int[] $ids
      * @param int[] $websiteIds when given, only products assigned to one of these websites count
      * @return int[] existing Magento Entity IDs
@@ -430,13 +404,10 @@ class EntityDiscovery implements EntityDiscoveryInterface
                     ->distinct();
             }
 
-            $existingEntityIds = array_merge(
-                $existingEntityIds,
-                $this->connection->fetchCol($select)
-            );
+            $existingEntityIds[] = $this->connection->fetchCol($select);
         }
 
-        return array_map('intval', $existingEntityIds);
+        return array_map('intval', array_merge([], ...$existingEntityIds));
     }
 
     /**
@@ -449,11 +420,11 @@ class EntityDiscovery implements EntityDiscoveryInterface
         // Products deleted from Magento, or no longer assigned to any website of this site.
         $websiteIds = null;
         foreach ($this->getIndexedAthosIds($siteId) as $athosIndexedIds) {
-            $websiteIds = $websiteIds ?? $this->getSiteProvider()->getWebsiteIdsForSite($siteId);
+            $websiteIds = $websiteIds ?? $this->siteProvider->getWebsiteIdsForSite($siteId);
             $athosIndexedIds = array_map('intval', $athosIndexedIds);
             $existingMagentoIds = $this->filterMagentoEntityIds($athosIndexedIds, $websiteIds);
 
-            $idsToDelete = $this->getSyncSiteAssignmentAction()->filterPendingDeletions(
+            $idsToDelete = $this->syncSiteAssignmentAction->filterPendingDeletions(
                 array_values(array_diff($athosIndexedIds, $existingMagentoIds)),
                 $siteId
             );
@@ -538,8 +509,6 @@ class EntityDiscovery implements EntityDiscoveryInterface
             $relations = array_merge($configRelations, $groupedRelations);
 
             foreach ($relations as $relation) {
-                // target_parent_id must hold the parent entity_id; parent_id is the row_id on Commerce.
-                $parentId = (int)$relation['parent_entity_id'];
                 $parentId = $this->resolveParentEntityId($relation);
                 $childId = (int)$relation['product_id'];
 
@@ -578,31 +547,6 @@ class EntityDiscovery implements EntityDiscoveryInterface
     }
 
     /**
-     * Site provider, resolved on first use for callers that do not inject it.
-     *
-     * @return LiveIndexingSiteProvider
-     */
-    private function getSiteProvider(): LiveIndexingSiteProvider
-    {
-        if ($this->siteProvider === null) {
-            $this->siteProvider = ObjectManager::getInstance()->get(LiveIndexingSiteProvider::class);
-        }
-
-        return $this->siteProvider;
-    }
-
-    /**
-     * Site assignment action, resolved on first use for callers that do not inject it.
-     *
-     * @return SyncSiteAssignmentAction
-     */
-    private function getSyncSiteAssignmentAction(): SyncSiteAssignmentAction
-    {
-        if ($this->syncSiteAssignmentAction === null) {
-            $this->syncSiteAssignmentAction = ObjectManager::getInstance()->get(SyncSiteAssignmentAction::class);
-        }
-
-        return $this->syncSiteAssignmentAction;
      * @param array $payload
      * @param string $storeCode
      * @return FeedSpecificationInterface
@@ -625,6 +569,9 @@ class EntityDiscovery implements EntityDiscoveryInterface
      */
     private function resolveParentEntityId(array $relation): int
     {
+        if (isset($relation['parent_entity_id'])) {
+            return (int)$relation['parent_entity_id'];
+        }
         if (isset($relation['entity_id'])) {
             return (int)$relation['entity_id'];
         }

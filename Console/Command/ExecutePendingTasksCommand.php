@@ -19,7 +19,6 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Console\Command;
 
 use Magento\Framework\App\Area;
-use Magento\Framework\App\ObjectManager;
 use Magento\Framework\App\State;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Stdlib\DateTime\DateTimeFactory;
@@ -87,7 +86,7 @@ class ExecutePendingTasksCommand extends Command
         CliOutput                           $cliOutput,
         CollectorInterface                  $metricCollector,
         AthosCommerceLogger                 $logger,
-        ?StoreWorkerLauncher                $storeWorkerLauncher = null,
+        StoreWorkerLauncher                $storeWorkerLauncher,
         ?string                             $name = null
     )
     {
@@ -98,9 +97,7 @@ class ExecutePendingTasksCommand extends Command
         $this->cliOutput = $cliOutput;
         $this->metricCollector = $metricCollector;
         $this->logger = $logger;
-        $this->storeWorkerLauncher = $storeWorkerLauncher ?: ObjectManager::getInstance()->get(
-            StoreWorkerLauncher::class
-        );
+        $this->storeWorkerLauncher = $storeWorkerLauncher;
     }
 
     /**

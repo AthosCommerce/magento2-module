@@ -18,7 +18,6 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Model\Task;
 
-use Magento\Framework\App\ObjectManager;
 use Magento\Framework\ShellFactory;
 use AthosCommerce\Feed\Api\StoreExecutionLockInterface;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
@@ -57,12 +56,12 @@ class StoreWorkerLauncher
         TaskResource $taskResource,
         ShellFactory $shellFactory,
         AthosCommerceLogger $logger,
-        ?StoreExecutionLockInterface $storeExecutionLock = null
+        StoreExecutionLockInterface $storeExecutionLock
     ) {
         $this->taskResource = $taskResource;
         $this->shellFactory = $shellFactory;
         $this->logger = $logger;
-        $this->storeExecutionLock = $storeExecutionLock ?: ObjectManager::getInstance()->get(StoreExecutionLock::class);
+        $this->storeExecutionLock = $storeExecutionLock;
     }
 
     /**

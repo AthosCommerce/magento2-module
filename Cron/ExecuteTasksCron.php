@@ -18,7 +18,6 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Cron;
 
-use Magento\Framework\App\ObjectManager;
 use AthosCommerce\Feed\Api\ExecutePendingTasksInterface;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Model\Metric\CollectorInterface;
@@ -64,19 +63,17 @@ class ExecuteTasksCron
     public function __construct(
         ExecutePendingTasksInterface $executePendingTasks,
         AthosCommerceLogger $logger,
-        ?Config $config = null,
-        ?StoreWorkerLauncher $storeWorkerLauncher = null,
-        ?LogOutput $logOutput = null,
-        ?CollectorInterface $metricCollector = null
+        Config $config,
+        StoreWorkerLauncher $storeWorkerLauncher,
+        LogOutput $logOutput,
+        CollectorInterface $metricCollector
     ) {
         $this->executePendingTasks = $executePendingTasks;
         $this->logger = $logger;
-        $this->config = $config ?: ObjectManager::getInstance()->get(Config::class);
-        $this->storeWorkerLauncher = $storeWorkerLauncher ?: ObjectManager::getInstance()->get(
-            StoreWorkerLauncher::class
-        );
-        $this->logOutput = $logOutput ?: ObjectManager::getInstance()->get(LogOutput::class);
-        $this->metricCollector = $metricCollector ?: ObjectManager::getInstance()->get(CollectorInterface::class);
+        $this->config = $config;
+        $this->storeWorkerLauncher = $storeWorkerLauncher;
+        $this->logOutput = $logOutput;
+        $this->metricCollector = $metricCollector;
     }
 
     /**

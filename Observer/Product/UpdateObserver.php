@@ -29,7 +29,6 @@ use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Api\SearchCriteriaBuilderFactory;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
-use Magento\Framework\App\ObjectManager;
 use Magento\Store\Model\Store;
 use Magento\Store\Model\StoreManagerInterface;
 use AthosCommerce\Feed\Observer\BaseProductObserver;
@@ -129,8 +128,8 @@ class UpdateObserver implements ObserverInterface
      * @param IndexingEntityRepositoryInterface $indexingEntityRepository
      * @param SearchCriteriaBuilderFactory $searchCriteriaBuilderFactory
      * @param ConfigModel $configModel
-     * @param StoreManagerInterface|null $storeManager
-     * @param SyncSiteAssignmentAction|null $syncSiteAssignmentAction
+     * @param StoreManagerInterface $storeManager
+     * @param SyncSiteAssignmentAction $syncSiteAssignmentAction
      */
     public function __construct(
         BaseProductObserver $baseProductObserver,
@@ -142,8 +141,8 @@ class UpdateObserver implements ObserverInterface
         IndexingEntityRepositoryInterface $indexingEntityRepository,
         SearchCriteriaBuilderFactory $searchCriteriaBuilderFactory,
         ConfigModel $configModel,
-        ?StoreManagerInterface $storeManager = null,
-        ?SyncSiteAssignmentAction $syncSiteAssignmentAction = null
+        StoreManagerInterface $storeManager,
+        SyncSiteAssignmentAction $syncSiteAssignmentAction
     )
     {
         $this->baseProductObserver = $baseProductObserver;
@@ -155,10 +154,8 @@ class UpdateObserver implements ObserverInterface
         $this->indexingEntityRepository = $indexingEntityRepository;
         $this->searchCriteriaBuilderFactory = $searchCriteriaBuilderFactory;
         $this->configModel = $configModel;
-        $this->storeManager = $storeManager
-            ?? ObjectManager::getInstance()->get(StoreManagerInterface::class);
-        $this->syncSiteAssignmentAction = $syncSiteAssignmentAction
-            ?? ObjectManager::getInstance()->get(SyncSiteAssignmentAction::class);
+        $this->storeManager = $storeManager;
+        $this->syncSiteAssignmentAction = $syncSiteAssignmentAction;
     }
 
     /**
