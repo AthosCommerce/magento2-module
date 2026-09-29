@@ -210,6 +210,12 @@ class UpdateObserver implements ObserverInterface
                         $siteId !== null ? [$siteId] : []
                     );
                     $this->updateParentEntities($product, (int)$storeId, $siteId);
+                    // Variant-wide values (e.g. ss_minimums / ss_maximums) are part of every
+                    // sibling's payload, so the other variants are re-sent as well.
+                    $this->syncSiteAssignmentAction->queueSiblingUpserts(
+                        [(int)$product->getId()],
+                        $siteId !== null ? [$siteId] : []
+                    );
 
                     $this->logger->debug(
                         '[UpdateObserver] executed',

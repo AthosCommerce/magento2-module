@@ -29,10 +29,16 @@ use AthosCommerce\Feed\Observer\BaseProductObserver;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use Magento\Framework\App\ResourceConnection;
 use AthosCommerce\Feed\Service\Provider\ProductNextActionProvider;
+use AthosCommerce\Feed\Service\Action\SyncSiteAssignmentAction;
 
 class BunchSaveObserver implements ObserverInterface
 {
     private const UNSCOPED_SITE_KEY = '__all__';
+
+    /**
+     * @var SyncSiteAssignmentAction
+     */
+    private $syncSiteAssignmentAction;
 
     /**
      * @var BaseProductObserver
@@ -76,6 +82,7 @@ class BunchSaveObserver implements ObserverInterface
      * @param ProductResource $productResource
      * @param ProductNextActionProvider $productNextActionProvider
      * @param ConfigModel $configModel
+     * @param SyncSiteAssignmentAction $syncSiteAssignmentAction
      */
     public function __construct(
         BaseProductObserver       $baseProductObserver,
@@ -84,7 +91,8 @@ class BunchSaveObserver implements ObserverInterface
         ScopeConfigInterface      $scopeConfig,
         ProductResource           $productResource,
         ProductNextActionProvider $productNextActionProvider,
-        ConfigModel               $configModel
+        ConfigModel               $configModel,
+        SyncSiteAssignmentAction  $syncSiteAssignmentAction
     )
     {
         $this->baseProductObserver = $baseProductObserver;
@@ -94,6 +102,7 @@ class BunchSaveObserver implements ObserverInterface
         $this->productResource = $productResource;
         $this->productNextActionProvider = $productNextActionProvider;
         $this->configModel = $configModel;
+        $this->syncSiteAssignmentAction = $syncSiteAssignmentAction;
     }
 
     /**
@@ -229,6 +238,11 @@ class BunchSaveObserver implements ObserverInterface
                         ['productIds' => $productIdsToDelete, 'site_id' => $siteKey]
                     );
                 }
+                // Siblings of imported variants carry variant-wide values; re-send them too.
+                $this->syncSiteAssignmentAction->queueSiblingUpserts(
+                    array_keys($resolvedActions),
+                    $siteIds
+                );
             }
         } catch (\Throwable $e) {
             $this->logger->critical(

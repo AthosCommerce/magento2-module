@@ -56,7 +56,9 @@ use PHPUnit\Framework\TestCase;
  * Key characteristics of InventoryUpdateObserver vs UpdateObserver:
  *  - Event carries a StockItem; the product is loaded separately by the observer.
  *  - forceIndexable is true only for an NVI child with a visible parent, and applies to the
- *    child's own rows only. The parent's own row is re-queued for UPSERT; siblings are untouched.
+ *    child's own rows only. The parent's own row is re-queued for UPSERT; sibling variants that
+ *    are live in Athos are re-queued for UPSERT (their payloads carry variant-wide values such as
+ *    ss_minimums / ss_maximums), without changing their is_indexable flag.
  *  - Observer exits early when dataHasChangedFor('qty') and dataHasChangedFor('is_in_stock')
  *    are both false.
  *
@@ -407,12 +409,13 @@ class InventoryUpdateObserverTest extends TestCase
     /**
      * A stock change on a disabled configurable child must only DELETE the child's own
      * row. The parent and its sibling variant rows must not be deleted; the parent is
-     * re-queued for UPSERT so its availability is refreshed.
+     * re-queued for UPSERT so its availability is refreshed, and the live sibling is
+     * re-queued for UPSERT so its variant-wide values are refreshed.
      *
      * @magentoDataFixture Magento/ConfigurableProduct/_files/configurable_attribute.php
      * @magentoConfigFixture current_store athoscommerce/indexing/enable_live_indexing 1
      */
-    public function testExecute_WhenDisabledConfigurableChildStockChanges_DoesNotDeleteParentOrSiblings(): void
+    public function testExecute_WhenDisabledConfigurableChildStockChanges_UpsertsParentAndSiblings(): void
     {
         [$parentProduct, $childProduct] = $this->createAndSaveConfigurableProduct(
             Status::STATUS_ENABLED,
@@ -450,7 +453,7 @@ class InventoryUpdateObserverTest extends TestCase
         $this->assertSame(Actions::DELETE, $childEntity->getNextAction(), 'Child next_action mismatch');
         $this->assertSame(Actions::UPSERT, $parentEntity->getNextAction(), 'Parent next_action mismatch');
         $this->assertTrue($parentEntity->getIsIndexable(), 'Parent is_indexable mismatch');
-        $this->assertSame(Actions::NO_ACTION, $siblingEntity->getNextAction(), 'Sibling next_action mismatch');
+        $this->assertSame(Actions::UPSERT, $siblingEntity->getNextAction(), 'Sibling next_action mismatch');
         $this->assertTrue($siblingEntity->getIsIndexable(), 'Sibling is_indexable mismatch');
     }
 

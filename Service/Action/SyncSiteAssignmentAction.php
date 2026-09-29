@@ -130,10 +130,94 @@ class SyncSiteAssignmentAction
         }
         foreach ($idsBySite as $siteId => $ids) {
             $this->setIndexingEntitiesToDeleteAction->execute(array_values($ids), [(string)$siteId]);
+            // The variant left this site: its siblings' variant-wide values change there.
+            $this->queueSiblingUpserts(array_values($ids), [(string)$siteId]);
         }
         if ($idsBySite) {
             $this->logger->debug('[SyncSiteAssignment] Delete for unassigned sites', ['sites' => $idsBySite]);
         }
+    }
+
+    /**
+     * Re-queue Upsert for the other variants of the changed products' parents.
+     *
+     * Variant payloads carry values calculated across all variants of the parent (e.g.
+     * ss_minimums / ss_maximums), so a change to one variant makes its siblings' payloads stale.
+     * Only siblings that are live in Athos and idle are re-queued (indexable, last action Upsert,
+     * no pending action), so a pending Delete or a never-sent row is left alone. Parents come
+     * from the changed products' rows, so a deleted or unlinked variant still finds them, and
+     * from the current relations, so a newly linked variant does too.
+     *
+     * @param int[] $productIds changed products (variants; other products are ignored)
+     * @param string[] $siteIds limit to these sites; all sites when empty
+     * @return int number of sibling rows queued
+     */
+    public function queueSiblingUpserts(array $productIds, array $siteIds = []): int
+    {
+        $productIds = array_values(array_unique(array_filter(array_map('intval', $productIds))));
+        if (!$productIds) {
+            return 0;
+        }
+        $parentIds = $this->getParentIds($productIds, $siteIds);
+        if (!$parentIds) {
+            return 0;
+        }
+        $connection = $this->resourceConnection->getConnection();
+        $where = [
+            'target_entity_type = ?' => Constants::PRODUCT_KEY,
+            'target_parent_id IN (?)' => $parentIds,
+            'target_id NOT IN (?)' => $productIds,
+            'is_indexable = ?' => 1,
+            'last_action = ?' => Actions::UPSERT,
+            'next_action = ?' => Actions::NO_ACTION,
+        ];
+        if ($siteIds) {
+            $where['site_id IN (?)'] = $siteIds;
+        }
+        $count = (int)$connection->update(
+            $this->resourceConnection->getTableName('athoscommerce_indexing_entity'),
+            ['next_action' => Actions::UPSERT],
+            $where
+        );
+        if ($count) {
+            $this->logger->debug(
+                '[SyncSiteAssignment] Sibling variants re-queued',
+                ['product_ids' => $productIds, 'parent_ids' => $parentIds, 'site_ids' => $siteIds, 'rows' => $count]
+            );
+        }
+
+        return $count;
+    }
+
+    /**
+     * Parent entity ids of the products, from their indexing rows and their current relations.
+     *
+     * @param int[] $productIds
+     * @param string[] $siteIds
+     * @return int[]
+     */
+    private function getParentIds(array $productIds, array $siteIds): array
+    {
+        $connection = $this->resourceConnection->getConnection();
+        $select = $connection->select()
+            ->distinct()
+            ->from($this->resourceConnection->getTableName('athoscommerce_indexing_entity'), ['target_parent_id'])
+            ->where('target_entity_type = ?', Constants::PRODUCT_KEY)
+            ->where('target_id IN (?)', $productIds)
+            ->where('target_parent_id > 0');
+        if ($siteIds) {
+            $select->where('site_id IN (?)', $siteIds);
+        }
+        $parentIds = array_map('intval', $connection->fetchCol($select));
+        $relations = array_merge(
+            $this->relationsProvider->getConfigurableRelationIds($productIds),
+            $this->relationsProvider->getGroupRelationIds($productIds)
+        );
+        foreach ($relations as $relation) {
+            $parentIds[] = (int)$relation['parent_entity_id'];
+        }
+
+        return array_values(array_unique(array_filter($parentIds)));
     }
 
     /**
