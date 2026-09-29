@@ -139,6 +139,8 @@ class SelectedOptionsProviderTest extends TestCase
                     $options[$attrCode]['value'],
                     "Mismatch for {$attrCode} in SKU: {$sku}"
                 );
+                $this->assertArrayHasKey('label', $options[$attrCode], "Missing label for {$attrCode}");
+                $this->assertNotSame('', (string)$options[$attrCode]['label'], "Empty label for {$attrCode}");
             }
         }
     }
@@ -248,12 +250,10 @@ class SelectedOptionsProviderTest extends TestCase
             ], $specification);
 
             $this->assertNull($result[0]['__selected_options']);
-            $this->assertSame(
-                json_encode([
-                    'test_configurable_first' => ['value' => 'First Option 1'],
-                ]),
-                $result[1]['__selected_options']
-            );
+            $selected = json_decode((string)$result[1]['__selected_options'], true);
+            $this->assertSame(['test_configurable_first'], array_keys($selected));
+            $this->assertSame('First Option 1', $selected['test_configurable_first']['value']);
+            $this->assertNotSame('', (string)$selected['test_configurable_first']['label']);
         } finally {
             $this->parentRelationsContext->reset();
             $this->contextManager->resetContext();
