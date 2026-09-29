@@ -19,7 +19,6 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Model\Feed\Storage;
 
 use Exception;
-use Magento\Framework\App\ObjectManager;
 use Magento\Framework\Exception\FileSystemException;
 use Magento\Framework\Exception\RuntimeException;
 use AthosCommerce\Feed\Api\AppConfigInterface;

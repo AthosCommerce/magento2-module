@@ -21,7 +21,6 @@ namespace AthosCommerce\Feed\Model\Feed\Storage;
 
 use AthosCommerce\Feed\Model\Feed\CatalogStorageInterface;
 use Exception;
-use Magento\Framework\App\ObjectManager;
 use Magento\Framework\Exception\FileSystemException;
 use Magento\Framework\Exception\RuntimeException;
 use AthosCommerce\Feed\Api\AppConfigInterface;

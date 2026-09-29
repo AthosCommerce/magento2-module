@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Observer\Product;
 
 use AthosCommerce\Feed\Helper\Constants;
+use AthosCommerce\Feed\Model\Config as ConfigModel;
 use AthosCommerce\Feed\Model\Source\Actions;
 use AthosCommerce\Feed\Observer\BaseProductObserver;
 use Magento\Framework\App\Config\ScopeConfigInterface;
@@ -48,21 +49,29 @@ class BunchDeleteObserver implements ObserverInterface
     private $storeManager;
 
     /**
+     * @var ConfigModel
+     */
+    private $configModel;
+
+    /**
      * @param BaseProductObserver $baseProductObserver
      * @param AthosCommerceLogger $logger
      * @param ScopeConfigInterface $scopeConfig
      * @param StoreManagerInterface $storeManager
+     * @param ConfigModel $configModel
      */
     public function __construct(
         BaseProductObserver   $baseProductObserver,
         AthosCommerceLogger   $logger,
         ScopeConfigInterface  $scopeConfig,
-        StoreManagerInterface $storeManager
+        StoreManagerInterface $storeManager,
+        ConfigModel           $configModel
     ) {
         $this->baseProductObserver = $baseProductObserver;
         $this->logger = $logger;
         $this->scopeConfig = $scopeConfig;
         $this->storeManager = $storeManager;
+        $this->configModel = $configModel;
     }
 
     /**
@@ -87,12 +96,15 @@ class BunchDeleteObserver implements ObserverInterface
             }
 
             $productIds = array_unique($productIds);
+            $siteIds = $this->getEnabledSiteIds();
             // Process deletions in chunks to avoid memory issues,
             // Magento deletes products globally so marking all product ids for global delete.
             foreach (array_chunk($productIds, 1000) as $chunk) {
                 $this->baseProductObserver->execute(
                     $chunk,
-                    Actions::DELETE
+                    Actions::DELETE,
+                    false,
+                    $siteIds
                 );
             }
 
@@ -129,5 +141,32 @@ class BunchDeleteObserver implements ObserverInterface
             }
         }
         return false;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function getEnabledSiteIds(): array
+    {
+        $siteIds = [];
+
+        foreach ($this->storeManager->getStores(false) as $store) {
+            if (!(bool)$this->scopeConfig->getValue(
+                Constants::XML_PATH_LIVE_INDEXING_ENABLED,
+                ScopeInterface::SCOPE_STORE,
+                $store->getId()
+            )) {
+                continue;
+            }
+
+            $siteId = trim($this->configModel->getSiteIdByStoreId((int)$store->getId()));
+            if ($siteId === '') {
+                continue;
+            }
+
+            $siteIds[] = $siteId;
+        }
+
+        return array_values(array_unique($siteIds));
     }
 }

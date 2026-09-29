@@ -3,10 +3,12 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Logger;
 
+use AthosCommerce\Feed\Model\Config as ConfigModel;
+use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Filesystem\DriverInterface;
 use Magento\Framework\Logger\Handler\Base;
+use Magento\Store\Model\StoreManagerInterface;
 use Monolog\Logger;
-use AthosCommerce\Feed\Model\Config as ConfigModel;
 
 class VerboseHandler extends Base
 {
@@ -22,18 +24,32 @@ class VerboseHandler extends Base
     private $configModel;
 
     /**
+     * @var StoreManagerInterface
+     */
+    private $storeManager;
+
+    /**
+     * @var array<string, bool>
+     */
+    private $debugStateByStoreId = [];
+
+    /**
      * @param ConfigModel $configModel
+     * @param StoreManagerInterface $storeManager
      * @param DriverInterface $filesystem
      * @param string|null $filePath
      * @param string|null $fileName
      */
     public function __construct(
-        ConfigModel     $configModel,
-        DriverInterface $filesystem,
-        ?string         $filePath = null,
-        ?string         $fileName = null
-    ) {
+        ConfigModel           $configModel,
+        StoreManagerInterface $storeManager,
+        DriverInterface       $filesystem,
+        ?string               $filePath = null,
+        ?string               $fileName = null
+    )
+    {
         $this->configModel = $configModel;
+        $this->storeManager = $storeManager;
         $this->loggerType = Logger::DEBUG;
 
         parent::__construct($filesystem, $filePath, $fileName);
@@ -68,7 +84,7 @@ class VerboseHandler extends Base
      */
     public function isHandling($record): bool
     {
-        if (!$this->isDebug()) {
+        if (!$this->isDebug($this->getStoreId($record))) {
             return false;
         }
 
@@ -78,10 +94,54 @@ class VerboseHandler extends Base
     /**
      * Check whether debug logging is enabled.
      *
+     * @param int|null $storeId
      * @return bool
      */
-    private function isDebug(): bool
+    private function isDebug(?int $storeId): bool
     {
-        return (bool)$this->configModel->isDebugLogEnabled();
+        $cacheKey = $storeId !== null ? (string)$storeId : 'default';
+        if (!array_key_exists($cacheKey, $this->debugStateByStoreId)) {
+            $this->debugStateByStoreId[$cacheKey] = (bool)$this->configModel->isDebugLogEnabled($storeId);
+        }
+
+        return $this->debugStateByStoreId[$cacheKey];
+    }
+
+    /**
+     * @param array|\Monolog\LogRecord $record
+     * @return int|null
+     */
+    private function getStoreId($record): ?int
+    {
+        if (is_array($record)) {
+            $storeId = $this->normalizeStoreId($record['context']['store_id'] ?? null);
+        } else {
+            $storeId = $this->normalizeStoreId($record->context['store_id'] ?? null);
+        }
+
+        if ($storeId !== null) {
+            return $storeId;
+        }
+
+        try {
+            return $this->normalizeStoreId((int)$this->storeManager->getStore()->getId());
+        } catch (NoSuchEntityException) {
+            return null;
+        }
+    }
+
+    /**
+     * @param mixed $storeId
+     * @return int|null
+     */
+    private function normalizeStoreId($storeId): ?int
+    {
+        if ($storeId === null || $storeId === '' || !is_numeric($storeId)) {
+            return null;
+        }
+
+        $storeId = (int)$storeId;
+
+        return $storeId > 0 ? $storeId : null;
     }
 }

@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Service\Tracking;
 
+use AthosCommerce\Feed\Service\GroupedParentIdResolver;
 use AthosCommerce\Feed\Service\Tracking\IdProviderInterface;
 use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\ConfigurableProduct\Api\LinkManagementInterface;
@@ -42,19 +43,27 @@ class IdProvider implements IdProviderInterface
     private $groupedType;
 
     /**
+     * @var GroupedParentIdResolver
+     */
+    private $groupedParentIdResolver;
+
+    /**
      * @param LinkManagementInterface $linkManagement
      * @param Configurable $configurableType
      * @param Grouped $groupedType
+     * @param GroupedParentIdResolver $groupedParentIdResolver
      */
     public function __construct(
         LinkManagementInterface $linkManagement,
         Configurable            $configurableType,
-        Grouped                 $groupedType
+        Grouped                 $groupedType,
+        GroupedParentIdResolver $groupedParentIdResolver
     )
     {
         $this->linkManagement = $linkManagement;
         $this->configurableType = $configurableType;
         $this->groupedType = $groupedType;
+        $this->groupedParentIdResolver = $groupedParentIdResolver;
     }
 
     /**
@@ -188,7 +197,7 @@ class IdProvider implements IdProviderInterface
             return (string)reset($parentIds);
         }
 
-        $groupedParentIds = $this->groupedType->getParentIdsByChild((int)$product->getId());
+        $groupedParentIds = $this->groupedParentIdResolver->getParentIdsByChildId((int)$product->getId());
         if (!empty($groupedParentIds)) {
             return (string)reset($groupedParentIds);
         }

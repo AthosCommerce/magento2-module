@@ -293,13 +293,14 @@ class UpdateObserverTest extends TestCase
     private function createIndexingEntityForProduct(
         int    $productId,
         string $lastAction,
-        bool   $isIndexable
+        bool   $isIndexable,
+        ?string $siteId = null
     ): IndexingEntity {
         /** @var IndexingEntity $entity */
         $entity = $this->objectManager->create(IndexingEntity::class);
         $entity->setTargetEntityType(Constants::PRODUCT_KEY);
         $entity->setTargetId($productId);
-        $entity->setSiteId(self::SITE_ID_PREFIX . random_int(0, 999999999));
+        $entity->setSiteId($siteId ?? self::SITE_ID_PREFIX . random_int(0, 999999999));
         $entity->setNextAction(Actions::NO_ACTION);
         $entity->setLastAction($lastAction);
         $entity->setIsIndexable($isIndexable);

@@ -18,7 +18,6 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Model;
 
-use Magento\Framework\App\ObjectManager;
 use Magento\Framework\Api\SearchCriteriaBuilder;
 use Magento\Framework\Exception\LocalizedException;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
@@ -66,24 +65,22 @@ class ExecutePendingTasks implements ExecutePendingTasksInterface
      * @param ExecuteTaskInterface $executeTask
      * @param AthosCommerceLogger $logger
      * @param TaskResource $taskResource
-     * @param StoreExecutionLockInterface|null $storeExecutionLock
+     * @param StoreExecutionLockInterface $storeExecutionLock
      */
     public function __construct(
         TaskRepositoryInterface $taskRepository,
         SearchCriteriaBuilder $searchCriteriaBuilder,
         ExecuteTaskInterface $executeTask,
         AthosCommerceLogger $logger,
-        ?TaskResource $taskResource = null,
-        ?StoreExecutionLockInterface $storeExecutionLock = null
+        TaskResource $taskResource,
+        StoreExecutionLockInterface $storeExecutionLock
     ) {
         $this->taskRepository = $taskRepository;
         $this->searchCriteriaBuilder = $searchCriteriaBuilder;
         $this->executeTask = $executeTask;
         $this->logger = $logger;
-        $this->taskResource = $taskResource ?: ObjectManager::getInstance()->get(TaskResource::class);
-        $this->storeExecutionLock = $storeExecutionLock ?: ObjectManager::getInstance()->get(
-            StoreExecutionLock::class
-        );
+        $this->taskResource = $taskResource;
+        $this->storeExecutionLock = $storeExecutionLock;
     }
 
     /**

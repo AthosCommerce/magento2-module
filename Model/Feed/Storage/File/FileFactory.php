@@ -19,7 +19,6 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Model\Feed\Storage\File;
 
 use Exception;
-use Magento\Framework\App\ObjectManager;
 use AthosCommerce\Feed\Model\Feed\Storage\FileInterface;
 
 class FileFactory

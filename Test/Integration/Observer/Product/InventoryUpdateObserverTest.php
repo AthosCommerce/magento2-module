@@ -24,14 +24,22 @@ use AthosCommerce\Feed\Model\IndexingEntity;
 use AthosCommerce\Feed\Model\ResourceModel\IndexingEntity as IndexingEntityResourceModel;
 use AthosCommerce\Feed\Model\Source\Actions;
 use AthosCommerce\Feed\Test\Integration\Traits\IndexingEntitiesTrait;
+use Magento\Catalog\Api\Data\ProductLinkInterface;
+use Magento\Catalog\Api\Data\ProductLinkInterfaceFactory;
 use Magento\Catalog\Api\ProductRepositoryInterface;
 use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\Product\Attribute\Source\Status;
+use Magento\Catalog\Model\Product\Type;
 use Magento\Catalog\Model\Product\Visibility;
+use Magento\CatalogInventory\Api\StockRegistryInterface;
 use Magento\CatalogInventory\Model\Stock\Item as StockItem;
+use Magento\ConfigurableProduct\Helper\Product\Options\Factory as ConfigurableOptionsFactory;
+use Magento\ConfigurableProduct\Model\Product\Type\Configurable;
+use Magento\Eav\Model\Config as EavConfig;
 use Magento\Framework\Api\SearchCriteriaBuilderFactory;
 use Magento\Framework\Event\ManagerInterface as EventManagerInterface;
 use Magento\Framework\ObjectManagerInterface;
+use Magento\GroupedProduct\Model\Product\Type\Grouped;
 use Magento\Store\Model\StoreManagerInterface;
 use Magento\TestFramework\Helper\Bootstrap;
 use PHPUnit\Framework\TestCase;
@@ -47,7 +55,8 @@ use PHPUnit\Framework\TestCase;
  *
  * Key characteristics of InventoryUpdateObserver vs UpdateObserver:
  *  - Event carries a StockItem; the product is loaded separately by the observer.
- *  - forceIndexable is NOT passed → defaults to false (same behaviour as DeleteObserver).
+ *  - forceIndexable is true only for an NVI child with a visible parent, and applies to the
+ *    child's own rows only. The parent's own row is re-queued for UPSERT; siblings are untouched.
  *  - Observer exits early when dataHasChangedFor('qty') and dataHasChangedFor('is_in_stock')
  *    are both false.
  *
@@ -62,6 +71,9 @@ class InventoryUpdateObserverTest extends TestCase
     use IndexingEntitiesTrait;
 
     private const SITE_ID_PREFIX = 'test-inv-observer-';
+
+    /** Target id for a sibling variant row under the same parent; no product is needed for it. */
+    private const SIBLING_ID = 987654321;
 
     private ?ObjectManagerInterface $objectManager = null;
 
@@ -258,6 +270,236 @@ class InventoryUpdateObserverTest extends TestCase
         );
     }
 
+    /**
+     * An NVI configurable child must resolve to UPSERT on stock-only updates when
+     * its parent is enabled and visible, and the child entity must not be skipped
+     * even when initially non-indexable. The parent entity must also be queued so
+     * parent salability changes are reflected in the feed.
+     *
+     * @dataProvider configurableParentVisibilityDataProvider
+     * @magentoDataFixture Magento/ConfigurableProduct/_files/configurable_attribute.php
+     * @magentoConfigFixture current_store athoscommerce/indexing/enable_live_indexing 1
+     */
+    public function testExecute_WhenConfigurableChildStockChanges_UsesUpsertAndForcesIndexable(
+        int $parentVisibility
+    ): void {
+        [$parentProduct, $childProduct] = $this->createAndSaveConfigurableProduct(
+            Status::STATUS_ENABLED,
+            $parentVisibility
+        );
+        $childId = (int)$childProduct->getId();
+        $parentId = (int)$parentProduct->getId();
+
+        $this->createIndexingEntityForProduct($parentId, Actions::UPSERT, true);
+        $entity = $this->createIndexingEntityForProduct($childId, Actions::NO_ACTION, false);
+        $entity->setTargetParentId($parentId);
+        /** @var IndexingEntityResourceModel $resourceModel */
+        $resourceModel = $this->objectManager->get(IndexingEntityResourceModel::class);
+        $resourceModel->save($entity);
+
+        $stockItem = $this->buildStockItem(
+            $childId,
+            currentQty: 20,
+            origQty: 10,
+            currentInStock: 1,
+            origInStock: 1
+        );
+
+        $this->dispatchStockItemSaveAfter($stockItem);
+
+        $updatedEntity = $this->getIndexingEntityByTargetId($childId);
+        $parentEntity = $this->getIndexingEntityByTargetId($parentId);
+
+        $this->assertNotNull($updatedEntity);
+        $this->assertSame(Actions::UPSERT, $updatedEntity->getNextAction());
+        $this->assertTrue($updatedEntity->getIsIndexable());
+        $this->assertNotNull($parentEntity);
+        $this->assertSame(Actions::UPSERT, $parentEntity->getNextAction());
+        $this->assertTrue($parentEntity->getIsIndexable());
+    }
+
+    /**
+     * A shared NVI child linked to multiple visible grouped parents must update
+     * every parent-context child row to UPSERT on stock-only changes.
+     *
+     * @magentoConfigFixture current_store athoscommerce/indexing/enable_live_indexing 1
+     */
+    public function testExecute_WhenSharedGroupedChildStockChanges_UpdatesAllVisibleParentContexts(): void
+    {
+        [$parentProducts, $childProduct] = $this->createAndSaveSharedGroupedProduct();
+        $childId = (int)$childProduct->getId();
+
+        foreach ($parentProducts as $parentProduct) {
+            $entity = $this->createIndexingEntityForProduct($childId, Actions::NO_ACTION, false);
+            $entity->setTargetParentId((int)$parentProduct->getId());
+
+            /** @var IndexingEntityResourceModel $resourceModel */
+            $resourceModel = $this->objectManager->get(IndexingEntityResourceModel::class);
+            $resourceModel->save($entity);
+        }
+
+        $stockItem = $this->buildStockItem(
+            $childId,
+            currentQty: 20,
+            origQty: 10,
+            currentInStock: 1,
+            origInStock: 1
+        );
+
+        $this->dispatchStockItemSaveAfter($stockItem);
+
+        foreach ($parentProducts as $parentProduct) {
+            $updatedEntity = $this->getIndexingEntityByTargetIdAndParentId($childId, (int)$parentProduct->getId());
+
+            $this->assertNotNull($updatedEntity);
+            $this->assertSame(
+                Actions::UPSERT,
+                $updatedEntity->getNextAction(),
+                'Shared child next_action mismatch for parent ' . $parentProduct->getSku()
+            );
+            $this->assertTrue(
+                $updatedEntity->getIsIndexable(),
+                'Shared child is_indexable mismatch for parent ' . $parentProduct->getSku()
+            );
+        }
+    }
+
+    /**
+     * When a variant goes out of stock through a real stock item save, the parent's own
+     * row must be queued for UPSERT so parent salability reflects the child stock.
+     *
+     * @dataProvider configurableParentVisibilityDataProvider
+     * @magentoDataFixture Magento/ConfigurableProduct/_files/configurable_attribute.php
+     * @magentoConfigFixture current_store athoscommerce/indexing/enable_live_indexing 1
+     */
+    public function testExecute_WhenConfigurableChildGoesOutOfStock_QueuesParent(int $parentVisibility): void
+    {
+        [$parentProduct, $childProduct] = $this->createAndSaveConfigurableProduct(
+            Status::STATUS_ENABLED,
+            $parentVisibility
+        );
+        $parentId = (int)$parentProduct->getId();
+        $childId = (int)$childProduct->getId();
+
+        $this->createIndexingEntityForProduct($parentId, Actions::UPSERT, true);
+        $this->createIndexingEntityForProduct($childId, Actions::UPSERT, true, $parentId);
+
+        /** @var StockRegistryInterface $stockRegistry */
+        $stockRegistry = $this->objectManager->get(StockRegistryInterface::class);
+        $stockItem = $stockRegistry->getStockItem($childId);
+        $stockItem->setUseConfigManageStock(false);
+        $stockItem->setManageStock(true);
+        $stockItem->setQty(0);
+        $stockItem->setIsInStock(false);
+        $stockRegistry->updateStockItemBySku($childProduct->getSku(), $stockItem);
+
+        $parentEntity = $this->getIndexingEntityByTargetIdAndParentId($parentId, null);
+        $childEntity = $this->getIndexingEntityByTargetIdAndParentId($childId, $parentId);
+
+        $this->assertNotNull($parentEntity);
+        $this->assertNotNull($childEntity);
+        $this->assertSame(Actions::UPSERT, $parentEntity->getNextAction(), 'Parent next_action mismatch');
+        $this->assertTrue($parentEntity->getIsIndexable(), 'Parent is_indexable mismatch');
+        $this->assertSame(Actions::UPSERT, $childEntity->getNextAction(), 'Child next_action mismatch');
+        $this->assertTrue($childEntity->getIsIndexable(), 'Child is_indexable mismatch');
+    }
+
+    /**
+     * A stock change on a disabled configurable child must only DELETE the child's own
+     * row. The parent and its sibling variant rows must not be deleted; the parent is
+     * re-queued for UPSERT so its availability is refreshed.
+     *
+     * @magentoDataFixture Magento/ConfigurableProduct/_files/configurable_attribute.php
+     * @magentoConfigFixture current_store athoscommerce/indexing/enable_live_indexing 1
+     */
+    public function testExecute_WhenDisabledConfigurableChildStockChanges_DoesNotDeleteParentOrSiblings(): void
+    {
+        [$parentProduct, $childProduct] = $this->createAndSaveConfigurableProduct(
+            Status::STATUS_ENABLED,
+            Visibility::VISIBILITY_BOTH
+        );
+        $childProduct->setStatus(Status::STATUS_DISABLED);
+        /** @var ProductRepositoryInterface $productRepository */
+        $productRepository = $this->objectManager->get(ProductRepositoryInterface::class);
+        $productRepository->save($childProduct);
+
+        $parentId = (int)$parentProduct->getId();
+        $childId = (int)$childProduct->getId();
+
+        $this->createIndexingEntityForProduct($parentId, Actions::UPSERT, true);
+        $this->createIndexingEntityForProduct($childId, Actions::UPSERT, true, $parentId);
+        $this->createIndexingEntityForProduct(self::SIBLING_ID, Actions::UPSERT, true, $parentId);
+
+        $stockItem = $this->buildStockItem(
+            $childId,
+            currentQty: 0,
+            origQty: 10,
+            currentInStock: 0,
+            origInStock: 1
+        );
+
+        $this->dispatchStockItemSaveAfter($stockItem);
+
+        $parentEntity = $this->getIndexingEntityByTargetIdAndParentId($parentId, null);
+        $childEntity = $this->getIndexingEntityByTargetIdAndParentId($childId, $parentId);
+        $siblingEntity = $this->getIndexingEntityByTargetIdAndParentId(self::SIBLING_ID, $parentId);
+
+        $this->assertNotNull($parentEntity);
+        $this->assertNotNull($childEntity);
+        $this->assertNotNull($siblingEntity);
+        $this->assertSame(Actions::DELETE, $childEntity->getNextAction(), 'Child next_action mismatch');
+        $this->assertSame(Actions::UPSERT, $parentEntity->getNextAction(), 'Parent next_action mismatch');
+        $this->assertTrue($parentEntity->getIsIndexable(), 'Parent is_indexable mismatch');
+        $this->assertSame(Actions::NO_ACTION, $siblingEntity->getNextAction(), 'Sibling next_action mismatch');
+        $this->assertTrue($siblingEntity->getIsIndexable(), 'Sibling is_indexable mismatch');
+    }
+
+    /**
+     * A stock change on an enabled NVI configurable child forces only the child's own
+     * row indexable. Non-indexable sibling rows and a non-indexable parent row must be
+     * left untouched.
+     *
+     * @magentoDataFixture Magento/ConfigurableProduct/_files/configurable_attribute.php
+     * @magentoConfigFixture current_store athoscommerce/indexing/enable_live_indexing 1
+     */
+    public function testExecute_WhenConfigurableChildStockChanges_DoesNotForceSiblingsOrParentIndexable(): void
+    {
+        [$parentProduct, $childProduct] = $this->createAndSaveConfigurableProduct(
+            Status::STATUS_ENABLED,
+            Visibility::VISIBILITY_BOTH
+        );
+        $parentId = (int)$parentProduct->getId();
+        $childId = (int)$childProduct->getId();
+
+        $this->createIndexingEntityForProduct($parentId, Actions::NO_ACTION, false);
+        $this->createIndexingEntityForProduct($childId, Actions::NO_ACTION, false, $parentId);
+        $this->createIndexingEntityForProduct(self::SIBLING_ID, Actions::NO_ACTION, false, $parentId);
+
+        $stockItem = $this->buildStockItem(
+            $childId,
+            currentQty: 5,
+            origQty: 10,
+            currentInStock: 1,
+            origInStock: 1
+        );
+
+        $this->dispatchStockItemSaveAfter($stockItem);
+
+        $parentEntity = $this->getIndexingEntityByTargetIdAndParentId($parentId, null);
+        $childEntity = $this->getIndexingEntityByTargetIdAndParentId($childId, $parentId);
+        $siblingEntity = $this->getIndexingEntityByTargetIdAndParentId(self::SIBLING_ID, $parentId);
+
+        $this->assertNotNull($parentEntity);
+        $this->assertNotNull($childEntity);
+        $this->assertNotNull($siblingEntity);
+        $this->assertSame(Actions::UPSERT, $childEntity->getNextAction(), 'Child next_action mismatch');
+        $this->assertTrue($childEntity->getIsIndexable(), 'Child is_indexable mismatch');
+        $this->assertSame(Actions::NO_ACTION, $siblingEntity->getNextAction(), 'Sibling next_action mismatch');
+        $this->assertFalse($siblingEntity->getIsIndexable(), 'Sibling is_indexable mismatch');
+        $this->assertSame(Actions::NO_ACTION, $parentEntity->getNextAction(), 'Parent next_action mismatch');
+        $this->assertFalse($parentEntity->getIsIndexable(), 'Parent is_indexable mismatch');
+    }
+
     // ──────────────────────────────────────────────────────────────────────────
     // Data provider
     // ──────────────────────────────────────────────────────────────────────────
@@ -359,6 +601,21 @@ class InventoryUpdateObserverTest extends TestCase
         ];
     }
 
+    public function configurableParentVisibilityDataProvider(): array
+    {
+        return [
+            'parent_visibility_both' => [
+                'parentVisibility' => Visibility::VISIBILITY_BOTH,
+            ],
+            'parent_visibility_in_catalog' => [
+                'parentVisibility' => Visibility::VISIBILITY_IN_CATALOG,
+            ],
+            'parent_visibility_in_search' => [
+                'parentVisibility' => Visibility::VISIBILITY_IN_SEARCH,
+            ],
+        ];
+    }
+
     // ──────────────────────────────────────────────────────────────────────────
     // Helpers
     // ──────────────────────────────────────────────────────────────────────────
@@ -392,18 +649,151 @@ class InventoryUpdateObserverTest extends TestCase
     }
 
     /**
+     * @return array{0: Product, 1: Product}
+     */
+    private function createAndSaveConfigurableProduct(int $status, int $visibility): array
+    {
+        /** @var EavConfig $eavConfig */
+        $eavConfig = $this->objectManager->get(EavConfig::class);
+        $attribute = $eavConfig->getAttribute(Product::ENTITY, 'test_configurable');
+
+        $options = $attribute->getOptions();
+        array_shift($options);
+
+        /** @var StoreManagerInterface $storeManager */
+        $storeManager = $this->objectManager->get(StoreManagerInterface::class);
+        /** @var ProductRepositoryInterface $productRepository */
+        $productRepository = $this->objectManager->get(ProductRepositoryInterface::class);
+
+        $firstOption = reset($options);
+
+        /** @var Product $childProduct */
+        $childProduct = $this->objectManager->create(Product::class);
+        $childProduct->setTypeId(Type::TYPE_SIMPLE)
+            ->setAttributeSetId(4)
+            ->setName('Inventory Configurable Child ' . uniqid('', true))
+            ->setSku('athos_inv_cfg_child_' . uniqid('', true))
+            ->setPrice(10)
+            ->setStatus(Status::STATUS_ENABLED)
+            ->setVisibility(Visibility::VISIBILITY_NOT_VISIBLE)
+            ->setStockData(['qty' => 10, 'is_in_stock' => 1, 'manage_stock' => 0])
+            ->setWebsiteIds([$storeManager->getStore()->getWebsiteId()])
+            ->setData($attribute->getAttributeCode(), $firstOption->getValue());
+
+        $childProduct = $productRepository->save($childProduct);
+
+        /** @var ConfigurableOptionsFactory $optionsFactory */
+        $optionsFactory = $this->objectManager->get(ConfigurableOptionsFactory::class);
+        $configurableAttributesData = [
+            [
+                'attribute_id' => $attribute->getId(),
+                'code' => $attribute->getAttributeCode(),
+                'label' => $attribute->getStoreLabel(),
+                'position' => '0',
+                'values' => [
+                    [
+                        'label' => 'test',
+                        'attribute_id' => $attribute->getId(),
+                        'value_index' => $firstOption->getValue(),
+                    ],
+                ],
+            ],
+        ];
+
+        $configurableOptions = $optionsFactory->create($configurableAttributesData);
+
+        /** @var Product $parentProduct */
+        $parentProduct = $this->objectManager->create(Product::class);
+        $extensionAttributes = $parentProduct->getExtensionAttributes();
+        $extensionAttributes->setConfigurableProductOptions($configurableOptions);
+        $extensionAttributes->setConfigurableProductLinks([(int)$childProduct->getId()]);
+        $parentProduct->setExtensionAttributes($extensionAttributes);
+
+        $parentProduct->setTypeId(Configurable::TYPE_CODE)
+            ->setAttributeSetId(4)
+            ->setName('Inventory Configurable Parent ' . uniqid('', true))
+            ->setSku('athos_inv_cfg_parent_' . uniqid('', true))
+            ->setStatus($status)
+            ->setVisibility($visibility)
+            ->setStockData(['is_in_stock' => 1, 'manage_stock' => 0])
+            ->setWebsiteIds([$storeManager->getStore()->getWebsiteId()])
+            ->setPrice(10);
+
+        $parentProduct = $productRepository->save($parentProduct);
+
+        return [$parentProduct, $childProduct];
+    }
+
+    /**
+     * @return array{0: Product[], 1: Product}
+     */
+    private function createAndSaveSharedGroupedProduct(): array
+    {
+        /** @var StoreManagerInterface $storeManager */
+        $storeManager = $this->objectManager->get(StoreManagerInterface::class);
+        /** @var ProductRepositoryInterface $productRepository */
+        $productRepository = $this->objectManager->get(ProductRepositoryInterface::class);
+        /** @var ProductLinkInterfaceFactory $productLinkFactory */
+        $productLinkFactory = $this->objectManager->get(ProductLinkInterfaceFactory::class);
+
+        /** @var Product $childProduct */
+        $childProduct = $this->objectManager->create(Product::class);
+        $childProduct->setTypeId(Type::TYPE_SIMPLE)
+            ->setAttributeSetId(4)
+            ->setName('Shared Inventory Grouped Child ' . uniqid('', true))
+            ->setSku('athos_inv_grouped_shared_child_' . uniqid('', true))
+            ->setPrice(10)
+            ->setStatus(Status::STATUS_ENABLED)
+            ->setVisibility(Visibility::VISIBILITY_NOT_VISIBLE)
+            ->setStockData(['qty' => 10, 'is_in_stock' => 1, 'manage_stock' => 0])
+            ->setWebsiteIds([$storeManager->getStore()->getWebsiteId()]);
+
+        $childProduct = $productRepository->save($childProduct);
+
+        $parentProducts = [];
+        foreach (['one', 'two'] as $suffix) {
+            /** @var Product $parentProduct */
+            $parentProduct = $this->objectManager->create(Product::class);
+            $parentProduct->setTypeId(Grouped::TYPE_CODE)
+                ->setAttributeSetId(4)
+                ->setName('Shared Inventory Grouped Parent ' . $suffix . ' ' . uniqid('', true))
+                ->setSku('athos_inv_grouped_shared_parent_' . $suffix . '_' . uniqid('', true))
+                ->setStatus(Status::STATUS_ENABLED)
+                ->setVisibility(Visibility::VISIBILITY_BOTH)
+                ->setStockData(['is_in_stock' => 1, 'manage_stock' => 0])
+                ->setWebsiteIds([$storeManager->getStore()->getWebsiteId()]);
+
+            /** @var ProductLinkInterface $productLink */
+            $productLink = $productLinkFactory->create();
+            $productLink->setSku($parentProduct->getSku())
+                ->setLinkType('associated')
+                ->setLinkedProductSku($childProduct->getSku())
+                ->setLinkedProductType($childProduct->getTypeId())
+                ->getExtensionAttributes()
+                ->setQty(1);
+
+            $parentProduct->setProductLinks([$productLink]);
+            $parentProducts[] = $productRepository->save($parentProduct);
+        }
+
+        return [$parentProducts, $childProduct];
+    }
+
+    /**
      * Creates an IndexingEntity row for the given product in the specified
      * initial state so the observer has a record to act upon.
      */
     private function createIndexingEntityForProduct(
         int    $productId,
         string $lastAction,
-        bool   $isIndexable
+        bool   $isIndexable,
+        ?int   $targetParentId = null
     ): IndexingEntity {
         /** @var IndexingEntity $entity */
         $entity = $this->objectManager->create(IndexingEntity::class);
         $entity->setTargetEntityType(Constants::PRODUCT_KEY);
         $entity->setTargetId($productId);
+        $entity->setTargetParentId($targetParentId);
         $entity->setSiteId(self::SITE_ID_PREFIX . random_int(0, 999999999));
         $entity->setNextAction(Actions::NO_ACTION);
         $entity->setLastAction($lastAction);
@@ -471,5 +861,24 @@ class InventoryUpdateObserverTest extends TestCase
         $items = $repository->getList($searchCriteria)->getItems();
 
         return !empty($items) ? reset($items) : null;
+    }
+
+    private function getIndexingEntityByTargetIdAndParentId(int $targetId, ?int $targetParentId): ?IndexingEntity
+    {
+        /** @var SearchCriteriaBuilderFactory $factory */
+        $factory = $this->objectManager->get(SearchCriteriaBuilderFactory::class);
+        $searchCriteria = $factory->create()
+            ->addFilter(IndexingEntity::TARGET_ID, $targetId)
+            ->create();
+
+        /** @var IndexingEntityRepositoryInterface $repository */
+        $repository = $this->objectManager->get(IndexingEntityRepositoryInterface::class);
+        foreach ($repository->getList($searchCriteria)->getItems() as $item) {
+            if ($item->getTargetParentId() === $targetParentId) {
+                return $item;
+            }
+        }
+
+        return null;
     }
 }

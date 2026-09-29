@@ -19,7 +19,6 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Model\Task;
 
 use AthosCommerce\Feed\Api\StoreExecutionLockInterface;
-use Magento\Framework\App\ObjectManager;
 use Magento\Framework\Lock\LockManagerInterface;
 
 class StoreExecutionLock implements StoreExecutionLockInterface
@@ -32,11 +31,11 @@ class StoreExecutionLock implements StoreExecutionLockInterface
     private $lockManager;
 
     /**
-     * @param LockManagerInterface|null $lockManager
+     * @param LockManagerInterface $lockManager
      */
-    public function __construct(?LockManagerInterface $lockManager = null)
+    public function __construct(LockManagerInterface $lockManager)
     {
-        $this->lockManager = $lockManager ?: ObjectManager::getInstance()->get(LockManagerInterface::class);
+        $this->lockManager = $lockManager;
     }
 
     /**

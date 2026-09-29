@@ -19,6 +19,7 @@ declare(strict_types=1);
 namespace AthosCommerce\Feed\Observer\Product;
 
 use AthosCommerce\Feed\Helper\Constants;
+use AthosCommerce\Feed\Model\Config as ConfigModel;
 use AthosCommerce\Feed\Model\Source\Actions;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Event\Observer;
@@ -49,21 +50,29 @@ class DeleteObserver implements ObserverInterface
     private $productNextActionProvider;
 
     /**
+     * @var ConfigModel
+     */
+    private $configModel;
+
+    /**
      * @param BaseProductObserver $baseProductObserver
      * @param AthosCommerceLogger $logger
      * @param ScopeConfigInterface $scopeConfig
      * @param ProductNextActionProvider $productNextActionProvider
+     * @param ConfigModel $configModel
      */
     public function __construct(
         BaseProductObserver       $baseProductObserver,
         AthosCommerceLogger       $logger,
         ScopeConfigInterface      $scopeConfig,
-        ProductNextActionProvider $productNextActionProvider
+        ProductNextActionProvider $productNextActionProvider,
+        ConfigModel               $configModel
     ) {
         $this->baseProductObserver = $baseProductObserver;
         $this->logger = $logger;
         $this->scopeConfig = $scopeConfig;
         $this->productNextActionProvider = $productNextActionProvider;
+        $this->configModel = $configModel;
     }
 
     /**
@@ -95,9 +104,15 @@ class DeleteObserver implements ObserverInterface
                         continue;
                     }
 
-                    $nextAction = $this->productNextActionProvider->getNextActionByProduct($product);
+                    $nextAction = $this->productNextActionProvider->getNextActionByProduct($product, (int)$storeId);
+                    $siteId = $this->resolveSiteIdByStoreId((int)$storeId);
 
-                    $this->baseProductObserver->execute([$product->getId()], $nextAction);
+                    $this->baseProductObserver->execute(
+                        [$product->getId()],
+                        $nextAction,
+                        false,
+                        $siteId !== null ? [$siteId] : []
+                    );
 
                     $this->logger->debug(
                         '[DeleteObserver] Product marked for deletion: ',
@@ -130,5 +145,16 @@ class DeleteObserver implements ObserverInterface
                 ]
             );
         }
+    }
+
+    /**
+     * @param int $storeId
+     * @return string|null
+     */
+    private function resolveSiteIdByStoreId(int $storeId): ?string
+    {
+        $siteId = trim($this->configModel->getSiteIdByStoreId($storeId));
+
+        return $siteId !== '' ? $siteId : null;
     }
 }
