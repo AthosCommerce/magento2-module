@@ -22,7 +22,7 @@ $objectManager = Bootstrap::getObjectManager();
 /** @var TaskRepositoryInterface $taskRepository */
 $taskRepository = $objectManager->get(TaskRepositoryInterface::class);
 $payload = [
-    'preSignedUrl' => 'https://testurl.com'
+    'preSignedUrl' => 'https://test-athos-feed-bucket.s3.us-east-1.amazonaws.com/test-feed.json'
 ];
 /** @var TaskInterface $task */
 $task = $objectManager->create(TaskInterface::class);

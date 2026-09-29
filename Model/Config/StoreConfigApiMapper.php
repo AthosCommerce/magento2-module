@@ -45,6 +45,7 @@ class StoreConfigApiMapper
             'secretKeyLength' => $store->getSecretKeyLength(),
             'endPoint' => $store->getEndPoint(),
             'enableLiveIndexing' => $store->getEnableLiveIndexing(),
+            'enableDebugLog' => $store->getEnableDebugLog(),
             'entitySyncCronExpr' => $store->getEntitySyncCronExpr(),
             'perMinute' => $store->getPerMinute(),
             'chunkSize' => $store->getChunkSize(),

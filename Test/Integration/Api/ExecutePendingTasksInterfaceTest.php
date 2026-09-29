@@ -181,7 +181,7 @@ class ExecutePendingTasksInterfaceTest extends TestCase
     private function getPayload(array $extraPayload = []): array
     {
         return array_merge([
-            'preSignedUrl' => 'https://testurl.com',
+            'preSignedUrl' => 'https://test-athos-feed-bucket.s3.us-east-1.amazonaws.com/test-feed.json',
         ], $extraPayload);
     }
 }

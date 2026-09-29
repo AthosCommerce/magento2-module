@@ -469,12 +469,42 @@ class ConfigItem extends AbstractExtensibleObject implements ConfigItemInterface
     }
 
     /**
-     * @param bool|null $flag
+     * @param $value
      * @return ConfigItemInterface
      */
-    public function setEnableDebugLog(?bool $flag): ConfigItemInterface
+    public function setEnableDebugLog($value): ConfigItemInterface
     {
-        return $this->setData(self::ENABLE_DEBUG_LOG, $flag);
+        return $this->setData(self::ENABLE_DEBUG_LOG, $this->normalizeEnableDebugLogValue($value));
+    }
+
+    /**
+     * Only normalize recognized boolean representations so invalid values
+     * remain visible to upstream validators.
+     *
+     * @param mixed $value
+     * @return mixed
+     */
+    private function normalizeEnableDebugLogValue($value)
+    {
+        if ($value === null || is_bool($value)) {
+            return $value;
+        }
+
+        if ($value === 0 || $value === 1 || $value === '0' || $value === '1') {
+            return (bool)$value;
+        }
+
+        if (is_string($value)) {
+            $normalizedValue = strtolower(trim($value));
+            if ($normalizedValue === 'true') {
+                return true;
+            }
+            if ($normalizedValue === 'false') {
+                return false;
+            }
+        }
+
+        return $value;
     }
 
     /**

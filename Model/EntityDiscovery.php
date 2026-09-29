@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Model;
 
+use AthosCommerce\Feed\Api\Data\FeedSpecificationInterface;
 use AthosCommerce\Feed\Api\EntityDiscoveryInterface;
 use AthosCommerce\Feed\Helper\Constants;
 use AthosCommerce\Feed\Model\Api\MagentoEntityInterface;
@@ -73,6 +74,10 @@ class EntityDiscovery implements EntityDiscoveryInterface
      * @var SpecificationBuilderInterface
      */
     private $specificationBuilder;
+    /**
+     * @var ContextManagerInterface
+     */
+    private $contextManager;
     /**
      * @var SerializerInterface
      */
@@ -222,6 +227,9 @@ class EntityDiscovery implements EntityDiscoveryInterface
             }
 
             try {
+                $feedSpecification = $this->buildFeedSpecification($payload, $storeCode);
+                $this->contextManager->setContextFromSpecification($feedSpecification);
+
                 $this->logger->info(
                     "[Discovery] started for $storeCode/$siteId"
                 );
@@ -229,16 +237,17 @@ class EntityDiscovery implements EntityDiscoveryInterface
                 $this->discoverDeletions($siteId, $storeCode);
                 //TODO:: check with observer if updates are needed
                 //$this->discoverUpdates($siteId, $storeCode);
-                $this->discoverAdditions($siteId, $storeCode, $payload);
+                $this->discoverAdditions($siteId, $storeCode, $feedSpecification);
 
                 $this->logger->info(
                     "[Discovery] finished for $storeCode/$siteId"
                 );
-
             } catch (Exception $e) {
                 $this->logger->error(
                     "[Discovery] error for $storeCode/$siteId: " . $e->getMessage()
                 );
+            } finally {
+                $this->contextManager->resetContext();
             }
             $response[$storeId] = $storeCode;
         }
@@ -299,10 +308,14 @@ class EntityDiscovery implements EntityDiscoveryInterface
     /**
      * @param string $siteId
      * @param string $storeCode
-     * @param array $payload
+     * @param FeedSpecificationInterface $feedSpecification
      * @return void
      */
-    private function discoverAdditions(string $siteId, string $storeCode, array $payload): void
+    private function discoverAdditions(
+        string $siteId,
+        string $storeCode,
+        FeedSpecificationInterface $feedSpecification
+    ): void
     {
         // The feed collection filters by the current store context (website, visibility, stock):
         // without it every store would discover the default store's products.
@@ -368,7 +381,6 @@ class EntityDiscovery implements EntityDiscoveryInterface
         $table = $this->resource->getTableName('athoscommerce_indexing_entity');
         $existing = [];
 
-        //TODO:: Change chunk size if needed
         foreach (array_chunk($targetIds, 500) as $chunk) {
 
             $select = $this->connection->select()
@@ -528,7 +540,12 @@ class EntityDiscovery implements EntityDiscoveryInterface
             foreach ($relations as $relation) {
                 // target_parent_id must hold the parent entity_id; parent_id is the row_id on Commerce.
                 $parentId = (int)$relation['parent_entity_id'];
+                $parentId = $this->resolveParentEntityId($relation);
                 $childId = (int)$relation['product_id'];
+
+                if ($parentId <= 0 || $childId <= 0) {
+                    continue;
+                }
 
                 $childToParentMap[$childId] = $parentId;
                 $this->childParentCache[$childId] = $parentId;
@@ -586,5 +603,32 @@ class EntityDiscovery implements EntityDiscoveryInterface
         }
 
         return $this->syncSiteAssignmentAction;
+     * @param array $payload
+     * @param string $storeCode
+     * @return FeedSpecificationInterface
+     */
+    private function buildFeedSpecification(array $payload, string $storeCode): FeedSpecificationInterface
+    {
+        $payload['store'] = $storeCode;
+        $feedSpecification = $this->specificationBuilder->build($payload);
+        $feedSpecification->setStoreCode($storeCode);
+
+        return $feedSpecification;
+    }
+
+    /**
+     * Configurable relation queries return both the parent entity_id and the link-field parent_id.
+     * Discovery must persist the entity identifier so live indexing matches full-sync parent references.
+     *
+     * @param array $relation
+     * @return int
+     */
+    private function resolveParentEntityId(array $relation): int
+    {
+        if (isset($relation['entity_id'])) {
+            return (int)$relation['entity_id'];
+        }
+
+        return (int)($relation['parent_id'] ?? 0);
     }
 }

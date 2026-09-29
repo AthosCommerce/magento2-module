@@ -149,25 +149,41 @@ class GetConfigInfo implements GetConfigInfoInterface
                     continue;
                 }
 
-                $setter = 'set' . ucfirst($outputKey);
-                if (method_exists($stores[$storeId], $setter)) {
-                    $stores[$storeId]->{$setter}($value);
-                    if ($outputKey === 'secretKey' && is_string($value) && $value !== '') {
-                        $stores[$storeId]->setSecretKeyLength(strlen($value));
+                try{
+                    $setter = 'set' . ucfirst($outputKey);
+                    if (method_exists($stores[$storeId], $setter)) {
+                        $stores[$storeId]->{$setter}($value);
+                        if ($outputKey === 'secretKey' && is_string($value) && $value !== '') {
+                            $stores[$storeId]->setSecretKeyLength(strlen($value));
+                        }
+                    } else {
+                        $this->logger->warning(
+                            'Setter method not found in StoreConfig model',
+                            [
+                                'method' => __METHOD__,
+                                'storeId' => $storeId,
+                                'setter' => $setter,
+                                'key' => $outputKey,
+                                'path' => $path,
+                                'value' => $value
+                            ]
+                        );
                     }
-                } else {
-                    $this->logger->warning(
-                        'Setter method not found in StoreConfig model',
+                }catch (\Throwable $exception){
+                    $this->logger->error(
+                        'Error setting value in StoreConfig model',
                         [
                             'method' => __METHOD__,
                             'storeId' => $storeId,
                             'setter' => $setter,
                             'key' => $outputKey,
                             'path' => $path,
-                            'value' => $value
+                            'exception' => $exception->getMessage(),
+                            'trace' => $exception->getTraceAsString()
                         ]
                     );
                 }
+
                 $stores[$storeId] = $storeConfigModel;
             }
             $apiStores = [];

@@ -16,6 +16,7 @@
 
 namespace AthosCommerce\Feed\Test\Unit\Model\Task\Validator;
 
+use AthosCommerce\Feed\Helper\S3UrlValidator;
 use AthosCommerce\Feed\Model\Task\Validator\CreateValidationResult;
 use AthosCommerce\Feed\Model\Task\Validator\UrlValidator;
 use Magento\Framework\Validation\ValidationResult;
@@ -32,6 +33,10 @@ class UrlValidatorTest extends \PHPUnit\Framework\TestCase
      * @var Url
      */
     private $urlValidatorMock;
+    /**
+     * @var S3UrlValidator|\PHPUnit\Framework\MockObject\MockObject
+     */
+    private $s3UrlValidatorMock;
 
     /**
      * @return void
@@ -40,6 +45,7 @@ class UrlValidatorTest extends \PHPUnit\Framework\TestCase
     {
         $this->createValidationResultMock = $this->createMock(CreateValidationResult::class);
         $this->urlValidatorMock = $this->createMock(Url::class);
+        $this->s3UrlValidatorMock = $this->createMock(S3UrlValidator::class);
     }
 
     /**
@@ -48,6 +54,7 @@ class UrlValidatorTest extends \PHPUnit\Framework\TestCase
      * @param bool $fieldRequired
      * @param array $expectedValidatedValues
      * @param array $urlValidationResults
+     * @param array $s3ValidationResults
      * @param array $expectedErrors
      * @return void
      * @dataProvider validateDataProvider
@@ -58,21 +65,41 @@ class UrlValidatorTest extends \PHPUnit\Framework\TestCase
         bool $fieldRequired,
         array $expectedValidatedValues,
         array $urlValidationResults,
+        array $s3ValidationResults,
         array $expectedErrors
     ): void {
         $callIndex = 0;
+        $s3CallIndex = 0;
         $this->urlValidatorMock->expects($this->exactly(count($expectedValidatedValues)))
             ->method('isValid')
             ->willReturnCallback(
-                function ($value, array $schemes) use (
+                function (
+                    $value,
+                    array $schemes
+                ) use (
                     &$callIndex,
                     $expectedValidatedValues,
                     $urlValidationResults
                 ): bool {
-                    $this->assertSame(['http', 'https'], $schemes);
+                    $this->assertSame(['https'], $schemes);
                     $this->assertSame((string)$expectedValidatedValues[$callIndex], (string)$value);
                     $result = $urlValidationResults[$callIndex];
                     $callIndex++;
+                    return $result;
+                }
+            );
+        $this->s3UrlValidatorMock->expects($this->exactly(count($s3ValidationResults)))
+            ->method('validate')
+            ->willReturnCallback(
+                function (string $value) use (
+                    &$s3CallIndex,
+                    $expectedValidatedValues,
+                    $s3ValidationResults
+                ): bool {
+                    $this->assertSame((string)$expectedValidatedValues[$s3CallIndex], $value);
+                    $result = $s3ValidationResults[$s3CallIndex];
+                    $s3CallIndex++;
+
                     return $result;
                 }
             );
@@ -93,6 +120,7 @@ class UrlValidatorTest extends \PHPUnit\Framework\TestCase
         $validator = new UrlValidator(
             $this->createValidationResultMock,
             $this->urlValidatorMock,
+            $this->s3UrlValidatorMock,
             $fields,
             $fieldRequired
         );
@@ -108,8 +136,14 @@ class UrlValidatorTest extends \PHPUnit\Framework\TestCase
      */
     public static function validateDataProvider(): array
     {
-        $validS3Url1 = 'https://my-bucket.s3.us-east-1.amazonaws.com/file.json.gz?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAIOSFODNN7EXAMPLE%2F20260101%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260101T000000Z&X-Amz-Expires=86400&X-Amz-SignedHeaders=host&X-Amz-Signature=0000000000000000000000000000000000000000000000000000000000000000';
-        $validS3Url2 = 'https://my-bucket.s3.amazonaws.com/file-catalog.txt.gz?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAIOSFODNN7EXAMPLE%2F20260101%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260101T000000Z&X-Amz-Expires=86400&X-Amz-SignedHeaders=host&X-Amz-Signature=0000000000000000000000000000000000000000000000000000000000000000';
+        $validS3Url1 = self::buildSignedS3Url(
+            'my-bucket.s3.us-east-1.amazonaws.com',
+            'file.json.gz'
+        );
+        $validS3Url2 = self::buildSignedS3Url(
+            'my-bucket.s3.amazonaws.com',
+            'file-catalog.txt.gz'
+        );
 
         return [
             'required-presignedurl-valid' => [
@@ -118,12 +152,14 @@ class UrlValidatorTest extends \PHPUnit\Framework\TestCase
                 true,
                 [$validS3Url1],
                 [true],
+                [true],
                 [],
             ],
             'required-presignedurl-missing' => [
                 ['preSignedUrl'],
                 [],
                 true,
+                [],
                 [],
                 [],
                 [(string) __('preSignedUrl field is required')],
@@ -134,12 +170,14 @@ class UrlValidatorTest extends \PHPUnit\Framework\TestCase
                 false,
                 [$validS3Url2],
                 [true],
+                [true],
                 [],
             ],
             'optional-catalogpresignedurl-missing-passes' => [
                 ['catalogPreSignedUrl'],
                 [],
                 false,
+                [],
                 [],
                 [],
                 [],
@@ -150,15 +188,17 @@ class UrlValidatorTest extends \PHPUnit\Framework\TestCase
                 false,
                 ['https://fakeamazonaws.com/file.txt'],
                 [true],
+                [false],
                 [(string) __('"catalogPreSignedUrl" field value must contain valid bucket url')],
             ],
-            'spoofed-domain-amazonaws-dummy-com' => [
+            'http-s3-url-fails' => [
                 ['catalogPreSignedUrl'],
-                ['catalogPreSignedUrl' => 'http://amazonaws.dummy.com/disabled-all-flags.json'],
+                ['catalogPreSignedUrl' => 'http://my-bucket.s3.us-east-1.amazonaws.com/disabled-all-flags.json'],
                 false,
-                ['http://amazonaws.dummy.com/disabled-all-flags.json'],
-                [true],
-                [(string) __('"catalogPreSignedUrl" field value must contain valid bucket url')],
+                ['http://my-bucket.s3.us-east-1.amazonaws.com/disabled-all-flags.json'],
+                [false],
+                [],
+                [(string) __('"catalogPreSignedUrl" field value must be valid url address')],
             ],
             'spoofed-domain-fakeamazonaws-com' => [
                 ['preSignedUrl'],
@@ -166,8 +206,39 @@ class UrlValidatorTest extends \PHPUnit\Framework\TestCase
                 true,
                 ['https://fakeamazonaws.com/disabled-all-flags.json'],
                 [true],
+                [false],
+                [(string) __('"preSignedUrl" field value must contain valid bucket url')],
+            ],
+            'non-s3-aws-service-host-fails' => [
+                ['preSignedUrl'],
+                ['preSignedUrl' => 'https://sts.amazonaws.com/disabled-all-flags.json'],
+                true,
+                ['https://sts.amazonaws.com/disabled-all-flags.json'],
+                [true],
+                [false],
                 [(string) __('"preSignedUrl" field value must contain valid bucket url')],
             ],
         ];
+    }
+
+    /**
+     * Build a deterministic signed S3 test URL.
+     *
+     * @param string $host
+     * @param string $fileName
+     * @return string
+     */
+    private static function buildSignedS3Url(string $host, string $fileName): string
+    {
+        return sprintf(
+            'https://%1$s/%2$s?X-Amz-Algorithm=AWS4-HMAC-SHA256'
+            . '&X-Amz-Credential=AKIAIOSFODNN7EXAMPLE%%2F20260101%%2Fus-east-1%%2Fs3%%2Faws4_request'
+            . '&X-Amz-Date=20260101T000000Z'
+            . '&X-Amz-Expires=86400'
+            . '&X-Amz-SignedHeaders=host'
+            . '&X-Amz-Signature=0000000000000000000000000000000000000000000000000000000000000000',
+            $host,
+            $fileName
+        );
     }
 }

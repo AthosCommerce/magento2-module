@@ -15,6 +15,7 @@ interface StoreConfigInterface
     public const ENTITY_SYNC_CRON_EXPR = 'entitySyncCronExpr';
     public const PER_MINUTE = 'perMinute';
     public const CHUNK_SIZE = 'chunkSize';
+    public const ENABLE_DEBUG_LOG = 'enableDebugLog';
 
     public const TASK_PAYLOAD = 'taskPayload';
 
@@ -167,6 +168,21 @@ interface StoreConfigInterface
      * @return self
      */
     public function setChunkSize(?int $value): self;
+
+    /**
+     * Get debug logging status.
+     *
+     * @return bool|null
+     */
+    public function getEnableDebugLog(): ?bool;
+
+    /**
+     * Set debug logging status.
+     *
+     * @param mixed $value
+     * @return self
+     */
+    public function setEnableDebugLog($value): self;
 
     /**
      * Get the task payload.

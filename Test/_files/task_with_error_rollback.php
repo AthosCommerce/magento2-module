@@ -35,7 +35,7 @@ $searchCriteria = $searchCriteriaBuilder
 
 foreach ($taskRepository->getList($searchCriteria)->getItems() as $task) {
     $payload = $task->getPayload();
-    if (($payload['preSignedUrl'] ?? null) === 'https://testurl.com') {
+    if (($payload['preSignedUrl'] ?? null) === 'https://test-athos-feed-bucket.s3.us-east-1.amazonaws.com/test-feed.json') {
         $taskRepository->delete($task);
     }
 }

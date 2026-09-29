@@ -313,10 +313,10 @@ interface ConfigItemInterface
     public function getEnableDebugLog(): ?bool;
 
     /**
-     * @param bool|null $value
+     * @param $value
      * @return ConfigItemInterface
      */
-    public function setEnableDebugLog(?bool $value): ConfigItemInterface;
+    public function setEnableDebugLog($value): ConfigItemInterface;
 
     /**
      * @return bool
