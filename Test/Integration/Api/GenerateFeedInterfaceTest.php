@@ -99,7 +99,7 @@ class GenerateFeedInterfaceTest extends TestCase
     private function getPayload(): array
     {
         return [
-            'preSignedUrl' => 'https://testurl.com/file.json',
+            'preSignedUrl' => 'https://test-athos-feed-bucket.s3.us-east-1.amazonaws.com/test-feed.json',
         ];
     }
 
