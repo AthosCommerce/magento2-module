@@ -24,7 +24,9 @@ use AthosCommerce\Feed\Model\Api\MagentoEntityInterfaceFactory;
 use AthosCommerce\Feed\Model\Feed\DataProvider\Parent\RelationsProvider;
 use AthosCommerce\Feed\Model\Source\Actions;
 use AthosCommerce\Feed\Service\Provider\LiveIndexingSiteProvider;
+use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Framework\App\ResourceConnection;
+use Magento\Framework\EntityManager\MetadataPool;
 
 /**
  * Keeps indexing rows in line with website assignments: Delete on sites a product left,
@@ -36,6 +38,11 @@ class SyncSiteAssignmentAction
      * Parent types have no row of their own: the feed sends their variants.
      */
     private const PARENT_TYPES = ['configurable'];
+
+    /**
+     * catalog_product_link type of grouped product associations.
+     */
+    private const GROUPED_LINK_TYPE_ID = 3;
 
     /**
      * @var ResourceConnection
@@ -65,6 +72,10 @@ class SyncSiteAssignmentAction
      * @var AthosCommerceLogger
      */
     private $logger;
+    /**
+     * @var MetadataPool
+     */
+    private $metadataPool;
 
     /**
      * @param ResourceConnection $resourceConnection
@@ -74,6 +85,7 @@ class SyncSiteAssignmentAction
      * @param MagentoEntityInterfaceFactory $magentoEntityFactory
      * @param RelationsProvider $relationsProvider
      * @param AthosCommerceLogger $logger
+     * @param MetadataPool $metadataPool
      */
     public function __construct(
         ResourceConnection $resourceConnection,
@@ -82,7 +94,8 @@ class SyncSiteAssignmentAction
         AddIndexingEntitiesActionInterface $addIndexingEntitiesAction,
         MagentoEntityInterfaceFactory $magentoEntityFactory,
         RelationsProvider $relationsProvider,
-        AthosCommerceLogger $logger
+        AthosCommerceLogger $logger,
+        MetadataPool $metadataPool
     ) {
         $this->resourceConnection = $resourceConnection;
         $this->siteProvider = $siteProvider;
@@ -91,6 +104,7 @@ class SyncSiteAssignmentAction
         $this->magentoEntityFactory = $magentoEntityFactory;
         $this->relationsProvider = $relationsProvider;
         $this->logger = $logger;
+        $this->metadataPool = $metadataPool;
     }
 
     /**
@@ -148,6 +162,11 @@ class SyncSiteAssignmentAction
      * from the changed products' rows, so a deleted or unlinked variant still finds them, and
      * from the current relations, so a newly linked variant does too.
      *
+     * Siblings are matched two ways, each with the same filters: rows that store one of the
+     * parents, and rows of the parents' currently linked children. The second catches live
+     * siblings whose row was created while they were standalone or under another parent and
+     * still holds a null or old target_parent_id.
+     *
      * @param int[] $productIds changed products (variants; other products are ignored)
      * @param string[] $siteIds limit to these sites; all sites when empty
      * @return int number of sibling rows queued
@@ -163,9 +182,9 @@ class SyncSiteAssignmentAction
             return 0;
         }
         $connection = $this->resourceConnection->getConnection();
+        $table = $this->resourceConnection->getTableName('athoscommerce_indexing_entity');
         $where = [
             'target_entity_type = ?' => Constants::PRODUCT_KEY,
-            'target_parent_id IN (?)' => $parentIds,
             'target_id NOT IN (?)' => $productIds,
             'is_indexable = ?' => 1,
             'last_action = ?' => Actions::UPSERT,
@@ -174,11 +193,22 @@ class SyncSiteAssignmentAction
         if ($siteIds) {
             $where['site_id IN (?)'] = $siteIds;
         }
+        // Rows that store the parent (index on target_entity_type, target_parent_id, site_id).
         $count = (int)$connection->update(
-            $this->resourceConnection->getTableName('athoscommerce_indexing_entity'),
+            $table,
             ['next_action' => Actions::UPSERT],
-            $where
+            $where + ['target_parent_id IN (?)' => $parentIds]
         );
+        // Rows of the currently linked children (unique key on target_entity_type, target_id, ...).
+        // Rows re-queued above no longer have an empty next_action, so none is counted twice.
+        $linkedChildIds = array_values(array_diff($this->getLinkedChildIds($parentIds), $productIds));
+        if ($linkedChildIds) {
+            $count += (int)$connection->update(
+                $table,
+                ['next_action' => Actions::UPSERT],
+                $where + ['target_id IN (?)' => $linkedChildIds]
+            );
+        }
         if ($count) {
             $this->logger->debug(
                 '[SyncSiteAssignment] Sibling variants re-queued',
@@ -187,6 +217,38 @@ class SyncSiteAssignmentAction
         }
 
         return $count;
+    }
+
+    /**
+     * Entity ids of the children currently linked to the parents (configurable and grouped).
+     *
+     * Parents are entity ids; link tables reference the parent by its link field (row_id on
+     * Adobe Commerce). Children with required options are included, unlike Magento's own
+     * getChildrenIds() helpers, because they are variants all the same.
+     *
+     * @param int[] $parentIds
+     * @return int[]
+     */
+    private function getLinkedChildIds(array $parentIds): array
+    {
+        $connection = $this->resourceConnection->getConnection();
+        $linkField = $this->metadataPool->getMetadata(ProductInterface::class)->getLinkField();
+        $productTable = $this->resourceConnection->getTableName('catalog_product_entity');
+
+        $configurable = $connection->select()
+            ->from(['l' => $this->resourceConnection->getTableName('catalog_product_super_link')], ['product_id'])
+            ->join(['p' => $productTable], sprintf('p.%s = l.parent_id', $linkField), [])
+            ->where('p.entity_id IN (?)', $parentIds);
+        $grouped = $connection->select()
+            ->from(['l' => $this->resourceConnection->getTableName('catalog_product_link')], ['linked_product_id'])
+            ->join(['p' => $productTable], sprintf('p.%s = l.product_id', $linkField), [])
+            ->where('p.entity_id IN (?)', $parentIds)
+            ->where('l.link_type_id = ?', self::GROUPED_LINK_TYPE_ID);
+
+        return array_values(array_unique(array_map(
+            'intval',
+            array_merge($connection->fetchCol($configurable), $connection->fetchCol($grouped))
+        )));
     }
 
     /**
