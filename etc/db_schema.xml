@@ -63,5 +63,11 @@
             <column name="target_parent_id"/>
             <column name="site_id"/>
         </constraint>
+        <!-- Sibling lookups by parent (SyncSiteAssignmentAction::queueSiblingUpserts). -->
+        <index referenceId="ATHOSCOMMERCE_INDEXING_ENTITY_TYPE_PARENT_ID_SITE_ID" indexType="btree">
+            <column name="target_entity_type"/>
+            <column name="target_parent_id"/>
+            <column name="site_id"/>
+        </index>
     </table>
 </schema>
