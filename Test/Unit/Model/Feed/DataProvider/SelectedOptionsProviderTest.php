@@ -86,6 +86,7 @@ class SelectedOptionsProviderTest extends TestCase
             'attributes' => [
                 10 => [
                     'code' => 'athos_color',
+                    'label' => 'Farbe',
                     'options' => [
                         ['id' => 100, 'label' => 'Red'],
                     ],
@@ -120,8 +121,9 @@ class SelectedOptionsProviderTest extends TestCase
 
         $result = $this->provider->getData([$row], $feedSpecificationMock);
 
+        // Key stays the attribute code; the store view label is a field.
         $this->assertSame(
-            json_encode(['athos_color' => ['value' => 'Red']]),
+            json_encode(['athos_color' => ['label' => 'Farbe', 'value' => 'Red']]),
             $result[0][SelectedOptionsProvider::FIELD_KEY_SELECTED_OPTIONS]
         );
     }
@@ -215,6 +217,7 @@ class SelectedOptionsProviderTest extends TestCase
                         'attributes' => [
                             10 => [
                                 'code' => 'athos_color',
+                                'label' => 'Color',
                                 'options' => [
                                     ['id' => 100, 'label' => 'Red'],
                                 ],
@@ -241,11 +244,12 @@ class SelectedOptionsProviderTest extends TestCase
         $result = $this->provider->getData($rows, $feedSpecificationMock);
 
         $this->assertSame(
-            json_encode(['athos_color' => ['value' => 'Red']]),
+            json_encode(['athos_color' => ['label' => 'Color', 'value' => 'Red']]),
             $result[0][SelectedOptionsProvider::FIELD_KEY_SELECTED_OPTIONS]
         );
+        // No label in the attribute data: the attribute code is used as the label.
         $this->assertSame(
-            json_encode(['athos_size' => ['value' => 'Large']]),
+            json_encode(['athos_size' => ['label' => 'athos_size', 'value' => 'Large']]),
             $result[1][SelectedOptionsProvider::FIELD_KEY_SELECTED_OPTIONS]
         );
     }

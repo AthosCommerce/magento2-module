@@ -152,10 +152,16 @@ class SelectedOptionsProvider implements DataProviderInterface
 
                 foreach ($options['index'][$simpleId] as $attributeId => $optionId) {
                     if (isset($attributesData['attributes'][$attributeId])) {
-                        $attrCode = $attributesData['attributes'][$attributeId]['code'];
-                        foreach ($attributesData['attributes'][$attributeId]['options'] as $option) {
+                        $attributeData = $attributesData['attributes'][$attributeId];
+                        $attrCode = $attributeData['code'];
+                        foreach ($attributeData['options'] as $option) {
                             if ($option['id'] == $optionId) {
-                                $selectedOptions[$attrCode] = ['value' => $option['label']];
+                                // Keyed by the untranslated attribute code; the store view label
+                                // (same source as __standard_options / __swatch_options) is a field.
+                                $selectedOptions[$attrCode] = [
+                                    'label' => (string)($attributeData['label'] ?? $attrCode),
+                                    'value' => $option['label'],
+                                ];
                                 break;
                             }
                         }
