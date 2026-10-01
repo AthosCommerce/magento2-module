@@ -26,6 +26,7 @@ use AthosCommerce\Feed\Model\Config\StoreConfigApiMapper;
 use AthosCommerce\Feed\Model\Data\ConfigInfoResponseFactory;
 use AthosCommerce\Feed\Model\Data\StoreConfigFactory;
 use AthosCommerce\Feed\Model\ConfigRepository;
+use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Encryption\EncryptorInterface;
 use Magento\Store\Model\StoreManagerInterface;
 
@@ -52,6 +53,9 @@ class GetConfigInfo implements GetConfigInfoInterface
     /** @var EncryptorInterface */
     private $encryptor;
 
+    /** @var ScopeConfigInterface */
+    private $scopeConfig;
+
     /**
      * @param ConfigRepository $configRepository
      * @param StoreManagerInterface $storeManager
@@ -60,6 +64,7 @@ class GetConfigInfo implements GetConfigInfoInterface
      * @param StoreConfigFactory $storeConfigFactory
      * @param StoreConfigApiMapper $storeConfigApiMapper
      * @param EncryptorInterface $encryptor
+     * @param ScopeConfigInterface $scopeConfig
      */
     public function __construct(
         ConfigRepository          $configRepository,
@@ -68,7 +73,8 @@ class GetConfigInfo implements GetConfigInfoInterface
         ConfigInfoResponseFactory $responseFactory,
         StoreConfigFactory        $storeConfigFactory,
         StoreConfigApiMapper      $storeConfigApiMapper,
-        EncryptorInterface        $encryptor
+        EncryptorInterface        $encryptor,
+        ScopeConfigInterface      $scopeConfig
     ) {
         $this->configRepository = $configRepository;
         $this->storeManager = $storeManager;
@@ -77,6 +83,7 @@ class GetConfigInfo implements GetConfigInfoInterface
         $this->storeConfigFactory = $storeConfigFactory;
         $this->storeConfigApiMapper = $storeConfigApiMapper;
         $this->encryptor = $encryptor;
+        $this->scopeConfig = $scopeConfig;
     }
 
     /**
@@ -111,7 +118,8 @@ class GetConfigInfo implements GetConfigInfoInterface
                 }
                 $outputKey = $pathToKeyMap[$path];
                 $meta = ConfigMap::MAP[$outputKey] ?? null;
-                if ($meta === null) {
+                // Global settings are reported from default scope below; store rows are not used.
+                if ($meta === null || ($meta['scope'] ?? null) === 'default') {
                     continue;
                 }
                 $value = $row['value'];
@@ -188,6 +196,7 @@ class GetConfigInfo implements GetConfigInfoInterface
             }
             $apiStores = [];
             foreach ($stores as $storeConfig) {
+                $this->setGlobalValues($storeConfig);
                 $apiStores[] = $this->storeConfigApiMapper->map($storeConfig);
             }
 
@@ -218,5 +227,25 @@ class GetConfigInfo implements GetConfigInfoInterface
         }
 
         return $response;
+    }
+
+    /**
+     * Report global settings (cron schedules) with their effective default-scope value.
+     *
+     * @param object $storeConfig
+     * @return void
+     */
+    private function setGlobalValues($storeConfig): void
+    {
+        foreach (ConfigMap::MAP as $key => $meta) {
+            if (($meta['scope'] ?? null) !== 'default') {
+                continue;
+            }
+            $setter = 'set' . ucfirst($key);
+            if (method_exists($storeConfig, $setter)) {
+                $value = $this->scopeConfig->getValue($meta['path'], ScopeConfigInterface::SCOPE_TYPE_DEFAULT);
+                $storeConfig->{$setter}($value !== null ? (string)$value : null);
+            }
+        }
     }
 }

@@ -32,6 +32,7 @@ use AthosCommerce\Feed\Service\Action\SetIndexingEntitiesToDeleteActionInterface
 use AthosCommerce\Feed\Service\Action\SetIndexingEntitiesToUpdateActionInterface;
 use AthosCommerce\Feed\Service\Action\SyncSiteAssignmentAction;
 use AthosCommerce\Feed\Service\Provider\LiveIndexingSiteProvider;
+use AthosCommerce\Feed\Model\LiveIndexing\StoreLock;
 use AthosCommerce\Feed\Service\Provider\Api\IndexingEntityProviderInterface;
 use AthosCommerce\Feed\Service\Provider\MagentoEntityProvider;
 use Exception;
@@ -86,6 +87,10 @@ class EntityDiscovery implements EntityDiscoveryInterface
      */
     private $syncSiteAssignmentAction;
     /**
+     * @var StoreLock
+     */
+    private $storeLock;
+    /**
      * @var SerializerInterface
      */
     private $serializer;
@@ -134,6 +139,7 @@ class EntityDiscovery implements EntityDiscoveryInterface
      * @param SetIndexingEntitiesToUpdateActionInterface $setIndexingEntitiesToUpdateAction
      * @param LiveIndexingSiteProvider $siteProvider
      * @param SyncSiteAssignmentAction $syncSiteAssignmentAction
+     * @param StoreLock $storeLock
      */
     public function __construct(
         StoreManagerInterface                      $storeManager,
@@ -152,7 +158,8 @@ class EntityDiscovery implements EntityDiscoveryInterface
         SetIndexingEntitiesToDeleteActionInterface $setIndexingEntitiesToDeleteAction,
         SetIndexingEntitiesToUpdateActionInterface $setIndexingEntitiesToUpdateAction,
         LiveIndexingSiteProvider                   $siteProvider,
-        SyncSiteAssignmentAction                   $syncSiteAssignmentAction
+        SyncSiteAssignmentAction                   $syncSiteAssignmentAction,
+        StoreLock                                  $storeLock
     )
     {
         $this->storeManager = $storeManager;
@@ -173,6 +180,7 @@ class EntityDiscovery implements EntityDiscoveryInterface
         $this->setIndexingEntitiesToUpdateAction = $setIndexingEntitiesToUpdateAction;
         $this->siteProvider = $siteProvider;
         $this->syncSiteAssignmentAction = $syncSiteAssignmentAction;
+        $this->storeLock = $storeLock;
     }
 
     /**
@@ -221,6 +229,11 @@ class EntityDiscovery implements EntityDiscoveryInterface
                 continue;
             }
 
+            // One discovery run per store at a time, whoever started it (cron worker or CLI).
+            if (!$this->storeLock->acquire(StoreLock::TYPE_DISCOVERY, $storeCode)) {
+                $this->logger->info("[Discovery] skipped for $storeCode/$siteId: already running");
+                continue;
+            }
             try {
                 $feedSpecification = $this->buildFeedSpecification($payload, $storeCode);
                 $this->contextManager->setContextFromSpecification($feedSpecification);
@@ -243,6 +256,7 @@ class EntityDiscovery implements EntityDiscoveryInterface
                 );
             } finally {
                 $this->contextManager->resetContext();
+                $this->storeLock->release(StoreLock::TYPE_DISCOVERY, $storeCode);
             }
             $response[$storeId] = $storeCode;
         }

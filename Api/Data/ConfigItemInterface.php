@@ -27,6 +27,7 @@ interface ConfigItemInterface
 
     public const ENABLE_LIVE_INDEXING = 'enableLiveIndexing';
     public const ENTITY_SYNC_CRON_EXPR = 'entitySyncCronExpr';
+    public const DISCOVERY_SYNC_CRON_EXPR = 'discoverySyncCronExpr';
     public const PER_MINUTE = 'perMinute';
     public const CHUNK_SIZE = 'chunkSize';
 
@@ -97,6 +98,17 @@ interface ConfigItemInterface
      * @return ConfigItemInterface
      */
     public function setEntitySyncCronExpr(?string $value): ConfigItemInterface;
+
+    /**
+     * @return string|null
+     */
+    public function getDiscoverySyncCronExpr(): ?string;
+
+    /**
+     * @param string|null $value
+     * @return ConfigItemInterface
+     */
+    public function setDiscoverySyncCronExpr(?string $value): ConfigItemInterface;
 
     /**
      * @return int|null

@@ -56,7 +56,8 @@ class GetConfigInfoTest extends TestCase
             $responseFactoryMock,
             $storeConfigFactoryMock,
             $storeConfigApiMapperMock,
-            $encryptorMock
+            $encryptorMock,
+            $this->createMock(\Magento\Framework\App\Config\ScopeConfigInterface::class)
         );
 
         $rawSecret = 'plain:text-secret';

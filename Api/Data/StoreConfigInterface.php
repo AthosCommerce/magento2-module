@@ -13,6 +13,7 @@ interface StoreConfigInterface
 
     public const ENABLE_LIVE_INDEXING = 'enableLiveIndexing';
     public const ENTITY_SYNC_CRON_EXPR = 'entitySyncCronExpr';
+    public const DISCOVERY_SYNC_CRON_EXPR = 'discoverySyncCronExpr';
     public const PER_MINUTE = 'perMinute';
     public const CHUNK_SIZE = 'chunkSize';
     public const ENABLE_DEBUG_LOG = 'enableDebugLog';
@@ -138,6 +139,21 @@ interface StoreConfigInterface
      * @return self
      */
     public function setEntitySyncCronExpr(?string $value): self;
+
+    /**
+     * Get the discovery cron expression.
+     *
+     * @return string|null
+     */
+    public function getDiscoverySyncCronExpr(): ?string;
+
+    /**
+     * Set the discovery cron expression.
+     *
+     * @param string|null $value
+     * @return self
+     */
+    public function setDiscoverySyncCronExpr(?string $value): self;
 
     /**
      * Get the per-minute rate.

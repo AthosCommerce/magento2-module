@@ -24,6 +24,30 @@ bin/magento setup:static-content:deploy
 bin/magento cache:clean
 ```
 
+### Live indexing cron
+Live indexing runs on Magento cron only; no extra crontab entries or external scheduler are needed.
+Make sure Magento cron is installed and running:
+```
+bin/magento cron:install
+```
+
+| Job | Group | Default schedule | Config path (default scope) |
+|---|---|---|---|
+| `athoscommerce_live_indexing_discovery` | `athoscommerce_live_indexing` | `*/30 * * * *` | `athoscommerce/indexing/discovery_sync_cron_expr` |
+| `athoscommerce_live_indexing_sync` | `athoscommerce_live_indexing` | `*/2 * * * *` | `athoscommerce/indexing/entity_sync_cron_expr` |
+
+- The schedules are global (Magento reads cron schedules at default scope). The config API
+  (`entitySyncCronExpr`, `discoverySyncCronExpr`) saves them at default scope for any store.
+- When a job is due, it starts one background process per store view with live indexing enabled,
+  all at the same time (`bin/magento athoscommerce:indexing:entity-discovery --storecodes=<store>`,
+  `bin/magento athoscommerce:indexing:entity-sync --storecodes=<store>`), so a slow store does not
+  delay the others.
+- Each store run holds a per-store lock (separate locks for discovery and sync). A store whose
+  previous run is still going is skipped until the next schedule; a manual CLI run for that store
+  is skipped too.
+- The CLI commands are for manual or support runs; run without `--storecodes` they process the
+  stores one after another in the same process.
+
 ---------
 ## Compatible with:
 - Adobe Commerce 2.4.4-p18, 2.4.5-p17, 2.4.6-p15, 2.4.7-p10, 2.4.8-p5, 2.4.9.

@@ -32,6 +32,7 @@ use AthosCommerce\Feed\Service\Action\SetIndexingEntitiesToDeleteActionInterface
 use AthosCommerce\Feed\Service\Action\SetIndexingEntitiesToUpdateActionInterface;
 use AthosCommerce\Feed\Service\Action\SyncSiteAssignmentAction;
 use AthosCommerce\Feed\Service\Provider\LiveIndexingSiteProvider;
+use AthosCommerce\Feed\Model\LiveIndexing\StoreLock;
 use AthosCommerce\Feed\Service\Provider\Api\IndexingEntityProviderInterface;
 use AthosCommerce\Feed\Service\Provider\MagentoEntityProvider;
 use Magento\Framework\App\ResourceConnection;
@@ -147,7 +148,8 @@ class EntityDiscoveryTest extends TestCase
             $this->setIndexingEntitiesToDeleteActionMock,
             $this->setIndexingEntitiesToUpdateActionMock,
             $this->createMock(LiveIndexingSiteProvider::class),
-            $this->createMock(SyncSiteAssignmentAction::class)
+            $this->createMock(SyncSiteAssignmentAction::class),
+            $this->createStoreLockMock()
         );
     }
 
@@ -274,5 +276,18 @@ class EntityDiscoveryTest extends TestCase
     {
         throw $exception;
         yield [];
+    }
+
+    /**
+     * Store lock that is always free.
+     *
+     * @return StoreLock|MockObject
+     */
+    private function createStoreLockMock()
+    {
+        $storeLock = $this->createMock(StoreLock::class);
+        $storeLock->method('acquire')->willReturn(true);
+
+        return $storeLock;
     }
 }
