@@ -27,9 +27,11 @@ use AthosCommerce\Feed\Model\LiveIndexing\DeleteProcessor;
 use AthosCommerce\Feed\Model\LiveIndexing\Processor;
 use AthosCommerce\Feed\Model\LiveIndexing\UpdateProcessor;
 use AthosCommerce\Feed\Service\Provider\IndexingEntityProvider;
+use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Serialize\SerializerInterface;
 use Magento\Store\Api\Data\StoreInterface;
 use Magento\Store\Model\StoreManagerInterface;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -43,23 +45,73 @@ class ProcessorTest extends TestCase
      */
     public function testContextIsResetWhenProcessingFails(): void
     {
-        $config = $this->createMock(Config::class);
-        $config->method('getPayloadByStoreId')->willReturn('{"includeOutOfStock":true}');
+        $config = $this->createConfig();
         $config->method('getRequestPerMinuteByStoreId')
             ->willThrowException(new \RuntimeException('config unavailable'));
+        $contextManager = $this->createMock(ContextManagerInterface::class);
+        $contextManager->expects($this->once())->method('setContextFromSpecification');
+        $contextManager->expects($this->once())->method('resetContext');
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('config unavailable');
+        $this->createProcessor($config, $contextManager)->execute($this->createStore(), 'site-1');
+    }
+
+    /**
+     * A context setup that fails part way (store emulation started, customer not loadable) is
+     * reset as well, so the next store can start its own emulation.
+     */
+    public function testContextIsResetWhenContextSetupFails(): void
+    {
+        $config = $this->createConfig();
+        $config->expects($this->never())->method('getRequestPerMinuteByStoreId');
+        $contextManager = $this->createMock(ContextManagerInterface::class);
+        $contextManager->expects($this->once())
+            ->method('setContextFromSpecification')
+            ->willThrowException(new NoSuchEntityException(__('No such entity with customerId = 42')));
+        $contextManager->expects($this->once())->method('resetContext');
+
+        $this->expectException(NoSuchEntityException::class);
+        $this->createProcessor($config, $contextManager)->execute($this->createStore(), 'site-1');
+    }
+
+    /**
+     * @return Config|MockObject
+     */
+    private function createConfig()
+    {
+        $config = $this->createMock(Config::class);
+        $config->method('getPayloadByStoreId')->willReturn('{"includeOutOfStock":true}');
+
+        return $config;
+    }
+
+    /**
+     * @return StoreInterface|MockObject
+     */
+    private function createStore()
+    {
+        $store = $this->createMock(StoreInterface::class);
+        $store->method('getId')->willReturn(1);
+        $store->method('getCode')->willReturn('default');
+
+        return $store;
+    }
+
+    /**
+     * @param Config $config
+     * @param ContextManagerInterface $contextManager
+     * @return Processor
+     */
+    private function createProcessor(Config $config, ContextManagerInterface $contextManager): Processor
+    {
         $specificationBuilder = $this->createMock(SpecificationBuilderInterface::class);
         $specificationBuilder->method('build')
             ->willReturn($this->createMock(FeedSpecificationInterface::class));
         $serializer = $this->createMock(SerializerInterface::class);
         $serializer->method('unserialize')->willReturn(['includeOutOfStock' => true]);
-        $contextManager = $this->createMock(ContextManagerInterface::class);
-        $contextManager->expects($this->once())->method('setContextFromSpecification');
-        $contextManager->expects($this->once())->method('resetContext');
-        $store = $this->createMock(StoreInterface::class);
-        $store->method('getId')->willReturn(1);
-        $store->method('getCode')->willReturn('default');
 
-        $processor = new Processor(
+        return new Processor(
             $this->createMock(IndexingEntityProvider::class),
             $config,
             $specificationBuilder,
@@ -70,9 +122,5 @@ class ProcessorTest extends TestCase
             $this->createMock(AthosCommerceLogger::class),
             $this->createMock(StoreManagerInterface::class)
         );
-
-        $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('config unavailable');
-        $processor->execute($store, 'site-1');
     }
 }

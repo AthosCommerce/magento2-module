@@ -157,10 +157,11 @@ class Processor
             sprintf('[LiveIndexing] Feed specification built for store:%s | siteId:%s', $storeCode, $siteId)
         );
 
-        $this->contextManager->setContextFromSpecification($feedSpecification);
-        // Always reset the context, also when this store fails: the caller continues with the
-        // next store, which must not inherit this store's emulation or customer context.
+        // Always reset the context, also when this store fails (including a partial context setup,
+        // e.g. store emulation started but the customer could not be loaded): the caller continues
+        // with the next store, which must not inherit this store's emulation or customer context.
         try {
+            $this->contextManager->setContextFromSpecification($feedSpecification);
             $this->logger->debug(
                 sprintf('[LiveIndexing] Context set for store:%s | siteId:%s', $storeCode, $siteId)
             );
