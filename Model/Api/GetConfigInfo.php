@@ -98,15 +98,17 @@ class GetConfigInfo implements GetConfigInfoInterface
 
         try {
             $rows = $this->configRepository->fetchStoreConfigRows();
-            if (!$rows) {
-                $response->setSuccess(true);
-                $response->setMessage(__('No configuration found.')->render());
-                $response->setStores([]);
-                return $response;
-            }
 
+            // One model per store view, independent of store-scope rows: global settings (cron
+            // schedules) are saved at default scope only and must be reported for every store, also
+            // when no store has any store-scope value yet.
             $stores = [];
             $storeCodesCache = [];
+            foreach ($this->storeManager->getStores(false) as $store) {
+                $storeId = (int)$store->getId();
+                $storeCodesCache[$storeId] = $store->getCode();
+                $stores[$storeId] = $this->createStoreConfigModel($storeId, $storeCodesCache[$storeId]);
+            }
             $pathToKeyMap = ConfigMap::getPathToKeyMap();
 
             foreach ($rows as $row) {
@@ -145,11 +147,7 @@ class GetConfigInfo implements GetConfigInfoInterface
                 }
 
                 if (!isset($stores[$storeId])) {
-                    /** @var StoreConfigFactory $storeConfigModel */
-                    $storeConfigModel = $this->storeConfigFactory->create();
-                    $storeConfigModel->setStoreId((int)$storeId);
-                    $storeConfigModel->setStoreCode($storeCodesCache[$storeId]);
-                    $stores[$storeId] = $storeConfigModel;
+                    $stores[$storeId] = $this->createStoreConfigModel($storeId, $storeCodesCache[$storeId]);
                 }
 
                 if (($meta['group'] ?? null) === 'taskPayload') {
@@ -191,9 +189,14 @@ class GetConfigInfo implements GetConfigInfoInterface
                         ]
                     );
                 }
-
-                $stores[$storeId] = $storeConfigModel;
             }
+            if (!$stores) {
+                $response->setSuccess(true);
+                $response->setMessage(__('No configuration found.')->render());
+                $response->setStores([]);
+                return $response;
+            }
+
             $apiStores = [];
             foreach ($stores as $storeConfig) {
                 $this->setGlobalValues($storeConfig);
@@ -227,6 +230,22 @@ class GetConfigInfo implements GetConfigInfoInterface
         }
 
         return $response;
+    }
+
+    /**
+     * Empty config model for a store view.
+     *
+     * @param int $storeId
+     * @param string|null $storeCode
+     * @return object
+     */
+    private function createStoreConfigModel(int $storeId, ?string $storeCode)
+    {
+        $storeConfigModel = $this->storeConfigFactory->create();
+        $storeConfigModel->setStoreId($storeId);
+        $storeConfigModel->setStoreCode($storeCode);
+
+        return $storeConfigModel;
     }
 
     /**

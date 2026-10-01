@@ -83,9 +83,10 @@ class GetConfigInfoTest extends TestCase
             ->willReturn('');
 
         $storeManagerMock->expects($this->once())
-            ->method('getStore')
-            ->with(1)
-            ->willReturn($storeMock);
+            ->method('getStores')
+            ->with(false)
+            ->willReturn([$storeMock]);
+        $storeMock->method('getId')->willReturn(1);
         $storeMock->expects($this->once())
             ->method('getCode')
             ->willReturn('default');
@@ -123,5 +124,81 @@ class GetConfigInfoTest extends TestCase
         $result = $model->get();
 
         $this->assertSame($responseMock, $result);
+    }
+
+    /**
+     * Without any store-scope row every store view is still reported, with the global cron schedules.
+     */
+    public function testGetReportsEveryStoreWithGlobalSchedulesWhenNoStoreRows(): void
+    {
+        $configRepositoryMock = $this->createMock(ConfigRepository::class);
+        $configRepositoryMock->method('fetchStoreConfigRows')->willReturn([]);
+        $storeManagerMock = $this->createMock(StoreManagerInterface::class);
+        $storeManagerMock->method('getStores')->with(false)->willReturn([
+            $this->createStore(1, 'default'),
+            $this->createStore(2, 'second'),
+        ]);
+        $scopeConfigMock = $this->createMock(\Magento\Framework\App\Config\ScopeConfigInterface::class);
+        $scopeConfigMock->method('getValue')->willReturnMap([
+            [Constants::XML_PATH_LIVE_INDEXING_SYNC_CRON_EXPR, 'default', null, '*/5 * * * *'],
+            [Constants::XML_PATH_LIVE_INDEXING_DISCOVERY_CRON_EXPR, 'default', null, '0 17 * * *'],
+        ]);
+        $storeConfigFactoryMock = $this->createMock(StoreConfigFactory::class);
+        $storeConfigFactoryMock->method('create')->willReturnCallback(
+            function () {
+                $storeConfig = $this->createMock(StoreConfigInterface::class);
+                $storeConfig->expects($this->once())->method('setEntitySyncCronExpr')->with('*/5 * * * *');
+                $storeConfig->expects($this->once())->method('setDiscoverySyncCronExpr')->with('0 17 * * *');
+                return $storeConfig;
+            }
+        );
+        $created = [];
+        $storeConfigApiMapperMock = $this->createMock(StoreConfigApiMapper::class);
+        $storeConfigApiMapperMock->method('map')->willReturnCallback(
+            static function ($storeConfig) use (&$created): array {
+                $created[] = $storeConfig;
+                return ['store' => count($created)];
+            }
+        );
+        $responseMock = $this->createMock(ConfigInfoResponseInterface::class);
+        $responseMock->expects($this->once())->method('setSuccess')->with(true)->willReturnSelf();
+        $responseMock->expects($this->once())
+            ->method('setMessage')
+            ->with('Configuration fetched successfully.')
+            ->willReturnSelf();
+        $responseMock->expects($this->once())
+            ->method('setStores')
+            ->with([['store' => 1], ['store' => 2]])
+            ->willReturnSelf();
+        $responseFactoryMock = $this->createMock(ConfigInfoResponseFactory::class);
+        $responseFactoryMock->method('create')->willReturn($responseMock);
+
+        $model = new GetConfigInfo(
+            $configRepositoryMock,
+            $storeManagerMock,
+            $this->createMock(AthosCommerceLogger::class),
+            $responseFactoryMock,
+            $storeConfigFactoryMock,
+            $storeConfigApiMapperMock,
+            $this->createMock(EncryptorInterface::class),
+            $scopeConfigMock
+        );
+
+        $this->assertSame($responseMock, $model->get());
+        $this->assertCount(2, $created);
+    }
+
+    /**
+     * @param int $id
+     * @param string $code
+     * @return StoreInterface
+     */
+    private function createStore(int $id, string $code): StoreInterface
+    {
+        $store = $this->createMock(StoreInterface::class);
+        $store->method('getId')->willReturn($id);
+        $store->method('getCode')->willReturn($code);
+
+        return $store;
     }
 }
