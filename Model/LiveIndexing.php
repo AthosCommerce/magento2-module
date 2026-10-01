@@ -25,6 +25,7 @@ use Magento\Store\Model\StoreManagerInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use AthosCommerce\Feed\Model\LiveIndexing\Processor;
 use AthosCommerce\Feed\Model\LiveIndexing\StoreLock;
+use AthosCommerce\Feed\Exception\LiveIndexingStoresFailedException;
 use AthosCommerce\Feed\Model\Config as ConfigModel;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 
@@ -82,6 +83,8 @@ class LiveIndexing implements LiveIndexingInterface
     {
         $storesToProcess = [];
         $processCount = [];
+        $failures = [];
+        $firstFailure = null;
 
         if (!empty($storeCodes)) {
             foreach ($storeCodes as $code) {
@@ -147,7 +150,10 @@ class LiveIndexing implements LiveIndexingInterface
                     )
                 );
             } catch (\Throwable $exception) {
-                // Logged per store (workers run detached); the next stores are still processed.
+                // Logged per store and collected: the next stores are still processed, and the run is
+                // reported as failed after the loop.
+                $failures[$storeCode] = $exception->getMessage();
+                $firstFailure = $firstFailure ?? $exception;
                 $this->logger->error(
                     sprintf(
                         "[LiveIndexing] Processing failed for store:%s | SiteID:%s: %s",
@@ -160,6 +166,10 @@ class LiveIndexing implements LiveIndexingInterface
             } finally {
                 $this->storeLock->release(StoreLock::TYPE_SYNC, $storeCode);
             }
+        }
+
+        if ($failures) {
+            throw new LiveIndexingStoresFailedException('Entity sync', $failures, $firstFailure);
         }
 
         return $processCount;

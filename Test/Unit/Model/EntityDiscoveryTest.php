@@ -33,6 +33,7 @@ use AthosCommerce\Feed\Service\Action\SetIndexingEntitiesToUpdateActionInterface
 use AthosCommerce\Feed\Service\Action\SyncSiteAssignmentAction;
 use AthosCommerce\Feed\Service\Provider\LiveIndexingSiteProvider;
 use AthosCommerce\Feed\Model\LiveIndexing\StoreLock;
+use AthosCommerce\Feed\Exception\LiveIndexingStoresFailedException;
 use AthosCommerce\Feed\Service\Provider\Api\IndexingEntityProviderInterface;
 use AthosCommerce\Feed\Service\Provider\MagentoEntityProvider;
 use Magento\Framework\App\ResourceConnection;
@@ -254,6 +255,9 @@ class EntityDiscoveryTest extends TestCase
             ->method('error')
             ->with($this->stringContains('[Discovery] error for store-b/site-2: stock filter failure'));
 
+        // The failure is logged per store and then reported to the caller, so the command fails.
+        $this->expectException(LiveIndexingStoresFailedException::class);
+        $this->expectExceptionMessage('Discovery failed for 1 store(s): store-b: stock filter failure');
         $this->entityDiscovery->execute();
     }
 
