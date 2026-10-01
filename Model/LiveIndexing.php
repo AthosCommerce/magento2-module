@@ -146,6 +146,17 @@ class LiveIndexing implements LiveIndexingInterface
                         $siteId
                     )
                 );
+            } catch (\Throwable $exception) {
+                // Logged per store (workers run detached); the next stores are still processed.
+                $this->logger->error(
+                    sprintf(
+                        "[LiveIndexing] Processing failed for store:%s | SiteID:%s: %s",
+                        $storeCode,
+                        $siteId,
+                        $exception->getMessage()
+                    ),
+                    ['store' => $storeCode, 'site_id' => $siteId, 'trace' => $exception->getTraceAsString()]
+                );
             } finally {
                 $this->storeLock->release(StoreLock::TYPE_SYNC, $storeCode);
             }
