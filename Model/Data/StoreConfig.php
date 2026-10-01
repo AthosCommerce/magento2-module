@@ -186,6 +186,27 @@ class StoreConfig extends AbstractExtensibleModel implements StoreConfigInterfac
     }
 
     /**
+     * Get the discovery cron expression.
+     *
+     * @return string|null
+     */
+    public function getDiscoverySyncCronExpr(): ?string
+    {
+        return $this->getData(self::DISCOVERY_SYNC_CRON_EXPR);
+    }
+
+    /**
+     * Set the discovery cron expression.
+     *
+     * @param string|null $discoverySyncCronExpr
+     * @return self
+     */
+    public function setDiscoverySyncCronExpr(?string $discoverySyncCronExpr): self
+    {
+        return $this->setData(self::DISCOVERY_SYNC_CRON_EXPR, $discoverySyncCronExpr);
+    }
+
+    /**
      * Get the per-minute rate.
      *
      * @return int|null

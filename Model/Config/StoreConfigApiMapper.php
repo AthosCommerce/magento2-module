@@ -47,6 +47,7 @@ class StoreConfigApiMapper
             'enableLiveIndexing' => $store->getEnableLiveIndexing(),
             'enableDebugLog' => $store->getEnableDebugLog(),
             'entitySyncCronExpr' => $store->getEntitySyncCronExpr(),
+            'discoverySyncCronExpr' => $store->getDiscoverySyncCronExpr(),
             'perMinute' => $store->getPerMinute(),
             'chunkSize' => $store->getChunkSize(),
             'taskPayload' => $store->getTaskPayload(),

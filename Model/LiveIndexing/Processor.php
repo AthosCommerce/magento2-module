@@ -157,61 +157,38 @@ class Processor
             sprintf('[LiveIndexing] Feed specification built for store:%s | siteId:%s', $storeCode, $siteId)
         );
 
-        $this->contextManager->setContextFromSpecification($feedSpecification);
-        $this->logger->debug(
-            sprintf('[LiveIndexing] Context set for store:%s | siteId:%s', $storeCode, $siteId)
-        );
+        // Always reset the context, also when this store fails (including a partial context setup,
+        // e.g. store emulation started but the customer could not be loaded): the caller continues
+        // with the next store, which must not inherit this store's emulation or customer context.
+        try {
+            $this->contextManager->setContextFromSpecification($feedSpecification);
+            $this->logger->debug(
+                sprintf('[LiveIndexing] Context set for store:%s | siteId:%s', $storeCode, $siteId)
+            );
 
-        // 3. Fallback to a non-zero integer if the store configuration is zero or empty
-        $configuredPerMinute = $this->config->getRequestPerMinuteByStoreId($storeId);
-        $perMinute = max(1, (int)$configuredPerMinute);
-        $maxLimit = $perMinute * 2; // 2-minute window to avoid rate-limiting at the receiving end
+            // 3. Fallback to a non-zero integer if the store configuration is zero or empty
+            $configuredPerMinute = $this->config->getRequestPerMinuteByStoreId($storeId);
+            $perMinute = max(1, (int)$configuredPerMinute);
+            $maxLimit = $perMinute * 2; // 2-minute window to avoid rate-limiting at the receiving end
 
-        $this->logger->info(
-            sprintf(
-                '[LiveIndexing] Initiated for store:%s | siteId:%s | requests:%s | maxLimit:%s',
-                $storeCode,
-                $siteId,
-                $perMinute,
-                $maxLimit
-            )
-        );
-
-        // --- DELETE ---
-        $deleteRecords = $this->indexingEntityProvider->get(
-            null, [$siteId], null, Actions::DELETE, null, null, $maxLimit
-        );
-        $deleteCount = count($deleteRecords);
-
-        $this->logger->info(
-            sprintf('[LiveIndexing] Delete IDs summary | Store: %s | Count: %s', $storeCode, $deleteCount)
-        );
-        $this->logger->debug(
-            '[LiveIndexing][Processor][QueueState]',
-            [
-                'siteId' => $siteId,
-                'store' => $storeCode,
-                'deletePendingCount' => $deleteCount,
-                'updatePendingCount' => 0,
-                'deleteSkipped' => false,
-                'updateSkipped' => false,
-            ]
-        );
-
-        $deleteSuccessCount = $this->deleteProcessor->execute($deleteRecords, $siteId, $storeCode);
-
-        // --- UPSERT (skipped when deletes saturate the rate window) ---
-        $updateSuccessCount = 0;
-
-        if ($deleteCount >= $maxLimit) {
             $this->logger->info(
-                '[LiveIndexing] Skipping Update operation fully because deletes saturate window',
-                [
-                    'siteId' => $siteId,
-                    'store' => $storeCode,
-                    'deleteCount' => $deleteCount,
-                    'maxLimit' => $maxLimit,
-                ]
+                sprintf(
+                    '[LiveIndexing] Initiated for store:%s | siteId:%s | requests:%s | maxLimit:%s',
+                    $storeCode,
+                    $siteId,
+                    $perMinute,
+                    $maxLimit
+                )
+            );
+
+            // --- DELETE ---
+            $deleteRecords = $this->indexingEntityProvider->get(
+                null, [$siteId], null, Actions::DELETE, null, null, $maxLimit
+            );
+            $deleteCount = count($deleteRecords);
+
+            $this->logger->info(
+                sprintf('[LiveIndexing] Delete IDs summary | Store: %s | Count: %s', $storeCode, $deleteCount)
             );
             $this->logger->debug(
                 '[LiveIndexing][Processor][QueueState]',
@@ -221,53 +198,25 @@ class Processor
                     'deletePendingCount' => $deleteCount,
                     'updatePendingCount' => 0,
                     'deleteSkipped' => false,
-                    'updateSkipped' => true,
+                    'updateSkipped' => false,
                 ]
             );
-        } else {
-            $remainingRequests = (int)max(0, $maxLimit - $deleteCount);
-            if ($remainingRequests > 0) {
+
+            $deleteSuccessCount = $this->deleteProcessor->execute($deleteRecords, $siteId, $storeCode);
+
+            // --- UPSERT (skipped when deletes saturate the rate window) ---
+            $updateSuccessCount = 0;
+
+            if ($deleteCount >= $maxLimit) {
                 $this->logger->info(
-                    '[LiveIndexing] Fetching indexable Update IDs',
+                    '[LiveIndexing] Skipping Update operation fully because deletes saturate window',
                     [
                         'siteId' => $siteId,
                         'store' => $storeCode,
-                        'remainingRequests' => $remainingRequests,
+                        'deleteCount' => $deleteCount,
+                        'maxLimit' => $maxLimit,
                     ]
                 );
-
-                $updateRecords = $this->indexingEntityProvider->get(
-                    null, [$siteId], null, Actions::UPSERT, true, null, $remainingRequests
-                );
-
-                $this->logger->info(
-                    sprintf(
-                        '[LiveIndexing] Update IDs summary | Store: %s | SiteId: %s | Count: %s',
-                        $storeCode,
-                        $siteId,
-                        count($updateRecords)
-                    )
-                );
-
-                $this->logger->debug(
-                    '[LiveIndexing][Processor][QueueState]',
-                    [
-                        'siteId' => $siteId,
-                        'store' => $storeCode,
-                        'deletePendingCount' => $deleteCount,
-                        'updatePendingCount' => count($updateRecords),
-                        'deleteSkipped' => false,
-                        'updateSkipped' => false,
-                    ]
-                );
-
-                $updateSuccessCount = $this->updateProcessor->execute(
-                    $updateRecords,
-                    $store,
-                    $siteId,
-                    $feedSpecification
-                );
-            } else {
                 $this->logger->debug(
                     '[LiveIndexing][Processor][QueueState]',
                     [
@@ -279,21 +228,77 @@ class Processor
                         'updateSkipped' => true,
                     ]
                 );
+            } else {
+                $remainingRequests = (int)max(0, $maxLimit - $deleteCount);
+                if ($remainingRequests > 0) {
+                    $this->logger->info(
+                        '[LiveIndexing] Fetching indexable Update IDs',
+                        [
+                            'siteId' => $siteId,
+                            'store' => $storeCode,
+                            'remainingRequests' => $remainingRequests,
+                        ]
+                    );
+
+                    $updateRecords = $this->indexingEntityProvider->get(
+                        null, [$siteId], null, Actions::UPSERT, true, null, $remainingRequests
+                    );
+
+                    $this->logger->info(
+                        sprintf(
+                            '[LiveIndexing] Update IDs summary | Store: %s | SiteId: %s | Count: %s',
+                            $storeCode,
+                            $siteId,
+                            count($updateRecords)
+                        )
+                    );
+
+                    $this->logger->debug(
+                        '[LiveIndexing][Processor][QueueState]',
+                        [
+                            'siteId' => $siteId,
+                            'store' => $storeCode,
+                            'deletePendingCount' => $deleteCount,
+                            'updatePendingCount' => count($updateRecords),
+                            'deleteSkipped' => false,
+                            'updateSkipped' => false,
+                        ]
+                    );
+
+                    $updateSuccessCount = $this->updateProcessor->execute(
+                        $updateRecords,
+                        $store,
+                        $siteId,
+                        $feedSpecification
+                    );
+                } else {
+                    $this->logger->debug(
+                        '[LiveIndexing][Processor][QueueState]',
+                        [
+                            'siteId' => $siteId,
+                            'store' => $storeCode,
+                            'deletePendingCount' => $deleteCount,
+                            'updatePendingCount' => 0,
+                            'deleteSkipped' => false,
+                            'updateSkipped' => true,
+                        ]
+                    );
+                }
             }
+
+            $totalSuccessCount = $deleteSuccessCount + $updateSuccessCount;
+
+            $this->logger->info(
+                '[LiveIndexing] Summary',
+                [
+                    'siteId' => $siteId,
+                    'store' => $storeCode,
+                    'totalSuccessCount' => $totalSuccessCount,
+                ]
+            );
+        } finally {
+            $this->contextManager->resetContext();
         }
-
-        $totalSuccessCount = $deleteSuccessCount + $updateSuccessCount;
-
-        $this->logger->info(
-            '[LiveIndexing] Summary',
-            [
-                'siteId' => $siteId,
-                'store' => $storeCode,
-                'totalSuccessCount' => $totalSuccessCount,
-            ]
-        );
-
-        $this->contextManager->resetContext();
 
         return $totalSuccessCount;
     }

@@ -115,6 +115,23 @@ class ConfigItem extends AbstractExtensibleObject implements ConfigItemInterface
     }
 
     /**
+     * @return string|null
+     */
+    public function getDiscoverySyncCronExpr(): ?string
+    {
+        return $this->_get(self::DISCOVERY_SYNC_CRON_EXPR);
+    }
+
+    /**
+     * @param string|null $discoverySyncCronExpr
+     * @return ConfigItemInterface
+     */
+    public function setDiscoverySyncCronExpr(?string $discoverySyncCronExpr): ConfigItemInterface
+    {
+        return $this->setData(self::DISCOVERY_SYNC_CRON_EXPR, $discoverySyncCronExpr);
+    }
+
+    /**
      * @return int|null
      */
     public function getPerMinute(): ?int
@@ -604,6 +621,7 @@ class ConfigItem extends AbstractExtensibleObject implements ConfigItemInterface
             'endPoint' => $this->getEndPoint(),
             'enableLiveIndexing' => $this->getEnableLiveIndexing(),
             'entitySyncCronExpr' => $this->getEntitySyncCronExpr(),
+            'discoverySyncCronExpr' => $this->getDiscoverySyncCronExpr(),
             'perMinute' => $this->getPerMinute(),
             'chunkSize' => $this->getChunkSize(),
             'enableDebugLog' => $this->getEnableDebugLog(),

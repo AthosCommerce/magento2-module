@@ -2,6 +2,7 @@
 
 namespace AthosCommerce\Feed\Model\Api;
 
+use Magento\Framework\App\Config\ScopeConfigInterface;
 use AthosCommerce\Feed\Api\ConfigUpdateInterface;
 use AthosCommerce\Feed\Api\Data\ConfigItemInterface;
 use AthosCommerce\Feed\Api\Data\ConfigUpdateResponseInterface;
@@ -218,11 +219,13 @@ class ConfigUpdate implements ConfigUpdateInterface
                         $value = $this->encryptor->encrypt($value);
                     }
 
+                    // Global settings (cron schedules) go to default scope, whichever store is updated.
+                    $isGlobal = ($config['scope'] ?? null) === 'default';
                     $this->configWriter->save(
                         $config['path'],
                         $value,
-                        $scope,
-                        $scopeId
+                        $isGlobal ? ScopeConfigInterface::SCOPE_TYPE_DEFAULT : $scope,
+                        $isGlobal ? 0 : $scopeId
                     );
                 }
 
