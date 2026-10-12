@@ -20,8 +20,10 @@ namespace AthosCommerce\Feed\Console\Command;
 
 use Magento\Framework\App\Area;
 use Magento\Framework\App\State;
+use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Stdlib\DateTime\DateTimeFactory;
 use AthosCommerce\Feed\Api\LiveIndexingInterfaceFactory as LiveIndexing;
+use AthosCommerce\Feed\Model\LiveIndexing\WorkerFailureLogger;
 use AthosCommerce\Feed\Model\Metric\CollectorInterface;
 use AthosCommerce\Feed\Model\Metric\Output\CliOutput;
 use Symfony\Component\Console\Command\Command;
@@ -53,6 +55,10 @@ class EntitySyncCommand extends Command
      * @var CollectorInterface
      */
     private $metricCollector;
+    /**
+     * @var WorkerFailureLogger
+     */
+    private $workerFailureLogger;
 
     /**
      * @param LiveIndexing $liveIndexingFactory
@@ -60,6 +66,7 @@ class EntitySyncCommand extends Command
      * @param State $state
      * @param CliOutput $cliOutput
      * @param CollectorInterface $metricCollector
+     * @param WorkerFailureLogger $workerFailureLogger
      * @param string|null $name
      */
     public function __construct(
@@ -68,6 +75,7 @@ class EntitySyncCommand extends Command
         State              $state,
         CliOutput          $cliOutput,
         CollectorInterface $metricCollector,
+        WorkerFailureLogger $workerFailureLogger,
         ?string            $name = null
     )
     {
@@ -77,6 +85,7 @@ class EntitySyncCommand extends Command
         $this->state = $state;
         $this->cliOutput = $cliOutput;
         $this->metricCollector = $metricCollector;
+        $this->workerFailureLogger = $workerFailureLogger;
     }
 
     /**
@@ -127,8 +136,10 @@ HELP
     ): int
     {
         $filters = [];
+        $storeCodes = [];
         try {
             $storeCodes = $this->getStoreCodes($input);
+            $this->workerFailureLogger->start(static::COMMAND_NAME, $storeCodes);
             if ($storeCodes) {
                 $filters[] = __('STORE Codes = %1', implode(', ', $storeCodes));
             }
@@ -164,8 +175,11 @@ HELP
             $output->writeln('<info>Execution ended: ' . $dateTime->gmtDate() . ' </info> ');
         } catch (\Throwable $e) {
             $output->writeln('<error>Exception: ' . $e->getMessage() . ' </error> ');
+            $this->workerFailureLogger->logException(static::COMMAND_NAME, $storeCodes, $e);
 
             return Command::FAILURE;
+        } finally {
+            $this->workerFailureLogger->finish();
         }
 
         return Command::SUCCESS;

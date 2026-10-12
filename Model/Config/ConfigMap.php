@@ -47,10 +47,18 @@ class ConfigMap
             'type' => 'bool',
             'validator' => 'validateBoolean'
         ],
+        // Cron schedules are global in Magento (read at default scope), so they are saved there.
         'entitySyncCronExpr' => [
             'path' => Constants::XML_PATH_LIVE_INDEXING_SYNC_CRON_EXPR,
             'type' => 'cron',
-            'validator' => 'validateCron'
+            'validator' => 'validateCron',
+            'scope' => 'default'
+        ],
+        'discoverySyncCronExpr' => [
+            'path' => Constants::XML_PATH_LIVE_INDEXING_DISCOVERY_CRON_EXPR,
+            'type' => 'cron',
+            'validator' => 'validateCron',
+            'scope' => 'default'
         ],
         'perMinute' => [
             'path' => Constants::XML_PATH_LIVE_INDEXING_PER_MINUTE,

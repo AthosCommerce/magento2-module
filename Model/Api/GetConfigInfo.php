@@ -26,6 +26,7 @@ use AthosCommerce\Feed\Model\Config\StoreConfigApiMapper;
 use AthosCommerce\Feed\Model\Data\ConfigInfoResponseFactory;
 use AthosCommerce\Feed\Model\Data\StoreConfigFactory;
 use AthosCommerce\Feed\Model\ConfigRepository;
+use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Encryption\EncryptorInterface;
 use Magento\Store\Model\StoreManagerInterface;
 
@@ -52,6 +53,9 @@ class GetConfigInfo implements GetConfigInfoInterface
     /** @var EncryptorInterface */
     private $encryptor;
 
+    /** @var ScopeConfigInterface */
+    private $scopeConfig;
+
     /**
      * @param ConfigRepository $configRepository
      * @param StoreManagerInterface $storeManager
@@ -60,6 +64,7 @@ class GetConfigInfo implements GetConfigInfoInterface
      * @param StoreConfigFactory $storeConfigFactory
      * @param StoreConfigApiMapper $storeConfigApiMapper
      * @param EncryptorInterface $encryptor
+     * @param ScopeConfigInterface $scopeConfig
      */
     public function __construct(
         ConfigRepository          $configRepository,
@@ -68,7 +73,8 @@ class GetConfigInfo implements GetConfigInfoInterface
         ConfigInfoResponseFactory $responseFactory,
         StoreConfigFactory        $storeConfigFactory,
         StoreConfigApiMapper      $storeConfigApiMapper,
-        EncryptorInterface        $encryptor
+        EncryptorInterface        $encryptor,
+        ScopeConfigInterface      $scopeConfig
     ) {
         $this->configRepository = $configRepository;
         $this->storeManager = $storeManager;
@@ -77,6 +83,7 @@ class GetConfigInfo implements GetConfigInfoInterface
         $this->storeConfigFactory = $storeConfigFactory;
         $this->storeConfigApiMapper = $storeConfigApiMapper;
         $this->encryptor = $encryptor;
+        $this->scopeConfig = $scopeConfig;
     }
 
     /**
@@ -91,15 +98,17 @@ class GetConfigInfo implements GetConfigInfoInterface
 
         try {
             $rows = $this->configRepository->fetchStoreConfigRows();
-            if (!$rows) {
-                $response->setSuccess(true);
-                $response->setMessage(__('No configuration found.')->render());
-                $response->setStores([]);
-                return $response;
-            }
 
+            // One model per store view, independent of store-scope rows: global settings (cron
+            // schedules) are saved at default scope only and must be reported for every store, also
+            // when no store has any store-scope value yet.
             $stores = [];
             $storeCodesCache = [];
+            foreach ($this->storeManager->getStores(false) as $store) {
+                $storeId = (int)$store->getId();
+                $storeCodesCache[$storeId] = $store->getCode();
+                $stores[$storeId] = $this->createStoreConfigModel($storeId, $storeCodesCache[$storeId]);
+            }
             $pathToKeyMap = ConfigMap::getPathToKeyMap();
 
             foreach ($rows as $row) {
@@ -111,7 +120,8 @@ class GetConfigInfo implements GetConfigInfoInterface
                 }
                 $outputKey = $pathToKeyMap[$path];
                 $meta = ConfigMap::MAP[$outputKey] ?? null;
-                if ($meta === null) {
+                // Global settings are reported from default scope below; store rows are not used.
+                if ($meta === null || ($meta['scope'] ?? null) === 'default') {
                     continue;
                 }
                 $value = $row['value'];
@@ -137,11 +147,7 @@ class GetConfigInfo implements GetConfigInfoInterface
                 }
 
                 if (!isset($stores[$storeId])) {
-                    /** @var StoreConfigFactory $storeConfigModel */
-                    $storeConfigModel = $this->storeConfigFactory->create();
-                    $storeConfigModel->setStoreId((int)$storeId);
-                    $storeConfigModel->setStoreCode($storeCodesCache[$storeId]);
-                    $stores[$storeId] = $storeConfigModel;
+                    $stores[$storeId] = $this->createStoreConfigModel($storeId, $storeCodesCache[$storeId]);
                 }
 
                 if (($meta['group'] ?? null) === 'taskPayload') {
@@ -183,11 +189,17 @@ class GetConfigInfo implements GetConfigInfoInterface
                         ]
                     );
                 }
-
-                $stores[$storeId] = $storeConfigModel;
             }
+            if (!$stores) {
+                $response->setSuccess(true);
+                $response->setMessage(__('No configuration found.')->render());
+                $response->setStores([]);
+                return $response;
+            }
+
             $apiStores = [];
             foreach ($stores as $storeConfig) {
+                $this->setGlobalValues($storeConfig);
                 $apiStores[] = $this->storeConfigApiMapper->map($storeConfig);
             }
 
@@ -218,5 +230,41 @@ class GetConfigInfo implements GetConfigInfoInterface
         }
 
         return $response;
+    }
+
+    /**
+     * Empty config model for a store view.
+     *
+     * @param int $storeId
+     * @param string|null $storeCode
+     * @return object
+     */
+    private function createStoreConfigModel(int $storeId, ?string $storeCode)
+    {
+        $storeConfigModel = $this->storeConfigFactory->create();
+        $storeConfigModel->setStoreId($storeId);
+        $storeConfigModel->setStoreCode($storeCode);
+
+        return $storeConfigModel;
+    }
+
+    /**
+     * Report global settings (cron schedules) with their effective default-scope value.
+     *
+     * @param object $storeConfig
+     * @return void
+     */
+    private function setGlobalValues($storeConfig): void
+    {
+        foreach (ConfigMap::MAP as $key => $meta) {
+            if (($meta['scope'] ?? null) !== 'default') {
+                continue;
+            }
+            $setter = 'set' . ucfirst($key);
+            if (method_exists($storeConfig, $setter)) {
+                $value = $this->scopeConfig->getValue($meta['path'], ScopeConfigInterface::SCOPE_TYPE_DEFAULT);
+                $storeConfig->{$setter}($value !== null ? (string)$value : null);
+            }
+        }
     }
 }

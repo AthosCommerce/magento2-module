@@ -47,6 +47,7 @@ class Constants
     public const XML_PATH_SALES_API_MAX_PAGE_SIZE = 'athoscommerce/indexing/api_sales_max_page_size';
 
     public const XML_PATH_LIVE_INDEXING_SYNC_CRON_EXPR = 'athoscommerce/indexing/entity_sync_cron_expr';
+    public const XML_PATH_LIVE_INDEXING_DISCOVERY_CRON_EXPR = 'athoscommerce/indexing/discovery_sync_cron_expr';
     public const XML_PATH_LIVE_INDEXING_MILLISECONDS_DELAY = 'athoscommerce/indexing/milliseconds_delay';
 
     /**

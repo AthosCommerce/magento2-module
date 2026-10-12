@@ -602,4 +602,15 @@
         <plugin name="athoscommerce_feed_product_action_live_indexing"
                 type="AthosCommerce\Feed\Plugin\Catalog\ProductActionPlugin"/>
     </type>
+    <!-- Live indexing store workers run in the background, like Magento cron group processes. -->
+    <virtualType name="AthosCommerceLiveIndexingShellBackground" type="Magento\Framework\Shell">
+        <arguments>
+            <argument name="commandRenderer" xsi:type="object">Magento\Framework\Shell\CommandRendererBackground</argument>
+        </arguments>
+    </virtualType>
+    <type name="AthosCommerce\Feed\Model\LiveIndexing\StoreWorkerLauncher">
+        <arguments>
+            <argument name="shell" xsi:type="object">AthosCommerceLiveIndexingShellBackground</argument>
+        </arguments>
+    </type>
 </config>
