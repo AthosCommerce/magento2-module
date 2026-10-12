@@ -27,9 +27,15 @@ use Magento\Framework\Event\ObserverInterface;
 use AthosCommerce\Feed\Observer\BaseProductObserver;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Service\Provider\ProductNextActionProvider;
+use AthosCommerce\Feed\Service\Action\SyncSiteAssignmentAction;
 
 class DeleteObserver implements ObserverInterface
 {
+    /**
+     * @var SyncSiteAssignmentAction
+     */
+    private $syncSiteAssignmentAction;
+
     /**
      * @var BaseProductObserver
      */
@@ -60,19 +66,22 @@ class DeleteObserver implements ObserverInterface
      * @param ScopeConfigInterface $scopeConfig
      * @param ProductNextActionProvider $productNextActionProvider
      * @param ConfigModel $configModel
+     * @param SyncSiteAssignmentAction $syncSiteAssignmentAction
      */
     public function __construct(
         BaseProductObserver       $baseProductObserver,
         AthosCommerceLogger       $logger,
         ScopeConfigInterface      $scopeConfig,
         ProductNextActionProvider $productNextActionProvider,
-        ConfigModel               $configModel
+        ConfigModel               $configModel,
+        SyncSiteAssignmentAction  $syncSiteAssignmentAction
     ) {
         $this->baseProductObserver = $baseProductObserver;
         $this->logger = $logger;
         $this->scopeConfig = $scopeConfig;
         $this->productNextActionProvider = $productNextActionProvider;
         $this->configModel = $configModel;
+        $this->syncSiteAssignmentAction = $syncSiteAssignmentAction;
     }
 
     /**
@@ -111,6 +120,12 @@ class DeleteObserver implements ObserverInterface
                         [$product->getId()],
                         $nextAction,
                         false,
+                        $siteId !== null ? [$siteId] : []
+                    );
+                    // A deleted variant changes the variant-wide values of its siblings; its rows
+                    // still hold the parent id, so the siblings can be found and re-sent.
+                    $this->syncSiteAssignmentAction->queueSiblingUpserts(
+                        [(int)$product->getId()],
                         $siteId !== null ? [$siteId] : []
                     );
 

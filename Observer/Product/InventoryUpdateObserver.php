@@ -34,6 +34,7 @@ use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 use AthosCommerce\Feed\Service\Provider\ProductNextActionProvider;
 use AthosCommerce\Feed\Service\Tracking\IdProviderInterface;
 use AthosCommerce\Feed\Service\Tracking\StockItemSnapshot;
+use AthosCommerce\Feed\Service\Action\SyncSiteAssignmentAction;
 use Magento\Catalog\Model\Product\Visibility;
 
 class InventoryUpdateObserver implements ObserverInterface
@@ -87,6 +88,11 @@ class InventoryUpdateObserver implements ObserverInterface
      */
     private $stockItemSnapshot;
 
+    /**
+     * @var SyncSiteAssignmentAction
+     */
+    private $syncSiteAssignmentAction;
+
     public function __construct(
         AthosCommerceLogger       $logger,
         ProductRepository         $productRepository,
@@ -97,7 +103,8 @@ class InventoryUpdateObserver implements ObserverInterface
         ConfigModel               $configModel,
         IndexingEntityRepositoryInterface $indexingEntityRepository,
         SearchCriteriaBuilderFactory      $searchCriteriaBuilderFactory,
-        StockItemSnapshot                $stockItemSnapshot
+        StockItemSnapshot                $stockItemSnapshot,
+        SyncSiteAssignmentAction         $syncSiteAssignmentAction
     )
     {
         $this->logger = $logger;
@@ -110,6 +117,7 @@ class InventoryUpdateObserver implements ObserverInterface
         $this->indexingEntityRepository = $indexingEntityRepository;
         $this->searchCriteriaBuilderFactory = $searchCriteriaBuilderFactory;
         $this->stockItemSnapshot = $stockItemSnapshot;
+        $this->syncSiteAssignmentAction = $syncSiteAssignmentAction;
     }
 
     /**
@@ -177,6 +185,11 @@ class InventoryUpdateObserver implements ObserverInterface
                         $siteId !== null ? [$siteId] : []
                     );
                     $this->updateParentEntity($product, (int)$storeId, $siteId);
+                    // Siblings carry variant-wide values in their payloads; re-send them too.
+                    $this->syncSiteAssignmentAction->queueSiblingUpserts(
+                        [(int)$productId],
+                        $siteId !== null ? [$siteId] : []
+                    );
 
                     $this->logger->debug(
                         '[InventoryUpdateObserver] Stock Update Store Check',

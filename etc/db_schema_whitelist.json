@@ -45,6 +45,9 @@
             "created_at": true,
             "updated_at": true
         },
+        "index": {
+            "IDX_9D9AF738DB39B0A4A6DE2955B26EC4A7": true
+        },
         "constraint": {
             "PRIMARY": true,
             "UNQ_4BCDD54213D94E8E9AF1B8CCBDC75F23": true

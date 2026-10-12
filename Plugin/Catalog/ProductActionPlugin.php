@@ -258,6 +258,8 @@ class ProductActionPlugin
         foreach ($byAction as $nextAction => $ids) {
             $this->baseProductObserver->execute($ids, $nextAction, $nextAction === Actions::UPSERT, [$siteId]);
         }
+        // Siblings of changed variants carry variant-wide values; re-send them too.
+        $this->syncSiteAssignmentAction->queueSiblingUpserts($productIds, [$siteId]);
         $this->logger->debug(
             '[ProductActionPlugin] queued',
             ['store_id' => $store->getId(), 'site_id' => $siteId, 'actions' => $byAction]

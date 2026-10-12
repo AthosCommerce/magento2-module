@@ -28,6 +28,7 @@ use Magento\Framework\Event\ObserverInterface;
 use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
+use AthosCommerce\Feed\Service\Action\SyncSiteAssignmentAction;
 
 class BunchDeleteObserver implements ObserverInterface
 {
@@ -54,24 +55,32 @@ class BunchDeleteObserver implements ObserverInterface
     private $configModel;
 
     /**
+     * @var SyncSiteAssignmentAction
+     */
+    private $syncSiteAssignmentAction;
+
+    /**
      * @param BaseProductObserver $baseProductObserver
      * @param AthosCommerceLogger $logger
      * @param ScopeConfigInterface $scopeConfig
      * @param StoreManagerInterface $storeManager
      * @param ConfigModel $configModel
+     * @param SyncSiteAssignmentAction $syncSiteAssignmentAction
      */
     public function __construct(
         BaseProductObserver   $baseProductObserver,
         AthosCommerceLogger   $logger,
         ScopeConfigInterface  $scopeConfig,
         StoreManagerInterface $storeManager,
-        ConfigModel           $configModel
+        ConfigModel           $configModel,
+        SyncSiteAssignmentAction $syncSiteAssignmentAction
     ) {
         $this->baseProductObserver = $baseProductObserver;
         $this->logger = $logger;
         $this->scopeConfig = $scopeConfig;
         $this->storeManager = $storeManager;
         $this->configModel = $configModel;
+        $this->syncSiteAssignmentAction = $syncSiteAssignmentAction;
     }
 
     /**
@@ -106,6 +115,8 @@ class BunchDeleteObserver implements ObserverInterface
                     false,
                     $siteIds
                 );
+                // Siblings of deleted variants carry variant-wide values; re-send them too.
+                $this->syncSiteAssignmentAction->queueSiblingUpserts(array_map('intval', $chunk), $siteIds);
             }
 
             $this->logger->info(
