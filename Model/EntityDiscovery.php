@@ -32,6 +32,8 @@ use AthosCommerce\Feed\Service\Action\SetIndexingEntitiesToDeleteActionInterface
 use AthosCommerce\Feed\Service\Action\SetIndexingEntitiesToUpdateActionInterface;
 use AthosCommerce\Feed\Service\Action\SyncSiteAssignmentAction;
 use AthosCommerce\Feed\Service\Provider\LiveIndexingSiteProvider;
+use AthosCommerce\Feed\Model\LiveIndexing\StoreLock;
+use AthosCommerce\Feed\Exception\LiveIndexingStoresFailedException;
 use AthosCommerce\Feed\Service\Provider\Api\IndexingEntityProviderInterface;
 use AthosCommerce\Feed\Service\Provider\MagentoEntityProvider;
 use Exception;
@@ -86,6 +88,10 @@ class EntityDiscovery implements EntityDiscoveryInterface
      */
     private $syncSiteAssignmentAction;
     /**
+     * @var StoreLock
+     */
+    private $storeLock;
+    /**
      * @var SerializerInterface
      */
     private $serializer;
@@ -134,6 +140,7 @@ class EntityDiscovery implements EntityDiscoveryInterface
      * @param SetIndexingEntitiesToUpdateActionInterface $setIndexingEntitiesToUpdateAction
      * @param LiveIndexingSiteProvider $siteProvider
      * @param SyncSiteAssignmentAction $syncSiteAssignmentAction
+     * @param StoreLock $storeLock
      */
     public function __construct(
         StoreManagerInterface                      $storeManager,
@@ -152,7 +159,8 @@ class EntityDiscovery implements EntityDiscoveryInterface
         SetIndexingEntitiesToDeleteActionInterface $setIndexingEntitiesToDeleteAction,
         SetIndexingEntitiesToUpdateActionInterface $setIndexingEntitiesToUpdateAction,
         LiveIndexingSiteProvider                   $siteProvider,
-        SyncSiteAssignmentAction                   $syncSiteAssignmentAction
+        SyncSiteAssignmentAction                   $syncSiteAssignmentAction,
+        StoreLock                                  $storeLock
     )
     {
         $this->storeManager = $storeManager;
@@ -173,6 +181,7 @@ class EntityDiscovery implements EntityDiscoveryInterface
         $this->setIndexingEntitiesToUpdateAction = $setIndexingEntitiesToUpdateAction;
         $this->siteProvider = $siteProvider;
         $this->syncSiteAssignmentAction = $syncSiteAssignmentAction;
+        $this->storeLock = $storeLock;
     }
 
     /**
@@ -182,6 +191,8 @@ class EntityDiscovery implements EntityDiscoveryInterface
     public function execute(?array $storeCodes = null): array
     {
         $response = [];
+        $failures = [];
+        $firstFailure = null;
         foreach ($this->resolveStores($storeCodes) as $store) {
 
             $storeId = (int)$store->getId();
@@ -207,7 +218,15 @@ class EntityDiscovery implements EntityDiscoveryInterface
                 continue;
             }
             if (is_string($payload)) {
-                $payload = $this->serializer->unserialize($payload);
+                try {
+                    $payload = $this->serializer->unserialize($payload);
+                } catch (\Throwable $e) {
+                    // A broken payload fails this store only; the other stores still run.
+                    $this->logger->error("[Discovery] invalid task payload for $storeCode/$siteId: " . $e->getMessage());
+                    $failures[$storeCode] = 'Invalid task payload: ' . $e->getMessage();
+                    $firstFailure = $firstFailure ?? $e;
+                    continue;
+                }
             }
 
             if (!is_array($payload)) {
@@ -221,6 +240,11 @@ class EntityDiscovery implements EntityDiscoveryInterface
                 continue;
             }
 
+            // One discovery run per store at a time, whoever started it (cron worker or CLI).
+            if (!$this->storeLock->acquire(StoreLock::TYPE_DISCOVERY, $storeCode)) {
+                $this->logger->info("[Discovery] skipped for $storeCode/$siteId: already running");
+                continue;
+            }
             try {
                 $feedSpecification = $this->buildFeedSpecification($payload, $storeCode);
                 $this->contextManager->setContextFromSpecification($feedSpecification);
@@ -237,15 +261,24 @@ class EntityDiscovery implements EntityDiscoveryInterface
                 $this->logger->info(
                     "[Discovery] finished for $storeCode/$siteId"
                 );
-            } catch (Exception $e) {
+            } catch (\Throwable $e) {
                 $this->logger->error(
                     "[Discovery] error for $storeCode/$siteId: " . $e->getMessage()
                 );
+                // Keep going with the other stores; the run is reported as failed after the loop.
+                $failures[$storeCode] = $e->getMessage();
+                $firstFailure = $firstFailure ?? $e;
+                continue;
             } finally {
                 $this->contextManager->resetContext();
+                $this->storeLock->release(StoreLock::TYPE_DISCOVERY, $storeCode);
             }
             $response[$storeId] = $storeCode;
         }
+        if ($failures) {
+            throw new LiveIndexingStoresFailedException('Discovery', $failures, $firstFailure);
+        }
+
         return $response;
     }
 

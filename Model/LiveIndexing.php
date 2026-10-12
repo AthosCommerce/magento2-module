@@ -24,6 +24,8 @@ use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use AthosCommerce\Feed\Model\LiveIndexing\Processor;
+use AthosCommerce\Feed\Model\LiveIndexing\StoreLock;
+use AthosCommerce\Feed\Exception\LiveIndexingStoresFailedException;
 use AthosCommerce\Feed\Model\Config as ConfigModel;
 use AthosCommerce\Feed\Logger\AthosCommerceLogger;
 
@@ -45,24 +47,31 @@ class LiveIndexing implements LiveIndexingInterface
      * @var AthosCommerceLogger
      */
     private $logger;
+    /**
+     * @var StoreLock
+     */
+    private $storeLock;
 
     /**
      * @param StoreManagerInterface $storeManager
      * @param ConfigModel $config
      * @param Processor $processor
      * @param AthosCommerceLogger $logger
+     * @param StoreLock $storeLock
      */
     public function __construct(
         StoreManagerInterface $storeManager,
         ConfigModel           $config,
         Processor             $processor,
-        AthosCommerceLogger       $logger
+        AthosCommerceLogger       $logger,
+        StoreLock                 $storeLock
     )
     {
         $this->storeManager = $storeManager;
         $this->config = $config;
         $this->processor = $processor;
         $this->logger = $logger;
+        $this->storeLock = $storeLock;
     }
 
     /**
@@ -74,6 +83,8 @@ class LiveIndexing implements LiveIndexingInterface
     {
         $storesToProcess = [];
         $processCount = [];
+        $failures = [];
+        $firstFailure = null;
 
         if (!empty($storeCodes)) {
             foreach ($storeCodes as $code) {
@@ -112,24 +123,53 @@ class LiveIndexing implements LiveIndexingInterface
                 );
                 continue;
             }
-            $this->logger->info(
-                sprintf(
-                    "[LiveIndexing] Processing start for store:%s | SiteID:%s",
-                    $storeCode,
+            // One sync run per store at a time, whoever started it (cron worker or CLI).
+            if (!$this->storeLock->acquire(StoreLock::TYPE_SYNC, $storeCode)) {
+                $this->logger->info(
+                    sprintf("[LiveIndexing] Skipped for store:%s | SiteID:%s: already running", $storeCode, $siteId)
+                );
+                continue;
+            }
+            try {
+                $this->logger->info(
+                    sprintf(
+                        "[LiveIndexing] Processing start for store:%s | SiteID:%s",
+                        $storeCode,
+                        $siteId
+                    )
+                );
+                $processCount[$storeCode] = $this->processor->execute(
+                    $store,
                     $siteId
-                )
-            );
-            $processCount[$storeCode] = $this->processor->execute(
-                $store,
-                $siteId
-            );
-            $this->logger->info(
-                sprintf(
-                    "[LiveIndexing] Processing completed for store:%s | SiteID:%s",
-                    $storeCode,
-                    $siteId
-                )
-            );
+                );
+                $this->logger->info(
+                    sprintf(
+                        "[LiveIndexing] Processing completed for store:%s | SiteID:%s",
+                        $storeCode,
+                        $siteId
+                    )
+                );
+            } catch (\Throwable $exception) {
+                // Logged per store and collected: the next stores are still processed, and the run is
+                // reported as failed after the loop.
+                $failures[$storeCode] = $exception->getMessage();
+                $firstFailure = $firstFailure ?? $exception;
+                $this->logger->error(
+                    sprintf(
+                        "[LiveIndexing] Processing failed for store:%s | SiteID:%s: %s",
+                        $storeCode,
+                        $siteId,
+                        $exception->getMessage()
+                    ),
+                    ['store' => $storeCode, 'site_id' => $siteId, 'trace' => $exception->getTraceAsString()]
+                );
+            } finally {
+                $this->storeLock->release(StoreLock::TYPE_SYNC, $storeCode);
+            }
+        }
+
+        if ($failures) {
+            throw new LiveIndexingStoresFailedException('Entity sync', $failures, $firstFailure);
         }
 
         return $processCount;
