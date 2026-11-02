@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AthosCommerce\Feed\Test\Unit\Service\Tracking;
 
+use AthosCommerce\Feed\Service\GroupedParentIdResolver;
 use AthosCommerce\Feed\Service\Tracking\IdProvider;
 use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Catalog\Model\Product;
@@ -31,6 +32,11 @@ class IdProviderTest extends TestCase
     private $groupedTypeMock;
 
     /**
+     * @var GroupedParentIdResolver|MockObject
+     */
+    private $groupedParentIdResolverMock;
+
+    /**
      * @var IdProvider
      */
     private $idProvider;
@@ -40,11 +46,13 @@ class IdProviderTest extends TestCase
         $this->linkManagementMock = $this->createMock(LinkManagementInterface::class);
         $this->configurableTypeMock = $this->createMock(Configurable::class);
         $this->groupedTypeMock = $this->createMock(Grouped::class);
+        $this->groupedParentIdResolverMock = $this->createMock(GroupedParentIdResolver::class);
 
         $this->idProvider = new IdProvider(
             $this->linkManagementMock,
             $this->configurableTypeMock,
-            $this->groupedTypeMock
+            $this->groupedTypeMock,
+            $this->groupedParentIdResolverMock
         );
     }
 
@@ -71,8 +79,8 @@ class IdProviderTest extends TestCase
             ->with(5)
             ->willReturn(array());
 
-        $this->groupedTypeMock->expects($this->once())
-            ->method('getParentIdsByChild')
+        $this->groupedParentIdResolverMock->expects($this->once())
+            ->method('getParentIdsByChildId')
             ->with(5)
             ->willReturn(array());
 
@@ -88,8 +96,8 @@ class IdProviderTest extends TestCase
             ->with(11)
             ->willReturn(array(12));
 
-        $this->groupedTypeMock->expects($this->never())
-            ->method('getParentIdsByChild');
+        $this->groupedParentIdResolverMock->expects($this->never())
+            ->method('getParentIdsByChildId');
 
         $this->assertSame('12', $this->idProvider->getItemParentId($product));
     }
@@ -103,8 +111,8 @@ class IdProviderTest extends TestCase
             ->with(18)
             ->willReturn(array());
 
-        $this->groupedTypeMock->expects($this->once())
-            ->method('getParentIdsByChild')
+        $this->groupedParentIdResolverMock->expects($this->once())
+            ->method('getParentIdsByChildId')
             ->with(18)
             ->willReturn(array(19));
 
@@ -127,52 +135,48 @@ class IdProviderTest extends TestCase
 
     public function testGetItemIdReturnsFirstAvailableConfigurableChildId(): void
     {
-        $parentProduct = $this->createProductInterfaceMock(12, 'configurable-parent', Configurable::TYPE_CODE);
         $availableChild = $this->createAvailableProductMock(9, 'child-sku', 'simple', true);
+        $typeInstanceMock = $this->getConfigurableTypeInstanceMock(array($availableChild));
+        $parentProduct = $this->createCatalogProductMock(12, 'configurable-parent', Configurable::TYPE_CODE, $typeInstanceMock);
 
-        $this->linkManagementMock->expects($this->once())
-            ->method('getChildren')
-            ->with('configurable-parent')
-            ->willReturn(array($availableChild));
+        $this->linkManagementMock->expects($this->never())
+            ->method('getChildren');
 
         $this->assertSame('9', $this->idProvider->getItemId($parentProduct));
     }
 
     public function testGetItemSkuReturnsFirstAvailableConfigurableChildSku(): void
     {
-        $parentProduct = $this->createProductInterfaceMock(12, 'configurable-parent', Configurable::TYPE_CODE);
         $availableChild = $this->createAvailableProductMock(9, 'child-sku', 'simple', true);
+        $typeInstanceMock = $this->getConfigurableTypeInstanceMock(array($availableChild));
+        $parentProduct = $this->createCatalogProductMock(12, 'configurable-parent', Configurable::TYPE_CODE, $typeInstanceMock);
 
-        $this->linkManagementMock->expects($this->once())
-            ->method('getChildren')
-            ->with('configurable-parent')
-            ->willReturn(array($availableChild));
+        $this->linkManagementMock->expects($this->never())
+            ->method('getChildren');
 
         $this->assertSame('child-sku', $this->idProvider->getItemSku($parentProduct));
     }
 
     public function testGetItemIdFallsBackToOwnIdWhenNoAvailableConfigurableChildExists(): void
     {
-        $parentProduct = $this->createProductInterfaceMock(12, 'configurable-parent', Configurable::TYPE_CODE);
         $unavailableChild = $this->createAvailableProductMock(9, 'child-sku', 'simple', false);
+        $typeInstanceMock = $this->getConfigurableTypeInstanceMock(array($unavailableChild));
+        $parentProduct = $this->createCatalogProductMock(12, 'configurable-parent', Configurable::TYPE_CODE, $typeInstanceMock);
 
-        $this->linkManagementMock->expects($this->once())
-            ->method('getChildren')
-            ->with('configurable-parent')
-            ->willReturn(array($unavailableChild));
+        $this->linkManagementMock->expects($this->never())
+            ->method('getChildren');
 
         $this->assertSame('12', $this->idProvider->getItemId($parentProduct));
     }
 
     public function testGetItemSkuFallsBackToOwnSkuWhenNoAvailableConfigurableChildExists(): void
     {
-        $parentProduct = $this->createProductInterfaceMock(12, 'configurable-parent', Configurable::TYPE_CODE);
         $unavailableChild = $this->createAvailableProductMock(9, 'child-sku', 'simple', false);
+        $typeInstanceMock = $this->getConfigurableTypeInstanceMock(array($unavailableChild));
+        $parentProduct = $this->createCatalogProductMock(12, 'configurable-parent', Configurable::TYPE_CODE, $typeInstanceMock);
 
-        $this->linkManagementMock->expects($this->once())
-            ->method('getChildren')
-            ->with('configurable-parent')
-            ->willReturn(array($unavailableChild));
+        $this->linkManagementMock->expects($this->never())
+            ->method('getChildren');
 
         $this->assertSame('configurable-parent', $this->idProvider->getItemSku($parentProduct));
     }
@@ -296,6 +300,17 @@ class IdProviderTest extends TestCase
         $product->method('isAvailable')->willReturn($isAvailable);
 
         return $product;
+    }
+
+    private function getConfigurableTypeInstanceMock(array $usedProducts): MockObject
+    {
+        $typeInstance = $this->getMockBuilder(\stdClass::class)
+            ->addMethods(array('getUsedProducts'))
+            ->getMock();
+
+        $typeInstance->method('getUsedProducts')->willReturn($usedProducts);
+
+        return $typeInstance;
     }
 
     private function getGroupedTypeInstanceMock(array $associatedProducts): MockObject

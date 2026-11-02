@@ -158,7 +158,9 @@ class IdProvider implements IdProviderInterface
      */
     private function getConfigurableChildProduct(ProductInterface $product): ?ProductInterface
     {
-        $childProducts = $this->linkManagement->getChildren($product->getSku());
+        // LinkManagementInterface::getChildren() reloads the product and converts each child's media gallery
+        // into API data objects, which fatals on external video entries without video content.
+        $childProducts = $product->getTypeInstance()->getUsedProducts($product);
 
         foreach ($childProducts as $childProduct) {
             if (method_exists($childProduct, 'isAvailable') && $childProduct->isAvailable()) {
