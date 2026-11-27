@@ -267,4 +267,77 @@ class MsiStockProviderTest extends TestCase
 
         $this->assertSame([], $this->msiStockProvider->getStock($productIds));
     }
+
+    public function testGetStockWithoutLegacyStockItemFallsBackToStoreConfig(): void
+    {
+        $productIds = [1, 2, 3];
+
+        $storeMock = $this->getMockBuilder(Store::class)
+            ->disableOriginalConstructor()
+            ->addMethods(['getStoreId'])
+            ->onlyMethods(['getWebsiteId'])
+            ->getMock();
+        $websiteMock = $this->createMock(WebsiteInterface::class);
+        $criteriaMock = $this->createMock(StockItemCriteriaInterface::class);
+
+        $stockResolverMock = $this->getMockBuilder(\stdClass::class)->addMethods(['execute'])->getMock();
+        $stockDataMock = $this->getMockBuilder(\stdClass::class)->addMethods(['execute'])->getMock();
+        $reservationMock = $this->getMockBuilder(\stdClass::class)->addMethods(['execute'])->getMock();
+        $stockMock = $this->getMockBuilder(\stdClass::class)->addMethods(['getStockId'])->getMock();
+
+        $this->objectManagerMock->method('get')->willReturnMap([
+            [self::MSI_STOCK_RESOLVER_INTERFACE, $stockResolverMock],
+            [self::MSI_STOCK_ITEM_DATA_INTERFACE, $stockDataMock],
+            [self::MSI_RESERVATIONS_QUANTITY_INTERFACE, $reservationMock],
+        ]);
+        $this->storeContextManagerMock->method('getStoreFromContext')->willReturn($storeMock);
+        $storeMock->method('getStoreId')->willReturn(1);
+        $storeMock->method('getWebsiteId')->willReturn(1);
+        $this->websiteRepositoryMock->method('getById')->willReturn($websiteMock);
+        $websiteMock->method('getCode')->willReturn('default');
+        $stockResolverMock->method('execute')->willReturn($stockMock);
+        $stockMock->method('getStockId')->willReturn(1);
+
+        $this->productResourceMock->method('getProductsSku')->willReturn([
+            ['entity_id' => 1, 'sku' => '1'],
+            ['entity_id' => 2, 'sku' => '2'],
+            ['entity_id' => 3, 'sku' => '3'],
+        ]);
+        $this->legacyStockItemCriteriaFactoryMock->method('create')->willReturn($criteriaMock);
+        $criteriaMock->method('setScopeFilter')->willReturnSelf();
+        $criteriaMock->method('setProductsFilter')->willReturnSelf();
+
+        // none of the products has a cataloginventory_stock_item row
+        $this->legacyStockItemRepositoryMock->method('getList')->willReturn(new class {
+            public function getItems()
+            {
+                return [];
+            }
+        });
+
+        $stockDataMock->method('execute')->willReturnMap([
+            ['1', 1, ['quantity' => 5, 'is_salable' => true]],
+            ['2', 1, ['quantity' => 0, 'is_salable' => false]],
+            ['3', 1, null],
+        ]);
+        $reservationMock->method('execute')->willReturn(0.0);
+
+        $this->stockConfigurationMock->method('getManageStock')->with(1)->willReturn(true);
+        $this->stockConfigurationMock->method('getMinQty')->with(1)->willReturn(0.0);
+
+        $this->loggerMock->expects($this->once())
+            ->method('warning')
+            ->with($this->anything(), $this->callback(static function (array $context): bool {
+                return $context['productIds'] === [1, 2, 3];
+            }));
+
+        $this->assertSame(
+            [
+                1 => ['qty' => 5.0, 'in_stock' => true, 'is_stock_managed' => true],
+                2 => ['qty' => 0.0, 'in_stock' => false, 'is_stock_managed' => true],
+                3 => ['qty' => 0.0, 'in_stock' => false, 'is_stock_managed' => true],
+            ],
+            $this->msiStockProvider->getStock($productIds)
+        );
+    }
 }

@@ -144,6 +144,7 @@ class MsiStockProvider implements StockProviderInterface
         $skus = $this->getSkus($productIds);
         $configurations = $this->getItemConfigurations($productIds);
         $result = [];
+        $missingConfigurationIds = [];
         foreach ($productIds as $productId) {
             $sku = $skus[$productId] ?? null;
             if (!$sku) {
@@ -168,14 +169,34 @@ class MsiStockProvider implements StockProviderInterface
                 continue;
             }
 
-            /** @var Item $configuration */
+            /** @var Item|null $configuration */
             $configuration = $configurations[$productId] ?? null;
-            $configuration->setStoreId($storeId);
+            if ($configuration) {
+                $configuration->setStoreId($storeId);
+                $isStockManaged = $configuration->getManageStock();
+            } else {
+                // No cataloginventory_stock_item row (e.g. products created via MSI-only import or direct SQL).
+                // Fall back to the store level stock configuration instead of failing the whole batch.
+                $missingConfigurationIds[] = $productId;
+                $isStockManaged = (bool)$this->stockConfiguration->getManageStock($storeId);
+            }
             $result[$productId] = [
                 'qty' => $this->getQty($stockData, $reservation),
-                'in_stock' => $this->getIsInStock($stockData, $reservation, $configuration),
-                'is_stock_managed' => $configuration->getManageStock(),
+                'in_stock' => $this->getIsInStock($stockData, $reservation, $configuration, $storeId),
+                'is_stock_managed' => $isStockManaged,
             ];
+        }
+
+        if ($missingConfigurationIds) {
+            $this->logger->warning(
+                'Products have no cataloginventory_stock_item row; using store stock configuration defaults',
+                [
+                    'method' => __METHOD__,
+                    'storeId' => $storeId,
+                    'stockId' => $stockId,
+                    'productIds' => $missingConfigurationIds,
+                ]
+            );
         }
 
         return $result;
@@ -204,16 +225,18 @@ class MsiStockProvider implements StockProviderInterface
      * @param array $stockData
      * @param float $reservation
      * @param StockItemInterface|null $configuration
+     * @param int|null $storeId
      *
      * @return bool
      */
     private function getIsInStock(
         array $stockData,
         float $reservation,
-        ?StockItemInterface $configuration = null
+        ?StockItemInterface $configuration = null,
+        ?int $storeId = null
     ): bool {
         if (!$configuration) {
-            return false;
+            return $this->getIsInStockFromStoreConfig($stockData, $reservation, $storeId);
         }
 
         if (!$configuration->getManageStock()) {
@@ -231,6 +254,29 @@ class MsiStockProvider implements StockProviderInterface
         }
 
         return $this->getQty($stockData, $reservation) > $configuration->getMinQty();
+    }
+
+    /**
+     * Determine stock status for a product without a legacy stock item, using store level configuration
+     *
+     * @param array $stockData
+     * @param float $reservation
+     * @param int|null $storeId
+     *
+     * @return bool
+     */
+    private function getIsInStockFromStoreConfig(array $stockData, float $reservation, ?int $storeId): bool
+    {
+        if (!$this->stockConfiguration->getManageStock($storeId)) {
+            return true;
+        }
+
+        // product type is unknown here, so trust the MSI salable flag when it is available
+        if (isset($stockData['is_salable'])) {
+            return (bool)$stockData['is_salable'];
+        }
+
+        return $this->getQty($stockData, $reservation) > (float)$this->stockConfiguration->getMinQty($storeId);
     }
 
     /**
