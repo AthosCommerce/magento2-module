@@ -143,6 +143,7 @@ class MsiStockProvider implements StockProviderInterface
         $stockId = $stock->getStockId();
         $skus = $this->getSkus($productIds);
         $configurations = $this->getItemConfigurations($productIds);
+        $missingConfigurationTypes = $this->getProductTypes(array_diff($productIds, array_keys($configurations)));
         $result = [];
         $missingConfigurationIds = [];
         foreach ($productIds as $productId) {
@@ -182,7 +183,14 @@ class MsiStockProvider implements StockProviderInterface
             }
             $result[$productId] = [
                 'qty' => $this->getQty($stockData, $reservation),
-                'in_stock' => $this->getIsInStock($stockData, $reservation, $configuration, $storeId),
+                'in_stock' => $configuration
+                    ? $this->getIsInStock($stockData, $reservation, $configuration)
+                    : $this->getIsInStockFromStoreConfig(
+                        $stockData,
+                        $reservation,
+                        $storeId,
+                        $missingConfigurationTypes[$productId] ?? null
+                    ),
                 'is_stock_managed' => $isStockManaged,
             ];
         }
@@ -225,18 +233,16 @@ class MsiStockProvider implements StockProviderInterface
      * @param array $stockData
      * @param float $reservation
      * @param StockItemInterface|null $configuration
-     * @param int|null $storeId
      *
      * @return bool
      */
     private function getIsInStock(
         array $stockData,
         float $reservation,
-        ?StockItemInterface $configuration = null,
-        ?int $storeId = null
+        ?StockItemInterface $configuration = null
     ): bool {
         if (!$configuration) {
-            return $this->getIsInStockFromStoreConfig($stockData, $reservation, $storeId);
+            return false;
         }
 
         if (!$configuration->getManageStock()) {
@@ -257,26 +263,58 @@ class MsiStockProvider implements StockProviderInterface
     }
 
     /**
-     * Determine stock status for a product without a legacy stock item, using store level configuration
+     * Determine stock status for a product without a legacy stock item, using store level configuration.
+     * Mirrors getIsInStock(): the indexed is_salable flag ignores reservations, so it is only trusted for
+     * composite products; other products are checked by reservation adjusted qty against the store min qty.
      *
      * @param array $stockData
      * @param float $reservation
-     * @param int|null $storeId
+     * @param int $storeId
+     * @param string|null $typeId
      *
      * @return bool
      */
-    private function getIsInStockFromStoreConfig(array $stockData, float $reservation, ?int $storeId): bool
-    {
+    private function getIsInStockFromStoreConfig(
+        array $stockData,
+        float $reservation,
+        int $storeId,
+        ?string $typeId
+    ): bool {
         if (!$this->stockConfiguration->getManageStock($storeId)) {
             return true;
         }
 
-        // product type is unknown here, so trust the MSI salable flag when it is available
-        if (isset($stockData['is_salable'])) {
-            return (bool)$stockData['is_salable'];
+        $isSalable = $stockData['is_salable'] ?? null;
+        // composite products (configurable, grouped, bundle) always have 0 qty
+        if ($isSalable !== null && in_array($typeId, $this->typeManager->getCompositeTypes(), true)) {
+            return (bool)$isSalable;
+        }
+
+        if ($isSalable !== null && $isSalable == 0) {
+            return false;
         }
 
         return $this->getQty($stockData, $reservation) > (float)$this->stockConfiguration->getMinQty($storeId);
+    }
+
+    /**
+     * Retrieve product type IDs by product IDs
+     *
+     * @param array $productIds
+     *
+     * @return array<int|string, string>
+     */
+    private function getProductTypes(array $productIds): array
+    {
+        if (!$productIds) {
+            return [];
+        }
+        $connection = $this->productResource->getConnection();
+        $select = $connection->select()
+            ->from($this->productResource->getTable('catalog_product_entity'), ['entity_id', 'type_id'])
+            ->where('entity_id IN (?)', array_values($productIds), \Zend_Db::INT_TYPE);
+
+        return $connection->fetchPairs($select);
     }
 
     /**
